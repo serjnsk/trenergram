@@ -1000,6 +1000,10 @@ EX.forEach(e => { if(!e.gif) e.gif = 'assets/ex/0025' });
     .forEach(([id, ex, tx]) => { const c = CLIENTS.find(x=>x.id===id); if(c) c.comments.push({d: addDays(ANCHOR,-1), ex, tx, reply:null}) });
 })();
 
+/* Контакты в мессенджерах — демо: ник из транслита фамилии. */
+const translit = w => w.toLowerCase().replace(/[а-яё]/g, ch => ({а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'})[ch] ?? ch);
+CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0 ? '' : '_' + (80 + i % 19)); c.tg ||= '@' + h; c.max ||= '@' + h; });
+
 /* Сдвиг дат демо-данных к сегодняшнему дню. Ключи with датами занятий и
    результатов сдвигаются; даты рождения, «с нами с», создания шаблонов — нет. */
 (function(){

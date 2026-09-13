@@ -51,9 +51,14 @@ function render(){
       <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
       <div class="cinfo">
         <div class="nm">${esc(C.n)}</div>
-      </div>
-      <div class="cstats">
-        <div class="cst"><s>Активность</s><b>${C.last ? ago(C.last) : 'не заходил'}</b></div>
+        <div class="hfacts">
+          <div class="hf"><s>Пол, возраст</s><b>${C.sex==='ж'?'жен.':'муж.'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</b></div>
+          <div class="hf"><s>Рост, вес</s><b>${C.h?C.h+' см':'—'} · ${C.w?fmtNum(C.w)+' кг':'—'}</b></div>
+          <div class="hf"><s>Телефон</s><b><a href="tel:${esc(C.phone||'')}">${esc(C.phone||'—')}</a></b></div>
+          <div class="hf"><s>Телеграм</s><b><a href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener">${esc(C.tg||'—')}</a></b></div>
+          <div class="hf"><s>Макс</s><b>${esc(C.max||'—')}</b></div>
+          <div class="hf"><s>Последняя активность</s><b class="${C.last && daysBetween(C.last,TODAY)>=3 ? 'warn' : ''}">${C.last ? ago(C.last) : 'не заходил'}</b></div>
+        </div>
       </div>
       <div class="cacts">
         ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}

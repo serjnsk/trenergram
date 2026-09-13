@@ -379,7 +379,7 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .dngr{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
 
 /* ─── карточка клиента: шапка + табы-якоря ─── */
-.chead{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:22px;align-items:center;background:var(--bg);border-radius:var(--rad-l);padding:18px 22px}
+.chead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:center;background:var(--bg);border-radius:var(--rad-l);padding:18px 22px}
 .cph{position:relative;width:96px;height:96px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);display:grid;place-items:center;font-family:var(--disp);font-size:30px;font-weight:700;flex:none}
 .cph-up{position:absolute;right:-2px;bottom:-2px;width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--line2);display:grid;place-items:center;color:var(--tx3)}
 .cph-up svg{width:14px;height:14px}
@@ -409,3 +409,10 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .csec .facts{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .csec .facts .fact{border-right:1px solid var(--line)}
 .csec .facts .fact:last-child{border-right:0}
+
+.hfacts{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:12px}
+.hf s{display:block;text-decoration:none;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4)}
+.hf b{display:block;font-size:13.5px;font-weight:600;margin-top:3px;white-space:nowrap}
+.hf b.warn{color:var(--warn)}
+.hf b a{color:inherit;text-decoration:none}
+.hf b a:hover{color:var(--acc)}
