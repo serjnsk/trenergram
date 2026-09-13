@@ -904,3 +904,19 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dkpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:12px 0 6px}
 .dkpis .kpi{background:var(--s1)}
 .dash2{margin-top:8px}
+
+/* ─── одна лента: подписи типов и фильтр ─── */
+.feed1{margin:0 -14px}
+.feed1 .evday{padding-left:14px}
+.feed1 .fev{padding-left:14px;padding-right:14px}
+.tabs2{display:flex;gap:4px;flex-wrap:wrap;padding:8px 0 6px;border-bottom:1px solid var(--line);margin:0 -14px;padding-left:14px;padding-right:14px}
+.tabs2 button{height:28px;padding:0 11px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--tx2);background:none}
+.tabs2 button:hover{background:var(--s1)}
+.tabs2 button.on{background:var(--acc-a);color:var(--acc-d)}
+.tabs2 button s{text-decoration:none;font-weight:500;color:var(--tx4);margin-left:4px}
+.tchip{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--s1);color:var(--tx3);white-space:nowrap}
+.tchip.t-pr{background:var(--acc-a);color:var(--acc-d)}
+.tchip.t-q{background:#E6F1FB;color:#185FA5}
+.tchip.t-miss{background:#FBF1DE;color:var(--warn)}
+.tchip.t-prog{background:var(--rm-a);color:var(--rm)}
+.tchip.t-new,.tchip.t-done{background:var(--ok-a);color:var(--ok)}

@@ -55,7 +55,7 @@ function events(){
 const dayLabel = d => d===TODAY ? 'Сегодня' : d===addDays(TODAY,-1) ? 'Вчера' : humanDate(d);
 const evHTML = (e, mini) => `<div class="fev t-${e.t}${mini?' mini':''}" data-key="${e.key||''}">
     <span class="ico">${e.c && !mini ? esc(e.c.ini) : TICON[e.t]}</span>
-    <div class="c"><div class="h"><b>${esc(e.title)}</b>${mini?'':`<time>${dayLabel(e.d)}</time>`}</div><div class="tx">${e.tx}</div></div>
+    <div class="c"><div class="h"><b>${esc(e.title)}</b><span class="tchip t-${e.t}">${TLABEL[e.t]}</span>${mini?'':`<time>${dayLabel(e.d)}</time>`}</div><div class="tx">${e.tx}</div></div>
     ${mini ? '' : `<a class="btn gh sm" href="${e.href}">${e.act}</a>`}
   </div>`;
 function feedHTML(list, withDays=true){
@@ -88,17 +88,20 @@ const actionsHTML = () => { const ev = events(); const un = ev.filter(e=>e.t==='
   return grp('Ответить', un, 'Ответить') + grp('Составить', pg, 'В конструктор') + grp('Написать клиенту', ms, 'Профиль') + grp('Назначить программу', nw, 'Назначить'); };
 
 
-const NEED = new Set(['q','prog','miss','new']);
+/* Одна лента, как в соцсети: хронология по дням, тип события — подписью и
+   цветом у каждой записи; фильтр по типу — чипами над лентой. */
+const F = { t: 'all' };
+const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', new:'Новый клиент', done:'Результат', pay:'Подписка'};
 function render(){
-  const ev = events(), need = ev.filter(e=>NEED.has(e.t)), info = ev.filter(e=>!NEED.has(e.t));
-  const dt = new Date(TODAY+'T00:00:00');
+  const ev = events();
+  const list = F.t==='all' ? ev : ev.filter(e=>e.t===F.t);
+  const types = [['all','Все',ev.length], ...Object.keys(TYPES).filter(t=>ev.some(e=>e.t===t)).map(t=>[t,TYPES[t],ev.filter(e=>e.t===t).length])];
   const st = stats();
   $('#page').innerHTML = paneHead('Дашборд', null, `<span class="ph-sub">${['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(TODAY)]}, ${humanDate(TODAY)}</span><span class="sp"></span>`)
     + `<div class="dkpis">${st.map(s=>kpiHTML(s)).join('')}</div>
-      <div class="dash2">
-        <div class="col"><div class="colh"><b>Требует действия</b><span class="n">${need.length}</span></div>${feedHTML(need)}</div>
-        <div class="col"><div class="colh"><b>Что произошло</b><span class="n">${info.length}</span></div>${feedHTML(info)}</div>
-      </div>`;
+      <div class="tabs2">${types.map(([k,n,c])=>`<button data-t="${k}" class="${F.t===k?'on':''}">${n}<s>${c}</s></button>`).join('')}</div>
+      <div class="feed1">${feedHTML(list)}</div>`;
+  $$('.tabs2 [data-t]').forEach(b=>b.onclick=()=>{ F.t=b.dataset.t; render() });
   /* Ответ на вопрос — прямо в ленте, без перехода в карточку. */
   $$('.fev.t-q .btn').forEach(b=>b.onclick=e=>{ e.preventDefault(); const row=b.closest('.fev'); if(row.querySelector('.reply')) return;
     const key=row.dataset.key; row.querySelector('.c').insertAdjacentHTML('beforeend', `<div class="reply"><input placeholder="Ответить…" data-key="${key}"><button class="btn gh sm" data-send="${key}">Отправить</button></div>`);
