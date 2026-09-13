@@ -17,7 +17,7 @@
 | [Дашборд](https://serjnsk.github.io/trenergram/prototype/) | Что сегодня требует внимания: тренировки дня, непрочитанные комментарии, новые рекорды, простаивающие клиенты, недели программ без содержания |
 | [Клиенты](https://serjnsk.github.io/trenergram/prototype/clients.html) | Рабочий список тренера — поиск, фильтры, прогресс по программе, динамика показателя |
 | [Карточка клиента](https://serjnsk.github.io/trenergram/prototype/client.html?id=c1) | Профиль спортсмена: факты, история максимума на графике, записанные результаты, персональные максимумы, антропометрия, обратная связь |
-| [Календарь](https://serjnsk.github.io/trenergram/prototype/calendar.html) | Месяц / неделя по всем клиентам, фильтр по клиенту |
+| [Календарь](https://serjnsk.github.io/trenergram/prototype/calendar.html) | Месяц одного клиента — те же карточки дней, что в конструкторе; правая панель клиентов с поиском и метками «программа кончается» |
 | [Программы](https://serjnsk.github.io/trenergram/prototype/programs.html) | Карточки программ с прогрессом составления, недельная таблица |
 | **[Конструктор](https://serjnsk.github.io/trenergram/prototype/constructor.html)** | **Ядро продукта — см. разбор функций ниже** |
 | [База упражнений](https://serjnsk.github.io/trenergram/prototype/exercises.html) | Стартовая база + собственные упражнения тренера, поиск и фильтры |

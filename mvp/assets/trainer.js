@@ -252,7 +252,7 @@ function renderStrip(){
            не терять, где мы; сегодняшний день помечен точкой. */
         const mon = (dt.getDate()===1 || k===0) ? ' ' + MON[dt.getMonth()] : '';
         const today = c.date === TODAY;
-        const head = `<span class="d">${RU[dowMon(c.date)]} ${dt.getDate()}${mon}${today?'<i class="td" title="Сегодня"></i>':''}</span>`;
+        const head = `<span class="d">${RU[dowMon(c.date)]} ${dt.getDate()}${mon}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
         const cls = today ? ' today' : '';
         if(!c.inProg) return `<span class="day void${cls}">${head}</span>`;
         if(!c.inPlan) return `<button class="day empty${cls}" data-day="${c.i}" title="Составить этот день">${head}<span class="e">не составлено</span></button>`;
@@ -969,42 +969,11 @@ function openSetup(btn){
   const f = $(i.txt ? '#st-txt' : '#st-sets'); if(f) f.focus();
 }
 
-/* ═══════════ ВЫБОР КЛИЕНТА ═══════════
-   Не <select>: у тренера полсотни клиентов, нужен поиск с клавиатуры.
-   Поле ввода в фокусе сразу, список фильтруется по имени и программе,
-   стрелки и Enter — выбор без мыши. У каждого — докуда составлена программа:
-   это и есть ответ «кому писать следующим». */
+/* ═══════════ ВЫБОР КЛИЕНТА ═══════════ (общий список с поиском — в nav.js) */
 function openCliPick(btn){
   closeSug();
-  const box = document.createElement('div'); box.className = 'sug clipick';
-  const r = btn.getBoundingClientRect();
-  box.style.left = r.left + 'px'; box.style.top = (r.bottom + window.scrollY + 6) + 'px';
-  document.body.appendChild(box); SUG = box;
-  const list = CLIENTS.filter(c=>c.prog).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
-  const sub = c => { const p = program(c.prog), n = composedDays(c.prog);
-    return p.title + ' · ' + (n >= p.days ? 'составлена целиком' : n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено') };
-  const draw = q => {
-    const qq = norm(q||'');
-    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || norm(program(c.prog).title).includes(qq));
-    box.querySelector('.cl-list').innerHTML = rows.length ? rows.map((c,k)=>`
-      <button class="row ${c.id===S.cid?'cur':''} ${k===0?'on':''}" data-cli="${c.id}"><span class="cav">${esc(c.ini)}</span>
-        <span class="cl-t"><b>${esc(c.n)}</b><s>${esc(sub(c))}</s></span>${c.id===S.cid?ICON.chk:''}</button>`).join('')
-      : '<div class="cap">Никого не нашли</div>';
-  };
-  box.innerHTML = `<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="Имя клиента или программа" autocomplete="off"></div><div class="cl-list"></div>`;
-  draw('');
-  const pick = id => { closeSug(); const date = plan()[S.i].date;
-    if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы'); render() };
-  const inp = box.querySelector('#cl-q'); inp.focus();
-  inp.addEventListener('input', e => draw(e.target.value));
-  box.addEventListener('keydown', e => {
-    const rows = [...box.querySelectorAll('[data-cli]')]; let k = rows.findIndex(x=>x.classList.contains('on'));
-    if(e.key==='ArrowDown' || e.key==='ArrowUp'){ e.preventDefault(); if(!rows.length) return;
-      if(k>=0) rows[k].classList.remove('on'); k = (k + (e.key==='ArrowDown'?1:-1) + rows.length) % rows.length;
-      rows[k].classList.add('on'); rows[k].scrollIntoView({block:'nearest'}); return }
-    if(e.key==='Enter'){ e.preventDefault(); const on = rows[k] || rows[0]; if(on) pick(on.dataset.cli) }
-  });
-  box.addEventListener('click', e => { e.stopPropagation(); const row = e.target.closest('[data-cli]'); if(row) pick(row.dataset.cli) });
+  SUG = openClientPicker(btn, S.cid, id => { SUG = null; const date = plan()[S.i].date;
+    if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы'); render() });
 }
 
 /* ═══════════ ТИП БЛОКА ═══════════
@@ -1676,11 +1645,4 @@ renderNav('constructor.html'); renderTop(); render();
 
 /* Сворачивание панели источников — состояние переживает перезагрузку,
    как и у левого меню. */
-function setRailMin(min){
-  document.body.classList.toggle('railmin', min);
-  const b = document.getElementById('railtog');
-  if(b) b.title = b.ariaLabel = min ? 'Развернуть панель' : 'Свернуть панель';
-  try{ localStorage.setItem('tg.railmin', min ? '1' : '') }catch(_){}
-}
-$('#railtog').onclick = () => setRailMin(!document.body.classList.contains('railmin'));
-try{ if(localStorage.getItem('tg.railmin')) setRailMin(true) }catch(_){}
+initRail();

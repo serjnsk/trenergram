@@ -16,10 +16,25 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page"><div class="pagewrap">
-        <div class="phead" id="pagehead"></div>
-        <div id="page"></div>
-      </div></div>
+    <div class="page">
+      <div class="cons">
+        <main>
+          <section class="calwrap" id="cal"></section>
+        </main>
+        <aside class="rail" data-min="Клиенты">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead">
+            <div class="railttl">Клиенты</div>
+            <label class="search">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
+              <input id="q" placeholder="Имя или программа…" autocomplete="off">
+            </label>
+          </div>
+          <div class="railbody" id="clients"></div>
+          <div class="railfoot" id="railfoot">Клик по дню открывает конструктор на этом клиенте и дне.</div>
+        </aside>
+      </div>
+    </div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
@@ -27,138 +42,115 @@
 <script src="assets/nav.js"></script>
 <script src="assets/ui.js"></script>
 <script>
-/* ═══════════ КАЛЕНДАРЬ (CAL-1) ═══════════
-   Три уровня, у каждого своя единица и ограниченный объём:
+/* ═══════════ КАЛЕНДАРЬ — МЕСЯЦ ОДНОГО КЛИЕНТА (CAL-1) ═══════════
+   Та же логика, что у ленты конструктора, но другой паттерн: тренер заходит
+   посмотреть картину целиком — месяц одного клиента — и быстро прыгает между
+   клиентами по правой панели. Сетка «все клиенты × месяц» не масштабируется,
+   поэтому общая картина по всем — на дашборде, а здесь всегда один человек.
+   Вид ячеек (подробно / компактно) общий с лентой конструктора. */
+const Q = new URLSearchParams(location.search);
+const C = { cid: Q.get('client') || STATE.curClient || 'c1', q:'' };
+if(!client(C.cid)) C.cid = 'c1';
+{ const d = new Date((Q.get('date') || TODAY) + 'T00:00:00'); C.y = d.getFullYear(); C.m = d.getMonth(); }
+const laneView = () => STATE.laneView === 'compact' ? 'compact' : 'full';
+const ymIso = (y,m,d=1) => y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+Object.assign(ICON, {      /* те же иконки, что в ленте конструктора */
+  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
+  vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
+  vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
+});
 
-   МЕСЯЦ  — обзор: сколько занятий, сколько атлетов, сколько не составлено.
-            Ни одной фамилии. Сетка «все клиенты × месяц» не масштабируется:
-            у персонального тренера полсотни индивидуальных программ, и
-            схлопывать по программе нечего — в ячейку не влезет ничего.
-   ДЕНЬ   — полный разбор списком (не сеткой): день физически ограничен.
-            Групповое занятие — одна строка со стопкой атлетов.
-   НЕДЕЛЯ — по одному клиенту. «Все × 7 дней» не помещается тем же образом,
-            что и месяц, поэтому клиент выбирается явно.
-
-   Выбор клиента — селектом, а не чипами: строка чипов с фамилией каждого
-   клиента ломается на тех же полусотне, что и ячейки. */
-const V = { mode:'month', cur:TODAY, cli:(CLIENTS.find(c=>c.prog)||CLIENTS[0]).id };
-
-function monthGrid(anchor){
-  const d = D(anchor);
-  const first = iso(new Date(d.getFullYear(), d.getMonth(), 1));
+function renderCal(){
+  const c = client(C.cid), pid = c.prog, p = pid ? program(pid) : null;
+  const plan = pid ? buildPlan(pid) : [];
+  const first = ymIso(C.y, C.m), dim = new Date(C.y, C.m+1, 0).getDate();
   const start = addDays(first, -dowMon(first));
-  const cells = Array.from({length:42}, (_,i)=>addDays(start,i));
-  return `<div class="cal">
-    <div class="calhead">${RU.map(w=>`<div>${w}</div>`).join('')}</div>
-    <div class="calgrid">
-      ${cells.map(date=>{
-        const inMonth = date.slice(0,7)===first.slice(0,7);
-        const st = dayStats(date);
-        const total = st.n + st.gaps;
-        return `<div class="cell pick ${!inMonth?'out':''} ${date===TODAY?'today':''}" data-day="${date}">
-          <div class="cd">${+date.slice(8,10)}</div>
-          ${total ? `
-            <div class="dfill">
-              <i class="on" style="width:${Math.round(st.n/total*100)}%"></i>
-              <i class="no" style="width:${Math.round(st.gaps/total*100)}%"></i>
-            </div>
-            <div class="dn">${st.n} ${plural(st.n,'занятие','занятия','занятий')}</div>
-            <div class="ds">${st.athletes} ${plural(st.athletes,'атлет','атлета','атлетов')}</div>
-            ${st.gaps?`<div class="dg">${st.gaps} не составлено</div>`:''}
-          ` : `<div class="quiet">отдых</div>`}
-        </div>`;
-      }).join('')}
+  const nCells = Math.ceil((dowMon(first) + dim) / 7) * 7;
+  const compact = laneView() === 'compact';
+  const done = pid ? composedDays(pid) : 0;
+  const psum = p ? `${esc(p.title)} · ${dm(p.start)} – ${dm(dayDate(pid, p.days-1))} · ${done >= p.days ? 'составлена целиком' : done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено'}` : 'программа не назначена';
+  const cells = Array.from({length:nCells}, (_,k)=>{
+    const date = addDays(start, k), dt = new Date(date + 'T00:00:00');
+    const other = dt.getMonth() !== C.m, today = date === TODAY;
+    const i = p ? daysBetween(p.start, date) : -1;
+    const inProg = !!p && i >= 0 && i < p.days, inPlan = inProg && i < plan.length;
+    const mon = (dt.getDate()===1 || k===0) ? ' ' + MONTHS[dt.getMonth()].slice(0,3) : '';
+    const head = `<span class="d">${dt.getDate()}${mon}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+    const cls = (other?' dim':'') + (today?' today':'');
+    if(!inProg) return `<span class="day out${cls}">${head}${!other && p ? '<span class="e">вне программы</span>' : ''}</span>`;
+    const href = `constructor.html?client=${C.cid}&date=${date}`;
+    if(!inPlan) return `<a class="day empty${cls}" href="${href}" title="Составить этот день">${head}<span class="e">не составлено</span></a>`;
+    const x = plan[i];
+    const n = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
+    const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
+    const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
+    if(compact) return `<a class="day cmp${n?'':' rest'}${cls}" href="${href}">${head}
+      ${!n ? '<span class="e">отдых</span>' : x.draft ? '<span class="dr">черновик</span>' : `<span class="t">${esc(title)}</span>`}</a>`;
+    return `<a class="day${n?'':' rest'}${cls}" href="${href}">${head}
+      ${n ? `<span class="t">${esc(title)}</span>` : '<span class="e">отдых</span>'}
+      ${x.draft && n ? '<span class="dr">черновик</span>' : ''}
+      ${n ? `<span class="k">${bl} ${plural(bl,'блок','блока','блоков')} · ${n} упр</span>` : ''}
+      ${n ? `<span class="bl">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map(b=>`<i>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</i>`).join('')}</span>` : ''}</a>`;
+  });
+  const isNow = C.y === +TODAY.slice(0,4) && C.m === +TODAY.slice(5,7)-1;
+  $('#cal').innerHTML = `
+    <div class="wkh">
+      <h1 class="wkttl">Календарь</h1>
+      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cn">${esc(c.n)}</span>${ICON.chev}</button>
+      <s class="psum">${psum}</s>
+      <span class="sp"></span>
     </div>
-  </div>`;
-}
-
-function dayView(date){
-  const st = dayStats(date);
-  return `<div class="card cb">${timelineHTML(st.ses, st.gaps, date)}</div>
-    <div class="cols3" style="margin-top:20px">
-      <div class="kpi"><span class="k">${ICON.cal} Занятий</span><div class="v">${st.n}</div><div class="d">${st.athletes} ${plural(st.athletes,'атлет','атлета','атлетов')} суммарно</div></div>
-      <div class="kpi"><span class="k">${ICON.build} Не составлено</span><div class="v ${st.gaps?'warn':''}">${st.gaps}</div><div class="d">назначений ждут тренировку</div></div>
-      <div class="kpi"><span class="k">${ICON.chk} Записали результат</span><div class="v">${st.ses.reduce((a,s)=>a+s.done,0)}</div><div class="d">из ${st.athletes} за день</div></div>
-    </div>`;
-}
-
-function weekView(anchor, cid){
-  const c = client(cid);
-  const start = addDays(anchor, -dowMon(anchor));
-  const days = Array.from({length:7},(_,i)=>addDays(start,i));
-  const pool = c.prog ? scheduleFor(cid, days[0], days[6]) : [];
-  if(!c.prog) return `<div class="empty"><div class="t">${esc(c.n)} без программы</div>
-    <div class="d">Назначьте программу в карточке клиента</div></div>`;
-  return `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:start">
-    ${days.map(date=>{
-      const evs = pool.filter(e=>e.date===date);
-      return `<div class="card ${date===TODAY?'':''}">
-        <div class="ch"><span class="t">${RU[dowMon(date)]} · ${dm(date)}</span></div>
-        <div class="cb" style="display:flex;flex-direction:column;gap:7px;min-height:120px">
-          ${evs.length ? evs.map(e=>`<a class="ev ${e.status==='done'?'done':''}" href="constructor.html?client=${cid}&date=${e.date}"
-              style="height:auto;align-items:flex-start;padding:8px;text-decoration:none">
-              <span class="k ${e.kind==='warmup'?'warmup':e.kind==='metcon'?'metcon':e.kind==='cooldown'?'cooldown':''}" style="margin-top:5px"></span>
-              <span style="flex:1;min-width:0">
-                <span style="display:block;font-size:12px;font-weight:600;color:var(--tx1)">${esc(e.title)}</span>
-                <span style="display:block;font-size:11px;color:var(--tx4);margin-top:2px">день ${e.day}${e.draft?' · <b style="color:var(--warn)">черновик</b>':''}</span>
-              </span></a>`).join('')
-            : `<span style="font-size:11.5px;color:var(--tx4)">Отдых</span>`}
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-
-function periodTitle(){
-  const d = D(V.cur);
-  if(V.mode==='month') return MONTHS_N[d.getMonth()] + ' ' + d.getFullYear();
-  if(V.mode==='day')   return humanDate(V.cur);
-  const s = addDays(V.cur, -dowMon(V.cur));
-  return dm(s) + ' – ' + dm(addDays(s,6));
-}
-
-function render(){
-  $('#page').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <div class="filters">
-        <button data-mode="month" class="${V.mode==='month'?'on':''}">Месяц</button>
-        <button data-mode="day"   class="${V.mode==='day'?'on':''}">День</button>
-        <button data-mode="week"  class="${V.mode==='week'?'on':''}">Неделя</button>
-      </div>
-      <button class="iact" id="pPrev">${ICON.back}</button>
-      <button class="iact" id="pNext">${ICON.arr}</button>
-      <button class="btn gh sm" id="pToday">Сегодня</button>
-      <div style="font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:-.01em">${periodTitle()}</div>
-      <span class="sp" style="flex:1"></span>
-      ${V.mode==='week' ? `<label class="forw"><span>клиент</span>
-        <select id="cli">${CLIENTS.map(c=>`<option value="${c.id}" ${c.id===V.cli?'selected':''}>${esc(c.n)}</option>`).join('')}</select>
-      </label>` : ''}
+    <div class="wkn2">
+      <span class="wkn">
+        <button id="mPrev" title="Месяцем раньше">${ICON.back}</button>
+        <button id="mNext" title="Месяцем позже">${ICON.arr}</button>
+      </span>
+      <button class="today" id="mToday" ${isNow?'disabled':''}>Сегодня</button>
+      <s class="wkrange">${MONTHS_N[C.m]} ${C.y}</s>
+      <span class="sp"></span>
+      <span class="vtog" title="Вид">
+        <button data-view="full" class="${!compact?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
+        <button data-view="compact" class="${compact?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
+      </span>
     </div>
+    <div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div>
+    <div class="days cal ${compact?'compact':''}">${cells.join('')}</div>`;
+}
 
-    ${V.mode==='month' ? monthGrid(V.cur) : V.mode==='day' ? dayView(V.cur) : weekView(V.cur, V.cli)}
-
-    ${V.mode==='month' ? `<div class="legend">
-      <span><i style="background:var(--acc)"></i> Составлено</span>
-      <span><i style="background:var(--line2)"></i> Не составлено</span>
-    </div>
-    <div class="hint">Месяц показывает состояние дня, а не его содержание: имена и тренировки — на экране дня. Клик по дню открывает его.</div>` : ''}`;
-
-  $$('.filters [data-mode]').forEach(b=>b.onclick=()=>{ V.mode=b.dataset.mode; render() });
-  $$('[data-day]').forEach(el=>el.onclick=()=>{ V.cur=el.dataset.day; V.mode='day'; render() });
-  const sel=$('#cli'); if(sel) sel.onchange=e=>{ V.cli=e.target.value; render() };
-  $('#pToday').onclick=()=>{ V.cur=TODAY; render() };
-  const step = back => {
-    const d=D(V.cur), k = back?-1:1;
-    V.cur = V.mode==='month' ? iso(new Date(d.getFullYear(),d.getMonth()+k,1))
-          : V.mode==='day'   ? addDays(V.cur,k)
-          :                    addDays(V.cur,7*k);
-    render();
+/* Правая панель: все клиенты, поиск; у кого программа кончается — метка. */
+function renderClients(){
+  const qq = norm(C.q);
+  const list = CLIENTS.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)))
+    .sort((a,b)=>a.n.localeCompare(b.n,'ru'));
+  const flag = c => {
+    if(!c.prog) return '<span class="fl gh">нет программы</span>';
+    const p = program(c.prog), n = composedDays(c.prog);
+    if(n >= p.days) return '';
+    const left = daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1)));
+    if(left < 0) return '<span class="fl rm">кончилась</span>';
+    if(left <= 7) return `<span class="fl">${left} ${plural(left,'день','дня','дней')}</span>`;
+    return '';
   };
-  $('#pPrev').onclick=()=>step(true);
-  $('#pNext').onclick=()=>step(false);
+  $('#clients').innerHTML = list.length ? list.map(c=>`
+    <button class="crow ${c.id===C.cid?'on':''}" data-cli="${c.id}">
+      <span class="cav">${esc(c.ini)}</span>
+      <span class="body"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${flag(c)}
+    </button>`).join('') : '<div class="empty">Никого не нашли</div>';
 }
+function render(){ renderCal(); renderClients(); }
+
+document.addEventListener('click', e=>{
+  const row = e.target.closest('.crow'); if(row){ C.cid = row.dataset.cli; STATE.curClient = C.cid; saveState(); render(); return }
+  const vt = e.target.closest('[data-view]'); if(vt){ STATE.laneView = vt.dataset.view; saveState(); render(); return }
+  if(e.target.closest('#mPrev')){ C.m--; if(C.m<0){ C.m=11; C.y-- } render(); return }
+  if(e.target.closest('#mNext')){ C.m++; if(C.m>11){ C.m=0; C.y++ } render(); return }
+  if(e.target.closest('#mToday')){ C.y = +TODAY.slice(0,4); C.m = +TODAY.slice(5,7)-1; render(); return }
+  const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, id => { C.cid = id; STATE.curClient = id; saveState(); render() }); return }
+});
+document.addEventListener('input', e=>{ if(e.target.id==='q'){ C.q = e.target.value; renderClients() } });
 render();
-initShell({page:'calendar.html', title:'Календарь'});
+initShell({page:'calendar.html'});
+initRail();
 </script>
 </body>
 </html>

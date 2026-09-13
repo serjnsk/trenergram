@@ -100,3 +100,60 @@ function bindTopButton(){
   const w = dd.querySelector('[data-wizard]');
   if(w && typeof openWizard === 'function') w.onclick = e => { e.preventDefault(); dd.classList.remove('on'); openWizard() };
 }
+
+
+/* ═══════════ ВЫБОР КЛИЕНТА — ОБЩИЙ ═══════════
+   Не <select>: у тренера полсотни клиентов, нужен поиск с клавиатуры.
+   Поле в фокусе сразу, список фильтруется по имени и программе, стрелки и
+   Enter — выбор без мыши. У каждого — докуда составлена программа: это и
+   есть ответ «кому писать следующим». Используется конструктором и календарём. */
+const clientProgSub = c => {
+  if(!c.prog) return 'программа не назначена';
+  const p = program(c.prog), n = composedDays(c.prog);
+  return p.title + ' · ' + (n >= p.days ? 'составлена целиком' : n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено');
+};
+function openClientPicker(btn, curId, onPick){
+  document.querySelectorAll('.sug.clipick').forEach(x=>x.remove());
+  const box = document.createElement('div'); box.className = 'sug clipick';
+  const r = btn.getBoundingClientRect();
+  box.style.left = r.left + 'px'; box.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  document.body.appendChild(box);
+  const list = CLIENTS.filter(c=>c.prog).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
+  const draw = q => {
+    const qq = norm(q||'');
+    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || norm(program(c.prog).title).includes(qq));
+    box.querySelector('.cl-list').innerHTML = rows.length ? rows.map((c,k)=>`
+      <button class="row ${c.id===curId?'cur':''} ${k===0?'on':''}" data-cli="${c.id}"><span class="cav">${esc(c.ini)}</span>
+        <span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${c.id===curId?ICON.chk:''}</button>`).join('')
+      : '<div class="cap">Никого не нашли</div>';
+  };
+  box.innerHTML = `<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="Имя клиента или программа" autocomplete="off"></div><div class="cl-list"></div>`;
+  draw('');
+  const close = () => { box.remove(); document.removeEventListener('click', off, true) };
+  const pick = id => { close(); onPick(id) };
+  const off = e => { if(!box.isConnected){ document.removeEventListener('click', off, true); return }
+    if(!box.contains(e.target) && !btn.contains(e.target)) close() };
+  setTimeout(()=>document.addEventListener('click', off, true));
+  const inp = box.querySelector('#cl-q'); inp.focus();
+  inp.addEventListener('input', e => draw(e.target.value));
+  box.addEventListener('keydown', e => {
+    const rows = [...box.querySelectorAll('[data-cli]')]; let k = rows.findIndex(x=>x.classList.contains('on'));
+    if(e.key==='Escape'){ e.preventDefault(); close(); return }
+    if(e.key==='ArrowDown' || e.key==='ArrowUp'){ e.preventDefault(); if(!rows.length) return;
+      if(k>=0) rows[k].classList.remove('on'); k = (k + (e.key==='ArrowDown'?1:-1) + rows.length) % rows.length;
+      rows[k].classList.add('on'); rows[k].scrollIntoView({block:'nearest'}); return }
+    if(e.key==='Enter'){ e.preventDefault(); const on = rows[k] || rows[0]; if(on) pick(on.dataset.cli) }
+  });
+  box.addEventListener('click', e => { e.stopPropagation(); const row = e.target.closest('[data-cli]'); if(row) pick(row.dataset.cli) });
+  return box;
+}
+
+/* Правая панель сворачивается в колонку; состояние — в localStorage. */
+function initRail(){
+  const b = document.getElementById('railtog'); if(!b) return;
+  const setRailMin = min => { document.body.classList.toggle('railmin', min);
+    b.title = min ? 'Развернуть панель' : 'Свернуть панель';
+    try{ localStorage.setItem('tg.railmin', min ? '1' : '') }catch(_){} };
+  b.onclick = () => setRailMin(!document.body.classList.contains('railmin'));
+  try{ if(localStorage.getItem('tg.railmin')) setRailMin(true) }catch(_){}
+}
