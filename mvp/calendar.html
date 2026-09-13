@@ -27,7 +27,7 @@
             <div class="railttl">Клиенты</div>
             <label class="search">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
-              <input id="q" placeholder="Имя или программа…" autocomplete="off">
+              <input id="q" placeholder="Имя" autocomplete="off">
             </label>
           </div>
           <div class="railbody" id="clients"></div>
@@ -122,6 +122,7 @@ function renderCal(keepYM){
       <s class="psum">${psum}</s>
       <span class="sp"></span>
       <button class="today" id="mToday">Сегодня</button>
+      <label class="jump" title="Перейти к дате">${ICON.cal}<input type="date" id="jumpDate" value="${TODAY}"></label>
       <span class="vtog" title="Вид">
         <button data-view="full" class="${!x.compact?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
         <button data-view="compact" class="${x.compact?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
@@ -132,7 +133,18 @@ function renderCal(keepYM){
     <div id="botSent"></div>`;
   scrollToMonth(keepYM || TODAY.slice(0,7)+'-01', !keepYM);
 }
-const HEAD = 58 + 14;   /* шапка + отступ */
+const HEAD = 58 + 62;   /* шапка приложения + липкая шапка календаря */
+/* Переход к произвольной дате: месяц дорастает при необходимости, день мигает. */
+function jumpTo(date){
+  const ym = ymOf(date);
+  if(ymKey(ym) < ymKey(C.from) || ymKey(ym) > ymKey(C.to)){
+    if(ymKey(ym) < ymKey(C.from)) C.from = ymAdd(ym, -1); else C.to = ymAdd(ym, 1);
+    renderCal(); observe();
+  }
+  scrollToMonth(ymKey(ym), true);
+  const cell = [...document.querySelectorAll('.day')].find(el => el.getAttribute('href') && el.getAttribute('href').endsWith('date=' + date)) ;
+  if(cell){ cell.classList.add('flash'); setTimeout(()=>cell.classList.remove('flash'), 1600) }
+}
 function scrollToMonth(ym, smooth){
   const el = document.querySelector(`.mon[data-ym="${ym}"]`); if(!el) return;
   window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - HEAD, behavior: smooth ? 'smooth' : 'auto'});
@@ -154,24 +166,25 @@ const io = new IntersectionObserver(entries => {
 }, {rootMargin:'400px 0px'});
 function observe(){ io.disconnect(); io.observe($('#topSent')); io.observe($('#botSent')); }
 
-/* Правая панель: все клиенты, поиск; у кого программа кончается — метка. */
+/* Правая панель: клиенты по срочности — первыми те, у кого написанные
+   тренировки кончаются раньше всех; справа — через сколько дней. Поиск —
+   только по имени. Без программы — в конце. */
+const runway = c => { if(!c.prog) return Infinity; const n = composedDays(c.prog); return daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1))) };
 function renderClients(){
   const qq = norm(C.q);
-  const list = CLIENTS.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)))
-    .sort((a,b)=>a.n.localeCompare(b.n,'ru'));
+  const list = CLIENTS.filter(c=>!qq || norm(c.n).includes(qq))
+    .sort((a,b)=>(runway(a)-runway(b)) || a.n.localeCompare(b.n,'ru'));
   const flag = c => {
-    if(!c.prog) return '<span class="fl gh">нет программы</span>';
-    const p = program(c.prog), n = composedDays(c.prog);
-    if(n >= p.days) return '';
-    const left = daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1)));
-    if(left < 0) return '<span class="fl rm">кончилась</span>';
-    if(left <= 7) return `<span class="fl">${left} ${plural(left,'день','дня','дней')}</span>`;
-    return '';
+    const r = runway(c);
+    if(r === Infinity) return '<span class="fl gh">нет программы</span>';
+    if(r < 0) return '<span class="fl rm">кончилась</span>';
+    if(r === 0) return '<span class="fl">сегодня</span>';
+    return `<span class="fl ${r <= 7 ? '' : 'gh'}">${r} ${plural(r,'день','дня','дней')}</span>`;
   };
   $('#clients').innerHTML = list.length ? list.map(c=>`
     <button class="crow ${c.id===C.cid?'on':''}" data-cli="${c.id}">
       <span class="cav">${esc(c.ini)}</span>
-      <span class="body"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${flag(c)}
+      <span class="body"><b>${esc(c.n)}</b></span>${flag(c)}
     </button>`).join('') : '<div class="empty">Никого не нашли</div>';
 }
 function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); renderClients(); observe(); }
@@ -184,6 +197,7 @@ document.addEventListener('click', e=>{
   const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
 });
 document.addEventListener('input', e=>{ if(e.target.id==='q'){ C.q = e.target.value; renderClients() } });
+document.addEventListener('change', e=>{ if(e.target.id==='jumpDate' && e.target.value) jumpTo(e.target.value) });
 render();
 initShell({page:'calendar.html'});
 initRail();

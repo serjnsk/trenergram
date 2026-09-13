@@ -34,7 +34,7 @@ const TRAINER = {
 const PLANS = [
   {id:'start',  n:'Старт',  limit:10,  price:990,  d:'Для начала: до 10 клиентов'},
   {id:'pro',    n:'Тренер', limit:50,  price:2990, d:'Персональный тренер с полной базой'},
-  {id:'studio', n:'Студия', limit:200, price:7990, d:'Группы и команды, несколько тренеров'},
+  {id:'studio', n:'Студия', limit:200, price:7990, d:'Несколько тренеров, до 200 клиентов'},
 ];
 const SPORTS = ['Кроссфит','Тренажёрный зал','Тяжёлая атлетика','Функциональный тренинг','Бег','Плавание','Единоборства','Реабилитация'];
 const PROFILE_DEF = {
@@ -151,6 +151,88 @@ const ALIAS = {
  ropec:['канат','лазание по канату','rope climb'],
  copen:['раскрытие грудного','t-spine','грудной отдел'],
 };
+/* ═══ Расширение базы до 100 упражнений — для проверки поиска, таблиц и панелей
+   на реальном объёме. Ключ pm у вариаций — от базового движения. ═══ */
+EX.push(
+ {id:'bsquat', ru:'Болгарский сплит-присед', en:'Bulgarian Split Squat', g:'Ноги', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'gsquat', ru:'Гоблет-присед', en:'Goblet Squat', g:'Ноги', eq:'Гиря', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'legpress', ru:'Жим ногами', en:'Leg Press', g:'Ноги', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'rdl', ru:'Румынская тяга', en:'Romanian Deadlift', g:'Ноги', eq:'Штанга', pm:'rdl', u:['кг','повт'], m:'pending', own:false},
+ {id:'hipthrust', ru:'Ягодичный мост', en:'Hip Thrust', g:'Ноги', eq:'Штанга', pm:null, u:['повт','кг'], m:'ok', own:true},
+ {id:'stepup', ru:'Зашагивания на тумбу', en:'Step-up', g:'Ноги', eq:'Тумба', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'pistol', ru:'Пистолетик', en:'Pistol Squat', g:'Ноги', eq:'Своё тело', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'legcurl', ru:'Сгибание ног', en:'Leg Curl', g:'Ноги', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'legext', ru:'Разгибание ног', en:'Leg Extension', g:'Ноги', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'calf', ru:'Подъём на носки', en:'Calf Raise', g:'Ноги', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'ohsquat', ru:'Присед над головой', en:'Overhead Squat', g:'Ноги', eq:'Штанга', pm:'ohsquat', u:['кг','повт'], m:'pending', own:false},
+ {id:'boxsquat', ru:'Присед на ящик', en:'Box Squat', g:'Ноги', eq:'Штанга', pm:'squat', u:['кг','повт'], m:'ok', own:false},
+ {id:'sumo', ru:'Становая тяга сумо', en:'Sumo Deadlift', g:'Ноги', eq:'Штанга', pm:'dead', u:['кг','повт'], m:'ok', own:false},
+ {id:'nordic', ru:'Нордические сгибания', en:'Nordic Curl', g:'Ноги', eq:'Своё тело', pm:null, u:['повт'], m:'ok', own:true},
+ {id:'gm', ru:'Наклоны со штангой', en:'Good Morning', g:'Ноги', eq:'Штанга', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'bbrow', ru:'Тяга штанги в наклоне', en:'Barbell Row', g:'Спина', eq:'Штанга', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'dbrow', ru:'Тяга гантели в наклоне', en:'Dumbbell Row', g:'Спина', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'latpull', ru:'Тяга верхнего блока', en:'Lat Pulldown', g:'Спина', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'pending', own:false},
+ {id:'seatrow', ru:'Тяга горизонтального блока', en:'Seated Cable Row', g:'Спина', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'chinup', ru:'Подтягивания обратным хватом', en:'Chin-up', g:'Спина', eq:'Турник', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'bmu', ru:'Выход силой на перекладине', en:'Bar Muscle-up', g:'Спина', eq:'Турник', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'ringrow', ru:'Тяга на кольцах', en:'Ring Row', g:'Спина', eq:'Кольца', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'facepull', ru:'Тяга к лицу', en:'Face Pull', g:'Спина', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:true},
+ {id:'hyperext', ru:'Гиперэкстензия', en:'Back Extension', g:'Спина', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'pendlay', ru:'Тяга Пендли', en:'Pendlay Row', g:'Спина', eq:'Штанга', pm:null, u:['повт','кг'], m:'pending', own:false},
+ {id:'tbarrow', ru:'Т-тяга', en:'T-bar Row', g:'Спина', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'incline', ru:'Жим на наклонной скамье', en:'Incline Bench Press', g:'Грудь', eq:'Штанга', pm:'bench', u:['кг','повт'], m:'ok', own:false},
+ {id:'dbpress', ru:'Жим гантелей лёжа', en:'Dumbbell Bench Press', g:'Грудь', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'dips', ru:'Отжимания на брусьях', en:'Dips', g:'Грудь', eq:'Брусья', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'fly', ru:'Разведения гантелей', en:'Dumbbell Fly', g:'Грудь', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'cablefly', ru:'Сведения в кроссовере', en:'Cable Fly', g:'Грудь', eq:'Тренажёр', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'floorpress', ru:'Жим с пола', en:'Floor Press', g:'Грудь', eq:'Штанга', pm:'bench', u:['кг','повт'], m:'pending', own:true},
+ {id:'pushupw', ru:'Отжимания с весом', en:'Weighted Push-up', g:'Грудь', eq:'Своё тело', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'pushpress', ru:'Швунг жимовой', en:'Push Press', g:'Плечи', eq:'Штанга', pm:'press', u:['кг','повт'], m:'ok', own:false},
+ {id:'pushjerk', ru:'Швунг толчковый', en:'Push Jerk', g:'Плечи', eq:'Штанга', pm:'jerk', u:['кг','повт'], m:'ok', own:false},
+ {id:'dbohp', ru:'Жим гантелей сидя', en:'Dumbbell Shoulder Press', g:'Плечи', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'latraise', ru:'Махи гантелями в стороны', en:'Lateral Raise', g:'Плечи', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'rearfly', ru:'Махи в наклоне', en:'Rear Delt Fly', g:'Плечи', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'arnold', ru:'Жим Арнольда', en:'Arnold Press', g:'Плечи', eq:'Гантели', pm:null, u:['повт','кг'], m:'pending', own:false},
+ {id:'wallwalk', ru:'Выход в стойку у стены', en:'Wall Walk', g:'Плечи', eq:'Своё тело', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'zpress', ru:'Z-жим', en:'Z-press', g:'Плечи', eq:'Штанга', pm:null, u:['повт','кг'], m:'ok', own:true},
+ {id:'hpc', ru:'Взятие с виса', en:'Hang Power Clean', g:'ТА', eq:'Штанга', pm:'clean', u:['кг','повт'], m:'ok', own:false},
+ {id:'hps', ru:'Рывок с виса', en:'Hang Power Snatch', g:'ТА', eq:'Штанга', pm:'snatch', u:['кг','повт'], m:'ok', own:false},
+ {id:'sqclean', ru:'Взятие в сед', en:'Squat Clean', g:'ТА', eq:'Штанга', pm:'clean', u:['кг','повт'], m:'ok', own:false},
+ {id:'sqsnatch', ru:'Рывок в сед', en:'Squat Snatch', g:'ТА', eq:'Штанга', pm:'snatch', u:['кг','повт'], m:'ok', own:false},
+ {id:'cleanpull', ru:'Тяга взятия', en:'Clean Pull', g:'ТА', eq:'Штанга', pm:'clean', u:['кг','повт'], m:'pending', own:false},
+ {id:'snatchpull', ru:'Рывковая тяга', en:'Snatch Pull', g:'ТА', eq:'Штанга', pm:'snatch', u:['кг','повт'], m:'ok', own:false},
+ {id:'splitjerk', ru:'Толчок в ножницы', en:'Split Jerk', g:'ТА', eq:'Штанга', pm:'jerk', u:['кг','повт'], m:'ok', own:false},
+ {id:'snatchbal', ru:'Рывковый баланс', en:'Snatch Balance', g:'ТА', eq:'Штанга', pm:'snatch', u:['кг','повт'], m:'ok', own:false},
+ {id:'cj', ru:'Взятие и толчок', en:'Clean & Jerk', g:'ТА', eq:'Штанга', pm:'jerk', u:['кг','повт'], m:'ok', own:true},
+ {id:'musnatch', ru:'Силовой рывок', en:'Muscle Snatch', g:'ТА', eq:'Штанга', pm:'snatch', u:['кг','повт'], m:'ok', own:false},
+ {id:'k2e', ru:'Колени к локтям', en:'Knees-to-elbows', g:'Кроссфит', eq:'Турник', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'dbsnatch', ru:'Рывок гантели', en:'Dumbbell Snatch', g:'Кроссфит', eq:'Гантели', pm:null, u:['повт','кг'], m:'pending', own:false},
+ {id:'dbthr', ru:'Трастер с гантелями', en:'Dumbbell Thruster', g:'Кроссфит', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'devil', ru:'Дэвил-пресс', en:'Devil Press', g:'Кроссфит', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'manmaker', ru:'Мэн-мейкер', en:'Man Maker', g:'Кроссфит', eq:'Гантели', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'bfb', ru:'Бёрпи через штангу', en:'Bar-facing Burpee', g:'Кроссфит', eq:'Штанга', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'boxover', ru:'Перепрыгивания через тумбу', en:'Box Jump Over', g:'Кроссфит', eq:'Тумба', pm:null, u:['повт','высота'], m:'ok', own:false},
+ {id:'farmer', ru:'Прогулка фермера', en:'Farmer Carry', g:'Кроссфит', eq:'Гантели', pm:null, u:['м','кг'], m:'ok', own:true},
+ {id:'ohcarry', ru:'Прогулка с весом над головой', en:'Overhead Carry', g:'Кроссфит', eq:'Штанга', pm:null, u:['м','кг'], m:'pending', own:false},
+ {id:'sandbag', ru:'Взятие мешка на плечо', en:'Sandbag to Shoulder', g:'Кроссфит', eq:'Мешок', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'rmu', ru:'Выход силой на кольцах', en:'Ring Muscle-up', g:'Кроссфит', eq:'Кольца', pm:null, u:['повт'], m:'ok', own:false},
+ {id:'handwalk', ru:'Ходьба на руках', en:'Handstand Walk', g:'Кроссфит', eq:'Своё тело', pm:null, u:['м'], m:'ok', own:false},
+ {id:'slamball', ru:'Слэмбол', en:'Slam Ball', g:'Кроссфит', eq:'Мяч', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'kbclean', ru:'Взятие гири', en:'Kettlebell Clean', g:'Кроссфит', eq:'Гиря', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'kbpress', ru:'Жим гири', en:'Kettlebell Press', g:'Кроссфит', eq:'Гиря', pm:null, u:['повт','кг'], m:'ok', own:false},
+ {id:'tgu', ru:'Турецкий подъём', en:'Turkish Get-up', g:'Кроссфит', eq:'Гиря', pm:null, u:['повт','кг'], m:'pending', own:false},
+ {id:'legless', ru:'Канат без ног', en:'Legless Rope Climb', g:'Кроссфит', eq:'Канат', pm:null, u:['повт'], m:'ok', own:true}
+);
+Object.assign(ALIAS, {
+ bbrow:['тяга в наклоне','тяга штанги в наклоне','barbell row'], pushpress:['швунг','швунг жимовой','push press'],
+ dips:['брусья','отжимания на брусьях'], latpull:['тяга верхнего блока','верхний блок','lat pulldown'],
+ situp:['ситап','сит-ап','sit-up','sit up'], run:['бег','run','пробежка'], ski:['лыжи','skierg','ски эрг'],
+ farmer:['фермер','прогулка фермера','farmer carry'], hpc:['взятие с виса','hang power clean','hang clean'],
+ dbsnatch:['рывок гантели','db snatch'], gsquat:['гоблет','гоблет присед','goblet squat'], rdl:['румынская','румынская тяга','rdl'],
+ hipthrust:['ягодичный мост','hip thrust'], tgu:['турецкий подъём','tgu','get up'], cj:['толчок','clean and jerk','c&j'],
+ c2b:['c2b','до груди','chest to bar'], bmu:['bmu','выход силой','bar muscle up'], rmu:['rmu','выход на кольцах','ring muscle up'],
+ devil:['devil press','дэвил пресс','девил пресс'], hollow:['холлоу','hollow'],
+});
 
 /* ─── Библиотека шаблонов (TPL) ───────────────────────────────
    Две независимые оси, которые нельзя смешивать:
@@ -313,7 +395,7 @@ const CLIENTS = [
   note:'После травмы колена (март 2026). Глубину седа наращивать постепенно.'},
 
  {id:'c3', n:'Илья Гордеев', ini:'ИГ', sex:'м', born:'1991-06-21', since:'2024-02-10',
-  sport:'Кроссфит', level:'Продвинутый', phone:'+7 903 552-10-19', tariff:'Группа', prog:'p2',
+  sport:'Кроссфит', level:'Продвинутый', phone:'+7 903 552-10-19', tariff:'Индивидуально', prog:'p2',
   h:178, w:80, last:'2026-08-20', done:7, plan:16, streak:0,
   pm:{squat:160,dead:200,bench:120,clean:110,snatch:88},
   hist:{squat:[['2026-05-04',150],['2026-06-15',155],['2026-07-20',160]],
@@ -321,7 +403,7 @@ const CLIENTS = [
   pr:null, comments:[], note:''},
 
  {id:'c4', n:'Дарья Лунина', ini:'ДЛ', sex:'ж', born:'1999-01-30', since:'2025-03-03',
-  sport:'Кроссфит', level:'Средний', phone:'+7 913 700-88-45', tariff:'Группа', prog:'p2',
+  sport:'Кроссфит', level:'Средний', phone:'+7 913 700-88-45', tariff:'Индивидуально', prog:'p2b',
   h:171, w:63, last:'2026-08-25', done:13, plan:16, streak:5,
   pm:{squat:85,dead:110,bench:52.5,clean:62.5},
   hist:{squat:[['2026-05-04',72.5],['2026-06-15',77.5],['2026-07-20',82.5],['2026-08-24',85]]},
@@ -329,7 +411,7 @@ const CLIENTS = [
   comments:[{d:'2026-08-25', ex:null, tx:'Комплекс зашёл, но двойные прыжки всё ещё рвут дыхание.', reply:null}], note:''},
 
  {id:'c5', n:'Пётр Ким', ini:'ПК', sex:'м', born:'1988-09-14', since:'2024-11-20',
-  sport:'Кроссфит', level:'Начальный', phone:'+7 923 441-05-62', tariff:'Группа', prog:'p2',
+  sport:'Кроссфит', level:'Начальный', phone:'+7 923 441-05-62', tariff:'Индивидуально', prog:'p2c',
   h:175, w:77, last:'2026-08-24', done:11, plan:16, streak:2,
   pm:{squat:105,dead:135,bench:75}, hist:{squat:[['2026-06-01',95],['2026-07-13',100],['2026-08-17',105]]},
   pr:null, comments:[], note:''},
@@ -347,8 +429,12 @@ const PROGRAMS = [
     идёт одно на всех, и в таймлайне дня оно обязано быть одной строкой. */
  {id:'p1', title:'Сила + кроссфит', goal:'Рост силовых при сохранении метконовой формы',
   days:56, clients:['c1'], start:'2026-08-03', kind:'individual', time:'07:30'},
- {id:'p2', title:'Командная подготовка', goal:'Общая база для группы, индивидуальные проценты',
-  days:84, clients:['c3','c4','c5'], start:'2026-07-20', kind:'group', time:'18:30'},
+ {id:'p2', title:'Кроссфит · вечер', goal:'Общая база кроссфита, проценты от своих максимумов',
+  days:84, clients:['c3'], start:'2026-07-20', kind:'individual', time:'18:30'},
+ {id:'p2b', title:'Кроссфит · база', goal:'Та же база, старт на две недели позже',
+  days:84, clients:['c4'], start:'2026-08-03', kind:'individual', time:'17:30'},
+ {id:'p2c', title:'Кроссфит · техника', goal:'Акцент на технику гимнастики',
+  days:84, clients:['c5'], start:'2026-07-27', kind:'individual', time:'20:00'},
  {id:'p3', title:'Возвращение после травмы', goal:'Аккуратный возврат к приседу после колена',
   days:42, clients:['c2'], start:'2026-08-10', kind:'individual', time:'11:00'},
 ];
@@ -491,6 +577,8 @@ const rep = (seq, times) => Array.from({length:times}, () => seq).flat();
 const PLAN = {
   p1: rep(DAYS.p1, 5),
   p2: rep(DAYS.p2, 6),
+  p2b: rep(DAYS.p2, 5),
+  p2c: rep(DAYS.p2, 6),
   /* Возврат после травмы: нагрузка через день, паузы длиннее — цикл не равен
      неделе, и в старой модели это было невыразимо. */
   p3: [...rep(DAYS.p3, 4), DAYS.p3[0], null, null, DAYS.p3[1], null, null],
@@ -825,6 +913,7 @@ function sessionsOn(date){
   const by = new Map();
   scheduleAll(date,date).forEach(e=>{
     const c = client(e.cid);
+    if(!(program(c.prog)||{}).time) return;     /* без времени — клиент тренируется сам, в таймлайне дня не занятие */
     const key = c.prog + '|' + e.title;
     if(!by.has(key)) by.set(key,{pid:c.prog, title:e.title, kind:e.kind, draft:!!e.draft,
       time:(program(c.prog)||{}).time || '12:00', who:[]});
@@ -843,6 +932,68 @@ function sessionsOn(date){
 }
 
 /* ═══════ Состояние приложения (общее между страницами) ═══════ */
+
+/* ═══ 50 клиентов, у каждого — своя индивидуальная программа (командных в MVP
+   нет). Объём, на котором должны работать списки, поиск, календарь и
+   таймлайн. Генерация детерминированная (seed); даты — в координатах ANCHOR,
+   сдвигаются вместе с остальными данными. У части программ есть время
+   занятия — они попадают в таймлайн дня; остальные клиенты тренируются сами. ═══ */
+(function seedDemo(){
+  let seed = 20260913; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 };
+  const pick = a => a[Math.floor(rnd()*a.length)], between = (a,b) => a + Math.floor(rnd()*(b-a+1));
+  const r25 = v => Math.round(v/2.5)*2.5, dd = n => String(n).padStart(2,'0');
+  const FM = ['Иван','Дмитрий','Алексей','Егор','Максим','Павел','Роман','Кирилл','Андрей','Тимур','Глеб','Олег','Артур','Денис','Игорь','Владислав','Марк','Юрий','Матвей','Лев'];
+  const FF = ['Анна','Елена','Ольга','Ксения','Полина','Алина','Екатерина','Наталья','Вера','Юлия','Светлана','Марина','Виктория','Татьяна','Алёна','Ирина','Кристина','Валерия','София','Арина'];
+  const LM = ['Смирнов','Иванов','Кузнецов','Попов','Васильев','Петров','Соколов','Михайлов','Новиков','Фёдоров','Морозов','Алексеев','Лебедев','Семёнов','Егоров','Павлов','Козлов','Степанов','Николаев','Орлов','Андреев','Макаров','Никитин','Захаров','Зайцев','Борисов','Яковлев','Григорьев','Романов','Воробьёв','Сергеев','Кузьмин','Фролов','Александров','Дмитриев','Королёв','Гусев','Киселёв','Ильин','Максимов'];
+  /* Шаблоны программ: название, цель, длина, из каких дней собирается. */
+  const KINDS = [
+    ['Присед · 12 недель','Линейная прогрессия в приседе',84,'p1'], ['Гипертрофия · 8 недель','Объём и техника без гонки за весами',56,'p1'],
+    ['Пауэрлифтинг · база','Три движения, подводка к стартам',56,'p1'], ['Сила + кроссфит','Рост силовых при метконовой форме',56,'p1'],
+    ['ОФП · утро','Общая физподготовка',42,'p2'], ['Кроссфит · вечер','Кроссфит для всех уровней',84,'p2'], ['Техника гимнастики','Подтягивания, выходы, стойка',56,'p2'],
+    ['Новичок · старт','Первые шесть недель в зале',42,'p2'], ['Марафон · подготовка','Бег три раза в неделю, силовая — одна',84,'p3'],
+    ['Возврат в строй','После травмы — аккуратно, через день',42,'p3'], ['Гиревой цикл','Гири и кор, шесть недель',42,'p3'],
+  ];
+  const TIMES = ['06:30','08:30','09:30','10:30','12:00','14:00','15:00','16:00','17:00','19:00'];
+  const total = 50 - CLIENTS.length;
+  let pn = 20, tIdx = 0;
+  for(let k=0; k<total; k++){
+    const sex = rnd() < 0.55 ? 'м' : 'ж';
+    const first = sex==='м' ? pick(FM) : pick(FF); let last = pick(LM); if(sex==='ж') last += 'а';
+    const id = 'g' + (k+1), lvl = pick(['Новичок','Средний','Средний','Продвинутый']);
+    const hasProg = k < total - 8;                       /* восемь клиентов без программы */
+    let pid = null, sessions = 0;
+    if(hasProg){
+      const [title, goal, days, src] = pick(KINDS);
+      pid = 'p' + (pn++);
+      const start = addDays(ANCHOR, -between(5, days - 10));       /* программа идёт; где-то только началась, где-то кончается */
+      const weeks = Math.min(Math.ceil(days/7), Math.ceil((daysBetween(start, ANCHOR) + between(-10, 24)) / 7));
+      PROGRAMS.push({id:pid, title, goal, days, clients:[id], start, kind:'individual', time: tIdx < TIMES.length && k % 4 === 0 ? TIMES[tIdx++] : null});
+      PLAN[pid] = rep(DAYS[src], Math.max(1, weeks)).slice(0, days);
+      sessions = PLAN[pid].filter(Boolean).length;
+    }
+    const strong = sex==='м' ? 1 : 0.62, mult = {'Новичок':0.7,'Средний':1,'Продвинутый':1.25}[lvl];
+    const sq = r25((90 + rnd()*70) * strong * mult), dl = r25(sq*1.25), bn = r25(sq*0.7), pr = r25(sq*0.45);
+    const idle = rnd() < 0.18;
+    CLIENTS.push({
+      id, n: first + ' ' + last, ini: first[0] + last[0], sex,
+      born: between(1984, 2006) + '-' + dd(between(1,12)) + '-' + dd(between(1,28)),
+      since: between(2023, 2026) + '-' + dd(between(1,8)) + '-' + dd(between(1,28)),
+      sport: pid ? pick(['Кроссфит','Тренажёрный зал','Тяжёлая атлетика','Функциональный тренинг']) : pick(SPORTS),
+      level: lvl, phone: '+7 9' + between(10,99) + ' ' + between(100,999) + '-' + dd(between(0,99)) + '-' + dd(between(0,99)),
+      tariff: 'Индивидуально', prog: pid,
+      h: sex==='м' ? between(168,195) : between(158,180), w: sex==='м' ? between(68,102) : between(52,78),
+      last: pid ? addDays(ANCHOR, -(idle ? between(3,9) : between(0,2))) : null,
+      done: Math.round(sessions*0.6), plan: sessions, streak: idle ? 0 : between(1,12),
+      pm: {squat:sq, fsquat:r25(sq*0.85), dead:dl, bench:bn, press:pr, clean:r25(sq*0.7), snatch:r25(sq*0.55), jerk:r25(sq*0.75)},
+      hist: {squat:[[addDays(ANCHOR,-98), r25(sq*0.88)],[addDays(ANCHOR,-56), r25(sq*0.94)],[addDays(ANCHOR,-14), sq]],
+             dead: [[addDays(ANCHOR,-98), r25(dl*0.9)], [addDays(ANCHOR,-49), r25(dl*0.95)],[addDays(ANCHOR,-7), dl]]},
+      pr: null, comments: [], note: '',
+    });
+  }
+  [['g3','Присед','Колени сводит на выходе из седа — это техника или веса много?'],['g11','Жим лёжа','Плечо щёлкает в нижней точке. Заменить на гантели?'],['g19',null,'Могу перенести четверг на пятницу?']]
+    .forEach(([id, ex, tx]) => { const c = CLIENTS.find(x=>x.id===id); if(c) c.comments.push({d: addDays(ANCHOR,-1), ex, tx, reply:null}) });
+})();
+
 /* Сдвиг дат демо-данных к сегодняшнему дню. Ключи with датами занятий и
    результатов сдвигаются; даты рождения, «с нами с», создания шаблонов — нет. */
 (function(){

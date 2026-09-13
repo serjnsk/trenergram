@@ -34,8 +34,6 @@ const unread = c => c.comments.filter((cm,i)=>!cm.reply && !STATE.replied[c.id+'
 const needsAttention = c => unread(c)>0 || (c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 
 function match(c){
-  if(V.f==='ind' && c.tariff!=='Индивидуально') return false;
-  if(V.f==='grp' && c.tariff!=='Группа') return false;
   if(V.f==='noprog' && c.prog) return false;
   if(V.f==='attn' && !needsAttention(c)) return false;
   if(V.q && norm(c.n).indexOf(norm(V.q))<0) return false;
@@ -53,7 +51,7 @@ function render(){
     last: (a,b)=>String(a.last||'').localeCompare(String(b.last||'')),
   };
   if(CS.k && SORTS[CS.k]) list = [...list].sort((a,b)=>SORTS[CS.k](a,b)*CS.dir);
-  const FILTERS = [['all','Все'],['ind','Индивидуально'],['grp','Группа'],['noprog','Без программы'],['attn','Требуют внимания']];
+  const FILTERS = [['all','Все'],['noprog','Без программы'],['attn','Требуют внимания']];
 
   $('#page').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">

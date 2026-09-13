@@ -8,14 +8,14 @@ const NAV = [
  {h:'index.html',      k:'dash',  n:'Дашборд'},
  {h:'calendar.html',   k:'cal',   n:'Календарь',              a:'Кален'},
  {h:'clients.html',    k:'users', n:'Клиенты',                a:'Клиен',  c:()=>CLIENTS.length},
- {g:'Библиотеки'},
+ {g:'Базы шаблонов'},
  /* Четыре базы по уровням сущностей из документации: упражнение → блок →
     тренировка → программа (недели живут вкладкой внутри базы программ).
     В каждой — и общая база сервиса, и сохранённое тренером, личное с пометкой. */
- {h:'exercises.html',  k:'dumb',  n:'База упражнений',        a:'Упраж',  c:()=>EX.length},
- {h:'blocks.html',     k:'folder',n:'База блоков'            , a:'Блоки',  c:()=>TPL.filter(t=>t.lvl==='блок').length},
- {h:'workouts.html',   k:'tpl',   n:'База тренировок',        a:'Трен',   c:()=>TPL.filter(t=>t.lvl==='тренировка').length},
- {h:'programs.html',   k:'prog',  n:'База программ',          a:'Прогр',  c:()=>TPL.filter(t=>t.lvl==='программа').length},
+ {h:'exercises.html',  k:'dumb',  n:'Упражнения',             a:'Упраж',  c:()=>EX.length},
+ {h:'blocks.html',     k:'folder',n:'Блоки'                  , a:'Блоки',  c:()=>TPL.filter(t=>t.lvl==='блок').length},
+ {h:'workouts.html',   k:'tpl',   n:'Тренировки',             a:'Трен',   c:()=>TPL.filter(t=>t.lvl==='тренировка').length},
+ {h:'programs.html',   k:'prog',  n:'Программы',              a:'Прогр',  c:()=>TPL.filter(t=>t.lvl==='программа').length},
 ];
 
 
