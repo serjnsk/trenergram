@@ -246,6 +246,7 @@ const rlist = (items, cur, attr) => `<div class="rlist">${items.map(([k, n, c]) 
 /* cfg: {level, title, ph, add} */
 function renderLib(cfg){
   const level = cfg.level;
+  TPL.filter(t=>t.lvl==='блок').forEach(normFmt);     /* формат из названия — в тип, название чистое */
   const all = TPL.filter(t=>t.lvl===level);
   const withFolders = level==='блок';
   const list = all.filter(t=>{
@@ -259,12 +260,14 @@ function renderLib(cfg){
   const cols = libCols(level);
   $('#page').innerHTML = paneHead(cfg.title, all.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="${esc(cfg.ph)}" value="${esc(LIB.q)}"></label>
+      ${withFolders ? `<select class="inp" id="folder" style="width:160px">${['Все',...TPL_FOLDERS].map(f=>`<option value="${esc(f)}" ${LIB.folder===f?'selected':''}>${f==='Все'?'Все папки':esc(f)}</option>`).join('')}</select>` : ''}
       <label class="chk"><input type="checkbox" id="own" ${LIB.own?'checked':''}> Только свои</label>
       <span class="sp"></span>
       <button class="btn gh" id="btnAdd">${ICON.plus} ${esc(cfg.add)}</button>`)
     + (list.length ? dataTable('lib-'+level, cols, list)
        : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
 
+  const fs = $('#folder'); if(fs) fs.onchange=e=>{ LIB.folder=e.target.value; renderLib(cfg) };
   $('#own').onchange=e=>{ LIB.own=e.target.checked; renderLib(cfg) };
   $('#q').oninput=e=>{ LIB.q=e.target.value; renderLib(cfg) };
   $('#btnAdd').onclick=()=>toast('В конструкторе: соберите и нажмите «Сохранить в библиотеку»');
@@ -274,20 +277,27 @@ function renderLib(cfg){
   const qEl=$('#q'); if(qEl){ qEl.focus({preventScroll:true}); qEl.setSelectionRange(LIB.q.length,LIB.q.length) }
 }
 function renderLibRail(cfg){
-  const level = cfg.level, all = TPL.filter(t=>t.lvl===level), t = tplById(LIB.sel);
-  const folders = level==='блок' ? `<div class="rhead">Папки</div>${rlist([['Все','Все',all.length], ...TPL_FOLDERS.map(f=>[f,f,all.filter(x=>x.folder===f).length])], LIB.folder, 'folder')}` : '';
-  const prev = t ? `
-    <div class="rhead">Выбрано</div>
+  const level = cfg.level, t = tplById(LIB.sel);
+  const kind = {'блок':'Блок','тренировка':'Тренировка','программа':'Программа'}[level];
+  if(!t){ railSet({title:kind, body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
+  const st = tplStats(t);
+  const facts = level==='блок'
+    ? `<s>Папка</s><b>${esc(t.folder||'—')}</b><s>Тип</s><b>${t.fmt ? esc(fmtLabel(t.fmt)) : '<span style="color:var(--tx4)">без типа</span>'}</b><s>Упражнений</s><b>${st.n}</b>`
+    : level==='тренировка'
+    ? `<s>Блоков</s><b>${st.blocks}</b><s>Упражнений</s><b>${st.n}</b>`
+    : `<s>Дней</s><b>${t.days}</b><s>Цикл</s><b>${st.cycle} дн.</b><s>Тренировок</s><b>${st.workouts}</b>`;
+  railSet({title:kind, body:`
     <div class="rprev">
       <b class="rt">${esc(t.title)}</b>
-      <div class="chips">${t.folder?`<span class="chip">${esc(t.folder)}</span>`:''}${t.own?`<span class="chip ok">своё</span>`:`<span class="chip ghost">общая база</span>`}${t.used?`<span class="chip">${t.used}×</span>`:''}${t.fmt?`<span class="chip acc">${esc(fmtLabel(t.fmt))}</span>`:''}</div>
+      <div class="kv">${facts}
+        <s>Источник</s><b>${t.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
+        <s>Использован</s><b>${t.used ? t.used + '×' : '—'}</b>
+      </div>
+      <div class="rhead" style="padding-left:0">${level==='программа' ? 'Цель и цикл' : 'Состав'}</div>
       <div class="rlines">${libLines(t)}</div>
-      <div class="hint">${t.own ? 'Ваш шаблон: можно переименовать, изменить и удалить.' : 'Из общей базы: изменить нельзя — вставьте в тренировку и сохраните как свой.'}</div>
-      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} Вставить в тренировку</a></div>
-    </div>` : '<div class="rprev"><div class="hint">Выберите строку — здесь появится состав.</div></div>';
-  railSet({title: cfg.railTitle || 'Контекст', body: folders + prev,
-    foot: `Общая база ${all.filter(t=>!t.own).length} · сохранено вами ${all.filter(t=>t.own).length}`});
-  $$('#railbody [data-folder]').forEach(b=>b.onclick=()=>{ LIB.folder=b.dataset.folder; renderLib(cfg) });
+      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} Вставить в тренировку</a>${t.own ? '<button class="btn gh sm" id="rEdit">Изменить</button>' : ''}</div>
+    </div>`, foot: t.own ? '' : 'Шаблон из общей базы: изменить нельзя — вставьте в тренировку и сохраните как свой.'});
+  const ed = $('#rEdit'); if(ed) ed.onclick = () => toast('Редактирование шаблона — в конструкторе: вставьте, измените и сохраните');
 }
 function libDetail(t){ if(t){ LIB.sel = t.id } }
 

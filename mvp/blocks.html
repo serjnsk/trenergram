@@ -19,9 +19,9 @@
     <div class="page">
       <div class="cons">
         <main><section class="pane" id="page"></section></main>
-        <aside class="rail" data-min="Блоки">
+        <aside class="rail" data-min="Блок">
           <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
-          <div class="railhead"><div class="railttl" id="railttl">Блоки</div></div>
+          <div class="railhead"><div class="railttl" id="railttl">Блок</div></div>
           <div class="railbody" id="railbody"></div>
           <div class="railfoot" id="railfoot"></div>
         </aside>
@@ -37,7 +37,7 @@
 /* ═══════════ БАЗА БЛОКОВ И КОМПЛЕКСОВ (TPL-1, TPL-2) ═══════════
    Единственный уровень с папками: разминок у тренера много, и без папок
    список нечитаем. Папки заданы в TPL_FOLDERS. */
-const cfg = { level:'блок', title:'Блоки', railTitle:'Папки и состав', ph:'Поиск блока или комплекса…', add:'Сохранить блок' };
+const cfg = { level:'блок', title:'Блоки', railTitle:'Блок', ph:'Поиск блока или комплекса…', add:'Сохранить блок' };
 renderLib(cfg);
 initShell({page:'blocks.html'});
 initRail();

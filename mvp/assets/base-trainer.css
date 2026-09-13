@@ -853,3 +853,6 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .rprev .avrow .av{width:44px;height:44px;font-size:15px}
 .rprev .acts{margin-top:12px}
 .pagewrap.wide{max-width:none}
+.rprev .kv{gap:8px 12px}
+.rprev .kv s{white-space:nowrap;padding-top:1px}
+.rprev .kv b .chip{height:20px}
