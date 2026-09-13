@@ -55,7 +55,7 @@ function renderNav(page){
     </div>
     <a class="nfoot" href="profile.html" title="${esc(TRAINER.n)}">
       <span class="av">${esc(TRAINER.ini)}</span>
-      <span><b>${esc(TRAINER.n)}</b><s>${esc(TRAINER.workspace)}</s></span>
+      <span><b>${esc(TRAINER.n)}</b></span>
     </a>`;
   $('#navtog').onclick = () => setNavMin(true);
   /* Из свёрнутого состояния выходят кликом по знаку: кнопки-стрелки там нет,
