@@ -49,35 +49,43 @@
    поэтому общая картина по всем — на дашборде, а здесь всегда один человек.
    Вид ячеек (подробно / компактно) общий с лентой конструктора. */
 const Q = new URLSearchParams(location.search);
-const C = { cid: Q.get('client') || STATE.curClient || 'c1', q:'' };
+const C = { cid: Q.get('client') || STATE.curClient || 'c1', q:'', from:null, to:null };
 if(!client(C.cid)) C.cid = 'c1';
-{ const d = new Date((Q.get('date') || TODAY) + 'T00:00:00'); C.y = d.getFullYear(); C.m = d.getMonth(); }
 const laneView = () => STATE.laneView === 'compact' ? 'compact' : 'full';
 const ymIso = (y,m,d=1) => y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+const ymOf = iso => ({y:+iso.slice(0,4), m:+iso.slice(5,7)-1});
+const ymAdd = ({y,m}, k) => { const t = y*12 + m + k; return {y:Math.floor(t/12), m:((t%12)+12)%12} };
+const ymKey = ({y,m}) => ymIso(y,m);
 Object.assign(ICON, {      /* те же иконки, что в ленте конструктора */
   chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
   vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
   vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
 });
 
-function renderCal(){
-  const c = client(C.cid), pid = c.prog, p = pid ? program(pid) : null;
-  const plan = pid ? buildPlan(pid) : [];
-  const first = ymIso(C.y, C.m), dim = new Date(C.y, C.m+1, 0).getDate();
+/* Лента месяцев вниз, как в любом календаре: листается колесом, стрелок нет.
+   Стартовый диапазон — от месяца перед началом программы до месяца после
+   её конца (и сегодняшний месяц обязательно); дальше лента дорастает
+   в обе стороны по мере прокрутки. */
+function initRange(){
+  const c = client(C.cid), p = c.prog ? program(c.prog) : null;
+  const dates = [TODAY]; if(p){ dates.push(p.start, dayDate(c.prog, p.days-1)) }
+  dates.sort();
+  C.from = ymAdd(ymOf(dates[0]), -1); C.to = ymAdd(ymOf(dates[dates.length-1]), 1);
+}
+function monthHTML(y, m, ctx){
+  const {p, pid, plan, compact} = ctx;
+  const first = ymIso(y, m), dim = new Date(y, m+1, 0).getDate();
   const start = addDays(first, -dowMon(first));
   const nCells = Math.ceil((dowMon(first) + dim) / 7) * 7;
-  const compact = laneView() === 'compact';
-  const done = pid ? composedDays(pid) : 0;
-  const psum = p ? `${esc(p.title)} · ${dm(p.start)} – ${dm(dayDate(pid, p.days-1))} · ${done >= p.days ? 'составлена целиком' : done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено'}` : 'программа не назначена';
   const cells = Array.from({length:nCells}, (_,k)=>{
     const date = addDays(start, k), dt = new Date(date + 'T00:00:00');
-    const other = dt.getMonth() !== C.m, today = date === TODAY;
+    if(dt.getMonth() !== m) return '<span class="day void"></span>';
+    const today = date === TODAY;
     const i = p ? daysBetween(p.start, date) : -1;
     const inProg = !!p && i >= 0 && i < p.days, inPlan = inProg && i < plan.length;
-    const mon = (dt.getDate()===1 || k===0) ? ' ' + MONTHS[dt.getMonth()].slice(0,3) : '';
-    const head = `<span class="d">${dt.getDate()}${mon}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
-    const cls = (other?' dim':'') + (today?' today':'');
-    if(!inProg) return `<span class="day out${cls}">${head}${!other && p ? '<span class="e">вне программы</span>' : ''}</span>`;
+    const head = `<span class="d">${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+    const cls = today ? ' today' : '';
+    if(!inProg) return `<span class="day out${cls}">${head}${p ? '<span class="e">вне программы</span>' : ''}</span>`;
     const href = `constructor.html?client=${C.cid}&date=${date}`;
     if(!inPlan) return `<a class="day empty${cls}" href="${href}" title="Составить этот день">${head}<span class="e">не составлено</span></a>`;
     const x = plan[i];
@@ -92,30 +100,59 @@ function renderCal(){
       ${n ? `<span class="k">${bl} ${plural(bl,'блок','блока','блоков')} · ${n} упр</span>` : ''}
       ${n ? `<span class="bl">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map(b=>`<i>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</i>`).join('')}</span>` : ''}</a>`;
   });
-  const isNow = C.y === +TODAY.slice(0,4) && C.m === +TODAY.slice(5,7)-1;
+  return `<section class="mon" data-ym="${ymIso(y,m)}">
+    <div class="monh"><b>${MONTHS_N[m]} ${y}</b><div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div></div>
+    <div class="days cal ${compact?'compact':''}">${cells.join('')}</div>
+  </section>`;
+}
+function ctx(){
+  const c = client(C.cid), pid = c.prog, p = pid ? program(pid) : null;
+  return {c, pid, p, plan: pid ? buildPlan(pid) : [], compact: laneView()==='compact'};
+}
+function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); k = ymAdd(k, 1)) out.push(k); return out }
+
+function renderCal(keepYM){
+  const x = ctx(), {c, pid, p} = x;
+  const done = pid ? composedDays(pid) : 0;
+  const psum = p ? `${esc(p.title)} · ${dm(p.start)} – ${dm(dayDate(pid, p.days-1))} · ${done >= p.days ? 'составлена целиком' : done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено'}` : 'программа не назначена';
   $('#cal').innerHTML = `
     <div class="wkh">
       <h1 class="wkttl">Календарь</h1>
       <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cn">${esc(c.n)}</span>${ICON.chev}</button>
       <s class="psum">${psum}</s>
       <span class="sp"></span>
-    </div>
-    <div class="wkn2">
-      <span class="wkn">
-        <button id="mPrev" title="Месяцем раньше">${ICON.back}</button>
-        <button id="mNext" title="Месяцем позже">${ICON.arr}</button>
-      </span>
-      <button class="today" id="mToday" ${isNow?'disabled':''}>Сегодня</button>
-      <s class="wkrange">${MONTHS_N[C.m]} ${C.y}</s>
-      <span class="sp"></span>
+      <button class="today" id="mToday">Сегодня</button>
       <span class="vtog" title="Вид">
-        <button data-view="full" class="${!compact?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
-        <button data-view="compact" class="${compact?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
+        <button data-view="full" class="${!x.compact?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
+        <button data-view="compact" class="${x.compact?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
       </span>
     </div>
-    <div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div>
-    <div class="days cal ${compact?'compact':''}">${cells.join('')}</div>`;
+    <div id="topSent"></div>
+    <div id="feed">${months().map(k=>monthHTML(k.y, k.m, x)).join('')}</div>
+    <div id="botSent"></div>`;
+  scrollToMonth(keepYM || TODAY.slice(0,7)+'-01', !keepYM);
 }
+const HEAD = 58 + 14;   /* шапка + отступ */
+function scrollToMonth(ym, smooth){
+  const el = document.querySelector(`.mon[data-ym="${ym}"]`); if(!el) return;
+  window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - HEAD, behavior: smooth ? 'smooth' : 'auto'});
+}
+/* Месяц, который сейчас наверху экрана, — чтобы при смене клиента не прыгать. */
+function topMonth(){
+  const m = [...document.querySelectorAll('.mon')].find(el => el.getBoundingClientRect().bottom > HEAD + 40);
+  return m ? m.dataset.ym : null;
+}
+/* Дорастание ленты: снизу — добавляем месяц, сверху — добавляем и компенсируем прокрутку. */
+const io = new IntersectionObserver(entries => {
+  const x = ctx();
+  for(const e of entries){
+    if(!e.isIntersecting) continue;
+    if(e.target.id === 'botSent'){ C.to = ymAdd(C.to, 1); $('#feed').insertAdjacentHTML('beforeend', monthHTML(C.to.y, C.to.m, x)); }
+    if(e.target.id === 'topSent'){ const h0 = document.documentElement.scrollHeight; C.from = ymAdd(C.from, -1);
+      $('#feed').insertAdjacentHTML('afterbegin', monthHTML(C.from.y, C.from.m, x)); window.scrollBy(0, document.documentElement.scrollHeight - h0); }
+  }
+}, {rootMargin:'400px 0px'});
+function observe(){ io.disconnect(); io.observe($('#topSent')); io.observe($('#botSent')); }
 
 /* Правая панель: все клиенты, поиск; у кого программа кончается — метка. */
 function renderClients(){
@@ -137,15 +174,14 @@ function renderClients(){
       <span class="body"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${flag(c)}
     </button>`).join('') : '<div class="empty">Никого не нашли</div>';
 }
-function render(){ renderCal(); renderClients(); }
+function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); renderClients(); observe(); }
+function switchClient(id){ const keep = topMonth(); C.cid = id; STATE.curClient = id; saveState(); C.from = null; render(keep); }
 
 document.addEventListener('click', e=>{
-  const row = e.target.closest('.crow'); if(row){ C.cid = row.dataset.cli; STATE.curClient = C.cid; saveState(); render(); return }
-  const vt = e.target.closest('[data-view]'); if(vt){ STATE.laneView = vt.dataset.view; saveState(); render(); return }
-  if(e.target.closest('#mPrev')){ C.m--; if(C.m<0){ C.m=11; C.y-- } render(); return }
-  if(e.target.closest('#mNext')){ C.m++; if(C.m>11){ C.m=0; C.y++ } render(); return }
-  if(e.target.closest('#mToday')){ C.y = +TODAY.slice(0,4); C.m = +TODAY.slice(5,7)-1; render(); return }
-  const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, id => { C.cid = id; STATE.curClient = id; saveState(); render() }); return }
+  const row = e.target.closest('.crow'); if(row){ switchClient(row.dataset.cli); return }
+  const vt = e.target.closest('[data-view]'); if(vt){ const keep = topMonth(); STATE.laneView = vt.dataset.view; saveState(); render(keep); return }
+  if(e.target.closest('#mToday')){ scrollToMonth(TODAY.slice(0,7)+'-01', true); return }
+  const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
 });
 document.addEventListener('input', e=>{ if(e.target.id==='q'){ C.q = e.target.value; renderClients() } });
 render();

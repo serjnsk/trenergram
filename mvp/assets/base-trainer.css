@@ -788,6 +788,9 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 /* .wk занят виджетом недели на дашборде (pages.css) — у календаря свой контейнер */
 .calwrap{background:var(--bg);border-radius:var(--rad-l);padding:12px 14px}
 .psum{text-decoration:none;font-size:12.5px;color:var(--tx3);margin-left:6px}
+.mon{margin-bottom:22px}
+.monh{position:sticky;top:58px;z-index:3;background:var(--bg);padding:10px 0 6px;margin:0 -2px;padding-left:2px;padding-right:2px}
+.monh b{display:block;font-family:var(--disp);font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
 .dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:4px}
 .dow span{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4);padding:0 9px}
 .days.cal .day{text-decoration:none;color:inherit}
