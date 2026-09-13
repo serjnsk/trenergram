@@ -35,7 +35,7 @@ const CID = new URLSearchParams(location.search).get('id') || STATE.curClient ||
 const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
 const V = { metric: Object.keys(C.hist||{})[0] || 'squat' };
-const SECTIONS = [['overview','Обзор'],['program','Программа'],['results','Результаты'],['pm','Максимумы'],['body','Показатели'],['chat','Общение'],['info','Данные']];
+const SECTIONS = [['overview','Обзор'],['program','Программа'],['results','Результаты'],['pm','Максимумы'],['body','Показатели'],['info','Данные']];
 const resultsFor = cid => LOG.filter(r=>r.cid===cid).sort((a,b)=> a.date<b.date?1:-1);
 const pmLabel = k => PMNAMES[k] || k;
 const runway = () => { if(!C.prog) return null; const n = composedDays(C.prog); return daysBetween(TODAY, dayDate(C.prog, Math.max(0,n-1))) };
@@ -46,24 +46,17 @@ const runwayChip = () => { const r = runway(); if(r===null) return '<span class=
 function render(){
   const P = C.prog ? program(C.prog) : null, pm = pmOf(C.id), res = resultsFor(C.id);
   const plan = P ? buildPlan(C.prog) : [], i0 = P ? daysBetween(P.start, TODAY) : -1;
-  const unread = C.comments.filter((cm,i)=>!cm.reply && !STATE.replied[C.id+':'+i]).length;
   $('#page').innerHTML = `
     <div class="chead">
       <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
       <div class="cinfo">
         <div class="nm">${esc(C.n)}</div>
-        <div class="mt"><span class="chip">${esc(C.sport)}</span><span class="chip">${esc(C.level)}</span><span class="chip ghost">${age(C.born)} ${plural(age(C.born),'год','года','лет')}</span><span class="chip ghost">${C.sex==='ж'?'жен.':'муж.'}</span><span class="chip ghost">${esc(C.tariff)}</span></div>
-        <div class="pl">${P ? `<b>${esc(P.title)}</b> · ${dm(P.start)} – ${dm(dayDate(C.prog, P.days-1))} · составлено ${composedDays(C.prog)} из ${P.days} ${runwayChip()}` : '<b>Программа не назначена</b> · клиент видит пустой календарь'}</div>
       </div>
       <div class="cstats">
-        <div class="cst"><s>Тренировок</s><b>${C.plan?C.done+'<i>/'+C.plan+'</i>':'—'}</b></div>
-        <div class="cst"><s>Серия</s><b>${C.streak||'—'}${C.streak?'<i> дн.</i>':''}</b></div>
         <div class="cst"><s>Активность</s><b>${C.last ? ago(C.last) : 'не заходил'}</b></div>
-        <div class="cst"><s>Вопросы</s><b>${unread ? `<span class="chip acc">${unread}</span>` : '—'}</b></div>
       </div>
       <div class="cacts">
         ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
-        <button class="btn gh" id="btnMsg">${ICON.chat} Написать</button>
       </div>
     </div>
 
@@ -85,7 +78,7 @@ function render(){
     <section class="csec" id="program">
       <div class="sechead"><span class="t">Программа</span><span class="ln"></span>${P?`<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a>`:''}</div>
       <div class="card cb">
-        ${P ? `<div class="pgrow"><div><b>${esc(P.title)}</b><s>${esc(P.goal||'')}</s></div><div class="pgm"><s>Сроки</s><b>${dm(P.start)} – ${dm(dayDate(C.prog, P.days-1))}</b></div><div class="pgm"><s>Составлено</s><b>${composedDays(C.prog)} из ${P.days} дней</b></div><div class="pgm"><s>Запас</s><b>${runwayChip()}</b></div></div>
+        ${P ? `<div class="pgrow"><div><b>${esc(P.title)}</b><s>${esc(P.goal||'')}</s></div></div>
         <div class="days cal compact" style="margin-top:12px">${Array.from({length:7},(_,k)=>{ const i=i0+k; const date=addDays(TODAY,k); const inProg=i>=0 && i<P.days; const x=inProg && i<plan.length ? plan[i] : null; const n=x?x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length,0):0;
           const head=`<span class="d">${RU[dowMon(date)]} ${new Date(date+'T00:00:00').getDate()}${k===0?'<i class="tdot"></i>':''}</span>`;
           if(!inProg) return `<span class="day out">${head}<span class="e">вне программы</span></span>`;
@@ -133,19 +126,6 @@ function render(){
       </div>
     </section>
 
-    <section class="csec" id="chat">
-      <div class="sechead"><span class="t">Общение</span><span class="ln"></span>${unread?`<span class="n">${unread} без ответа</span>`:''}</div>
-      <div class="card cb flush">
-        ${C.comments.length ? `<div class="feed">${C.comments.map((cm,i)=>{ const key=C.id+':'+i;
-          return `<div class="fitem"><span class="av s">${esc(C.ini)}</span><div class="c">
-            <div class="h"><b>${esc(C.n)}</b>${cm.ex?`<span style="font-size:11.5px;color:var(--tx4)">· ${esc(cm.ex)}</span>`:''}<time>${humanDate(cm.d)}</time></div>
-            <div class="tx">${esc(cm.tx)}</div>
-            ${cm.reply?`<div class="tx" style="margin-top:8px;color:var(--tx1)"><b>Вы:</b> ${esc(cm.reply)}</div>`
-              : `<div class="reply"><input placeholder="Ответить…" data-key="${key}"><button class="btn gh sm" data-send="${key}" data-i="${i}">Отправить</button></div>`}
-          </div></div>`; }).join('')}</div>` : `<div class="empty"><div class="t">Сообщений ещё нет</div><div class="d">Вопросы клиента к тренировкам появятся здесь</div></div>`}
-      </div>
-    </section>
-
     <section class="csec" id="info">
       <div class="sechead"><span class="t">Данные</span><span class="ln"></span></div>
       <div class="card cb">
@@ -161,11 +141,9 @@ function render(){
 
   $$('.pmpick button').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.m; render() });
   $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; saveState(); toast('Максимум обновлён — проценты в тренировках пересчитаются') });
-  $$('[data-send]').forEach(b=>b.onclick=()=>{ const key=b.dataset.send, i=+b.dataset.i; const v=$(`[data-key="${key}"]`).value.trim(); if(!v) return; C.comments[i].reply=v; STATE.replied[key]=true; saveState(); toast('Ответ отправлен'); render() });
   $('#fH').onchange=e=>{ C.h=+e.target.value||null; toast('Рост обновлён') };
   $('#fW').onchange=e=>{ C.w=+e.target.value||null; toast('Вес обновлён') };
   $('#fNote').onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
-  $('#btnMsg').onclick=()=>toast('Сообщение клиенту — в клиентском приложении, появится с модулем общения');
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   /* Табы-якоря: плавная прокрутка с учётом липких шапок; активный — по видимой секции. */
   const HEAD = 58 + 52;
