@@ -137,6 +137,8 @@ const ICON = {
  x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>',
  chat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 7.6a5.2 5.2 0 0 1-7.4 4.7L2.5 13.2l1-3.6A5.2 5.2 0 1 1 13.5 7.6z"/></svg>',
  photo:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h1.5l1-1.5h3l1 1.5H12a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 12 13H4a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="8" cy="8.5" r="2.3"/></svg>',
+ chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
+ search:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>',
  ai:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.8 9.5 6 13.7 7.5 9.5 9 8 13.2 6.5 9 2.3 7.5 6.5 6z"/><path d="M12.8 11.4l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z"/></svg>',
  /* Отдельная папка для кнопок: у навигационной ICON.tpl другой viewBox
     и не задана толщина обводки — рядом со «Сохранить» и «Копией» она
@@ -197,24 +199,19 @@ function planStat(){
    а не заполняет семь ячеек. Полоса прокручивается, выбранный день в центре. */
 function renderStrip(){
   const d = plan(), p = program(S.pid), cur = d[S.i];
-  /* Лента — семь дней текущей недели: неделя осталась представлением, и здесь
-     она уместна. Дни за концом плана, но в сроке программы — пустые, клик по
-     такому продлевает план. */
+  /* Лента — две недели: текущая и следующая. Тренер обычно на этой неделе
+     пишет тренировки на следующую, и обе должны быть перед глазами. Неделя
+     осталась представлением, и здесь она уместна. Дни за концом плана, но
+     в сроке программы — пустые, клик по такому продлевает план. */
   const wk0 = addDays(cur.date, -dowMon(cur.date));
-  const cells = Array.from({length:7}, (_,k)=>{
+  const cells = Array.from({length:14}, (_,k)=>{
     const date = addDays(wk0, k), i = daysBetween(p.start, date);
     return {date, i, inPlan: i>=0 && i<d.length, inProg: i>=0 && i<p.days};
   });
   $('#wk').innerHTML = `
     <div class="wkh">
       <h1 class="wkttl">Создать тренировку</h1>
-      <select class="cliSel" id="cli" title="Клиент">${CLIENTS.filter(c=>c.prog).map(c=>
-        `<option value="${c.id}" ${c.id===S.cid?'selected':''}>${esc(c.n)}</option>`).join('')}</select>
-      <span class="wkn">
-        <button id="dayPrev" title="Предыдущая неделя" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
-        <button id="dayNext" title="Следующая неделя" ${cells[6].i>=p.days-1?'disabled':''}>${ICON.arr}</button>
-      </span>
-      <s class="wkrange">${dm(cells[0].date)} – ${dm(cells[6].date)}</s>
+      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cn">${esc(client(S.cid).n)}</span>${ICON.chev}</button>
       <span class="sp"></span>
       ${S.sel ? `
         <b class="seln">Выбрано ${S.sel.size}</b>
@@ -222,6 +219,13 @@ function renderStrip(){
         <button class="cp" id="selMove" ${S.sel.size?'':'disabled'}>${ICON.arr} Перенести</button>
         <button class="cp" id="selCancel">${ICON.x} Отмена</button>
       ` : (S.paste ? `<s class="hint">${S.paste==='copy'?'выберите день, куда скопировать':'выберите день, куда перенести'}</s>` : '')}
+    </div>
+    <div class="wkn2">
+      <span class="wkn">
+        <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
+        <button id="dayNext" title="Неделей позже" ${cells[13].i>=p.days-1?'disabled':''}>${ICON.arr}</button>
+      </span>
+      <button class="today" id="wkToday" ${cur.date===TODAY?'disabled':''}>Сегодня</button>
     </div>
     <div class="days" id="strip">
       ${cells.map(c=>{
@@ -936,6 +940,44 @@ function openSetup(btn){
   const f = $(i.txt ? '#st-txt' : '#st-sets'); if(f) f.focus();
 }
 
+/* ═══════════ ВЫБОР КЛИЕНТА ═══════════
+   Не <select>: у тренера полсотни клиентов, нужен поиск с клавиатуры.
+   Поле ввода в фокусе сразу, список фильтруется по имени и программе,
+   стрелки и Enter — выбор без мыши. У каждого — докуда составлена программа:
+   это и есть ответ «кому писать следующим». */
+function openCliPick(btn){
+  closeSug();
+  const box = document.createElement('div'); box.className = 'sug clipick';
+  const r = btn.getBoundingClientRect();
+  box.style.left = r.left + 'px'; box.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  document.body.appendChild(box); SUG = box;
+  const list = CLIENTS.filter(c=>c.prog).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
+  const sub = c => { const p = program(c.prog), n = composedDays(c.prog);
+    return p.title + ' · ' + (n >= p.days ? 'составлена целиком' : n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено') };
+  const draw = q => {
+    const qq = norm(q||'');
+    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || norm(program(c.prog).title).includes(qq));
+    box.querySelector('.cl-list').innerHTML = rows.length ? rows.map((c,k)=>`
+      <button class="row ${c.id===S.cid?'cur':''} ${k===0?'on':''}" data-cli="${c.id}"><span class="cav">${esc(c.ini)}</span>
+        <span class="cl-t"><b>${esc(c.n)}</b><s>${esc(sub(c))}</s></span>${c.id===S.cid?ICON.chk:''}</button>`).join('')
+      : '<div class="cap">Никого не нашли</div>';
+  };
+  box.innerHTML = `<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="Имя клиента или программа" autocomplete="off"></div><div class="cl-list"></div>`;
+  draw('');
+  const pick = id => { closeSug(); const date = plan()[S.i].date;
+    if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы'); render() };
+  const inp = box.querySelector('#cl-q'); inp.focus();
+  inp.addEventListener('input', e => draw(e.target.value));
+  box.addEventListener('keydown', e => {
+    const rows = [...box.querySelectorAll('[data-cli]')]; let k = rows.findIndex(x=>x.classList.contains('on'));
+    if(e.key==='ArrowDown' || e.key==='ArrowUp'){ e.preventDefault(); if(!rows.length) return;
+      if(k>=0) rows[k].classList.remove('on'); k = (k + (e.key==='ArrowDown'?1:-1) + rows.length) % rows.length;
+      rows[k].classList.add('on'); rows[k].scrollIntoView({block:'nearest'}); return }
+    if(e.key==='Enter'){ e.preventDefault(); const on = rows[k] || rows[0]; if(on) pick(on.dataset.cli) }
+  });
+  box.addEventListener('click', e => { e.stopPropagation(); const row = e.target.closest('[data-cli]'); if(row) pick(row.dataset.cli) });
+}
+
 /* ═══════════ ТИП БЛОКА ═══════════
    Панель под чипом типа: выбор типа и его параметры. Меняется на лету,
    чип в шапке блока обновляется без перерисовки документа. */
@@ -1263,6 +1305,8 @@ document.addEventListener('click', e=>{
   }
   /* Стрелки листают неделями: лента — это неделя, день внутри неё выбирают
      кликом. Встаём на тот же день недели, если он в сроке программы. */
+  if(e.target.closest('#wkToday')){ if(!bindClient(S.cid, TODAY)) return toast('Сегодня вне срока программы клиента'); render(); return }
+  if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
   if(e.target.closest('#dayPrev')){ S.i = Math.max(0, S.i-7); S.compose = null; render(); return }
   if(e.target.closest('#dayNext')){ const i = Math.min(program(S.pid).days-1, S.i+7); extendPlan(i); S.i = i; S.compose = null; render(); return }
   const nd = e.target.closest('[data-notedel]');
@@ -1413,13 +1457,6 @@ document.addEventListener('change', e=>{
     const f = e.target.files && e.target.files[0];
     if(f){ $('#pt-photo-name').textContent = f.name; toast('Фото прикреплено. Распознавание с фото появится вместе с ИИ-модулем — пока разбираем текст') }
     return;
-  }
-  if(e.target.id === 'cli'){
-    /* Смена клиента — это смена плана: у каждого своя программа. Дату держим,
-       чтобы тренер не терял место, где стоял. */
-    const date = plan()[S.i].date;
-    if(!bindClient(e.target.value, date)) { toast('У клиента нет программы или дата вне её'); return }
-    render();
   }
 });
 document.addEventListener('keydown', e=>{
