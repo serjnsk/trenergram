@@ -966,7 +966,7 @@ function sessionsOn(date){
       const [title, goal, days, src] = pick(KINDS);
       pid = 'p' + (pn++);
       const start = addDays(ANCHOR, -between(5, days - 10));       /* программа идёт; где-то только началась, где-то кончается */
-      const weeks = Math.min(Math.ceil(days/7), Math.ceil((daysBetween(start, ANCHOR) + between(-10, 24)) / 7));
+      const weeks = Math.min(Math.ceil(days/7), Math.ceil((daysBetween(start, ANCHOR) + (rnd() < 0.12 ? between(-8, -1) : between(1, 30))) / 7));
       PROGRAMS.push({id:pid, title, goal, days, clients:[id], start, kind:'individual', time: tIdx < TIMES.length && k % 4 === 0 ? TIMES[tIdx++] : null});
       PLAN[pid] = rep(DAYS[src], Math.max(1, weeks)).slice(0, days);
       sessions = PLAN[pid].filter(Boolean).length;

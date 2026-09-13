@@ -85,16 +85,16 @@ function monthHTML(y, m, ctx){
     const inProg = !!p && i >= 0 && i < p.days, inPlan = inProg && i < plan.length;
     const head = `<span class="d">${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = today ? ' today' : '';
-    if(!inProg) return `<span class="day out${cls}">${head}${p ? '<span class="e">вне программы</span>' : ''}</span>`;
+    if(!inProg) return `<span class="day out${cls}" data-date="${date}">${head}${p ? '<span class="e">вне программы</span>' : ''}</span>`;
     const href = `constructor.html?client=${C.cid}&date=${date}`;
-    if(!inPlan) return `<a class="day empty${cls}" href="${href}" title="Составить этот день">${head}<span class="e">не составлено</span></a>`;
+    if(!inPlan) return `<a class="day empty${cls}" href="${href}" data-date="${date}" title="Составить этот день">${head}<span class="e">не составлено</span></a>`;
     const x = plan[i];
     const n = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
     const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
-    if(compact) return `<a class="day cmp${n?'':' rest'}${cls}" href="${href}">${head}
+    if(compact) return `<a class="day cmp${n?'':' rest'}${cls}" href="${href}" data-date="${date}">${head}
       ${!n ? '<span class="e">отдых</span>' : x.draft ? '<span class="dr">черновик</span>' : `<span class="t">${esc(title)}</span>`}</a>`;
-    return `<a class="day${n?'':' rest'}${cls}" href="${href}">${head}
+    return `<a class="day${n?'':' rest'}${cls}" href="${href}" data-date="${date}">${head}
       ${n ? `<span class="t">${esc(title)}</span>` : '<span class="e">отдых</span>'}
       ${x.draft && n ? '<span class="dr">черновик</span>' : ''}
       ${n ? `<span class="k">${bl} ${plural(bl,'блок','блока','блоков')} · ${n} упр</span>` : ''}
@@ -131,7 +131,7 @@ function renderCal(keepYM){
     <div id="topSent"></div>
     <div id="feed">${months().map(k=>monthHTML(k.y, k.m, x)).join('')}</div>
     <div id="botSent"></div>`;
-  scrollToMonth(keepYM || TODAY.slice(0,7)+'-01', !keepYM);
+  if(keepYM) scrollToMonth(keepYM, false);
 }
 const HEAD = 58 + 62;   /* шапка приложения + липкая шапка календаря */
 /* Переход к произвольной дате: месяц дорастает при необходимости, день мигает. */
@@ -142,7 +142,7 @@ function jumpTo(date){
     renderCal(); observe();
   }
   scrollToMonth(ymKey(ym), true);
-  const cell = [...document.querySelectorAll('.day')].find(el => el.getAttribute('href') && el.getAttribute('href').endsWith('date=' + date)) ;
+  const cell = document.querySelector(`.day[data-date="${date}"]`);
   if(cell){ cell.classList.add('flash'); setTimeout(()=>cell.classList.remove('flash'), 1600) }
 }
 function scrollToMonth(ym, smooth){
@@ -187,7 +187,12 @@ function renderClients(){
       <span class="body"><b>${esc(c.n)}</b></span>${flag(c)}
     </button>`).join('') : '<div class="empty">Никого не нашли</div>';
 }
-function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); renderClients(); observe(); }
+function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); renderClients(); if(document.readyState==='complete') observe(); }
+/* Прокрутка до load сбрасывается браузером (восстановление позиции), поэтому
+   к сегодняшнему месяцу едем после загрузки, и только потом включаем
+   дорастание ленты — иначе верхний датчик срабатывает на старте. */
+history.scrollRestoration = 'manual';
+addEventListener('load', ()=> setTimeout(()=>{ scrollToMonth(TODAY.slice(0,7)+'-01', false); observe() }, 60));
 function switchClient(id){ const keep = topMonth(); C.cid = id; STATE.curClient = id; saveState(); C.from = null; render(keep); }
 
 document.addEventListener('click', e=>{
