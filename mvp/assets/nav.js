@@ -16,8 +16,6 @@ const NAV = [
  {h:'blocks.html',     k:'folder',n:'База блоков'            , a:'Блоки',  c:()=>TPL.filter(t=>t.lvl==='блок').length},
  {h:'workouts.html',   k:'tpl',   n:'База тренировок',        a:'Трен',   c:()=>TPL.filter(t=>t.lvl==='тренировка').length},
  {h:'programs.html',   k:'prog',  n:'База программ',          a:'Прогр',  c:()=>TPL.filter(t=>t.lvl==='программа').length},
- {g:'Настройки'},
- {h:'profile.html',    k:'brand', n:'Профиль',                a:'Проф'},
 ];
 
 

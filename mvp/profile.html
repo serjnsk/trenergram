@@ -59,7 +59,7 @@ function render(){
       <div class="card cb">
         <div class="avrow">
           <span class="av">${esc(T.ini)}</span>
-          <span class="av-t"><b>${esc(T.first)} ${esc(T.last)}</b><s>${esc(T.workspace)} · тренер с ${dlong(P.sub.since).slice(-4)} года в Тренерграм</s></span>
+          <span class="av-t"><b>${esc(T.first)} ${esc(T.last)}</b></span>
           <span class="sp" style="flex:1"></span>
           <button class="btn gh sm" id="btnPhoto">${ICON.plus} Загрузить фото</button>
         </div>
@@ -73,7 +73,6 @@ function render(){
         </div>
         <div class="cols2" style="margin-bottom:12px">
           <div class="formfld"><span class="k">Город</span><input class="inp" data-t="city" value="${esc(T.city)}"></div>
-          <div class="formfld"><span class="k">Рабочее пространство</span><input class="inp" data-t="workspace" value="${esc(T.workspace)}"></div>
         </div>
         <div class="formfld" style="margin-bottom:12px"><span class="k">Виды спорта</span>
           <div class="tags">${SPORTS.map(x=>`<button data-sport="${esc(x)}" class="${T.sports.includes(x)?'on':''}">${esc(x)}</button>`).join('')}</div></div>
@@ -83,14 +82,8 @@ function render(){
 
       <div class="sechead"><span class="t">Настройки работы</span><span class="ln"></span></div>
       <div class="card cb">
-        <div class="setrow"><span class="t"><b>Единицы веса</b><s>Во всех программах, у клиентов тоже</s></span>
-          <span class="seg">${['кг','фунты'].map(u=>`<button data-pref="units" data-v="${u}" class="${P.prefs.units===u?'on':''}">${u}</button>`).join('')}</span></div>
-        <div class="setrow"><span class="t"><b>Начало недели</b><s>Календарь и лента конструктора</s></span>
-          <span class="seg">${['пн','вс'].map(u=>`<button data-pref="weekStart" data-v="${u}" class="${P.prefs.weekStart===u?'on':''}">${u==='пн'?'Понедельник':'Воскресенье'}</button>`).join('')}</span></div>
         <div class="setrow"><span class="t"><b>Часовой пояс</b><s>Время занятий в таймлайне и уведомлениях</s></span>
           <select class="inp" id="tz" style="width:240px">${TZS.map(z=>`<option ${T.tz===z?'selected':''}>${z}</option>`).join('')}</select></div>
-        <div class="setrow"><span class="t"><b>Язык интерфейса</b><s>Клиентское приложение — на языке клиента</s></span>
-          <span class="seg">${[['ru','Русский'],['en','English']].map(([v,n])=>`<button data-pref="lang" data-v="${v}" class="${P.prefs.lang===v?'on':''}">${n}</button>`).join('')}</span></div>
       </div>
 
       <div class="sechead"><span class="t">Уведомления</span><span class="ln"></span></div>
@@ -100,13 +93,9 @@ function render(){
           <span class="chan"><button data-n="push" class="${P.notify.push?'on':''}">Push</button><button data-n="email" class="${P.notify.email?'on':''}">Email</button></span></div>
       </div>
 
-      <div class="sechead"><span class="t">Безопасность и аккаунт</span><span class="ln"></span></div>
+      <div class="sechead"><span class="t">Безопасность</span><span class="ln"></span></div>
       <div class="card cb">
         <div class="setrow"><span class="t"><b>Пароль</b><s>Вход по телефону и паролю</s></span><button class="btn gh sm" id="btnPass">Сменить пароль</button></div>
-        <div class="setrow"><span class="t"><b>Сеансы</b><s>Вы вошли на 2 устройствах</s></span><button class="btn gh sm" id="btnLogout">Выйти на всех устройствах</button></div>
-        <div class="setrow"><span class="t"><b>Экспорт данных</b><s>Клиенты, программы и результаты — CSV</s></span><button class="btn gh sm" id="btnExport">Скачать архив</button></div>
-        <div class="dngr"><button class="lnk-rm" id="btnDel">Удалить аккаунт</button>
-          <div class="hint" style="margin-top:6px">Клиенты потеряют доступ к программам. Перед удалением можно скачать архив.</div></div>
       </div>
     </div>
 
@@ -121,7 +110,6 @@ function render(){
         </div>
         <div class="acts"><button class="btn sm" id="btnPlan">Сменить тариф</button><button class="btn gh sm" id="btnHist">История платежей</button></div>
         <button class="lnk-rm" id="btnCancel" style="font-size:12px">Отменить подписку</button>
-        <div class="hint">Тарифы и цены — заглушка: модель монетизации не зафиксирована (OQ-8).</div>
       </div>
       <div class="card cb">
         <div class="sechead" style="margin:0 0 10px"><span class="t">Приглашение клиентов</span></div>
@@ -133,7 +121,6 @@ function render(){
 
   $$('[data-t]').forEach(i=>i.onchange=e=>{ T[i.dataset.t]=e.target.value.trim(); if(i.dataset.t==='first'||i.dataset.t==='last'){ T.n=(T.first+' '+T.last).trim(); T.ini=(T.first[0]||'')+(T.last[0]||''); renderNav('profile.html') } save('Сохранено'); if(i.dataset.t!=='about') render() });
   $$('[data-sport]').forEach(b=>b.onclick=()=>{ const x=b.dataset.sport; T.sports = T.sports.includes(x) ? T.sports.filter(y=>y!==x) : [...T.sports,x]; save(); render() });
-  $$('[data-pref]').forEach(b=>b.onclick=()=>{ P.prefs[b.dataset.pref]=b.dataset.v; save('Сохранено'); render() });
   $('#tz').onchange=e=>{ T.tz=e.target.value; save('Часовой пояс сохранён') };
   $$('[data-n]').forEach(b=>b.onclick=()=>{ P.notify[b.dataset.n]=!P.notify[b.dataset.n]; save(); render() });
   $('#btnPhoto').onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы');
@@ -143,10 +130,6 @@ function render(){
       <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password"></div>
       <div class="formfld"><span class="k">Ещё раз</span><input class="inp" type="password"></div></div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPass">Сохранить</button>`});
-  $('#btnLogout').onclick=()=>toast('Все сеансы, кроме этого, завершены');
-  $('#btnExport').onclick=()=>toast('Архив готовится — пришлём на ' + T.email);
-  $('#btnDel').onclick=()=>openModal({title:'Удалить аккаунт', body:`<p class="lead">Аккаунт <b>${esc(T.n)}</b>, ${CLIENTS.length} клиентов и все программы будут удалены без возможности восстановления.</p><p class="sub">Подписка прекратится, деньги за неиспользованный период не возвращаются.</p>`,
-    foot:`<span class="sp"></span><button class="btn gh" data-close>Оставить</button><button class="btn rm" data-close id="mdDel">Удалить навсегда</button>`});
   $('#btnPlan').onclick=()=>openModal({title:'Тариф', wide:true, body:`<div class="plans">${PLANS.map(x=>`<div class="plan ${x.id===P.sub.plan?'on':''}"><b>${esc(x.n)}</b><span class="pr">${rub(x.price)} <s>/ мес</s></span><s>до ${x.limit} клиентов · ${esc(x.d)}</s>
       <button class="btn ${x.id===P.sub.plan?'gh':''} sm" data-plan="${x.id}" ${x.id===P.sub.plan?'disabled':''}>${x.id===P.sub.plan?'Текущий':'Выбрать'}</button></div>`).join('')}</div><div class="hint">Смена тарифа вступает в силу со следующего платежа; лимит клиентов — сразу.</div>`});
   $('#btnHist').onclick=()=>openModal({title:'История платежей', body:`<table class="tbl"><thead><tr><th>Дата</th><th>Тариф</th><th class="r">Сумма</th><th>Карта</th></tr></thead><tbody>
@@ -158,7 +141,6 @@ document.addEventListener('click', e=>{
   if(e.target.closest('[data-close]') || e.target===$('#ov')) closeModal();
   const pl = e.target.closest('[data-plan]'); if(pl){ P.sub.plan=pl.dataset.plan; save('Тариф изменён — с ' + dlong(P.sub.until)); closeModal(); render() }
   if(e.target.closest('#mdPass')){ closeModal(); toast('Пароль изменён') }
-  if(e.target.closest('#mdDel')) toast('В прототипе аккаунт не удаляется');
   if(e.target.closest('#mdCancel')) toast('Подписка отменена — доступ до ' + dlong(P.sub.until));
 });
 render();
