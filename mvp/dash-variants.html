@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Дашборд · варианты · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css">
+<link rel="stylesheet" href="assets/theme-01-strava.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+/* ── переключатель вариантов (только для этой страницы) ── */
+.vsw{display:flex;align-items:center;gap:6px;margin:0 0 14px;font-size:12.5px;color:var(--tx3)}
+.vsw a{height:28px;padding:0 11px;border-radius:20px;background:var(--s1);color:var(--tx2);font-weight:600;display:inline-flex;align-items:center;text-decoration:none}
+.vsw a.on{background:var(--acc);color:#fff}
+.vsw s{text-decoration:none;margin-left:8px}
+/* ── лента событий ── */
+.evday{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4);padding:12px 14px 6px}
+.ev{display:flex;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:flex-start}
+.ev:last-child{border-bottom:0}
+.ev .ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--s1);color:var(--tx3);font-size:11px;font-weight:700;flex:none}
+.ev .ico svg{width:15px;height:15px}
+.ev.t-pr .ico{background:var(--acc-a);color:var(--acc)}
+.ev.t-q .ico{background:#E6F1FB;color:#185FA5}
+.ev.t-miss .ico{background:#FBF1DE;color:var(--warn)}
+.ev.t-prog .ico{background:var(--rm-a);color:var(--rm)}
+.ev.t-new .ico{background:var(--ok-a);color:var(--ok)}
+.ev.t-done .ico{background:var(--ok-a);color:var(--ok)}
+.ev.t-pay .ico{background:var(--s1);color:var(--tx3)}
+.ev .c{flex:1;min-width:0}
+.ev .h{display:flex;gap:8px;align-items:baseline}
+.ev .h b{font-size:13px;font-weight:600}
+.ev .h time{margin-left:auto;font-size:11px;color:var(--tx4);white-space:nowrap}
+.ev .tx{font-size:12.5px;color:var(--tx2);margin-top:2px;line-height:1.45}
+.ev .btn{flex:none;margin-top:1px}
+.ev.mini{padding:8px 0;gap:9px}
+.ev.mini .ico{width:26px;height:26px;font-size:10px}
+.ev.mini .ico svg{width:13px;height:13px}
+/* ── статистика ── */
+.kpi .tr{display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--ok)}
+.kpi .tr.dn{color:var(--rm)}
+.kpi.sm{padding:11px 13px}
+.kpi.sm .v{font-size:22px;margin:4px 0 1px}
+.kpi.big .v{font-size:34px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.sticky{position:sticky;top:78px}
+.tabs2{display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tabs2 button{height:28px;padding:0 11px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--tx2);background:none}
+.tabs2 button.on{background:var(--acc-a);color:var(--acc-d)}
+.tabs2 button s{text-decoration:none;font-weight:500;color:var(--tx4);margin-left:4px}
+.catc{background:var(--bg);border-radius:var(--rad-l);padding:12px 14px 6px;min-height:150px}
+.catc .h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.catc .h b{font-size:13.5px;font-weight:600}
+.catc .h svg{width:16px;height:16px;color:var(--tx3);flex:none}
+.catc .h .n{font-size:11px;color:var(--tx4);font-weight:600;background:var(--s1);border-radius:20px;padding:2px 7px}
+.catc .h a{margin-left:auto;font-size:12px;color:var(--acc-d)}
+.act{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.act:last-child{border-bottom:0}
+.act .n{width:26px;height:26px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);font-size:12px;font-weight:700;display:grid;place-items:center;flex:none}
+.act .t{flex:1;min-width:0}
+.act .t s{display:block;text-decoration:none;font-size:11.5px;color:var(--tx3)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap wide">
+        <div class="phead" id="pagehead"></div>
+        <div id="page"></div>
+      </div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+/* ═══════════ ДАШБОРД: ПЯТЬ ВАРИАНТОВ КАРКАСА ═══════════
+   Одно наполнение — лента важных событий и статистика аккаунта, — пять
+   компоновок. Страница для выбора, в меню её нет. ?v=1..5 */
+const V = Math.min(5, Math.max(1, +(new URLSearchParams(location.search).get('v') || 1)));
+const unread = () => { const out=[]; CLIENTS.forEach(c=>c.comments.forEach((cm,i)=>{ if(!cm.reply && !STATE.replied[c.id+':'+i]) out.push({c,cm,key:c.id+':'+i}) })); return out };
+const idle = () => CLIENTS.filter(c=>c.prog && c.last && daysBetween(c.last,TODAY)>=3);
+const noProg = () => CLIENTS.filter(c=>!c.prog);
+const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', new:'Новые клиенты', done:'Результаты', pay:'Подписка'};
+const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, new:ICON.users, done:ICON.chk, pay:ICON.folder};
+
+/* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
+function events(){
+  const ev = [];
+  CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый максимум: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
+  unread().forEach(({c,cm})=>ev.push({t:'q', d:cm.d, c, title:c.n + (cm.ex?' · '+cm.ex:''), tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
+  idle().forEach(c=>ev.push({t:'miss', d:c.last, c, title:c.n, tx:`Не появлялся ${ago(c.last)} — серия прервана`, act:'Открыть профиль', href:'client.html?id='+c.id}));
+  composeQueue().filter(x=>x.runway<=7).forEach(x=>{ const c = client(x.p.clients[0]); if(!c) return;
+    const lbl = x.runway<0 ? `Программа «${x.p.title}» кончилась ${-x.runway} ${plural(-x.runway,'день','дня','дней')} назад — клиент без тренировок` : x.runway===0 ? `Сегодня последняя написанная тренировка «${x.p.title}»` : `Написанные тренировки «${x.p.title}» кончаются через ${x.runway} ${plural(x.runway,'день','дня','дней')}`;
+    ev.push({t:'prog', d: x.runway<0 ? x.lastDay : TODAY, c, title:c.n, tx:lbl, act:'Составить', href:`constructor.html?client=${c.id}&date=${addDays(x.lastDay,1)}`}) });
+  noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
+  CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
+  ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});
+  const order = {q:0, prog:1, pr:2, miss:3, new:4, done:5, pay:6};
+  return ev.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
+}
+const dayLabel = d => d===TODAY ? 'Сегодня' : d===addDays(TODAY,-1) ? 'Вчера' : humanDate(d);
+const evHTML = (e, mini) => `<div class="ev t-${e.t}${mini?' mini':''}">
+    <span class="ico">${e.c && !mini ? esc(e.c.ini) : TICON[e.t]}</span>
+    <div class="c"><div class="h"><b>${esc(e.title)}</b>${mini?'':`<time>${dayLabel(e.d)}</time>`}</div><div class="tx">${e.tx}</div></div>
+    ${mini ? '' : `<a class="btn gh sm" href="${e.href}">${e.act}</a>`}
+  </div>`;
+function feedHTML(list, withDays=true){
+  if(!list.length) return '<div class="empty"><div class="t">Тихо</div><div class="d">Новых событий нет</div></div>';
+  let out='', day=null;
+  list.forEach(e=>{ if(withDays && e.d!==day){ day=e.d; out+=`<div class="evday">${dayLabel(e.d)} · ${humanDate(e.d)}</div>` } out+=evHTML(e) });
+  return out;
+}
+
+/* Статистика аккаунта — с трендом к прошлой неделе (демо-дельты). */
+function stats(){
+  const active = CLIENTS.filter(c=>c.prog).length;
+  const done = CLIENTS.reduce((a,c)=>a+(c.done||0),0), plan = CLIENTS.reduce((a,c)=>a+(c.plan||0),0);
+  const q = composeQueue();
+  const drafts = Object.values(STATE.days||{}).flatMap(o=>Object.values(o)).filter(r=>r.draft).length;
+  return [
+    {k:'Активных клиентов', v:active, d:`из ${CLIENTS.length} в аккаунте`, tr:'+2', ic:ICON.users},
+    {k:'Выполнение за неделю', v:Math.round(done/plan*100)+' %', d:'отмеченных тренировок', tr:'+5 %', ic:ICON.chk},
+    {k:'Занятий сегодня', v:sessionsOn(TODAY).length, d:`${scheduleAll(TODAY,TODAY).length} атлетов суммарно`, tr:'', ic:ICON.cal},
+    {k:'Рекорды за неделю', v:CLIENTS.filter(c=>c.pr && daysBetween(c.pr.at,TODAY)<=7).length, d:'новых максимумов', tr:'−1', dn:true, ic:ICON.star, acc:true},
+    {k:'Ждут ответа', v:unread().length, d:'вопросов без ответа', tr:'+3', dn:true, ic:ICON.chat, acc:true},
+    {k:'Кончаются на неделе', v:q.filter(x=>x.runway>=0 && x.runway<=7).length + q.filter(x=>x.runway<0).length, d:`${q.filter(x=>x.runway<0).length} уже без тренировок`, tr:'', ic:ICON.prog, warn:true},
+  ];
+}
+const kpiHTML = (s, cls='') => `<div class="kpi ${cls}"><span class="k">${s.ic} ${esc(s.k)}</span><div class="v ${s.acc?'acc':s.warn?'warn':''}">${s.v}${s.tr?`<span class="tr ${s.dn?'dn':''}">${s.tr}</span>`:''}</div><div class="d">${esc(s.d)}</div></div>`;
+const queueHTML = n => composeQueue().slice(0,n).map(x=>{ const c=client(x.p.clients[0]); const lbl = x.runway<0?'кончилась':x.runway===0?'сегодня':`${x.runway} ${plural(x.runway,'день','дня','дней')}`;
+  return `<div class="act"><span class="n">${esc(c?c.ini:'—')}</span><span class="t">${esc(c?c.n:x.p.title)}<s>${esc(x.p.title)} · составлено ${x.composed} из ${x.p.days}</s></span><span class="chip ${x.runway<0?'rm':x.runway<=7?'warn':'ghost'}">${lbl}</span></div>`}).join('');
+const actionsHTML = () => { const ev = events(); const un = ev.filter(e=>e.t==='q'), pg = ev.filter(e=>e.t==='prog'), ms = ev.filter(e=>e.t==='miss'), nw = ev.filter(e=>e.t==='new');
+  const grp = (t, list, act) => list.length ? `<div class="rhead" style="padding-left:0">${t} · ${list.length}</div>${list.slice(0,4).map(e=>`<div class="act"><span class="n">${esc(e.c?e.c.ini:'—')}</span><span class="t">${esc(e.title)}<s>${e.tx.replace(/<[^>]+>/g,'').slice(0,60)}</s></span><a class="btn gh sm" href="${e.href}">${act}</a></div>`).join('')}` : '';
+  return grp('Ответить', un, 'Ответить') + grp('Составить', pg, 'В конструктор') + grp('Написать клиенту', ms, 'Профиль') + grp('Назначить программу', nw, 'Назначить'); };
+
+const switcher = `<div class="vsw">Вариант: ${[1,2,3,4,5].map(i=>`<a href="?v=${i}" class="${V===i?'on':''}">${i}</a>`).join('')}<s>${['Лента + боковая статистика','Цифры сверху, лента внизу','Три колонки','Лента с фильтрами + панель действий','Сводки по категориям'][V-1]}</s></div>`;
+
+function v1(){ const ev = events(), st = stats();
+  return `<div style="display:grid;grid-template-columns:minmax(0,2fr) 380px;gap:22px;align-items:start">
+    <div><div class="sechead"><span class="t">Лента событий</span><span class="ln"></span><span class="n">${ev.length}</span></div><div class="card cb flush">${feedHTML(ev)}</div></div>
+    <div class="sticky"><div class="sechead"><span class="t">Аккаунт</span><span class="ln"></span></div>
+      <div class="cols2" style="gap:10px">${st.map(s=>kpiHTML(s,'sm')).join('')}</div>
+      <div class="sechead"><span class="t">Очередь составления</span><span class="ln"></span></div><div class="card cb" style="padding-top:4px;padding-bottom:4px">${queueHTML(6)}</div></div>
+  </div>`; }
+function v2(){ const ev = events(), st = stats();
+  const need = ev.filter(e=>['q','prog','miss','new'].includes(e.t)), info = ev.filter(e=>!['q','prog','miss','new'].includes(e.t));
+  return `<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">${st.map(s=>kpiHTML(s)).join('')}</div>
+    <div class="cols2" style="margin-top:22px;align-items:start">
+      <div><div class="sechead"><span class="t">Требует действия</span><span class="ln"></span><span class="n">${need.length}</span></div><div class="card cb flush">${feedHTML(need)}</div></div>
+      <div><div class="sechead"><span class="t">Что произошло</span><span class="ln"></span><span class="n">${info.length}</span></div><div class="card cb flush">${feedHTML(info)}</div></div>
+    </div>`; }
+function v3(){ const ev = events(), st = stats(), ses = sessionsOn(TODAY);
+  return `<div style="display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) 300px;gap:18px;align-items:start">
+    <div><div class="sechead"><span class="t">Лента событий</span><span class="ln"></span><span class="n">${ev.length}</span></div><div class="card cb flush">${feedHTML(ev)}</div></div>
+    <div><div class="sechead"><span class="t">Сегодня</span><span class="ln"></span><span class="n">${ses.length}</span></div><div class="card cb">${timelineHTML(ses,0,TODAY)}</div>
+      <div class="sechead"><span class="t">Очередь составления</span><span class="ln"></span></div><div class="card cb" style="padding-top:4px;padding-bottom:4px">${queueHTML(5)}</div></div>
+    <div class="sticky"><div class="sechead"><span class="t">Аккаунт</span><span class="ln"></span></div><div class="stack">${st.map(s=>kpiHTML(s,'sm')).join('')}</div></div>
+  </div>`; }
+function v4(){ const ev = events(), st = stats(); const tab = new URLSearchParams(location.search).get('t') || 'all';
+  const list = tab==='all' ? ev : ev.filter(e=>e.t===tab);
+  const tabs = [['all','Все',ev.length],...Object.keys(TYPES).filter(t=>ev.some(e=>e.t===t)).map(t=>[t,TYPES[t],ev.filter(e=>e.t===t).length])];
+  return `<div class="cons" style="padding:0;margin:0 -22px">
+    <main><section class="pane" style="min-height:70vh">
+      <div class="pane-h"><h1 class="wkttl">Дашборд</h1><span class="sp"></span>${st.slice(0,4).map(s=>`<span class="chip ghost" style="height:26px;font-size:12px"><b style="color:var(--ink);margin-right:5px">${s.v}</b>${esc(s.k.toLowerCase())}</span>`).join('')}</div>
+      <div class="tabs2">${tabs.map(([k,n,c])=>`<button onclick="location.search='?v=4&t=${k}'" class="${tab===k?'on':''}">${n}<s>${c}</s></button>`).join('')}</div>
+      ${feedHTML(list)}
+    </section></main>
+    <aside class="rail" data-min="Действия" style="position:sticky;top:72px">
+      <div class="railhead"><div class="railttl">Требует действия</div></div>
+      <div class="railbody">${actionsHTML()}</div>
+      <div class="railfoot">Здесь только то, на что нужно отреагировать; остальное — в ленте.</div>
+    </aside>
+  </div>`; }
+function v5(){ const ev = events(), st = stats();
+  const cats = Object.keys(TYPES).map(t=>({t, n:TYPES[t], list:ev.filter(e=>e.t===t)})).filter(c=>c.list.length);
+  return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">${st.slice(0,4).map(s=>kpiHTML(s,'big')).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px;align-items:start">
+      ${cats.map(c=>`<div class="catc"><div class="h">${TICON[c.t]}<b>${c.n}</b><span class="n">${c.list.length}</span><a href="?v=4&t=${c.t}">все →</a></div>${c.list.slice(0,3).map(e=>evHTML(e,true)).join('')}</div>`).join('')}
+      <div class="catc"><div class="h">${ICON.build}<b>Очередь составления</b><span class="n">${composeQueue().filter(x=>x.runway<=7).length}</span><a href="calendar.html">все →</a></div>${queueHTML(3)}</div>
+    </div>`; }
+
+function render(){
+  $('#page').innerHTML = switcher + [v1,v2,v3,v4,v5][V-1]();
+}
+render();
+initShell({page:'index.html', title: V===4 ? '' : 'Дашборд'});
+if(V===4){ const h=$('#pagehead'); if(h) h.remove(); }
+</script>
+</body>
+</html>
