@@ -3,7 +3,10 @@
    Сущности по 02 — Функциональные требования:
    упражнение → блок → тренировка → программа → шаблон
    ============================================================ */
-const TODAY = '2026-08-26';                 /* среда — фиксируем для детерминизма */
+/* TODAY — реальная дата (объявлена ниже, после помощников дат). Демо-данные
+   написаны вокруг ANCHOR и при загрузке сдвигаются на разницу дней, чтобы
+   прототип не устаревал: «сегодня» в нём всегда сегодня. */
+const ANCHOR = '2026-08-26';
 const D = s => new Date(s + 'T00:00:00');
 const iso = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const RU = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
@@ -13,6 +16,9 @@ const dm = s => { const d=D(s); return String(d.getDate()).padStart(2,'0')+'.'+S
 const addDays = (s,n) => { const d=D(s); d.setDate(d.getDate()+n); return iso(d) };
 const dowMon = s => (D(s).getDay()+6)%7;    /* 0 = понедельник */
 const daysBetween = (a,b) => Math.round((D(b)-D(a))/86400000);
+const TODAY = iso(new Date());
+const SHIFT = daysBetween(ANCHOR, TODAY);
+const shiftDate = d => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? addDays(d, SHIFT) : d;
 
 /* ─── Тренер и его рабочее пространство (REG-3) ─── */
 const TRAINER = {
@@ -779,7 +785,7 @@ function scheduleAll(from,to){ return CLIENTS.flatMap(c=>scheduleFor(c.id,from,t
    тренировка, назначенная группе из 25 человек (CON-11), это одна строка с
    25 атлетами, а не 25 строк: иначе список растёт с числом клиентов и
    перестаёт читаться уже на десятке. */
-const NOW = '13:40';                        /* как и TODAY — фиксируем для детерминизма */
+const NOW = (d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'))(new Date());
 const hhmm = t => +t.slice(0,2)*60 + +t.slice(3,5);
 
 /* ═══════ Очередь составления (CON-4, CON-12, NFR-4) ═══════
@@ -837,6 +843,15 @@ function sessionsOn(date){
 }
 
 /* ═══════ Состояние приложения (общее между страницами) ═══════ */
+/* Сдвиг дат демо-данных к сегодняшнему дню. Ключи with датами занятий и
+   результатов сдвигаются; даты рождения, «с нами с», создания шаблонов — нет. */
+(function(){
+  const KEYS = new Set(['start','date','last','until','d']);
+  const walk = o => { if(!o || typeof o !== 'object') return;
+    if(Array.isArray(o)){ o.forEach(walk); return }
+    for(const k of Object.keys(o)){ const v = o[k]; if(KEYS.has(k) && typeof v === 'string') o[k] = shiftDate(v); else if(v && typeof v === 'object') walk(v) } };
+  [PROFILE_DEF, CLIENTS, PROGRAMS, LOG].forEach(walk);
+})();
 const STATE = (function(){
   const def = {online:true, queue:0, ids:false, navc:false, curClient:'c1', curProg:'p1', curWeek:4,
                pm:Object.fromEntries(CLIENTS.map(c=>[c.id, {...c.pm}])), replied:{}, days:{}, profile:null};
