@@ -377,3 +377,35 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .plan s{text-decoration:none;font-size:12px;color:var(--tx3)}
 .plan .btn{margin-top:6px;justify-content:center}
 .dngr{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+
+/* ─── карточка клиента: шапка + табы-якоря ─── */
+.chead{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:22px;align-items:center;background:var(--bg);border-radius:var(--rad-l);padding:18px 22px}
+.cph{position:relative;width:96px;height:96px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);display:grid;place-items:center;font-family:var(--disp);font-size:30px;font-weight:700;flex:none}
+.cph-up{position:absolute;right:-2px;bottom:-2px;width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--line2);display:grid;place-items:center;color:var(--tx3)}
+.cph-up svg{width:14px;height:14px}
+.cinfo .nm{font-family:var(--disp);font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.cinfo .mt{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cinfo .pl{margin-top:10px;font-size:13px;color:var(--tx2);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cinfo .pl b{color:var(--ink);font-weight:600}
+.cstats{display:grid;grid-template-columns:repeat(4,auto);gap:22px;padding:0 6px}
+.cst s{display:block;text-decoration:none;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4)}
+.cst b{display:block;font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em;margin-top:3px;white-space:nowrap}
+.cst b i{font-style:normal;font-size:13px;color:var(--tx3);font-weight:500}
+.cacts{display:flex;flex-direction:column;gap:8px}
+.cacts .btn{justify-content:center}
+.ctabs{position:sticky;top:58px;z-index:5;display:flex;gap:2px;background:var(--bg);border-radius:var(--rad-l);padding:6px;margin:12px 0 18px;border-bottom:1px solid var(--line)}
+.ctabs a{height:34px;padding:0 14px;border-radius:var(--rad-m);display:inline-flex;align-items:center;font-size:13.5px;font-weight:600;color:var(--tx2);text-decoration:none}
+.ctabs a:hover{background:var(--s1);color:var(--ink)}
+.ctabs a.on{background:var(--acc-a);color:var(--acc-d)}
+.csec{scroll-margin-top:120px;margin-bottom:26px}
+.csec .sechead{margin-top:0}
+.csec .sechead .lnk{font-size:12.5px;color:var(--acc-d)}
+.pgrow{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,auto);gap:22px;align-items:center}
+.pgrow b{display:block;font-size:14.5px;font-weight:600}
+.pgrow s{display:block;text-decoration:none;font-size:12.5px;color:var(--tx3);margin-top:2px}
+.pgm s{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4);display:block}
+.pgm b{font-size:13.5px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px;margin-top:3px}
+.pmwrap{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}
+.csec .facts{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.csec .facts .fact{border-right:1px solid var(--line)}
+.csec .facts .fact:last-child{border-right:0}
