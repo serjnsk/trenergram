@@ -39,8 +39,8 @@
    докуда составлено, активность, максимумы, переходы в конструктор и календарь. */
 const CS = {k:null, dir:1};
 const V = {q:'', f:'all', sel:null};
-const unread = c => c.comments.filter((cm,i)=>!cm.reply && !STATE.replied[c.id+':'+i]).length;
-const needsAttention = c => unread(c)>0 || (c.prog && c.last && daysBetween(c.last,TODAY)>=3);
+const unreadOf = c => c.comments.filter((cm,i)=>!cm.reply && !STATE.replied[c.id+':'+i]).length;
+const needsAttention = c => unreadOf(c)>0 || (c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 const runway = c => { if(!c.prog) return null; const n = composedDays(c.prog); return daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1))) };
 const runwayChip = c => { const r = runway(c);
   if(r === null) return '<span class="chip ghost">без программы</span>';
@@ -75,7 +75,7 @@ function render(){
         ${th('n','Клиент')}${th('prog','Программа')}${th('run','Составлено на')}${th('done','Прогресс')}${th('last','Последняя активность')}${th(null,'Динамика приседа')}
       </tr></thead><tbody>
         ${list.map(c=>{
-          const u = unread(c), pr = program(c.prog);
+          const u = unreadOf(c), pr = program(c.prog);
           const idle = c.last && daysBetween(c.last,TODAY)>=3;
           const sq = c.hist && c.hist.squat;
           return `<tr class="click ${c.id===V.sel?'on':''}" data-row="${c.id}">
@@ -108,7 +108,7 @@ function render(){
 function renderRail(){
   const c = client(V.sel);
   if(!c){ railSet({title:'Клиент', body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
-  const p = program(c.prog), n = c.prog ? composedDays(c.prog) : 0, u = unread(c);
+  const p = program(c.prog), n = c.prog ? composedDays(c.prog) : 0, u = unreadOf(c);
   railSet({title:'Клиент', body:`
     <div class="rprev">
       <div class="avrow"><span class="av">${esc(c.ini)}</span><span class="av-t"><b>${esc(c.n)}</b><s>${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</s></span></div>
