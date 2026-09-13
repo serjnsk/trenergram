@@ -89,7 +89,7 @@ function render(){
         }).join('')}
       </tbody></table>` : `<div class="empty"><div class="t">Никого не нашли</div><div class="d">Измените поиск или фильтр</div></div>`}
     </div>
-    <div class="hint">Клиент попадает в этот список сам, как только перейдёт по <a href="brand.html" style="color:var(--tx3)">пригласительной ссылке</a> и войдёт по номеру телефона.</div>`;
+    <div class="hint">Клиент попадает в этот список сам, как только перейдёт по <a href="profile.html" style="color:var(--tx3)">пригласительной ссылке</a> и войдёт по номеру телефона.</div>`;
 
   $$('[data-tbl="cli"] th[data-sort]').forEach(th=>th.onclick=()=>{
     if(CS.k === th.dataset.sort) CS.dir = -CS.dir; else { CS.k = th.dataset.sort; CS.dir = 1 }

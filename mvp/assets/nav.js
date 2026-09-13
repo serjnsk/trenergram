@@ -17,7 +17,7 @@ const NAV = [
  {h:'workouts.html',   k:'tpl',   n:'База тренировок',        a:'Трен',   c:()=>TPL.filter(t=>t.lvl==='тренировка').length},
  {h:'programs.html',   k:'prog',  n:'База программ',          a:'Прогр',  c:()=>TPL.filter(t=>t.lvl==='программа').length},
  {g:'Настройки'},
- {h:'brand.html',      k:'brand', n:'Бренд тренера',          a:'Бренд'},
+ {h:'profile.html',    k:'brand', n:'Профиль',                a:'Проф'},
 ];
 
 
@@ -55,7 +55,7 @@ function renderNav(page){
              <span class="ntxt">${esc(x.n)}</span><i class="nab">${esc(x.a||x.n)}</i>
              ${x.c?`<span class="cnt">${x.c()}</span>`:''}</a>`).join('')}
     </div>
-    <a class="nfoot" href="brand.html" title="${esc(TRAINER.n)}">
+    <a class="nfoot" href="profile.html" title="${esc(TRAINER.n)}">
       <span class="av">${esc(TRAINER.ini)}</span>
       <span><b>${esc(TRAINER.n)}</b><s>${esc(TRAINER.workspace)}</s></span>
     </a>`;

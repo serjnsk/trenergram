@@ -18,7 +18,23 @@ const daysBetween = (a,b) => Math.round((D(b)-D(a))/86400000);
 const TRAINER = {
   n:'Сергей Ковальчук', ini:'СК', workspace:'CrossFit Ладья',
   invite:'https://trenergram.app/j/kovalchuk',
+  first:'Сергей', last:'Ковальчук', phone:'+7 921 400-18-22', email:'kovalchuk@ladya.fit',
+  city:'Санкт-Петербург', tz:'Europe/Moscow', sports:['Кроссфит','Тяжёлая атлетика'],
+  about:'Тренирую кроссфит и силовые с 2016 года. Готовлю к соревнованиям и возвращаю после травм — аккуратно и по плану.',
   brand:{ title:'Ковальчук · Strength & Conditioning', color:'#D7FF3F', bg:'#0B0D0F', logo:'СК' }
+};
+/* Подписка и рабочие настройки тренера. Тарифы — заглушка до решения OQ-8:
+   структура (лимит клиентов, срок, следующий платёж) реальная, цифры — нет. */
+const PLANS = [
+  {id:'start',  n:'Старт',  limit:10,  price:990,  d:'Для начала: до 10 клиентов'},
+  {id:'pro',    n:'Тренер', limit:50,  price:2990, d:'Персональный тренер с полной базой'},
+  {id:'studio', n:'Студия', limit:200, price:7990, d:'Группы и команды, несколько тренеров'},
+];
+const SPORTS = ['Кроссфит','Тренажёрный зал','Тяжёлая атлетика','Функциональный тренинг','Бег','Плавание','Единоборства','Реабилитация'];
+const PROFILE_DEF = {
+  sub:{plan:'pro', until:'2026-10-12', card:'Visa •••• 4242', since:'2025-03-12'},
+  prefs:{units:'кг', lang:'ru', weekStart:'пн'},
+  notify:{results:true, comments:true, missed:true, programEnd:true, newClient:true, push:true, email:false},
 };
 
 /* ─── База упражнений (EX-1) · гибкие показатели (EX-3) ─── */
@@ -823,7 +839,7 @@ function sessionsOn(date){
 /* ═══════ Состояние приложения (общее между страницами) ═══════ */
 const STATE = (function(){
   const def = {online:true, queue:0, ids:false, navc:false, curClient:'c1', curProg:'p1', curWeek:4,
-               pm:Object.fromEntries(CLIENTS.map(c=>[c.id, {...c.pm}])), replied:{}, days:{}};
+               pm:Object.fromEntries(CLIENTS.map(c=>[c.id, {...c.pm}])), replied:{}, days:{}, profile:null};
   let s = def;
   try{ const raw = localStorage.getItem('trenergram.state'); if(raw) s = Object.assign({}, def, JSON.parse(raw)) }catch(_){}
   return s;

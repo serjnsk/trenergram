@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Профиль · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css">
+<link rel="stylesheet" href="assets/theme-01-strava.css">
+<link rel="stylesheet" href="assets/pages.css">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap">
+        <div class="phead" id="pagehead"></div>
+        <div id="page"></div>
+      </div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+/* ═══════════ ПРОФИЛЬ ТРЕНЕРА ═══════════
+   Настройки аккаунта, а не витрина бренда (BRD-1 — за пределами MVP):
+   основные данные, подписка и лимит клиентов, рабочие настройки,
+   уведомления одним блоком, безопасность. Приглашение клиентов (REG-1)
+   живёт здесь же — это свойство аккаунта тренера. */
+const P = (STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF)));
+const T = TRAINER;
+const save = msg => { saveState(); if(msg) toast(msg) };
+const plan = () => PLANS.find(x=>x.id===P.sub.plan) || PLANS[1];
+const rub = n => n.toLocaleString('ru-RU') + ' ₽';
+const MONG = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()]+' '+d.getFullYear() };
+const dshort = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()].slice(0,3)+' '+d.getFullYear() };
+const daysLeft = iso => daysBetween(TODAY, iso);
+const TZS = ['Europe/Kaliningrad','Europe/Moscow','Europe/Samara','Asia/Yekaterinburg','Asia/Omsk','Asia/Novosibirsk','Asia/Krasnoyarsk','Asia/Irkutsk','Asia/Yakutsk','Asia/Vladivostok'];
+const NOTIFY = [
+  ['results',    'Результаты клиентов',        'Записал тренировку, поставил рекорд'],
+  ['comments',   'Комментарии и вопросы',      'Клиент написал под тренировкой'],
+  ['missed',     'Пропущенные тренировки',     'Не отмечена в день занятия'],
+  ['programEnd', 'Программа заканчивается',    'За 7 дней до последнего составленного дня'],
+  ['newClient',  'Новый клиент',               'Кто-то перешёл по вашей ссылке'],
+];
+
+function render(){
+  const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until);
+  $('#page').innerHTML = `
+  <div class="prof">
+    <div>
+      <div class="sechead"><span class="t">Основные данные</span><span class="ln"></span></div>
+      <div class="card cb">
+        <div class="avrow">
+          <span class="av">${esc(T.ini)}</span>
+          <span class="av-t"><b>${esc(T.first)} ${esc(T.last)}</b><s>${esc(T.workspace)} · тренер с ${dlong(P.sub.since).slice(-4)} года в Тренерграм</s></span>
+          <span class="sp" style="flex:1"></span>
+          <button class="btn gh sm" id="btnPhoto">${ICON.plus} Загрузить фото</button>
+        </div>
+        <div class="cols2" style="margin-bottom:12px">
+          <div class="formfld"><span class="k">Имя</span><input class="inp" data-t="first" value="${esc(T.first)}"></div>
+          <div class="formfld"><span class="k">Фамилия</span><input class="inp" data-t="last" value="${esc(T.last)}"></div>
+        </div>
+        <div class="cols2" style="margin-bottom:12px">
+          <div class="formfld"><span class="k">Телефон</span><input class="inp" data-t="phone" value="${esc(T.phone)}"></div>
+          <div class="formfld"><span class="k">Email</span><input class="inp" data-t="email" value="${esc(T.email)}"></div>
+        </div>
+        <div class="cols2" style="margin-bottom:12px">
+          <div class="formfld"><span class="k">Город</span><input class="inp" data-t="city" value="${esc(T.city)}"></div>
+          <div class="formfld"><span class="k">Рабочее пространство</span><input class="inp" data-t="workspace" value="${esc(T.workspace)}"></div>
+        </div>
+        <div class="formfld" style="margin-bottom:12px"><span class="k">Виды спорта</span>
+          <div class="tags">${SPORTS.map(x=>`<button data-sport="${esc(x)}" class="${T.sports.includes(x)?'on':''}">${esc(x)}</button>`).join('')}</div></div>
+        <div class="formfld"><span class="k">О себе — видят клиенты</span>
+          <textarea class="inp" data-t="about" rows="3">${esc(T.about)}</textarea></div>
+      </div>
+
+      <div class="sechead"><span class="t">Настройки работы</span><span class="ln"></span></div>
+      <div class="card cb">
+        <div class="setrow"><span class="t"><b>Единицы веса</b><s>Во всех программах, у клиентов тоже</s></span>
+          <span class="seg">${['кг','фунты'].map(u=>`<button data-pref="units" data-v="${u}" class="${P.prefs.units===u?'on':''}">${u}</button>`).join('')}</span></div>
+        <div class="setrow"><span class="t"><b>Начало недели</b><s>Календарь и лента конструктора</s></span>
+          <span class="seg">${['пн','вс'].map(u=>`<button data-pref="weekStart" data-v="${u}" class="${P.prefs.weekStart===u?'on':''}">${u==='пн'?'Понедельник':'Воскресенье'}</button>`).join('')}</span></div>
+        <div class="setrow"><span class="t"><b>Часовой пояс</b><s>Время занятий в таймлайне и уведомлениях</s></span>
+          <select class="inp" id="tz" style="width:240px">${TZS.map(z=>`<option ${T.tz===z?'selected':''}>${z}</option>`).join('')}</select></div>
+        <div class="setrow"><span class="t"><b>Язык интерфейса</b><s>Клиентское приложение — на языке клиента</s></span>
+          <span class="seg">${[['ru','Русский'],['en','English']].map(([v,n])=>`<button data-pref="lang" data-v="${v}" class="${P.prefs.lang===v?'on':''}">${n}</button>`).join('')}</span></div>
+      </div>
+
+      <div class="sechead"><span class="t">Уведомления</span><span class="ln"></span></div>
+      <div class="card cb">
+        ${NOTIFY.map(([k,n,d])=>`<div class="setrow"><span class="t"><b>${n}</b><s>${d}</s></span><button class="switch ${P.notify[k]?'on':''}" data-n="${k}" aria-label="${n}"></button></div>`).join('')}
+        <div class="setrow"><span class="t"><b>Каналы</b><s>Куда приходят уведомления</s></span>
+          <span class="chan"><button data-n="push" class="${P.notify.push?'on':''}">Push</button><button data-n="email" class="${P.notify.email?'on':''}">Email</button></span></div>
+      </div>
+
+      <div class="sechead"><span class="t">Безопасность и аккаунт</span><span class="ln"></span></div>
+      <div class="card cb">
+        <div class="setrow"><span class="t"><b>Пароль</b><s>Вход по телефону и паролю</s></span><button class="btn gh sm" id="btnPass">Сменить пароль</button></div>
+        <div class="setrow"><span class="t"><b>Сеансы</b><s>Вы вошли на 2 устройствах</s></span><button class="btn gh sm" id="btnLogout">Выйти на всех устройствах</button></div>
+        <div class="setrow"><span class="t"><b>Экспорт данных</b><s>Клиенты, программы и результаты — CSV</s></span><button class="btn gh sm" id="btnExport">Скачать архив</button></div>
+        <div class="dngr"><button class="lnk-rm" id="btnDel">Удалить аккаунт</button>
+          <div class="hint" style="margin-top:6px">Клиенты потеряют доступ к программам. Перед удалением можно скачать архив.</div></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card cb">
+        <div class="subhead"><span class="pl">${esc(pl.n)}</span><span class="chip ${left>0?'ok':'rm'}">${left>0?'активна':'истекла'}</span></div>
+        <div class="usage"><div class="l"><span>Клиентов</span><b>${used} из ${pl.limit}</b></div><div class="bar"><i style="width:${Math.min(100,used/pl.limit*100)}%"></i></div></div>
+        <div class="kv">
+          <s>Оплачено до</s><b>${dshort(P.sub.until)}${left>0?` · ${left} ${plural(left,'день','дня','дней')}`:''}</b>
+          <s>Следующий платёж</s><b>${rub(pl.price)} · ${dshort(P.sub.until)}</b>
+          <s>Способ оплаты</s><b>${esc(P.sub.card)}</b>
+        </div>
+        <div class="acts"><button class="btn sm" id="btnPlan">Сменить тариф</button><button class="btn gh sm" id="btnHist">История платежей</button></div>
+        <button class="lnk-rm" id="btnCancel" style="font-size:12px">Отменить подписку</button>
+        <div class="hint">Тарифы и цены — заглушка: модель монетизации не зафиксирована (OQ-8).</div>
+      </div>
+      <div class="card cb">
+        <div class="sechead" style="margin:0 0 10px"><span class="t">Приглашение клиентов</span></div>
+        <div class="copyfield"><code>${esc(T.invite)}</code><button class="btn gh sm" id="btnCopy">Скопировать</button></div>
+        <div class="hint">Клиент открывает ссылку, входит по номеру телефона и сразу привязан к вам. Список — в «Клиентах».</div>
+      </div>
+    </div>
+  </div>`;
+
+  $$('[data-t]').forEach(i=>i.onchange=e=>{ T[i.dataset.t]=e.target.value.trim(); if(i.dataset.t==='first'||i.dataset.t==='last'){ T.n=(T.first+' '+T.last).trim(); T.ini=(T.first[0]||'')+(T.last[0]||''); renderNav('profile.html') } save('Сохранено'); if(i.dataset.t!=='about') render() });
+  $$('[data-sport]').forEach(b=>b.onclick=()=>{ const x=b.dataset.sport; T.sports = T.sports.includes(x) ? T.sports.filter(y=>y!==x) : [...T.sports,x]; save(); render() });
+  $$('[data-pref]').forEach(b=>b.onclick=()=>{ P.prefs[b.dataset.pref]=b.dataset.v; save('Сохранено'); render() });
+  $('#tz').onchange=e=>{ T.tz=e.target.value; save('Часовой пояс сохранён') };
+  $$('[data-n]').forEach(b=>b.onclick=()=>{ P.notify[b.dataset.n]=!P.notify[b.dataset.n]; save(); render() });
+  $('#btnPhoto').onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы');
+  $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); toast('Ссылка скопирована') };
+  $('#btnPass').onclick=()=>openModal({title:'Сменить пароль', body:`
+      <div class="formfld" style="margin-bottom:10px"><span class="k">Текущий пароль</span><input class="inp" type="password"></div>
+      <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password"></div>
+      <div class="formfld"><span class="k">Ещё раз</span><input class="inp" type="password"></div></div>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPass">Сохранить</button>`});
+  $('#btnLogout').onclick=()=>toast('Все сеансы, кроме этого, завершены');
+  $('#btnExport').onclick=()=>toast('Архив готовится — пришлём на ' + T.email);
+  $('#btnDel').onclick=()=>openModal({title:'Удалить аккаунт', body:`<p class="lead">Аккаунт <b>${esc(T.n)}</b>, ${CLIENTS.length} клиентов и все программы будут удалены без возможности восстановления.</p><p class="sub">Подписка прекратится, деньги за неиспользованный период не возвращаются.</p>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Оставить</button><button class="btn rm" data-close id="mdDel">Удалить навсегда</button>`});
+  $('#btnPlan').onclick=()=>openModal({title:'Тариф', wide:true, body:`<div class="plans">${PLANS.map(x=>`<div class="plan ${x.id===P.sub.plan?'on':''}"><b>${esc(x.n)}</b><span class="pr">${rub(x.price)} <s>/ мес</s></span><s>до ${x.limit} клиентов · ${esc(x.d)}</s>
+      <button class="btn ${x.id===P.sub.plan?'gh':''} sm" data-plan="${x.id}" ${x.id===P.sub.plan?'disabled':''}>${x.id===P.sub.plan?'Текущий':'Выбрать'}</button></div>`).join('')}</div><div class="hint">Смена тарифа вступает в силу со следующего платежа; лимит клиентов — сразу.</div>`});
+  $('#btnHist').onclick=()=>openModal({title:'История платежей', body:`<table class="tbl"><thead><tr><th>Дата</th><th>Тариф</th><th class="r">Сумма</th><th>Карта</th></tr></thead><tbody>
+      ${['2026-09-12','2026-08-12','2026-07-12','2026-06-12'].map(d=>`<tr><td>${dlong(d)}</td><td>${esc(pl.n)} · месяц</td><td class="r">${rub(pl.price)}</td><td>${esc(P.sub.card)}</td></tr>`).join('')}</tbody></table>`});
+  $('#btnCancel').onclick=()=>openModal({title:'Отменить подписку', body:`<p class="lead">Доступ сохранится до <b>${dlong(P.sub.until)}</b>, потом кабинет станет только для чтения: клиенты увидят уже назначенные тренировки, новые назначить будет нельзя.</p>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Оставить подписку</button><button class="btn rm" data-close id="mdCancel">Отменить</button>`});
+}
+document.addEventListener('click', e=>{
+  if(e.target.closest('[data-close]') || e.target===$('#ov')) closeModal();
+  const pl = e.target.closest('[data-plan]'); if(pl){ P.sub.plan=pl.dataset.plan; save('Тариф изменён — с ' + dlong(P.sub.until)); closeModal(); render() }
+  if(e.target.closest('#mdPass')){ closeModal(); toast('Пароль изменён') }
+  if(e.target.closest('#mdDel')) toast('В прототипе аккаунт не удаляется');
+  if(e.target.closest('#mdCancel')) toast('Подписка отменена — доступ до ' + dlong(P.sub.until));
+});
+render();
+initShell({page:'profile.html', title:'Профиль'});
+</script>
+</body>
+</html>

@@ -22,7 +22,7 @@
 | **[Конструктор](https://serjnsk.github.io/trenergram/prototype/constructor.html)** | **Ядро продукта — см. разбор функций ниже** |
 | [База упражнений](https://serjnsk.github.io/trenergram/prototype/exercises.html) | Стартовая база + собственные упражнения тренера, поиск и фильтры |
 | [Шаблоны](https://serjnsk.github.io/trenergram/prototype/templates.html) | Библиотека пяти уровней — упражнение → блок → тренировка → неделя → программа |
-| [Бренд и профиль](https://serjnsk.github.io/trenergram/prototype/brand.html) | Оформление профиля тренера, пригласительная ссылка, живой превью в телефоне |
+| [Профиль](https://serjnsk.github.io/trenergram/prototype/profile.html) | Настройки тренера: основные данные, подписка и лимит клиентов, рабочие настройки, уведомления, безопасность; ссылка-приглашение |
 | [Карта сайта](https://serjnsk.github.io/trenergram/prototype/sitemap.html) | Объём MVP и то, что сознательно осталось за скобками первой версии |
 
 Конструктор (`constructor.html`) — точная копия дизайн-концепции `showcase/01-strava/trainer.html` (тег `archive/screens-4-styles`), доведённая до полноценного MVP остальными восемью страницами в том же визуальном языке.
