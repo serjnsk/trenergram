@@ -52,7 +52,7 @@ function matchEX(e){
 const EX_COLS = [
   {k:'ru', n:'Упражнение', sort:byStr('ru'), cell:e=>
     `<div class="cellname">
-       <span class="thumb ${e.m==='pending'?'pending':''}" style="width:30px;height:30px;font-size:10px">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
+       <span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:11px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
        <div style="min-width:0">
          <div class="n">${esc(e.ru)}</div>
          <div class="sub">${esc(e.en)}</div>
