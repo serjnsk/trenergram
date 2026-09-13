@@ -432,7 +432,7 @@ function renderSrc(){
     box.innerHTML = Object.entries(g).map(([k,arr])=>`
       <div class="grpttl"><span class="lab">${esc(k)}</span><span class="ln"></span><span class="n">${arr.length}</span></div>
       ${arr.map(e=>`<div class="exc" draggable="true" data-ex="${e.id}">
-        <span class="thumb ${e.m==='pending'?'pending':''}">${e.m==='ok'?esc(initials(e)):'·'}</span>
+        <span class="thumb ${e.m==='pending'?'pending':''}">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='ok'?esc(initials(e)):'·'}</span>
         <span class="body"><span class="nm">${esc(e.ru)}</span>
           <span class="en">${esc(e.en)} · ${esc(e.eq)}</span></span>
         <button class="add" data-addex="${e.id}" title="В открытый блок">${ICON.plus}</button>

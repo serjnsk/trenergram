@@ -48,7 +48,8 @@ const EX = [
  {id:'squat',  ru:'Приседания со штангой',      en:'Back Squat',       g:'Ноги',    eq:'Штанга',   pm:'squat',  u:['кг','повт'],              m:'ok',      own:false},
  {id:'fsquat', ru:'Фронтальный присед',          en:'Front Squat',      g:'Ноги',    eq:'Штанга',   pm:'fsquat', u:['кг','повт'],              m:'ok',      own:false},
  {id:'dead',   ru:'Становая тяга',               en:'Deadlift',         g:'Спина',   eq:'Штанга',   pm:'dead',   u:['кг','повт'],              m:'ok',      own:false},
- {id:'bench',  ru:'Жим лёжа',                    en:'Bench Press',      g:'Грудь',   eq:'Штанга',   pm:'bench',  u:['кг','повт'],              m:'ok',      own:false},
+ {id:'bench',  ru:'Жим лёжа',                    en:'Bench Press',      g:'Грудь',   eq:'Штанга',   pm:'bench',  u:['кг','повт'],              m:'ok',      own:false,
+  gif:'assets/ex/0025'},   /* сэмпл EDB (exercisedb.io): 0025 barbell bench press, 180/360/720/1080 */
  {id:'press',  ru:'Жим стоя',                    en:'Strict Press',     g:'Плечи',   eq:'Штанга',   pm:'press',  u:['кг','повт'],              m:'ok',      own:false},
  {id:'clean',  ru:'Взятие на грудь в стойку',    en:'Power Clean',      g:'ТА',      eq:'Штанга',   pm:'clean',  u:['кг','повт'],              m:'pending', own:false},
  {id:'snatch', ru:'Рывок',                       en:'Snatch',           g:'ТА',      eq:'Штанга',   pm:'snatch', u:['кг','повт'],              m:'pending', own:false},
@@ -932,6 +933,11 @@ function sessionsOn(date){
 }
 
 /* ═══════ Состояние приложения (общее между страницами) ═══════ */
+
+/* ═══ Демо-медиа: одна GIF из сэмпла EDB на все упражнения — чтобы посмотреть,
+   как демонстрации выглядят в общем лайауте (таблица, панели, конструктор).
+   В продукте у каждого упражнения своя. ═══ */
+EX.forEach(e => { if(!e.gif) e.gif = 'assets/ex/0025' });
 
 /* ═══ 50 клиентов, у каждого — своя индивидуальная программа (командных в MVP
    нет). Объём, на котором должны работать списки, поиск, календарь и
