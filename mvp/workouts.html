@@ -16,10 +16,17 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page"><div class="pagewrap">
-        <div class="phead" id="pagehead"></div>
-        <div id="page"></div>
-      </div></div>
+    <div class="page">
+      <div class="cons">
+        <main><section class="pane" id="page"></section></main>
+        <aside class="rail" data-min="Тренировки">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead"><div class="railttl" id="railttl">Тренировки</div></div>
+          <div class="railbody" id="railbody"></div>
+          <div class="railfoot" id="railfoot"></div>
+        </aside>
+      </div>
+    </div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
@@ -29,9 +36,10 @@
 <script>
 /* ═══════════ БАЗА ТРЕНИРОВОК (TPL-2) ═══════════
    Уровень выше блока: тренировка — набор блоков на один день. */
-const cfg = { level:'тренировка', ph:'Поиск тренировки…', add:'Сохранить тренировку' };
+const cfg = { level:'тренировка', title:'Тренировки', railTitle:'Состав', ph:'Поиск тренировки…', add:'Сохранить тренировку' };
 renderLib(cfg);
-initShell({page:'workouts.html', title:'База тренировок'});
+initShell({page:'workouts.html'});
+initRail();
 </script>
 </body>
 </html>

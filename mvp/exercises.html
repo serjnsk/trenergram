@@ -16,10 +16,17 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page"><div class="pagewrap">
-        <div class="phead" id="pagehead"></div>
-        <div id="page"></div>
-      </div></div>
+    <div class="page">
+      <div class="cons">
+        <main><section class="pane" id="page"></section></main>
+        <aside class="rail" data-min="Группы и упражнение">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead"><div class="railttl" id="railttl">Группы и упражнение</div></div>
+          <div class="railbody" id="railbody"></div>
+          <div class="railfoot" id="railfoot"></div>
+        </aside>
+      </div>
+    </div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
@@ -28,7 +35,7 @@
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ БАЗА УПРАЖНЕНИЙ (EX-1, EX-2, EX-3) ═══════════ */
-const V = { q:'', eq:'', own:false, g:'Все' };
+const V = { q:'', eq:'', own:false, g:'Все', sel:null };
 
 function matchEX(e){
   if(V.g!=='Все' && e.g!==V.g) return false;
@@ -63,56 +70,45 @@ const EX_COLS = [
 
 function render(){
   const list = EX.filter(matchEX);
-  $('#page').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <label class="search" style="width:240px">${ICON.search}<input id="q" placeholder="Поиск упражнения…" value="${esc(V.q)}"></label>
+  if(!list.some(e=>e.id===V.sel)) V.sel = list.length ? list[0].id : null;
+  $('#page').innerHTML = paneHead('Упражнения', EX.length, `
+      <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск упражнения…" value="${esc(V.q)}"></label>
       <select class="inp" id="eq" style="width:170px">
         <option value="">Любое оснащение</option>
         ${EQUIP.map(x=>`<option ${V.eq===x?'selected':''}>${esc(x)}</option>`).join('')}
       </select>
-      <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--tx2);cursor:pointer">
-        <input type="checkbox" id="own" ${V.own?'checked':''}> Только свои
-      </label>
-      <span class="sp" style="flex:1"></span>
-      <button class="btn" id="btnAdd">${ICON.plus} Добавить упражнение</button>
-    </div>
-    <div class="filters" style="margin-bottom:16px">
-      ${GROUPS.map(g=>`<button data-g="${esc(g)}" class="${V.g===g?'on':''}">${esc(g)}</button>`).join('')}
-    </div>
-
-    ${list.length ? `<div class="card">${dataTable('ex', EX_COLS, list)}</div>` : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`}
-
-    <div class="cols3" style="margin-top:26px">
-      <div class="kpi"><span class="k">${ICON.dumb} Стартовая база</span><div class="v">${EX.filter(e=>!e.own).length}</div><div class="d">упражнений с техникой и метриками</div></div>
-      <div class="kpi"><span class="k">${ICON.plus} Свои упражнения</span><div class="v acc">${EX.filter(e=>e.own).length}</div><div class="d">видны только вам и вашим клиентам</div></div>
-      <div class="kpi"><span class="k">${ICON.star} Расчёт от максимума</span><div class="v">${EX.filter(e=>e.pm).length}</div><div class="d">упражнений с процентовкой от ПМ</div></div>
-    </div>`;
-
-  bindTable('ex', render, id=>openDetail(byId(id)));
-  $$('.filters [data-g]').forEach(b=>b.onclick=()=>{ V.g=b.dataset.g; render() });
+      <label class="chk"><input type="checkbox" id="own" ${V.own?'checked':''}> Только свои</label>
+      <span class="sp"></span>
+      <button class="btn" id="btnAdd">${ICON.plus} Добавить упражнение</button>`)
+    + (list.length ? dataTable('ex', EX_COLS, list) : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
+  bindTable('ex', render, id=>{ V.sel = id; markRow('ex', id); renderRail() });
+  markRow('ex', V.sel);
   $('#eq').onchange=e=>{ V.eq=e.target.value; render() };
   $('#own').onchange=e=>{ V.own=e.target.checked; render() };
   $('#q').oninput=e=>{ V.q=e.target.value; render() };
   $('#btnAdd').onclick=openAddModal;
   const qEl=$('#q'); qEl.focus({preventScroll:true}); qEl.setSelectionRange(V.q.length,V.q.length);
+  renderRail();
 }
-
-function openDetail(e){
-  openModal({title:e.ru, body:`
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
-      <div class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:12px">${e.m==='pending'?'':initials(e)}</div>
-      <div><div style="font-size:12.5px;color:var(--tx3)">${esc(e.en)}</div>
-        <div style="display:flex;gap:6px;margin-top:5px">
-          <span class="chip">${esc(e.g)}</span><span class="chip">${esc(e.eq)}</span>${e.pm?`<span class="chip acc">Максимум: ${esc(PMNAMES[e.pm]||e.pm)}</span>`:''}
-        </div>
-      </div>
-    </div>
-    <div class="lab">Единицы записи результата</div>
-    <div style="display:flex;gap:6px;margin-bottom:14px">${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</div>
-    ${TECH[e.id]?`<div class="lab">Техника</div><div style="font-size:13px;color:var(--tx2);line-height:1.55">${esc(TECH[e.id])}</div>`:''}
-  `, foot:`<a class="btn gh" href="constructor.html">Использовать в тренировке</a>`});
+/* Правая панель: группы мышц с количеством и карточка выбранного упражнения. */
+function renderRail(){
+  const e = byId(V.sel);
+  const groups = rlist(GROUPS.map(g=>[g, g, g==='Все' ? EX.length : EX.filter(x=>x.g===g).length]), V.g, 'g');
+  const prev = e ? `
+    <div class="rhead">Упражнение</div>
+    <div class="rprev">
+      <div class="avrow"><span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:12px;border-radius:var(--rad-m)">${e.m==='pending'?'':initials(e)}</span>
+        <span class="av-t"><b>${esc(e.ru)}</b><s>${esc(e.en)}</s></span></div>
+      <div class="chips"><span class="chip">${esc(e.g)}</span><span class="chip">${esc(e.eq)}</span>${e.pm?`<span class="chip acc">ПМ: ${esc(PMNAMES[e.pm]||e.pm)}</span>`:''}${e.own?'<span class="chip ok">своё</span>':''}</div>
+      <div class="rhead" style="padding-left:0">Единицы записи</div>
+      <div class="chips">${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</div>
+      ${TECH[e.id]?`<div class="rhead" style="padding-left:0">Техника</div><div class="rtext">${esc(TECH[e.id])}</div>`:''}
+      ${(ALIAS[e.id]||[]).length?`<div class="rhead" style="padding-left:0">Парсер узнаёт</div><div class="rtext">${esc((ALIAS[e.id]||[]).join(', '))}</div>`:''}
+      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} В тренировку</a></div>
+    </div>` : '';
+  railSet({title:'Группы и упражнение', body:`<div class="rhead">Группы</div>${groups}${prev}`, foot:`Стартовая база ${EX.filter(x=>!x.own).length} · свои ${EX.filter(x=>x.own).length} · с расчётом от ПМ ${EX.filter(x=>x.pm).length}`});
+  $$('#railbody [data-g]').forEach(b=>b.onclick=()=>{ V.g=b.dataset.g; render() });
 }
-
 function openAddModal(){
   openModal({title:'Добавить упражнение', wide:false, body:`
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -132,7 +128,8 @@ function openAddModal(){
   };
 }
 render();
-initShell({page:'exercises.html', title:'База упражнений'});
+initShell({page:'exercises.html'});
+initRail();
 </script>
 </body>
 </html>

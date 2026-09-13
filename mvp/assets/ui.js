@@ -168,7 +168,7 @@ document.addEventListener('keydown', e=>{
 
    В каждой базе рядом лежит своё и общее (как у упражнений, EX-2):
    личное помечено чипом и всегда выше, внутри личного — новое первым. */
-const LIB = { q:'', own:false, folder:'Все', tab:0 };
+const LIB = { q:'', own:false, folder:'Все', tab:0, sel:null };
 
 const libSort = (a,b) =>
   a.own !== b.own ? (a.own ? -1 : 1)                       /* своё выше общего */
@@ -221,9 +221,31 @@ function libCols(level){
     ownCol, usedCol];
 }
 
-/* cfg: {level, add, tabs:[{n,level}]} — tabs только у базы программ (Программы / Недели) */
+/* ═══════════ ОБЩИЙ КАРКАС СПИСКОВ ═══════════
+   Карточка во всю рабочую зону (шапка с поиском липкая) + правая панель
+   контекста: фильтры и предпросмотр выбранной строки. Тот же скелет, что у
+   конструктора и календаря, — страница адаптируется под любую ширину. */
+const railSet = ({title, body, foot}) => {
+  const t = $('#railttl'), bd = $('#railbody'), f = $('#railfoot');
+  if(t && title != null) t.textContent = title;
+  if(bd) bd.innerHTML = body || '';
+  if(f) f.innerHTML = foot || '';
+};
+const paneHead = (title, count, controls) => `
+  <div class="pane-h">
+    <h1 class="wkttl">${esc(title)}</h1>${count != null ? `<span class="cnt">${count}</span>` : ''}
+    ${controls || ''}
+  </div>`;
+/* Подсветка выбранной строки без перерисовки таблицы — иначе теряется прокрутка. */
+function markRow(tblId, id){
+  $$(`[data-tbl="${tblId}"] tr[data-row]`).forEach(tr => tr.classList.toggle('on', tr.dataset.row === String(id)));
+}
+const rlist = (items, cur, attr) => `<div class="rlist">${items.map(([k, n, c]) =>
+  `<button data-${attr}="${esc(k)}" class="${cur===k?'on':''}"><span>${esc(n)}</span>${c != null ? `<s>${c}</s>` : ''}</button>`).join('')}</div>`;
+
+/* cfg: {level, title, ph, add} */
 function renderLib(cfg){
-  const level = cfg.tabs ? cfg.tabs[LIB.tab].level : cfg.level;
+  const level = cfg.level;
   const all = TPL.filter(t=>t.lvl===level);
   const withFolders = level==='блок';
   const list = all.filter(t=>{
@@ -232,61 +254,42 @@ function renderLib(cfg){
     if(LIB.q && norm(t.title).indexOf(norm(LIB.q))<0) return false;
     return true;
   }).sort(libSort);
+  if(!list.some(t=>t.id===LIB.sel)) LIB.sel = list.length ? list[0].id : null;
 
   const cols = libCols(level);
-  const grid = list.length
-    ? `<div class="card">${dataTable('lib-'+level, cols, list)}</div>`
-    : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`;
+  $('#page').innerHTML = paneHead(cfg.title, all.length, `
+      <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="${esc(cfg.ph)}" value="${esc(LIB.q)}"></label>
+      <label class="chk"><input type="checkbox" id="own" ${LIB.own?'checked':''}> Только свои</label>
+      <span class="sp"></span>
+      <button class="btn gh" id="btnAdd">${ICON.plus} ${esc(cfg.add)}</button>`)
+    + (list.length ? dataTable('lib-'+level, cols, list)
+       : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
 
-  $('#page').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <label class="search" style="width:250px">${ICON.search}<input id="q" placeholder="${esc(cfg.ph)}" value="${esc(LIB.q)}"></label>
-      <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--tx2);cursor:pointer">
-        <input type="checkbox" id="own" ${LIB.own?'checked':''}> Только свои
-      </label>
-      <span class="sp" style="flex:1"></span>
-      <button class="btn gh" id="btnAdd">${ICON.plus} ${esc(cfg.add)}</button>
-    </div>
-
-    ${cfg.tabs?`<div class="filters" style="margin-bottom:14px">
-      ${cfg.tabs.map((t,i)=>`<button data-tab="${i}" class="${LIB.tab===i?'on':''}">${esc(t.n)}</button>`).join('')}
-    </div>`:''}
-
-    ${withFolders?`<div class="filters" style="margin-bottom:16px">
-      ${['Все',...TPL_FOLDERS].map(f=>`<button data-folder="${esc(f)}" class="${LIB.folder===f?'on':''}">${esc(f)}</button>`).join('')}
-    </div>`:''}
-
-    ${grid}
-
-    <div class="cols2" style="margin-top:26px">
-      <div class="kpi"><span class="k">${ICON.folder} Общая база сервиса</span><div class="v">${all.filter(t=>!t.own).length}</div><div class="d">доступны сразу, менять нельзя — только копировать к себе</div></div>
-      <div class="kpi"><span class="k">${ICON.plus} Сохранено вами</span><div class="v acc">${all.filter(t=>t.own).length}</div><div class="d">видно только в вашем рабочем пространстве</div></div>
-    </div>`;
-
-  $$('.filters [data-tab]').forEach(b=>b.onclick=()=>{ LIB.tab=+b.dataset.tab; renderLib(cfg) });
-  $$('.filters [data-folder]').forEach(b=>b.onclick=()=>{ LIB.folder=b.dataset.folder; renderLib(cfg) });
   $('#own').onchange=e=>{ LIB.own=e.target.checked; renderLib(cfg) };
   $('#q').oninput=e=>{ LIB.q=e.target.value; renderLib(cfg) };
   $('#btnAdd').onclick=()=>toast('В конструкторе: соберите и нажмите «Сохранить в библиотеку»');
-  bindTable('lib-'+level, ()=>renderLib(cfg), id=>libDetail(tplById(id)));
+  bindTable('lib-'+level, ()=>renderLib(cfg), id=>{ LIB.sel = id; markRow('lib-'+level, id); renderLibRail(cfg) });
+  markRow('lib-'+level, LIB.sel);
+  renderLibRail(cfg);
   const qEl=$('#q'); if(qEl){ qEl.focus({preventScroll:true}); qEl.setSelectionRange(LIB.q.length,LIB.q.length) }
 }
-
-function libDetail(t){
-  if(!t) return;
-  openModal({title:t.title, body:`
-    <div style="display:flex;gap:6px;margin-bottom:14px">
-      ${t.folder?`<span class="chip">${esc(t.folder)}</span>`:''}
-      ${t.own?`<span class="chip ok">своё</span>`:`<span class="chip ghost">общая база сервиса</span>`}
-      ${t.used?`<span class="chip">использован ${t.used}×</span>`:''}
-    </div>
-    <div class="ls" style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--tx2)">${libLines(t)}</div>
-    <div class="hint">${t.own
-      ? 'Ваш шаблон: его можно переименовать, изменить и удалить.'
-      : 'Шаблон из общей базы сервиса. Изменить его нельзя — вставьте в тренировку и сохраните как свой.'}</div>`,
-    foot:`<span class="sp"></span><a class="btn" href="constructor.html">${ICON.build} Вставить в тренировку</a>`});
+function renderLibRail(cfg){
+  const level = cfg.level, all = TPL.filter(t=>t.lvl===level), t = tplById(LIB.sel);
+  const folders = level==='блок' ? `<div class="rhead">Папки</div>${rlist([['Все','Все',all.length], ...TPL_FOLDERS.map(f=>[f,f,all.filter(x=>x.folder===f).length])], LIB.folder, 'folder')}` : '';
+  const prev = t ? `
+    <div class="rhead">Выбрано</div>
+    <div class="rprev">
+      <b class="rt">${esc(t.title)}</b>
+      <div class="chips">${t.folder?`<span class="chip">${esc(t.folder)}</span>`:''}${t.own?`<span class="chip ok">своё</span>`:`<span class="chip ghost">общая база</span>`}${t.used?`<span class="chip">${t.used}×</span>`:''}${t.fmt?`<span class="chip acc">${esc(fmtLabel(t.fmt))}</span>`:''}</div>
+      <div class="rlines">${libLines(t)}</div>
+      <div class="hint">${t.own ? 'Ваш шаблон: можно переименовать, изменить и удалить.' : 'Из общей базы: изменить нельзя — вставьте в тренировку и сохраните как свой.'}</div>
+      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} Вставить в тренировку</a></div>
+    </div>` : '<div class="rprev"><div class="hint">Выберите строку — здесь появится состав.</div></div>';
+  railSet({title: cfg.railTitle || 'Контекст', body: folders + prev,
+    foot: `Общая база ${all.filter(t=>!t.own).length} · сохранено вами ${all.filter(t=>t.own).length}`});
+  $$('#railbody [data-folder]').forEach(b=>b.onclick=()=>{ LIB.folder=b.dataset.folder; renderLib(cfg) });
 }
-
+function libDetail(t){ if(t){ LIB.sel = t.id } }
 
 /* ═══════════ ТАЙМЛАЙН ДНЯ — общий для дашборда и дня календаря ═══════════
    Строка — занятие, а не клиент (см. sessionsOn в data.js). Держим в одном

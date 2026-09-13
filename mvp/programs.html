@@ -16,10 +16,17 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page"><div class="pagewrap">
-        <div class="phead" id="pagehead"></div>
-        <div id="page"></div>
-      </div></div>
+    <div class="page">
+      <div class="cons">
+        <main><section class="pane" id="page"></section></main>
+        <aside class="rail" data-min="Программы">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead"><div class="railttl" id="railttl">Программы</div></div>
+          <div class="railbody" id="railbody"></div>
+          <div class="railfoot" id="railfoot"></div>
+        </aside>
+      </div>
+    </div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
@@ -31,9 +38,10 @@
    Вкладки «Недели» больше нет: недели как сущности не существует. Программа —
    упорядоченная последовательность дней, которую тренер набирает в любом
    ритме; хранить и искать «недели» отдельно стало нечем. */
-const cfg = { level:'программа', ph:'Поиск программы…', add:'Сохранить программу' };
+const cfg = { level:'программа', title:'Программы', railTitle:'Состав', ph:'Поиск программы…', add:'Сохранить программу' };
 renderLib(cfg);
-initShell({page:'programs.html', title:'База программ'});
+initShell({page:'programs.html'});
+initRail();
 </script>
 </body>
 </html>

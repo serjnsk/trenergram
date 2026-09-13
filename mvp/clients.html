@@ -16,10 +16,17 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page"><div class="pagewrap">
-        <div class="phead" id="pagehead"></div>
-        <div id="page"></div>
-      </div></div>
+    <div class="page">
+      <div class="cons">
+        <main><section class="pane" id="page"></section></main>
+        <aside class="rail" data-min="Клиент">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead"><div class="railttl" id="railttl">Клиент</div></div>
+          <div class="railbody" id="railbody"></div>
+          <div class="railfoot" id="railfoot"></div>
+        </aside>
+      </div>
+    </div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
@@ -27,11 +34,19 @@
 <script src="assets/nav.js"></script>
 <script src="assets/ui.js"></script>
 <script>
-/* ═══════════ КЛИЕНТЫ — рабочий список тренера ═══════════ */
+/* ═══════════ КЛИЕНТЫ — рабочий список тренера ═══════════
+   Таблица во всю ширину, справа — карточка выбранного клиента: программа,
+   докуда составлено, активность, максимумы, переходы в конструктор и календарь. */
 const CS = {k:null, dir:1};
-const V = {q:'', f:'all'};
+const V = {q:'', f:'all', sel:null};
 const unread = c => c.comments.filter((cm,i)=>!cm.reply && !STATE.replied[c.id+':'+i]).length;
 const needsAttention = c => unread(c)>0 || (c.prog && c.last && daysBetween(c.last,TODAY)>=3);
+const runway = c => { if(!c.prog) return null; const n = composedDays(c.prog); return daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1))) };
+const runwayChip = c => { const r = runway(c);
+  if(r === null) return '<span class="chip ghost">без программы</span>';
+  if(r < 0) return '<span class="chip rm">кончилась</span>';
+  if(r === 0) return '<span class="chip warn">сегодня</span>';
+  return `<span class="chip ${r<=7?'warn':'ghost'}">${r} ${plural(r,'день','дня','дней')}</span>`; };
 
 function match(c){
   if(V.f==='noprog' && c.prog) return false;
@@ -39,39 +54,31 @@ function match(c){
   if(V.q && norm(c.n).indexOf(norm(V.q))<0) return false;
   return true;
 }
-
 function render(){
   let list = CLIENTS.filter(match);
-  /* Сортировка по столбцу: на шести клиентах не нужна, на полусотне — основной
-     способ найти нужного. Ключи те же, что в шапке таблицы. */
   const SORTS = {
     n:    (a,b)=>a.n.localeCompare(b.n),
     prog: (a,b)=>String((program(a.prog)||{}).title||'').localeCompare(String((program(b.prog)||{}).title||'')),
+    run:  (a,b)=>(runway(a) ?? 9999)-(runway(b) ?? 9999),
     done: (a,b)=>(a.done/a.plan||0)-(b.done/b.plan||0),
     last: (a,b)=>String(a.last||'').localeCompare(String(b.last||'')),
   };
   if(CS.k && SORTS[CS.k]) list = [...list].sort((a,b)=>SORTS[CS.k](a,b)*CS.dir);
+  if(!list.some(c=>c.id===V.sel)) V.sel = list.length ? list[0].id : null;
   const FILTERS = [['all','Все'],['noprog','Без программы'],['attn','Требуют внимания']];
+  const th = (k, n) => `<th class="${k?'srt ':''}${CS.k===k?(CS.dir>0?'up':'dn'):''}" ${k?`data-sort="${k}"`:''}>${n}</th>`;
 
-  $('#page').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск клиента…" value="${esc(V.q)}"></label>
-      <div class="filters">${FILTERS.map(([k,n])=>`<button data-f="${k}" class="${V.f===k?'on':''}">${esc(n)}</button>`).join('')}</div>
-    </div>
-
-    <div class="card">
-      ${list.length ? `<table class="tbl" data-tbl="cli"><thead><tr>
-        <th class="srt ${CS.k==='n'?(CS.dir>0?'up':'dn'):''}" data-sort="n">Клиент</th>
-        <th class="srt ${CS.k==='prog'?(CS.dir>0?'up':'dn'):''}" data-sort="prog">Программа</th>
-        <th class="srt ${CS.k==='done'?(CS.dir>0?'up':'dn'):''}" data-sort="done">Прогресс</th>
-        <th class="srt ${CS.k==='last'?(CS.dir>0?'up':'dn'):''}" data-sort="last">Последняя активность</th>
-        <th>Динамика приседа</th>
+  $('#page').innerHTML = paneHead('Клиенты', CLIENTS.length, `
+      <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск по имени…" value="${esc(V.q)}"></label>
+      <div class="filters">${FILTERS.map(([k,n])=>`<button data-f="${k}" class="${V.f===k?'on':''}">${esc(n)}</button>`).join('')}</div>`)
+    + (list.length ? `<div class="tblwrap"><table class="tbl" data-tbl="cli"><thead><tr>
+        ${th('n','Клиент')}${th('prog','Программа')}${th('run','Составлено на')}${th('done','Прогресс')}${th('last','Последняя активность')}${th(null,'Динамика приседа')}
       </tr></thead><tbody>
         ${list.map(c=>{
           const u = unread(c), pr = program(c.prog);
           const idle = c.last && daysBetween(c.last,TODAY)>=3;
-          const sq = c.hist.squat;
-          return `<tr class="click" data-id="${c.id}">
+          const sq = c.hist && c.hist.squat;
+          return `<tr class="click ${c.id===V.sel?'on':''}" data-row="${c.id}">
             <td><div class="cellname">
               <span class="av m">${esc(c.ini)}</span>
               <div>
@@ -80,26 +87,47 @@ function render(){
               </div>
             </div></td>
             <td>${pr?esc(pr.title):`<span style="color:var(--tx4)">без программы</span>`}</td>
+            <td>${runwayChip(c)}</td>
             <td>${c.plan?`<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:64px"><i style="width:${Math.round(c.done/c.plan*100)}%"></i></div><span style="font-size:12px;color:var(--tx3)">${c.done}/${c.plan}</span></div>`:'<span style="color:var(--tx4)">—</span>'}</td>
             <td>${c.last?`<span class="chip ${idle?'warn':'ok'}">${ago(c.last)}</span>`:`<span class="chip ghost">не заходил</span>`}</td>
             <td>${sq?`<div style="display:flex;align-items:center;gap:9px">${sparkline(sq.map(h=>h[1]),56,20)}<span style="font-size:12.5px;font-weight:600">${fmtNum(c.pm.squat)} кг</span></div>`:'<span style="color:var(--tx4)">—</span>'}</td>
           </tr>`;
         }).join('')}
-      </tbody></table>` : `<div class="empty"><div class="t">Никого не нашли</div><div class="d">Измените поиск или фильтр</div></div>`}
-    </div>
-    <div class="hint">Клиент попадает в этот список сам, как только перейдёт по <a href="profile.html" style="color:var(--tx3)">пригласительной ссылке</a> и войдёт по номеру телефона.</div>`;
+      </tbody></table></div>` : `<div class="empty"><div class="t">Никого не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
 
   $$('[data-tbl="cli"] th[data-sort]').forEach(th=>th.onclick=()=>{
     if(CS.k === th.dataset.sort) CS.dir = -CS.dir; else { CS.k = th.dataset.sort; CS.dir = 1 }
     render();
   });
-  $$('tr[data-id]').forEach(r=>r.onclick=()=>location.href='client.html?id='+r.dataset.id);
+  $$('tr[data-row]').forEach(r=>{ r.onclick=()=>{ V.sel = r.dataset.row; markRow('cli', V.sel); renderRail() }; r.ondblclick=()=>location.href='client.html?id='+r.dataset.row });
   $$('.filters button').forEach(b=>b.onclick=()=>{ V.f=b.dataset.f; render() });
   $('#q').oninput=e=>{ V.q=e.target.value; render() };
   $('#q').focus({preventScroll:true}); $('#q').setSelectionRange(V.q.length,V.q.length);
+  renderRail();
+}
+function renderRail(){
+  const c = client(V.sel);
+  if(!c){ railSet({title:'Клиент', body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
+  const p = program(c.prog), n = c.prog ? composedDays(c.prog) : 0, u = unread(c);
+  railSet({title:'Клиент', body:`
+    <div class="rprev">
+      <div class="avrow"><span class="av">${esc(c.ini)}</span><span class="av-t"><b>${esc(c.n)}</b><s>${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</s></span></div>
+      <div class="rhead">Программа</div>
+      ${p ? `<div class="kv"><s>Название</s><b>${esc(p.title)}</b><s>Сроки</s><b>${dm(p.start)} – ${dm(dayDate(c.prog, p.days-1))}</b><s>Составлено</s><b>${n >= p.days ? 'целиком' : n ? 'до ' + dm(dayDate(c.prog, n-1)) : 'нет'} ${runwayChip(c)}</b></div>`
+          : '<div class="hint">Программа не назначена — клиент видит пустой календарь.</div>'}
+      <div class="rhead">Активность</div>
+      <div class="kv"><s>Последняя</s><b>${c.last ? ago(c.last) : 'не заходил'}</b><s>Серия</s><b>${c.streak||0} ${plural(c.streak||0,'день','дня','дней')}</b><s>Без ответа</s><b>${u ? `<span class="chip acc">${u}</span>` : '—'}</b></div>
+      <div class="rhead">Максимумы</div>
+      <div class="kv">${[['squat','Присед'],['dead','Становая'],['bench','Жим лёжа'],['press','Жим стоя']].map(([k,nm])=>`<s>${nm}</s><b>${c.pm && c.pm[k] ? fmtNum(c.pm[k])+' кг' : '—'}</b>`).join('')}</div>
+      <div class="acts">
+        <a class="btn sm" href="client.html?id=${c.id}">Открыть карточку</a>
+        ${c.prog ? `<a class="btn gh sm" href="constructor.html?client=${c.id}">В конструктор</a><a class="btn gh sm" href="calendar.html?client=${c.id}">Календарь</a>` : `<a class="btn gh sm" href="programs.html">Назначить программу</a>`}
+      </div>
+    </div>`, foot: 'Двойной клик по строке открывает карточку клиента.'});
 }
 render();
-initShell({page:'clients.html', title:'Клиенты'});
+initShell({page:'clients.html'});
+initRail();
 </script>
 </body>
 </html>
