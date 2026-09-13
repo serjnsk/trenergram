@@ -28,8 +28,10 @@
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ КАРТОЧКА КЛИЕНТА ═══════════
-   Шапка-контакт: фото, имя, физические данные, контакты ссылками, даты
-   (рождение, с нами с, оплачено до), заметка тренера. Ниже липкие табы-якоря:
+   Шапка по паттерну CRM-профиля (Zoho/HubSpot): полоса идентификации (фото,
+   имя, пол и возраст, действия) → сетка подписанных полей (телефон, Telegram,
+   Max ссылками; с нами с; оплачено до; последняя активность — точка-статус) →
+   заметка тренера строкой на всю ширину. Ниже липкие табы-якоря:
    Календарь (две недели) · События · Замеры (в динамике) · Максимумы (1ПМ/3ПМ
    с динамикой). Один экран без переходов. */
 const CID = new URLSearchParams(location.search).get('id') || STATE.curClient || 'c1';
@@ -45,8 +47,10 @@ const CI = {
   max:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 13V3l5 6 5-6v10"/></svg>',
 };
 const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear() };
-const paidChip = () => { if(!C.paidUntil) return '<span class="chip ghost">оплата не внесена</span>'; const r = daysBetween(TODAY, C.paidUntil);
-  return r < 0 ? `<span class="chip rm">оплата до ${dm(C.paidUntil)} — просрочена</span>` : `<span class="chip ${r<=7?'warn':'ok'}">оплачено до ${dm(C.paidUntil)}</span>` };
+const dshort = iso => dm(iso)+'.'+iso.slice(0,4);
+const paidKV = () => { if(!C.paidUntil) return '<span class="v"><i class="dot"></i>не внесена</span>'; const r = daysBetween(TODAY, C.paidUntil);
+  return r < 0 ? `<span class="v rm"><i class="dot"></i>${dshort(C.paidUntil)} <s>· просрочена</s></span>` : `<span class="v ${r<=7?'warn':'ok'}"><i class="dot"></i>${dshort(C.paidUntil)} <s>· ещё ${r} ${plural(r,'день','дня','дней')}</s></span>` };
+const actKV = () => !C.last ? '<span class="v"><i class="dot"></i>ещё не заходил</span>' : `<span class="v ${daysBetween(C.last,TODAY)>=3?'warn':'ok'}"><i class="dot"></i>${ago(C.last)}</span>`;
 
 /* Две недели — текущая и следующая — теми же карточками, что в календаре. */
 function laneHTML(){
@@ -114,21 +118,22 @@ function render(){
   const P = C.prog ? program(C.prog) : null;
   $('#page').innerHTML = `
     <div class="chead">
-      <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
-      <div class="cinfo">
-        <div class="nm">${esc(C.n)}</div>
-        <div class="cline phys">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</div>
-        <div class="cline contacts">
-          <a class="cc" href="tel:${esc((C.phone||'').replace(/[^\d+]/g,''))}" title="Позвонить">${CI.phone}<span>${esc(C.phone||'—')}</span></a>
-          <a class="cc" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}<span>${esc(C.tg||'—')}</span><s>Telegram</s></a>
-          <a class="cc" href="#" title="Написать в Max" data-max>${CI.max}<span>${esc(C.max||'—')}</span><s>Max</s></a>
+      <div class="chead-top">
+        <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
+        <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</div></div>
+        <div class="cacts">
+          ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
         </div>
-        <div class="cline dates"><span><s>С нами с</s>${dlong(C.since)}</span><i>·</i>${paidChip()}<i>·</i><span class="chip ${!C.last ? 'ghost' : daysBetween(C.last,TODAY)>=3 ? 'warn' : 'ok'}">${C.last ? 'был '+ago(C.last) : 'ещё не заходил'}</span></div>
-        <label class="cnote"><span>${ICON.chat} Заметка тренера · клиент не видит</span><input id="fNote" value="${esc(C.note||'')}" placeholder="Что важно помнить об этом клиенте…"></label>
       </div>
-      <div class="cacts">
-        ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
+      <div class="cgrid">
+        <div class="cf"><span class="k">Телефон</span><a class="v" href="tel:${esc((C.phone||'').replace(/[^\d+]/g,''))}" title="Позвонить">${CI.phone}${esc(C.phone||'—')}</a></div>
+        <div class="cf"><span class="k">Telegram</span><a class="v" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}${esc(C.tg||'—')}</a></div>
+        <div class="cf"><span class="k">Max</span><a class="v" href="#" title="Написать в Max" data-max>${CI.max}${esc(C.max||'—')}</a></div>
+        <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
+        <div class="cf"><span class="k">Оплачено до</span>${paidKV()}</div>
+        <div class="cf"><span class="k">Последняя активность</span>${actKV()}</div>
       </div>
+      <label class="cnote"><span class="k">${ICON.chat} Заметка тренера <i>· клиент не видит</i></span><input id="fNote" value="${esc(C.note||'')}" placeholder="Что важно помнить об этом клиенте…"></label>
     </div>
 
     <nav class="ctabs" id="ctabs">${SECTIONS.map(([k,n],i)=>`<a href="#${k}" class="${i===0?'on':''}" data-sec="${k}">${n}</a>`).join('')}</nav>
