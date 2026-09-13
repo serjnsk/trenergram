@@ -901,3 +901,6 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .act .n{width:26px;height:26px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);font-size:11px;font-weight:700;display:grid;place-items:center;flex:none}
 .act .t{flex:1;min-width:0}
 .act .t s{display:block;text-decoration:none;font-size:11.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dkpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:12px 0 6px}
+.dkpis .kpi{background:var(--s1)}
+.dash2{margin-top:8px}

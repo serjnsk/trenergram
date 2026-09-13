@@ -16,17 +16,9 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page">
-      <div class="cons">
-        <main><section class="pane" id="page"></section></main>
-        <aside class="rail" data-min="Аккаунт">
-          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
-          <div class="railhead"><div class="railttl" id="railttl">Аккаунт</div></div>
-          <div class="railbody" id="railbody"></div>
-          <div class="railfoot" id="railfoot"></div>
-        </aside>
-      </div>
-    </div>
+    <div class="page"><div class="pagewrap wide" style="padding-top:14px">
+        <section class="pane" id="page"></section>
+      </div></div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
@@ -100,8 +92,10 @@ const NEED = new Set(['q','prog','miss','new']);
 function render(){
   const ev = events(), need = ev.filter(e=>NEED.has(e.t)), info = ev.filter(e=>!NEED.has(e.t));
   const dt = new Date(TODAY+'T00:00:00');
+  const st = stats();
   $('#page').innerHTML = paneHead('Дашборд', null, `<span class="ph-sub">${['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(TODAY)]}, ${humanDate(TODAY)}</span><span class="sp"></span>`)
-    + `<div class="dash2">
+    + `<div class="dkpis">${st.map(s=>kpiHTML(s)).join('')}</div>
+      <div class="dash2">
         <div class="col"><div class="colh"><b>Требует действия</b><span class="n">${need.length}</span></div>${feedHTML(need)}</div>
         <div class="col"><div class="colh"><b>Что произошло</b><span class="n">${info.length}</span></div>${feedHTML(info)}</div>
       </div>`;
@@ -112,20 +106,9 @@ function render(){
     row.querySelector('[data-send]').onclick=()=>{ const v=row.querySelector('input').value.trim(); if(!v) return; const [cid,i]=key.split(':'); client(cid).comments[+i].reply=v; STATE.replied[key]=true; saveState(); toast('Ответ отправлен'); render() };
   });
   $$('.fev.t-pr .btn').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Проценты в назначенных тренировках пересчитаны от нового максимума') });
-  renderRail();
-}
-function renderRail(){
-  const st = stats();
-  railSet({title:'Аккаунт', body:`
-    <div class="rkpis">${st.map(s=>kpiHTML(s,'sm')).join('')}</div>
-    <div class="rhead">Очередь составления</div>
-    <div class="rprev" style="padding-top:0">${queueHTML(6)}</div>
-    <div class="acts" style="padding:0 8px"><a class="btn gh sm" href="clients.html">Все клиенты</a><a class="btn gh sm" href="calendar.html">Календарь</a></div>`,
-    foot:'Тренды — к прошлой неделе.'});
 }
 render();
 initShell({page:'index.html'});
-initRail();
 </script>
 </body>
 </html>
