@@ -1004,10 +1004,21 @@ EX.forEach(e => { if(!e.gif) e.gif = 'assets/ex/0025' });
 const translit = w => w.toLowerCase().replace(/[а-яё]/g, ch => ({а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'})[ch] ?? ch);
 CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0 ? '' : '_' + (80 + i % 19)); c.tg ||= '@' + h; c.max ||= '@' + h; });
 
+/* Оплата и замеры — демо: до какого числа внесена оплата, история веса и
+   объёмов раз в 3–5 недель. Замеры в координатах ANCHOR, сдвигаются. */
+(function seedBilling(){
+  let seed = 7; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 };
+  CLIENTS.forEach((c,i)=>{
+    c.paidUntil ||= addDays(ANCHOR, i % 9 === 4 ? -Math.floor(rnd()*6) - 1 : Math.floor(rnd()*40) + 3);
+    if(!c.meas){ const w0 = c.w || 75, n = 5; c.meas = Array.from({length:n}, (_,k)=>{ const t = n-1-k; const w = Math.round((w0 + t*(rnd()*1.2-0.3))*10)/10;
+      return {date: addDays(ANCHOR, -t*28 - Math.floor(rnd()*6)), w, waist: Math.round(w*0.98 + 3 + t*0.6), chest: Math.round(w*1.15 + 8 - t*0.3), hips: Math.round(w*1.1 + 6), fat: Math.round((14 + t*0.7 + rnd())*10)/10} }); }
+  });
+})();
+
 /* Сдвиг дат демо-данных к сегодняшнему дню. Ключи with датами занятий и
    результатов сдвигаются; даты рождения, «с нами с», создания шаблонов — нет. */
 (function(){
-  const KEYS = new Set(['start','date','last','until','d']);
+  const KEYS = new Set(['start','date','last','until','d','paidUntil']);
   const walk = o => { if(!o || typeof o !== 'object') return;
     if(Array.isArray(o)){ o.forEach(walk); return }
     for(const k of Object.keys(o)){ const v = o[k]; if(KEYS.has(k) && typeof v === 'string') o[k] = shiftDate(v); else if(v && typeof v === 'object') walk(v) } };

@@ -28,29 +28,84 @@
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ КАРТОЧКА КЛИЕНТА ═══════════
-   Шапка с фото и главными параметрами, под ней липкие табы-якоря по секциям:
-   Обзор · Программа · Результаты · Максимумы · Показатели · Общение · Данные.
-   Один экран без переходов: табы прокручивают к секции, активный подсвечивается. */
+   Шапка-контакт: фото, имя, физические данные, контакты ссылками, даты
+   (рождение, с нами с, оплачено до), заметка тренера. Ниже липкие табы-якоря:
+   Календарь (две недели) · События · Замеры (в динамике) · Максимумы (1ПМ/3ПМ
+   с динамикой). Один экран без переходов. */
 const CID = new URLSearchParams(location.search).get('id') || STATE.curClient || 'c1';
 const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
-const V = { metric: Object.keys(C.hist||{})[0] || 'squat' };
-const SECTIONS = [['overview','Обзор'],['program','Программа'],['results','Результаты'],['pm','Максимумы'],['body','Показатели'],['info','Данные']];
+const V = { metric: Object.keys(C.hist||{})[0] || 'squat', meas:'w' };
+const SECTIONS = [['cal','Календарь'],['events','События'],['meas','Замеры'],['pm','Максимумы']];
+const MEAS = [['w','Вес','кг'],['waist','Талия','см'],['chest','Грудь','см'],['hips','Бёдра','см'],['fat','Жир','%']];
+const pmLabel = k => PMNAMES[k] || k;
 const CI = {
   phone:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.5 2.5h2.2l1 2.8-1.4 1a8 8 0 0 0 4.4 4.4l1-1.4 2.8 1v2.2a1 1 0 0 1-1.1 1A11.5 11.5 0 0 1 2.5 3.6a1 1 0 0 1 1-1.1z"/></svg>',
   tg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M14 2.5 2 7.2l4.3 1.6L8 13l2.2-3 3.8-7.5z"/><path d="M6.3 8.8 14 2.5"/></svg>',
   max:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 13V3l5 6 5-6v10"/></svg>',
 };
-const resultsFor = cid => LOG.filter(r=>r.cid===cid).sort((a,b)=> a.date<b.date?1:-1);
-const pmLabel = k => PMNAMES[k] || k;
-const runway = () => { if(!C.prog) return null; const n = composedDays(C.prog); return daysBetween(TODAY, dayDate(C.prog, Math.max(0,n-1))) };
-const runwayChip = () => { const r = runway(); if(r===null) return '<span class="chip ghost">без программы</span>';
-  if(r<0) return '<span class="chip rm">кончилась</span>'; if(r===0) return '<span class="chip warn">сегодня последняя</span>';
-  return `<span class="chip ${r<=7?'warn':'ok'}">ещё ${r} ${plural(r,'день','дня','дней')}</span>` };
+const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear() };
+const paidChip = () => { if(!C.paidUntil) return '<span class="chip ghost">оплата не внесена</span>'; const r = daysBetween(TODAY, C.paidUntil);
+  return r < 0 ? `<span class="chip rm">оплата до ${dm(C.paidUntil)} — просрочена</span>` : `<span class="chip ${r<=7?'warn':'ok'}">оплачено до ${dm(C.paidUntil)}</span>` };
+
+/* Две недели — текущая и следующая — теми же карточками, что в календаре. */
+function laneHTML(){
+  const P = C.prog ? program(C.prog) : null, plan = P ? buildPlan(C.prog) : [];
+  const wk0 = addDays(TODAY, -dowMon(TODAY));
+  return `<div class="days cal compact">${Array.from({length:14},(_,k)=>{ const date=addDays(wk0,k), dt=new Date(date+'T00:00:00'); const i = P ? daysBetween(P.start, date) : -1;
+    const inProg = !!P && i>=0 && i<P.days, x = inProg && i<plan.length ? plan[i] : null; const n = x ? x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length,0) : 0;
+    const mon = (dt.getDate()===1 || k===0) ? ' '+MONTHS[dt.getMonth()].slice(0,3) : '';
+    const head=`<span class="d">${RU[dowMon(date)]} ${dt.getDate()}${mon}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+    const cls = date===TODAY ? ' today' : '';
+    if(!inProg) return `<span class="day out${cls}">${head}<span class="e">${P?'вне программы':'нет программы'}</span></span>`;
+    if(!x) return `<a class="day empty${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}<span class="e">не составлено</span></a>`;
+    return `<a class="day cmp${n?'':' rest'}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${!n?'<span class="e">отдых</span>':x.draft?'<span class="dr">черновик</span>':`<span class="t">${esc(x.title||'Без названия')}</span>`}</a>`; }).join('')}</div>`;
+}
+/* Замеры в динамике: график по выбранному показателю и таблица по датам. */
+function measHTML(){
+  const rows = (C.meas||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const [k,name,unit] = MEAS.find(m=>m[0]===V.meas) || MEAS[0];
+  const series = rows.filter(r=>r[k]!=null).map(r=>[r.date, r[k]]);
+  const last = rows[rows.length-1], prev = rows[rows.length-2];
+  const delta = (kk) => last && prev && last[kk]!=null && prev[kk]!=null ? last[kk]-prev[kk] : null;
+  return `<div class="cols2" style="grid-template-columns:1.1fr 1fr;align-items:start">
+    <div class="card">
+      <div class="cb" style="padding-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="pmpick">${MEAS.map(([kk,n])=>`<button data-meas="${kk}" class="${V.meas===kk?'on':''}">${n}</button>`).join('')}</div>
+        <span class="sp" style="flex:1"></span><span style="font-size:12.5px;color:var(--tx3)">Рост ${C.h?C.h+' см':'—'}</span></div>
+      <div class="cb chartbox" style="padding-top:0">${series.length>1 ? lineChart(series, unit) : '<div class="empty"><div class="t">Мало замеров для графика</div></div>'}</div>
+    </div>
+    <div class="card cb flush">
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Дата</th>${MEAS.map(([kk,n,u])=>`<th class="r">${n}, ${u}</th>`).join('')}</tr></thead><tbody>
+        ${rows.slice().reverse().map(r=>`<tr><td>${humanDate(r.date)}</td>${MEAS.map(([kk])=>`<td class="r num">${r[kk]!=null?fmtNum(r[kk]):'—'}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div>
+      <div class="measf">${last ? MEAS.map(([kk,n,u])=>{ const dd = delta(kk); return `<span class="mdt"><s>${n}</s><b>${last[kk]!=null?fmtNum(last[kk])+' '+u:'—'}</b>${dd!=null && dd!==0 ? `<i class="${dd<0?'dn':'up'}">${dd>0?'+':''}${fmtNum(Math.round(dd*10)/10)}</i>` : ''}</span>` }).join('') : ''}
+        <button class="btn gh sm" id="addMeas">${ICON.plus} Добавить замер</button></div>
+    </div>
+  </div>`;
+}
+/* Максимумы: 1ПМ и 3ПМ по всем зафиксированным упражнениям, динамика — графиком и стрелкой. */
+function pmHTML(){
+  const pm = pmOf(C.id), hist = C.hist || {};
+  const keys = Object.keys(pm);
+  const rowOf = k => { const h = hist[k] || []; const prev = h.length>1 ? h[h.length-2][1] : null, cur = pm[k]; const last = h.length ? h[h.length-1][0] : null;
+    return `<tr class="click ${V.metric===k?'on':''}" data-pm-row="${k}">
+      <td><b>${esc(pmLabel(k))}</b></td>
+      <td class="r"><span class="pmv"><input class="pmin" data-pm="${k}" value="${fmtNum(cur)}"><s>кг</s></span></td>
+      <td class="r num">${fmtNum(Math.round(cur*0.9/2.5)*2.5)}</td>
+      <td class="r">${prev!=null ? `<span class="chip ${cur>prev?'ok':cur<prev?'rm':'ghost'}">${cur>prev?'+':''}${fmtNum(Math.round((cur-prev)*10)/10)} кг</span>` : '<span class="chip ghost">первый</span>'}</td>
+      <td>${h.length ? sparkline(h.map(x=>x[1]),56,18) : ''}</td>
+      <td class="r" style="color:var(--tx3);font-size:12px">${last ? humanDate(last) : '—'}</td>
+    </tr>`; };
+  return `<div class="cols2" style="grid-template-columns:1fr 1.1fr;align-items:start">
+    <div class="card cb flush"><div class="tblwrap"><table class="tbl" data-tbl="pm"><thead><tr><th>Упражнение</th><th class="r">1ПМ</th><th class="r">3ПМ</th><th class="r">Динамика</th><th></th><th class="r">Обновлён</th></tr></thead><tbody>${keys.map(rowOf).join('')}</tbody></table></div>
+      <div class="hint">3ПМ — расчётный (90 % от 1ПМ), пока клиент не зафиксировал свой. Проценты в тренировках пересчитываются от 1ПМ.</div></div>
+    <div class="card"><div class="cb" style="padding-bottom:6px"><b style="font-size:14px">${esc(pmLabel(V.metric))}</b> <span style="font-size:12.5px;color:var(--tx3)">· история 1ПМ</span></div>
+      <div class="cb chartbox" style="padding-top:0">${hist[V.metric] && hist[V.metric].length>1 ? lineChart(hist[V.metric],'кг') : '<div class="empty"><div class="t">Истории пока нет</div><div class="d">Появится после второго зафиксированного максимума</div></div>'}</div></div>
+  </div>`;
+}
 
 function render(){
-  const P = C.prog ? program(C.prog) : null, pm = pmOf(C.id), res = resultsFor(C.id);
-  const plan = P ? buildPlan(C.prog) : [], i0 = P ? daysBetween(P.start, TODAY) : -1;
+  const P = C.prog ? program(C.prog) : null;
   $('#page').innerHTML = `
     <div class="chead">
       <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
@@ -62,7 +117,8 @@ function render(){
           <a class="cc" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}<span>${esc(C.tg||'—')}</span><s>Telegram</s></a>
           <a class="cc" href="#" title="Написать в Max" data-max>${CI.max}<span>${esc(C.max||'—')}</span><s>Max</s></a>
         </div>
-        <div class="cline"><span class="chip ${!C.last ? 'ghost' : daysBetween(C.last,TODAY)>=3 ? 'warn' : 'ok'}">${C.last ? 'был '+ago(C.last) : 'ещё не заходил'}</span></div>
+        <div class="cline dates"><span><s>Родился</s>${dlong(C.born)}</span><i>·</i><span><s>С нами с</s>${dlong(C.since)}</span><i>·</i>${paidChip()}<i>·</i><span class="chip ${!C.last ? 'ghost' : daysBetween(C.last,TODAY)>=3 ? 'warn' : 'ok'}">${C.last ? 'был '+ago(C.last) : 'ещё не заходил'}</span></div>
+        <label class="cnote"><span>${ICON.chat} Заметка тренера · клиент не видит</span><input id="fNote" value="${esc(C.note||'')}" placeholder="Что важно помнить об этом клиенте…"></label>
       </div>
       <div class="cacts">
         ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
@@ -71,91 +127,36 @@ function render(){
 
     <nav class="ctabs" id="ctabs">${SECTIONS.map(([k,n],i)=>`<a href="#${k}" class="${i===0?'on':''}" data-sec="${k}">${n}</a>`).join('')}</nav>
 
-    <section class="csec" id="overview">
-      <div class="sechead"><span class="t">Обзор</span><span class="ln"></span></div>
-      <div class="facts">
-        <div class="fact"><div class="k">Возраст</div><div class="v">${age(C.born)} <small>лет</small></div></div>
-        <div class="fact"><div class="k">В работе</div><div class="v" style="font-size:14px">${yearsSince(C.since)}</div></div>
-        <div class="fact"><div class="k">Рост</div><div class="v">${C.h?C.h+' <small>см</small>':'—'}</div></div>
-        <div class="fact"><div class="k">Вес</div><div class="v">${C.w?fmtNum(C.w)+' <small>кг</small>':'—'}</div></div>
-        <div class="fact"><div class="k">Присед</div><div class="v">${pm.squat?fmtNum(pm.squat)+' <small>кг</small>':'—'}</div></div>
-        <div class="fact"><div class="k">Становая</div><div class="v">${pm.dead?fmtNum(pm.dead)+' <small>кг</small>':'—'}</div></div>
-        <div class="fact"><div class="k">Жим лёжа</div><div class="v">${pm.bench?fmtNum(pm.bench)+' <small>кг</small>':'—'}</div></div>
-      </div>
+    <section class="csec" id="cal">
+      <div class="sechead"><span class="t">Календарь</span><span class="ln"></span>${P?`<span class="n">${esc(P.title)} · составлено ${composedDays(C.prog)} из ${P.days}</span>`:''}<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a></div>
+      <div class="card cb">${laneHTML()}</div>
     </section>
 
-    <section class="csec" id="program">
-      <div class="sechead"><span class="t">Программа</span><span class="ln"></span>${P?`<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a>`:''}</div>
-      <div class="card cb">
-        ${P ? `<div class="pgrow"><div><b>${esc(P.title)}</b><s>${esc(P.goal||'')}</s></div></div>
-        <div class="days cal compact" style="margin-top:12px">${Array.from({length:7},(_,k)=>{ const i=i0+k; const date=addDays(TODAY,k); const inProg=i>=0 && i<P.days; const x=inProg && i<plan.length ? plan[i] : null; const n=x?x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length,0):0;
-          const head=`<span class="d">${RU[dowMon(date)]} ${new Date(date+'T00:00:00').getDate()}${k===0?'<i class="tdot"></i>':''}</span>`;
-          if(!inProg) return `<span class="day out">${head}<span class="e">вне программы</span></span>`;
-          if(!x) return `<a class="day empty" href="constructor.html?client=${C.id}&date=${date}">${head}<span class="e">не составлено</span></a>`;
-          return `<a class="day cmp${n?'':' rest'}" href="constructor.html?client=${C.id}&date=${date}">${head}${!n?'<span class="e">отдых</span>':x.draft?'<span class="dr">черновик</span>':`<span class="t">${esc(x.title||'Без названия')}</span>`}</a>`; }).join('')}</div>`
-        : `<div class="empty"><div class="t">Программа не назначена</div><div class="d">Назначьте из базы программ или соберите в конструкторе</div></div>`}
-      </div>
+    <section class="csec" id="events">
+      <div class="sechead"><span class="t">Последние события</span><span class="ln"></span></div>
+      <div class="card cb flush"><div class="feed1" style="margin:0">${feedHTML(events(C.id))}</div></div>
     </section>
 
-    <section class="csec" id="results">
-      <div class="sechead"><span class="t">Результаты</span><span class="ln"></span></div>
-      <div class="cols2" style="grid-template-columns:1.2fr 1fr;align-items:start">
-        <div class="card">
-          <div class="cb" style="padding-bottom:6px"><div class="pmpick">${Object.keys(C.hist||{}).map(k=>`<button data-m="${k}" class="${V.metric===k?'on':''}">${esc(pmLabel(k))}</button>`).join('') || '<span style="font-size:12px;color:var(--tx4)">Истории пока нет</span>'}</div></div>
-          <div class="cb chartbox" style="padding-top:0">${C.hist && C.hist[V.metric] ? lineChart(C.hist[V.metric], 'кг') : ''}</div>
-        </div>
-        <div class="card cb flush">
-          ${res.length ? `<div class="feed">${res.map(r=>{ const e=byId(r.exId);
-            return `<div class="fitem"><span class="av s">${e?initials(e):'—'}</span><div class="c">
-              <div class="h"><b>${e?esc(e.ru):esc(r.exId)}</b><span style="font-size:11.5px;color:var(--tx4)">· ${esc(r.scheme)}</span><time>${humanDate(r.date)}</time></div>
-              <div class="tx">${r.kg!=null?`Рабочий вес ${fmtNum(r.kg)} кг`:''}${r.done?`Сделано: ${esc(r.done)}`:''}</div></div></div>`; }).join('')}</div>`
-          : `<div class="empty"><div class="t">Записанных результатов пока нет</div><div class="d">Появятся, когда клиент отметит тренировку</div></div>`}
-        </div>
-      </div>
+    <section class="csec" id="meas">
+      <div class="sechead"><span class="t">Замеры</span><span class="ln"></span></div>
+      ${measHTML()}
     </section>
 
     <section class="csec" id="pm">
       <div class="sechead"><span class="t">Максимумы</span><span class="ln"></span></div>
-      <div class="card cb">
-        ${Object.keys(pm).length ? `<div class="pmwrap">${Object.entries(pm).map(([k,v])=>`<div class="pmgrid"><span class="pn">${esc(pmLabel(k))}</span><input class="pmin" data-pm="${k}" value="${fmtNum(v)}"></div>`).join('')}</div>
-        <div class="hint">Проценты в назначенных тренировках пересчитываются от этих значений автоматически.</div>` : '<div style="font-size:12.5px;color:var(--tx4)">Клиент ещё не указал ни одного максимума</div>'}
-      </div>
-    </section>
-
-    <section class="csec" id="body">
-      <div class="sechead"><span class="t">Показатели</span><span class="ln"></span></div>
-      <div class="card cb">
-        <div class="cols4">
-          <div class="formfld"><span class="k">Рост, см</span><input class="inp" id="fH" value="${C.h||''}"></div>
-          <div class="formfld"><span class="k">Вес, кг</span><input class="inp" id="fW" value="${C.w||''}"></div>
-          <div class="formfld"><span class="k">Талия, см</span><input class="inp" placeholder="—"></div>
-          <div class="formfld"><span class="k">Жир, %</span><input class="inp" placeholder="—"></div>
-        </div>
-        <div class="hint">Произвольные измерения (PRO-2) — добавляются по названию; здесь показаны четыре типовых.</div>
-      </div>
-    </section>
-
-    <section class="csec" id="info">
-      <div class="sechead"><span class="t">Данные</span><span class="ln"></span></div>
-      <div class="card cb">
-        <div class="cols4">
-          <div class="formfld"><span class="k">Телефон</span><input class="inp" value="${esc(C.phone||'')}"></div>
-          <div class="formfld"><span class="k">Дата рождения</span><input class="inp" type="date" value="${C.born||''}"></div>
-          <div class="formfld"><span class="k">С нами с</span><input class="inp" type="date" value="${C.since||''}"></div>
-          <div class="formfld"><span class="k">Тариф</span><input class="inp" value="${esc(C.tariff||'')}"></div>
-        </div>
-        <div class="formfld" style="margin-top:12px"><span class="k">Заметка тренера — клиент не видит</span><textarea class="inp" id="fNote" rows="3" style="height:auto;padding:9px 11px;resize:vertical">${esc(C.note||'')}</textarea></div>
-      </div>
+      ${pmHTML()}
     </section>`;
 
-  $$('.pmpick button').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.m; render() });
-  $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; saveState(); toast('Максимум обновлён — проценты в тренировках пересчитаются') });
-  $('#fH').onchange=e=>{ C.h=+e.target.value||null; toast('Рост обновлён') };
-  $('#fW').onchange=e=>{ C.w=+e.target.value||null; toast('Вес обновлён') };
+  $$('[data-meas]').forEach(b=>b.onclick=()=>{ V.meas=b.dataset.meas; render() });
+  $$('[data-pm-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input')) return; V.metric=r.dataset.pmRow; render() });
+  $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; (C.hist[inp.dataset.pm] ||= []).push([TODAY, v]); saveState(); toast('Максимум обновлён — проценты в тренировках пересчитаются'); render() });
   $('#fNote').onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
+  const am = $('#addMeas'); if(am) am.onclick=()=>openModal({title:'Новый замер', body:`<div class="cols3">${MEAS.map(([k,n,u])=>`<div class="formfld"><span class="k">${n}, ${u}</span><input class="inp" data-nm="${k}" placeholder="—"></div>`).join('')}</div>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nmSave">Сохранить</button>`});
+  document.addEventListener('click', e=>{ if(e.target.closest('#nmSave')){ const r={date:TODAY}; $$('[data-nm]').forEach(i=>{ const v=parseFloat(i.value.replace(',','.')); if(isFinite(v)) r[i.dataset.nm]=v }); if(Object.keys(r).length>1){ (C.meas ||= []).push(r); if(r.w) C.w=r.w; closeModal(); toast('Замер записан'); render() } } }, {once:true});
+  $$('.fev.t-q .btn').forEach(b=>b.onclick=e=>{ e.preventDefault(); location.href='#events'; toast('Ответ на вопрос — из ленты дашборда') });
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
-  /* Табы-якоря: плавная прокрутка с учётом липких шапок; активный — по видимой секции. */
   const HEAD = 58 + 52;
   $$('#ctabs a').forEach(a=>a.onclick=e=>{ e.preventDefault(); const el=$('#'+a.dataset.sec); window.scrollTo({top: el.getBoundingClientRect().top + scrollY - HEAD, behavior:'smooth'}); history.replaceState(null,'','#'+a.dataset.sec) });
   const io = new IntersectionObserver(es=>{ es.forEach(en=>{ if(en.isIntersecting){ $$('#ctabs a').forEach(a=>a.classList.toggle('on', a.dataset.sec===en.target.id)) } }) }, {rootMargin:'-120px 0px -70% 0px'});
@@ -164,5 +165,6 @@ function render(){
 render();
 initShell({page:'clients.html'});
 </script>
+
 </body>
 </html>

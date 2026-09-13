@@ -385,3 +385,41 @@ function bindTable(id, redraw, onRow){
 }
 const byStr = k => (a,b) => String(a[k]||'').localeCompare(String(b[k]||''));
 const byNum = f => (a,b) => (f(a)||0) - (f(b)||0);
+
+/* ═══════════ ЛЕНТА СОБЫТИЙ — общая для дашборда и карточки клиента ═══════════ */
+const unread = () => { const out=[]; CLIENTS.forEach(c=>c.comments.forEach((cm,i)=>{ if(!cm.reply && !STATE.replied[c.id+':'+i]) out.push({c,cm,key:c.id+':'+i}) })); return out };
+const idle = () => CLIENTS.filter(c=>c.prog && c.last && daysBetween(c.last,TODAY)>=3);
+const noProg = () => CLIENTS.filter(c=>!c.prog);
+const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', new:'Новые клиенты', done:'Результаты', pay:'Подписка'};
+const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, new:ICON.users, done:ICON.chk, pay:ICON.folder};
+
+/* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
+function events(cid){
+  const ev = [];
+  CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый максимум: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
+  unread().forEach(({c,cm,key})=>ev.push({t:'q', d:cm.d, c, key, title:c.n + (cm.ex?' · '+cm.ex:''), tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
+  idle().forEach(c=>ev.push({t:'miss', d:c.last, c, title:c.n, tx:`Не появлялся ${ago(c.last)} — серия прервана`, act:'Открыть профиль', href:'client.html?id='+c.id}));
+  composeQueue().filter(x=>x.runway<=7).forEach(x=>{ const c = client(x.p.clients[0]); if(!c) return;
+    const lbl = x.runway<0 ? `Программа «${x.p.title}» кончилась ${-x.runway} ${plural(-x.runway,'день','дня','дней')} назад — клиент без тренировок` : x.runway===0 ? `Сегодня последняя написанная тренировка «${x.p.title}»` : `Написанные тренировки «${x.p.title}» кончаются через ${x.runway} ${plural(x.runway,'день','дня','дней')}`;
+    ev.push({t:'prog', d: x.runway<0 ? x.lastDay : TODAY, c, title:c.n, tx:lbl, act:'Составить', href:`constructor.html?client=${c.id}&date=${addDays(x.lastDay,1)}`}) });
+  noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
+  CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
+  ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});
+  const order = {q:0, prog:1, pr:2, miss:3, new:4, done:5, pay:6};
+  const list = cid ? ev.filter(e=>e.c && e.c.id===cid) : ev;
+  return list.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
+}
+const dayLabel = d => d===TODAY ? 'Сегодня' : d===addDays(TODAY,-1) ? 'Вчера' : humanDate(d);
+const evHTML = (e, mini) => `<div class="fev t-${e.t}${mini?' mini':''}" data-key="${e.key||''}">
+    <span class="ico">${e.c && !mini ? esc(e.c.ini) : TICON[e.t]}</span>
+    <div class="c"><div class="h"><b>${esc(e.title)}</b><span class="tchip t-${e.t}">${TLABEL[e.t]}</span>${mini?'':`<time>${dayLabel(e.d)}</time>`}</div><div class="tx">${e.tx}</div></div>
+    ${mini ? '' : `<a class="btn gh sm" href="${e.href}">${e.act}</a>`}
+  </div>`;
+function feedHTML(list, withDays=true){
+  if(!list.length) return '<div class="empty"><div class="t">Тихо</div><div class="d">Новых событий нет</div></div>';
+  let out='', day=null;
+  list.forEach(e=>{ if(withDays && e.d!==day){ day=e.d; out+=`<div class="evday">${dayLabel(e.d)}${e.d===TODAY||e.d===addDays(TODAY,-1)?' · '+humanDate(e.d):''}</div>` } out+=evHTML(e) });
+  return out;
+}
+
+const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', new:'Новый клиент', done:'Результат', pay:'Подписка'};
