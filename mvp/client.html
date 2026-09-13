@@ -36,6 +36,11 @@ const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
 const V = { metric: Object.keys(C.hist||{})[0] || 'squat' };
 const SECTIONS = [['overview','Обзор'],['program','Программа'],['results','Результаты'],['pm','Максимумы'],['body','Показатели'],['info','Данные']];
+const CI = {
+  phone:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.5 2.5h2.2l1 2.8-1.4 1a8 8 0 0 0 4.4 4.4l1-1.4 2.8 1v2.2a1 1 0 0 1-1.1 1A11.5 11.5 0 0 1 2.5 3.6a1 1 0 0 1 1-1.1z"/></svg>',
+  tg:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M14 2.5 2 7.2l4.3 1.6L8 13l2.2-3 3.8-7.5z"/><path d="M6.3 8.8 14 2.5"/></svg>',
+  max:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 13V3l5 6 5-6v10"/></svg>',
+};
 const resultsFor = cid => LOG.filter(r=>r.cid===cid).sort((a,b)=> a.date<b.date?1:-1);
 const pmLabel = k => PMNAMES[k] || k;
 const runway = () => { if(!C.prog) return null; const n = composedDays(C.prog); return daysBetween(TODAY, dayDate(C.prog, Math.max(0,n-1))) };
@@ -51,14 +56,13 @@ function render(){
       <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
       <div class="cinfo">
         <div class="nm">${esc(C.n)}</div>
-        <div class="hfacts">
-          <div class="hf"><s>Пол, возраст</s><b>${C.sex==='ж'?'жен.':'муж.'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</b></div>
-          <div class="hf"><s>Рост, вес</s><b>${C.h?C.h+' см':'—'} · ${C.w?fmtNum(C.w)+' кг':'—'}</b></div>
-          <div class="hf"><s>Телефон</s><b><a href="tel:${esc(C.phone||'')}">${esc(C.phone||'—')}</a></b></div>
-          <div class="hf"><s>Телеграм</s><b><a href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener">${esc(C.tg||'—')}</a></b></div>
-          <div class="hf"><s>Макс</s><b>${esc(C.max||'—')}</b></div>
-          <div class="hf"><s>Последняя активность</s><b class="${C.last && daysBetween(C.last,TODAY)>=3 ? 'warn' : ''}">${C.last ? ago(C.last) : 'не заходил'}</b></div>
+        <div class="cline phys">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}<i>·</i>${C.h?C.h+' см':'рост —'}, ${C.w?fmtNum(C.w)+' кг':'вес —'}</div>
+        <div class="cline contacts">
+          <a class="cc" href="tel:${esc((C.phone||'').replace(/[^\d+]/g,''))}" title="Позвонить">${CI.phone}<span>${esc(C.phone||'—')}</span></a>
+          <a class="cc" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}<span>${esc(C.tg||'—')}</span><s>Telegram</s></a>
+          <a class="cc" href="#" title="Написать в Max" data-max>${CI.max}<span>${esc(C.max||'—')}</span><s>Max</s></a>
         </div>
+        <div class="cline"><span class="chip ${!C.last ? 'ghost' : daysBetween(C.last,TODAY)>=3 ? 'warn' : 'ok'}">${C.last ? 'был '+ago(C.last) : 'ещё не заходил'}</span></div>
       </div>
       <div class="cacts">
         ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
@@ -150,6 +154,7 @@ function render(){
   $('#fW').onchange=e=>{ C.w=+e.target.value||null; toast('Вес обновлён') };
   $('#fNote').onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
+  $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
   /* Табы-якоря: плавная прокрутка с учётом липких шапок; активный — по видимой секции. */
   const HEAD = 58 + 52;
   $$('#ctabs a').forEach(a=>a.onclick=e=>{ e.preventDefault(); const el=$('#'+a.dataset.sec); window.scrollTo({top: el.getBoundingClientRect().top + scrollY - HEAD, behavior:'smooth'}); history.replaceState(null,'','#'+a.dataset.sec) });
