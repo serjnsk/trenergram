@@ -114,7 +114,7 @@ function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); 
 function renderCal(keepYM){
   const x = ctx(), {c, pid, p} = x;
   const done = pid ? composedDays(pid) : 0;
-  const psum = p ? `${esc(p.title)} · ${dm(p.start)} – ${dm(dayDate(pid, p.days-1))} · ${done >= p.days ? 'составлена целиком' : done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено'}` : 'программа не назначена';
+  const psum = p ? (done >= p.days ? 'составлена целиком' : done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено') : 'программа не назначена';
   $('#cal').innerHTML = `
     <div class="wkh">
       <h1 class="wkttl">Календарь</h1>
