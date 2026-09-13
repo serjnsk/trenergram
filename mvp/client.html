@@ -89,22 +89,22 @@ function measHTML(){
     </div>
   </div>`;
 }
-/* Максимумы: 1ПМ и 3ПМ по всем зафиксированным упражнениям, динамика — графиком и стрелкой. */
+/* Максимумы: 1ПМ и 3ПМ — оба вносятся тренером или клиентом; 3ПМ по умолчанию
+   пуст, пока его не зафиксировали. Динамика — графиком справа по выбранной строке. */
+const pm3Of = cid => ((STATE.pm3 ||= {})[cid] ||= {});
 function pmHTML(){
-  const pm = pmOf(C.id), hist = C.hist || {};
+  const pm = pmOf(C.id), pm3 = pm3Of(C.id), hist = C.hist || {};
   const keys = Object.keys(pm);
-  const rowOf = k => { const h = hist[k] || []; const prev = h.length>1 ? h[h.length-2][1] : null, cur = pm[k]; const last = h.length ? h[h.length-1][0] : null;
+  const rowOf = k => { const h = hist[k] || []; const last = h.length ? h[h.length-1][0] : null;
     return `<tr class="click ${V.metric===k?'on':''}" data-pm-row="${k}">
       <td><b>${esc(pmLabel(k))}</b></td>
-      <td class="r"><span class="pmv"><input class="pmin" data-pm="${k}" value="${fmtNum(cur)}"><s>кг</s></span></td>
-      <td class="r num">${fmtNum(Math.round(cur*0.9/2.5)*2.5)}</td>
-      <td class="r">${prev!=null ? `<span class="chip ${cur>prev?'ok':cur<prev?'rm':'ghost'}">${cur>prev?'+':''}${fmtNum(Math.round((cur-prev)*10)/10)} кг</span>` : '<span class="chip ghost">первый</span>'}</td>
-      <td>${h.length ? sparkline(h.map(x=>x[1]),56,18) : ''}</td>
+      <td class="r"><span class="pmv"><input class="pmin" data-pm="${k}" value="${fmtNum(pm[k])}"><s>кг</s></span></td>
+      <td class="r"><span class="pmv"><input class="pmin" data-pm3="${k}" value="${pm3[k]!=null?fmtNum(pm3[k]):''}" placeholder="—"><s>кг</s></span></td>
       <td class="r" style="color:var(--tx3);font-size:12px">${last ? humanDate(last) : '—'}</td>
     </tr>`; };
   return `<div class="cols2" style="grid-template-columns:1fr 1.1fr;align-items:start">
-    <div class="card cb flush"><div class="tblwrap"><table class="tbl" data-tbl="pm"><thead><tr><th>Упражнение</th><th class="r">1ПМ</th><th class="r">3ПМ</th><th class="r">Динамика</th><th></th><th class="r">Обновлён</th></tr></thead><tbody>${keys.map(rowOf).join('')}</tbody></table></div>
-      <div class="hint">3ПМ — расчётный (90 % от 1ПМ), пока клиент не зафиксировал свой. Проценты в тренировках пересчитываются от 1ПМ.</div></div>
+    <div class="card cb flush"><div class="tblwrap"><table class="tbl" data-tbl="pm"><thead><tr><th>Упражнение</th><th class="r">1ПМ</th><th class="r">3ПМ</th><th class="r">Обновлён</th></tr></thead><tbody>${keys.map(rowOf).join('')}</tbody></table></div>
+      <div class="hint">Проценты в тренировках считаются от 1ПМ. Клик по строке — история справа.</div></div>
     <div class="card"><div class="cb" style="padding-bottom:6px"><b style="font-size:14px">${esc(pmLabel(V.metric))}</b> <span style="font-size:12.5px;color:var(--tx3)">· история 1ПМ</span></div>
       <div class="cb chartbox" style="padding-top:0">${hist[V.metric] && hist[V.metric].length>1 ? lineChart(hist[V.metric],'кг') : '<div class="empty"><div class="t">Истории пока нет</div><div class="d">Появится после второго зафиксированного максимума</div></div>'}</div></div>
   </div>`;
@@ -155,7 +155,8 @@ function render(){
 
   $$('[data-meas]').forEach(b=>b.onclick=()=>{ V.meas=b.dataset.meas; render() });
   $$('[data-pm-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input')) return; V.metric=r.dataset.pmRow; render() });
-  $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; (C.hist[inp.dataset.pm] ||= []).push([TODAY, v]); saveState(); toast('Максимум обновлён — проценты в тренировках пересчитаются'); render() });
+  $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; (C.hist[inp.dataset.pm] ||= []).push([TODAY, v]); saveState(); toast('1ПМ обновлён — проценты в тренировках пересчитаются'); render() });
+  $$('[data-pm3]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); pm3Of(C.id)[inp.dataset.pm3] = isFinite(v) ? v : null; saveState(); toast('3ПМ записан') });
   $('#fNote').onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
   const am = $('#addMeas'); if(am) am.onclick=()=>openModal({title:'Новый замер', body:`<div class="cols3">${MEAS.map(([k,n,u])=>`<div class="formfld"><span class="k">${n}, ${u}</span><input class="inp" data-nm="${k}" placeholder="—"></div>`).join('')}</div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nmSave">Сохранить</button>`});
