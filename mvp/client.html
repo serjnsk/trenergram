@@ -66,20 +66,26 @@ function measHTML(){
   const rows = (C.meas||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
   const [k,name,unit] = MEAS.find(m=>m[0]===V.meas) || MEAS[0];
   const series = rows.filter(r=>r[k]!=null).map(r=>[r.date, r[k]]);
-  const last = rows[rows.length-1], prev = rows[rows.length-2];
-  const delta = (kk) => last && prev && last[kk]!=null && prev[kk]!=null ? last[kk]-prev[kk] : null;
-  return `<div class="cols2" style="grid-template-columns:1.1fr 1fr;align-items:start">
-    <div class="card">
-      <div class="cb" style="padding-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="pmpick">${MEAS.map(([kk,n])=>`<button data-meas="${kk}" class="${V.meas===kk?'on':''}">${n}</button>`).join('')}</div>
-        <span class="sp" style="flex:1"></span><span style="font-size:12.5px;color:var(--tx3)">Рост ${C.h?C.h+' см':'—'}</span></div>
-      <div class="cb chartbox" style="padding-top:0">${series.length>1 ? lineChart(series, unit) : '<div class="empty"><div class="t">Мало замеров для графика</div></div>'}</div>
+  const fmt = (kk, v) => v==null ? '—' : (kk==='w' || kk==='fat') ? v.toFixed(1).replace('.',',') : String(Math.round(v));
+  /* Дельта — всегда в своей колонке фиксированной ширины, чтобы значения в столбце стояли ровно. */
+  const delta = (i, kk) => { const cur = rows[i], prev = rows[i-1]; const d = (!cur || !prev || cur[kk]==null || prev[kk]==null) ? 0 : Math.round((cur[kk]-prev[kk])*10)/10;
+    return `<i class="dl ${d<0?'dn':d>0?'up':''}">${d ? (d>0?'+':'')+String(d).replace('.',',') : ''}</i>` };
+  return `<div class="card">
+    <div class="mhead">
+      <span class="mh"><s>Пол</s><b>${C.sex==='ж'?'Женский':'Мужской'}</b></span>
+      <span class="mh"><s>Дата рождения</s><b>${dlong(C.born)} · ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</b></span>
+      <span class="mh"><s>Рост</s><b>${C.h?C.h+' см':'—'}</b></span>
+      <span class="sp"></span>
+      <button class="btn gh sm" id="addMeas">${ICON.plus} Добавить замер</button>
     </div>
-    <div class="card cb flush">
-      <div class="tblwrap"><table class="tbl"><thead><tr><th>Дата</th>${MEAS.map(([kk,n,u])=>`<th class="r">${n}, ${u}</th>`).join('')}</tr></thead><tbody>
-        ${rows.slice().reverse().map(r=>`<tr><td>${humanDate(r.date)}</td>${MEAS.map(([kk])=>`<td class="r num">${r[kk]!=null?fmtNum(r[kk]):'—'}</td>`).join('')}</tr>`).join('')}
+    <div class="mbody">
+      <div class="tblwrap"><table class="tbl mtbl"><thead><tr><th>Дата</th>${MEAS.map(([kk,n,u])=>`<th class="r">${n}<s>${u}</s></th>`).join('')}</tr></thead><tbody>
+        ${rows.map((r,i)=>({r,i})).reverse().map(({r,i})=>`<tr><td>${humanDate(r.date)}</td>${MEAS.map(([kk])=>`<td class="r"><span class="mv"><b>${fmt(kk, r[kk])}</b>${delta(i,kk)}</span></td>`).join('')}</tr>`).join('')}
       </tbody></table></div>
-      <div class="measf">${last ? MEAS.map(([kk,n,u])=>{ const dd = delta(kk); return `<span class="mdt"><s>${n}</s><b>${last[kk]!=null?fmtNum(last[kk])+' '+u:'—'}</b>${dd!=null && dd!==0 ? `<i class="${dd<0?'dn':'up'}">${dd>0?'+':''}${fmtNum(Math.round(dd*10)/10)}</i>` : ''}</span>` }).join('') : ''}
-        <button class="btn gh sm" id="addMeas">${ICON.plus} Добавить замер</button></div>
+      <div class="mchart">
+        <div class="pmpick">${MEAS.map(([kk,n])=>`<button data-meas="${kk}" class="${V.meas===kk?'on':''}">${n}</button>`).join('')}</div>
+        <div class="chartbox">${series.length>1 ? lineChart(series, unit) : '<div class="empty"><div class="t">Мало замеров для графика</div></div>'}</div>
+      </div>
     </div>
   </div>`;
 }
@@ -111,13 +117,13 @@ function render(){
       <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
       <div class="cinfo">
         <div class="nm">${esc(C.n)}</div>
-        <div class="cline phys">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}<i>·</i>${C.h?C.h+' см':'рост —'}, ${C.w?fmtNum(C.w)+' кг':'вес —'}</div>
+        <div class="cline phys">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</div>
         <div class="cline contacts">
           <a class="cc" href="tel:${esc((C.phone||'').replace(/[^\d+]/g,''))}" title="Позвонить">${CI.phone}<span>${esc(C.phone||'—')}</span></a>
           <a class="cc" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}<span>${esc(C.tg||'—')}</span><s>Telegram</s></a>
           <a class="cc" href="#" title="Написать в Max" data-max>${CI.max}<span>${esc(C.max||'—')}</span><s>Max</s></a>
         </div>
-        <div class="cline dates"><span><s>Родился</s>${dlong(C.born)}</span><i>·</i><span><s>С нами с</s>${dlong(C.since)}</span><i>·</i>${paidChip()}<i>·</i><span class="chip ${!C.last ? 'ghost' : daysBetween(C.last,TODAY)>=3 ? 'warn' : 'ok'}">${C.last ? 'был '+ago(C.last) : 'ещё не заходил'}</span></div>
+        <div class="cline dates"><span><s>С нами с</s>${dlong(C.since)}</span><i>·</i>${paidChip()}<i>·</i><span class="chip ${!C.last ? 'ghost' : daysBetween(C.last,TODAY)>=3 ? 'warn' : 'ok'}">${C.last ? 'был '+ago(C.last) : 'ещё не заходил'}</span></div>
         <label class="cnote"><span>${ICON.chat} Заметка тренера · клиент не видит</span><input id="fNote" value="${esc(C.note||'')}" placeholder="Что важно помнить об этом клиенте…"></label>
       </div>
       <div class="cacts">
