@@ -105,25 +105,31 @@ function renderCal(keepYM){
   const x = ctx(), {c, pid, p} = x;
   const done = pid ? composedDays(pid) : 0;
   $('#cal').innerHTML = `
-    <div class="wkh">
-      <h1 class="wkttl">Календарь</h1>
-      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
-      <span class="sp"></span>
-      <button class="btn gh sm" id="mToday" title="Пролистать к сегодняшнему дню">Сегодня</button>
-      <button class="btn gh sm" id="mMonth" title="Пролистать к началу текущего месяца">Текущий месяц</button>
-      <button class="btn gh sm jumpb" id="jumpBtn" title="Перейти к дате">${ICON.cal}<span>${dm(C.jump||TODAY)}.${(C.jump||TODAY).slice(0,4)}</span>${ICON.chev}</button>
-      <span class="vtog" title="Вид">
-        <button data-view="compact" class="${x.view==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
-        <button data-view="full" class="${x.view==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
-        <button data-view="detail" class="${x.view==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
-      </span>
+    <div class="wkh two">
+      <div class="hl">
+        <h1 class="wkttl">Календарь</h1>
+        <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
+      </div>
+      <div class="hr">
+        <div class="dates">
+          <button class="btn gh sm" id="mToday" title="Пролистать к сегодняшнему дню">Сегодня</button>
+          <button class="btn gh sm" id="mMonth" title="Пролистать к началу текущего месяца">Текущий месяц</button>
+          <button class="btn gh sm jumpb" id="jumpBtn" title="Перейти к дате">${ICON.cal}<span>${dm(C.jump||TODAY)}.${(C.jump||TODAY).slice(0,4)}</span>${ICON.chev}</button>
+        </div>
+        <div class="views"><span class="vtog" title="Вид">
+          <button data-view="compact" class="${x.view==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
+          <button data-view="full" class="${x.view==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
+          <button data-view="detail" class="${x.view==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
+        </span></div>
+      </div>
     </div>
     <div id="topSent"></div>
     <div id="feed">${months().map(k=>monthHTML(k.y, k.m, x)).join('')}</div>
     <div id="botSent"></div>`;
+  { const h = document.querySelector('.calwrap .wkh'); if(h) $('#cal').style.setProperty('--wkh', h.offsetHeight + 'px') }
   if(keepYM) scrollToMonth(keepYM, false);
 }
-const HEAD = 58 + 62;   /* шапка приложения + липкая шапка календаря */
+const HEAD = () => 58 + ((document.querySelector('.calwrap .wkh')||{}).offsetHeight || 62);   /* шапка приложения + липкая шапка календаря */
 /* Переход к произвольной дате: месяц дорастает при необходимости, день мигает. */
 function jumpTo(date){
   const ym = ymOf(date);
@@ -133,17 +139,17 @@ function jumpTo(date){
   }
   /* Листаем к самому дню (под липкими шапками), а не к началу месяца. */
   const cell = document.querySelector(`.day[data-date="${date}"]`);
-  if(cell){ window.scrollTo({top: cell.getBoundingClientRect().top + scrollY - HEAD - 56, behavior:'smooth'});
+  if(cell){ window.scrollTo({top: cell.getBoundingClientRect().top + scrollY - HEAD() - 56, behavior:'smooth'});
     cell.classList.add('flash'); setTimeout(()=>cell.classList.remove('flash'), 1600) }
   else scrollToMonth(ymKey(ym), true);
 }
 function scrollToMonth(ym, smooth){
   const el = document.querySelector(`.mon[data-ym="${ym}"]`); if(!el) return;
-  window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - HEAD, behavior: smooth ? 'smooth' : 'auto'});
+  window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - HEAD(), behavior: smooth ? 'smooth' : 'auto'});
 }
 /* Месяц, который сейчас наверху экрана, — чтобы при смене клиента не прыгать. */
 function topMonth(){
-  const m = [...document.querySelectorAll('.mon')].find(el => el.getBoundingClientRect().bottom > HEAD + 40);
+  const m = [...document.querySelectorAll('.mon')].find(el => el.getBoundingClientRect().bottom > HEAD() + 40);
   return m ? m.dataset.ym : null;
 }
 /* Дорастание ленты: снизу — добавляем месяц, сверху — добавляем и компенсируем прокрутку. */

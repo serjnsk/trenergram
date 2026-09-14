@@ -236,30 +236,32 @@ function renderStrip(){
     return {date, i, inPlan: i>=0 && i<d.length, inProg: i>=0};
   });
   $('#wk').innerHTML = `
-    <div class="wkh">
-      <h1 class="wkttl">Создать тренировку</h1>
-      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cl-t"><b>${esc(client(S.cid).n)}</b><s>${esc(clientProgSub(client(S.cid)))}</s></span>${ICON.chev}</button>
-      <span class="sp"></span>
-      ${S.sel ? `
-        <b class="seln">Выбрано ${S.sel.size}</b>
-        <button class="cp" id="selCopy" ${S.sel.size?'':'disabled'}>${ICON.copy} Скопировать</button>
-        <button class="cp" id="selMove" ${S.sel.size?'':'disabled'}>${ICON.arr} Перенести</button>
-        <button class="cp" id="selCancel">${ICON.x} Отмена</button>
-      ` : (S.paste ? `<s class="hint">${S.paste==='copy'?'выберите день, куда скопировать':'выберите день, куда перенести'}</s>` : '')}
-    </div>
-    <div class="wkn2">
-      <span class="wkn">
-        <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
-        <button id="dayNext" title="Неделей позже">${ICON.arr}</button>
-      </span>
-      <button class="today" id="wkToday" ${cur.date===TODAY?'disabled':''}>Сегодня</button>
-      <s class="wkrange">${rangeLabel(cells[0].date, cells[13].date)}</s>
-      <span class="sp"></span>
-      <span class="vtog" title="Вид ленты">
-        <button data-view="compact" class="${laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
-        <button data-view="full" class="${laneView()==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
-        <button data-view="detail" class="${laneView()==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
-      </span>
+    <div class="wkh two">
+      <div class="hl">
+        <h1 class="wkttl">Создать тренировку</h1>
+        <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cl-t"><b>${esc(client(S.cid).n)}</b><s>${esc(clientProgSub(client(S.cid)))}</s></span>${ICON.chev}</button>
+        ${S.sel ? `<div class="selbar">
+          <b class="seln">Выбрано ${S.sel.size}</b>
+          <button class="cp" id="selCopy" ${S.sel.size?'':'disabled'}>${ICON.copy} Скопировать</button>
+          <button class="cp" id="selMove" ${S.sel.size?'':'disabled'}>${ICON.arr} Перенести</button>
+          <button class="cp" id="selCancel">${ICON.x} Отмена</button></div>
+        ` : (S.paste ? `<s class="hint">${S.paste==='copy'?'выберите день, куда скопировать':'выберите день, куда перенести'}</s>` : '')}
+      </div>
+      <div class="hr">
+        <div class="dates">
+          <span class="wkn">
+            <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
+            <button id="dayNext" title="Неделей позже">${ICON.arr}</button>
+          </span>
+          <button class="btn gh sm" id="wkToday" ${cur.date===TODAY?'disabled':''}>Сегодня</button>
+          <s class="wkrange">${rangeLabel(cells[0].date, cells[13].date)}</s>
+        </div>
+        <div class="views"><span class="vtog" title="Вид ленты">
+          <button data-view="compact" class="${laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
+          <button data-view="full" class="${laneView()==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
+          <button data-view="detail" class="${laneView()==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
+        </span></div>
+      </div>
     </div>
     <div class="days ${laneView()==='compact'?'compact':''} ${laneView()==='detail'?'detail':''}" id="strip">
       ${cells.map((c,k)=>{

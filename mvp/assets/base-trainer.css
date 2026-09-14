@@ -107,7 +107,7 @@ button{cursor:pointer}
 /* Стрелки стоят у самой недели, а не в топбаре: они листают её, и место
    действия должно совпадать с местом, где виден результат. */
 .wkh .wkn{display:flex;gap:3px;flex:none}
-.wkh .wkn button{width:28px;height:28px;border-radius:var(--rad-s);background:var(--s1);
+.wkh .wkn button{width:32px;height:32px;border-radius:var(--rad-s);background:var(--s1);
   display:grid;place-items:center;color:var(--tx2)}
 .wkh .wkn button:hover:not(:disabled){background:var(--s2);color:var(--ink)}
 .wkh .wkn button:disabled{color:var(--tx4);cursor:default;background:none}
@@ -793,10 +793,10 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .wkn2 .today:disabled{color:var(--tx4);background:none;cursor:default}
 
 /* ─── ориентиры ленты: диапазон, сегодня, вид ─── */
-.wkn2 .wkrange{text-decoration:none;font-size:14.5px;font-weight:600;color:var(--tx2);margin-left:4px}
+.wkh .wkrange{text-decoration:none;font-size:15px;font-weight:600;color:var(--ink);margin-left:4px;white-space:nowrap}
 .wkn2 .sp{flex:1}
 .vtog{display:inline-flex;border:1px solid var(--line2);border-radius:var(--rad-s);overflow:hidden}
-.vtog button{width:30px;height:28px;display:grid;place-items:center;color:var(--tx3);border-right:1px solid var(--line2)}
+.vtog button{width:34px;height:32px;display:grid;place-items:center;color:var(--tx3);border-right:1px solid var(--line2)}
 .vtog button:last-child{border-right:0}
 .vtog button:hover{background:var(--s1);color:var(--tx2)}
 .vtog button.on{background:var(--acc-a);color:var(--acc-d)}
@@ -811,7 +811,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .calwrap{background:var(--bg);border-radius:var(--rad-l);padding:12px 14px}
 .psum{text-decoration:none;font-size:14px;color:var(--tx3);margin-left:6px}
 .mon{margin-bottom:22px}
-.monh{position:sticky;top:120px;z-index:3;background:var(--bg);padding:10px 0 6px;margin:0 -2px;padding-left:2px;padding-right:2px}
+.monh{position:sticky;top:calc(58px + var(--wkh, 62px));z-index:3;background:var(--bg);padding:10px 0 6px;margin:0 -2px;padding-left:2px;padding-right:2px}
 .monh b{display:block;font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
 .dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:4px}
 .dow span{font-size:13.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:0 11px}
@@ -1064,18 +1064,31 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days .day .bx:first-child{border-top:0;padding-top:0}
 .days .day .bxh{margin-bottom:1px}
 /* Номер вплотную к названию блока; упражнения внутри — глубже названия, чтобы иерархия читалась по отступу. */
-.days .day .bxh{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:0 6px;font-size:15.5px;font-weight:500;line-height:21px}
+.days .day .bxh{display:grid;grid-template-columns:12px minmax(0,1fr) auto;align-items:baseline;gap:0 6px;font-size:15.5px;font-weight:500;line-height:21px}
 .days .day .bxh s{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--tx3);font-variant-numeric:tabular-nums}
 .days .day .bxh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .days .day .bxh i{font-style:normal;font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--acc-d)}
 /* Упражнение: название и параметры в одной строке, если помещаются; если нет —
    параметры целиком переносятся на следующую строку под название (обычный
    текстовый перенос, без выравнивания вправо). */
-.days .day .bxi{display:block;padding:2px 0 2px 22px;font-size:14.5px;line-height:20px}
+/* Упражнение начинается на одной вертикали с названием блока; висячий отступ:
+   если строка не влезла, продолжение (параметры) идёт со сдвигом вправо. */
+.days .day .bxi{display:block;padding:2px 0 2px 30px;text-indent:-12px;font-size:14.5px;line-height:20px}
 .days .day .bxi span{color:var(--ink)}
-.days .day .bxi em{display:inline-block;max-width:100%;margin-left:8px;font-style:normal;font-size:14px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
+.days .day .bxi em{display:inline-block;max-width:100%;margin-left:6px;text-indent:0;font-style:normal;font-size:14px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
 .days .day .bxi em:empty{display:none}
 .days .day .bxi em u{text-decoration:none;color:var(--acc-d);background:var(--acc-a);border-radius:5px;padding:0 6px;display:inline-block;line-height:19px}
 .days.cal.detail .day .bxi{font-size:15px;line-height:21px}
 .days.cal.detail .day .bxi em{font-size:14.5px}
 .days.detail .day.rest .stcell{min-height:110px}
+
+/* ─── единая шапка календаря и конструктора: слева заголовок и клиент, справа даты и вид ─── */
+.wkh.two{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:nowrap;gap:16px}
+.wkh.two .hl,.wkh.two .hr{display:flex;flex-direction:column;gap:10px;min-width:0}
+.wkh.two .hl{align-items:flex-start}
+.wkh.two .hr{align-items:flex-end;flex:none}
+.wkh.two .wkttl{line-height:32px;margin:0}
+.wkh.two .dates{display:flex;align-items:center;gap:8px;height:32px}
+.wkh.two .views{display:flex;align-items:center;min-height:46px}
+.wkh.two .selbar{display:flex;align-items:center;gap:8px}
+.wkh.two .cliSel{margin:0}
