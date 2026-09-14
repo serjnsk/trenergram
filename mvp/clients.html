@@ -86,11 +86,11 @@ function render(){
                 <div class="s">${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</div>
               </div>
             </div></td>
-            <td>${pr?esc(pr.title):`<span style="color:var(--tx4)">без программы</span>`}</td>
+            <td>${pr?esc(pr.title):`<span style="color:var(--tx3)">без программы</span>`}</td>
             <td>${runwayChip(c)}</td>
-            <td>${c.plan?`<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:64px"><i style="width:${Math.round(c.done/c.plan*100)}%"></i></div><span style="font-size:13.5px;color:var(--tx3)">${c.done}/${c.plan}</span></div>`:'<span style="color:var(--tx4)">—</span>'}</td>
+            <td>${c.plan?`<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:64px"><i style="width:${Math.round(c.done/c.plan*100)}%"></i></div><span style="font-size:13.5px;color:var(--tx3)">${c.done}/${c.plan}</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>
             <td>${c.last?`<span class="chip ${idle?'warn':'ok'}">${ago(c.last)}</span>`:`<span class="chip ghost">не заходил</span>`}</td>
-            <td>${sq?`<div style="display:flex;align-items:center;gap:9px">${sparkline(sq.map(h=>h[1]),56,20)}<span style="font-size:14px;font-weight:600">${fmtNum(c.pm.squat)} кг</span></div>`:'<span style="color:var(--tx4)">—</span>'}</td>
+            <td>${sq?`<div style="display:flex;align-items:center;gap:9px">${sparkline(sq.map(h=>h[1]),56,20)}<span style="font-size:14px;font-weight:600">${fmtNum(c.pm.squat)} кг</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>
           </tr>`;
         }).join('')}
       </tbody></table></div>` : `<div class="empty"><div class="t">Никого не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);

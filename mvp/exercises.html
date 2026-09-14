@@ -114,7 +114,7 @@ function renderRail(){
         <s>Сложность</s><b>${esc(d.difficulty)}</b>
         <s>Категория</s><b>${esc(d.category)}</b>` : ''}
         <s>Единицы</s><b>${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</b>
-        <s>От максимума</s><b>${e.pm ? `${esc(PMNAMES[e.pm]||e.pm)}` : '<span style="color:var(--tx4)">нет</span>'}</b>
+        <s>От максимума</s><b>${e.pm ? `${esc(PMNAMES[e.pm]||e.pm)}` : '<span style="color:var(--tx3)">нет</span>'}</b>
         <s>Видео</s><b>${e.gif ? '<span class="chip ok">GIF</span> 4 размера' : e.m==='ok' ? 'есть' : '<span class="chip warn">ожидает</span>'}</b>
         <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
         ${d ? `<s>ID в EDB</s><b>${esc(d.id)}</b>` : ''}

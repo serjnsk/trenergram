@@ -41,8 +41,8 @@ button{cursor:pointer}
   clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
 .nh .logo i b{font-weight:inherit;color:var(--acc)}
 .nbody{flex:1;overflow-y:auto;padding:12px 10px 16px}
-.ngrp{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--tx4);padding:14px 8px 6px}
+.ngrp{font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--tx3);padding:14px 8px 6px}
 .ngrp:first-child{padding-top:2px}
 .nav a{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:var(--rad-m);
   text-decoration:none;color:var(--tx2);font-size:15px;font-weight:500;letter-spacing:-.01em}
@@ -54,13 +54,13 @@ button{cursor:pointer}
    «База упражнений» средствами CSS нельзя — получится «БАЗА У»,
    поэтому сокращение приходит из данных. Кому не нужно — не показывает. */
 .nav a .nab{display:none}
-.nav a .cnt{font-size:13px;font-weight:600;color:var(--tx4);
+.nav a .cnt{font-size:13px;font-weight:600;color:var(--tx3);
   background:var(--s1);border-radius:var(--rad-s);padding:1px 6px}
 .nav a.on .cnt{background:var(--bg);color:var(--acc-d)}
 .nfoot{border-top:1px solid var(--line);padding:11px 14px;flex:none;
   display:flex;align-items:center;gap:9px}
 .nfoot .av{width:28px;height:28px;border-radius:50%;background:var(--s1);
-  display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--tx3);flex:none}
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3);flex:none}
 .nfoot b{font-size:14px;font-weight:600;display:block;letter-spacing:-.01em}
 .nfoot s{text-decoration:none;font-size:13px;color:var(--tx3);display:block}
 
@@ -70,14 +70,14 @@ button{cursor:pointer}
 .crumb{display:flex;align-items:center;gap:7px;font-size:14.5px;min-width:0}
 .crumb a{color:var(--tx3);text-decoration:none;white-space:nowrap}
 .crumb a:hover{color:var(--ink)}
-.crumb .sep{color:var(--tx4)}
+.crumb .sep{color:var(--tx3)}
 .crumb .cur{font-weight:600;letter-spacing:-.01em;white-space:nowrap}
 .topbar .sp{flex:1}
 .iact{width:32px;height:32px;border-radius:var(--rad-m);background:var(--s1);display:grid;place-items:center;color:var(--tx2)}
 .iact:hover{background:var(--s2);color:var(--ink)}
 .iact svg{width:16px;height:16px}
 .forw{display:flex;align-items:center;gap:8px;background:var(--s1);border-radius:var(--rad-m);padding:4px 4px 4px 11px}
-.forw span{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx4)}
+.forw span{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
 /* Системная стрелка селекта прижималась к правому краю плашки. Рисуем свою
    и отводим ей место паддингом — тогда она стоит там, где задумано. */
 .forw select{height:28px;border-radius:var(--rad-s);background:var(--bg);font-size:14.5px;font-weight:600;
@@ -128,7 +128,7 @@ button{cursor:pointer}
 .day .bl i{font-style:normal;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* нумерованный список блоков в дне календаря: номер в своей колонке, чтобы названия стояли ровно */
 .day .bl.num i{display:grid;grid-template-columns:16px minmax(0,1fr);gap:0 2px;align-items:baseline}
-.day .bl.num i s{text-decoration:none;font-size:12px;font-weight:600;color:var(--tx4);font-variant-numeric:tabular-nums}
+.day .bl.num i s{text-decoration:none;font-size:13px;font-weight:600;color:var(--tx3);font-variant-numeric:tabular-nums}
 .day.on .bl.num i s{color:var(--acc-d)}
 .day .bl.num i b{font-weight:inherit;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @container (min-width:900px){
@@ -139,7 +139,7 @@ button{cursor:pointer}
   display:flex;flex-direction:column;gap:4px;transition:.14s;border:1.5px solid transparent}
 .day:hover{background:var(--s2)}
 .day.on{background:var(--acc-a);border-color:var(--acc)}
-.day .d{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
+.day .d{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
 .day.on .d{color:var(--acc-d)}
 .day .t{font-size:15px;font-weight:600;line-height:1.3;letter-spacing:-.01em}
 .day .e{font-size:14px;color:var(--tx3);font-weight:500}
@@ -194,8 +194,8 @@ button{cursor:pointer}
 .fld{display:flex;align-items:center;gap:9px;background:var(--bg);border-radius:var(--rad-m);
   padding:7px 10px;border:1.5px solid transparent}
 .fld:focus-within{border-color:var(--acc)}
-.fld .k{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--tx4);flex:none;width:58px}
+.fld .k{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--tx3);flex:none;width:58px}
 .fld input{flex:1;min-width:0;font-size:15px}
 .fld input:focus{outline:0}
 .fld input::placeholder{color:var(--tx4)}
@@ -221,13 +221,13 @@ button{cursor:pointer}
 .line .sc{color:var(--tx2);font-weight:500}
 .line .pct{height:25px;padding:0 9px;border-radius:var(--rad-s);background:var(--acc-a);color:var(--acc-d);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;
   font-size:13px;font-weight:700;flex:none}
-.line .pct.none{background:var(--s1);color:var(--tx4);font-weight:500}
+.line .pct.none{background:var(--s1);color:var(--tx3);font-weight:500}
 .line .kg{font-size:13.5px;color:var(--tx3);white-space:nowrap;font-weight:500;flex:none;min-width:56px;text-align:right}
 .line .x{width:25px;height:25px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none}
 .line .x:hover{background:var(--rm-a);color:var(--rm)}
 .line .x:hover{background:var(--s1);color:var(--acc)}
 .line .x svg{width:13px;height:13px}
-.addl{width:100%;text-align:left;padding:8px 10px;border-radius:var(--rad-m);color:var(--tx4);
+.addl{width:100%;text-align:left;padding:8px 10px;border-radius:var(--rad-m);color:var(--tx3);
   font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
 .addl:hover{background:var(--bg);color:var(--acc)}
 .addl svg{width:14px;height:14px}
@@ -243,8 +243,8 @@ button{cursor:pointer}
 .sug .row:hover,.sug .row.on{background:var(--s1)}
 .sug .row b{font-weight:600;flex:1;min-width:0;letter-spacing:-.01em;font-size:15px}
 .sug .row s{text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap}
-.sug .cap{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--tx4);padding:8px 10px 5px}
+.sug .cap{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--tx3);padding:8px 10px 5px}
 .sug .ok{border-top:1px solid var(--line);margin-top:4px;padding-top:5px}
 
 /* ─── правая панель источников ─── */
@@ -262,24 +262,24 @@ button{cursor:pointer}
 .search input:focus{outline:0}
 .railbody{flex:1;overflow-y:auto;padding:9px 10px 12px}
 .railfoot{border-top:1px solid var(--line);padding:10px 13px;flex:none;
-  font-size:13px;color:var(--tx4);line-height:1.5}
+  font-size:13px;color:var(--tx3);line-height:1.5}
 
 .grpttl{display:flex;align-items:center;gap:8px;padding:11px 4px 6px}
-.grpttl .lab{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx4)}
+.grpttl .lab{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
 .grpttl .ln{flex:1;height:1px;background:var(--line)}
-.grpttl .n{font-size:12px;color:var(--tx4);font-weight:600}
+.grpttl .n{font-size:13px;color:var(--tx3);font-weight:600}
 .exc{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:var(--rad-m);cursor:pointer}
 .exc:hover{background:var(--s1)}
 .exc .thumb{width:44px;height:44px;border-radius:var(--rad-m);background:var(--s1);flex:none;
-  display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--tx3)}
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3)}
 .exc:hover .thumb{background:var(--bg)}
-.exc .thumb.pending{color:var(--tx4)}
+.exc .thumb.pending{color:var(--tx3)}
 .exc .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .exc .nm{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exc .en{display:block;font-size:13px;color:var(--tx4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exc .en{display:block;font-size:13px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .exc .add{width:24px;height:24px;border-radius:var(--rad-s);display:grid;place-items:center;
-  color:var(--tx4);flex:none;opacity:0;pointer-events:none}
+  color:var(--tx3);flex:none;opacity:0;pointer-events:none}
 .exc:hover .add{opacity:1}
 .exc .add:hover{background:var(--acc-a);color:var(--acc)}
 .exc .add svg{width:13px;height:13px}
@@ -289,12 +289,12 @@ button{cursor:pointer}
 .tplc .h{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .tplc .nm{flex:1;min-width:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tplc .chip{font-size:11.5px;font-weight:600;color:var(--acc-d);background:var(--bg);
+.tplc .chip{font-size:13px;font-weight:600;color:var(--acc-d);background:var(--bg);
   border-radius:var(--rad-s);padding:2px 7px;flex:none;white-space:nowrap}
 .tplc .ls{display:flex;flex-direction:column;gap:2px}
 .tplc .ls span{font-size:13px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.railbody .empty{padding:26px 8px;text-align:center;color:var(--tx4);font-size:13.5px}
-.railbody .hint{font-size:13px;color:var(--tx4);line-height:1.5;padding:10px 4px 0}
+.railbody .empty{padding:26px 8px;text-align:center;color:var(--tx3);font-size:13.5px}
+.railbody .hint{font-size:13px;color:var(--tx3);line-height:1.5;padding:10px 4px 0}
 
 /* ─── шторка назначения ─── */
 .ov{position:fixed;inset:0;background:rgba(20,20,20,.4);display:none;
@@ -317,7 +317,7 @@ button{cursor:pointer}
 .mdt{border-left:3px solid var(--acc);padding-left:12px;margin-bottom:18px}
 .mdt b{display:block;font-size:18.5px;font-weight:700;letter-spacing:-.03em;margin-bottom:3px}
 .mdt s{text-decoration:none;font-size:14px;color:var(--tx3);letter-spacing:.01em}
-.md .lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+.md .lab{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--tx3);margin-bottom:8px}
 
 .md .cl{width:100%;display:flex;align-items:center;gap:13px;padding:10px 16px 10px 12px;
@@ -329,15 +329,15 @@ button{cursor:pointer}
 .md .cl.on .box{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
 .md .cl .box svg{width:13px;height:13px}
 .md .cl .av{width:32px;height:32px;border-radius:var(--rad-m);background:var(--s1);
-  display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--tx3);flex:none}
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3);flex:none}
 .md .cl.on .av{background:var(--bg)}
 .md .cl .who{flex:1;min-width:0}
 .md .cl .who b{display:block;font-size:15.5px;font-weight:600;letter-spacing:-.015em}
-.md .cl .who s{display:block;text-decoration:none;font-size:13px;color:var(--tx4);
+.md .cl .who s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);
   margin-top:2px;letter-spacing:.01em}
 .md .cl .pmv{text-align:right;flex:none}
 .md .cl .pmv b{display:block;font-size:18.5px;font-weight:700;letter-spacing:-.03em;color:var(--acc)}
-.md .cl .pmv s{display:block;text-decoration:none;font-size:12px;color:var(--tx4)}
+.md .cl .pmv s{display:block;text-decoration:none;font-size:13px;color:var(--tx3)}
 
 /* Сообщение ко всей тренировке (COM-4) — над блоками, как и у клиента:
    там оно стоит под именем тренера и читается первым. */
@@ -362,7 +362,7 @@ button{cursor:pointer}
 
 /* Клиент без максимума: тренировка на процентах придёт к нему пустой */
 .md .cl.blind .who s{color:var(--warn)}
-.md .cl.blind .pmv b{color:var(--tx4)}
+.md .cl.blind .pmv b{color:var(--tx3)}
 
 /* ═══════════ ПЕРЕТАСКИВАНИЕ ═══════════
    Куда именно ляжет — показываем линией по краю цели, а не подсветкой
@@ -381,7 +381,7 @@ button{cursor:pointer}
    не упиралась в чип, а уходила под него. */
 .wmsg{position:relative}
 .wmsg .ent{position:absolute;right:46px;top:50%;transform:translateY(-50%);
-  font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.02em;
+  font-family:var(--ui);font-size:13px;font-weight:600;letter-spacing:.02em;
   color:var(--acc-d);background:var(--bg);border-radius:var(--rad-s);padding:3px 7px;
   opacity:0;transition:opacity .14s;pointer-events:none}
 .wmsg .ent::before{content:"";position:absolute;right:100%;top:-4px;bottom:-4px;width:26px;
@@ -433,7 +433,7 @@ button{cursor:pointer}
 .way.ai .ic{background:var(--acc);color:var(--on-acc)}
 .way.ai b{color:var(--acc-d)}
 .way.ai s{color:var(--tx2)}
-.orelse{margin-top:12px;text-align:center;font-size:14px;color:var(--tx4)}
+.orelse{margin-top:12px;text-align:center;font-size:14px;color:var(--tx3)}
 .orelse .lnk{font-size:14px;color:var(--tx3);text-decoration:underline;text-underline-offset:2px}
 .orelse .lnk:hover{color:var(--acc)}
 
@@ -454,7 +454,7 @@ button{cursor:pointer}
   border-radius:var(--rad-l);padding:11px 13px;margin:10px 0 2px;
   box-shadow:0 0 0 1.5px var(--acc)}
 .propose .t{flex:1;min-width:0}
-.propose .t b{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+.propose .t b{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;
   letter-spacing:.07em;text-transform:uppercase;color:var(--acc-d)}
 .propose .t b svg{width:12px;height:12px}
 .propose .t s{display:block;text-decoration:none;font-size:14.5px;color:var(--tx1);margin-top:2px}
@@ -485,17 +485,17 @@ button{cursor:pointer}
   border-radius:var(--rad-l);padding:13px 14px 14px;margin-bottom:10px;background:none;transition:.14s}
 .wtpl:hover{border-color:var(--acc);background:var(--acc-a)}
 .wtpl b{display:block;font-size:16.5px;font-weight:600;letter-spacing:-.02em}
-.wtpl s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx4);margin:3px 0 11px}
+.wtpl s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx3);margin:3px 0 11px}
 .wdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .wd{border-radius:var(--rad-m);padding:7px 7px 8px;font-size:13px;line-height:1.35;min-height:56px;
-  border:1.5px dashed var(--line2);color:var(--tx4);display:flex;flex-direction:column;gap:3px}
-.wd i{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--tx4)}
+  border:1.5px dashed var(--line2);color:var(--tx3);display:flex;flex-direction:column;gap:3px}
+.wd i{font-style:normal;font-size:12.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--tx3)}
 .wd.on{border-style:solid;border-color:transparent;background:var(--s1);color:var(--tx1)}
 .wtpl:hover .wd.on{background:var(--bg)}
 .wd.on i{color:var(--tx3)}
 .foot-note{border-left:3px solid var(--line2);padding-left:11px;margin-top:4px;
-  font-size:13.5px;line-height:1.5;color:var(--tx4)}
+  font-size:13.5px;line-height:1.5;color:var(--tx3)}
 
 /* ═══════════ СОХРАНЕНИЕ НЕДЕЛИ ═══════════
    Одно окно, одно решение. Сводка вместо перечисления: тренер хотел
@@ -504,7 +504,7 @@ button{cursor:pointer}
 .wsave .nmf{margin-bottom:14px}
 .wsave .nmf .k{width:70px}
 .audit{border-radius:var(--rad-m);background:var(--s1);padding:12px 13px;margin-bottom:9px}
-.audit b{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;
+.audit b{display:block;font-size:12.5px;font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;color:var(--tx3);margin-bottom:4px}
 .audit s{display:block;text-decoration:none;font-size:15px;color:var(--tx1);font-weight:500}
 .audit.new{background:var(--acc-a)}
@@ -591,7 +591,7 @@ body.railmin .railtog::before{content:"‹"}
 /* Подпись вертикально: иначе свёрнутая колонка не объясняет, что в ней. */
 body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left:0;right:0;
   writing-mode:vertical-rl;margin:0 auto;font-size:13px;font-weight:600;
-  letter-spacing:.04em;color:var(--tx4)}
+  letter-spacing:.04em;color:var(--tx3)}
 @media (max-width:1120px){ .railtog{display:none} }
 
 /* ─── выбор набора тренировок (CON-4, CON-14) ─── */
@@ -637,10 +637,10 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .docacts .btn svg{width:14px;height:14px}
 
 /* заголовок панели источников */
-.railttl{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx4);margin:0 0 9px 2px}
+.railttl{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin:0 0 9px 2px}
 
 /* ─── черновик и публикация ─── */
-.day .dr{display:inline-block;margin-top:3px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+.day .dr{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--warn);background:#FBF1DE;border-radius:4px;padding:1px 5px;width:fit-content}
 .pubbar{display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .pubbar s{text-decoration:none;flex:1;font-size:14px;color:var(--tx3);line-height:1.45}
@@ -675,7 +675,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dd-i b{display:block;font-size:14.5px;font-weight:600}
 .dd-i s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);margin-top:2px;line-height:1.4}
 /* ─── визард ─── */
-.wz-steps{display:flex;gap:18px;padding:0 18px 12px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx4)}
+.wz-steps{display:flex;gap:18px;padding:0 18px 12px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx3)}
 .wz-steps span{display:flex;align-items:center;gap:7px}
 .wz-steps i{font-style:normal;width:20px;height:20px;border-radius:50%;background:var(--s1);display:grid;place-items:center;font-size:13px;font-weight:700}
 .wz-steps .on{color:var(--ink);font-weight:600}
@@ -703,11 +703,11 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .st-head b{font-size:15px;font-weight:600;letter-spacing:-.01em}
 .st-head s{text-decoration:none;font-size:13.5px;color:var(--tx3);white-space:nowrap}
 .st-pmrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:-4px 0 12px;background:var(--s2);border-radius:var(--rad-m);font-size:14px;color:var(--tx2)}
-.st-pmrow s{text-decoration:none;flex-basis:100%;font-size:13px;color:var(--tx4)}
+.st-pmrow s{text-decoration:none;flex-basis:100%;font-size:13px;color:var(--tx3)}
 .st-grid{display:grid;grid-template-columns:134px 1fr;gap:12px 12px;align-items:center}
 .st-l{font-size:14px;color:var(--tx3)}
 .st-v{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
-.st-v i{font-style:normal;color:var(--tx4)}
+.st-v i{font-style:normal;color:var(--tx3)}
 .st-n{width:58px;height:32px;border:1px solid var(--line2);border-radius:var(--rad-s);padding:0 8px;font:inherit;font-size:15px;font-weight:600;background:var(--bg);text-align:center}
 .st-n.wide{width:120px;text-align:left}
 .st-n:focus{outline:0;border-color:var(--acc)}
@@ -735,9 +735,9 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .wz-tabs button.on{background:var(--acc);color:#fff;font-weight:600}
 .wz-row{display:flex;gap:14px;margin-bottom:14px}
 .wz-f{display:flex;flex-direction:column;gap:5px;flex:1}
-.wz-f span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx4)}
+.wz-f span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
 .wz-f select,.wz-f input{height:36px;border:1px solid var(--line2);border-radius:var(--rad-m);padding:0 10px;font:inherit;font-size:15px;background:var(--bg)}
-.wz-h{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx4);margin-bottom:8px}
+.wz-h{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px}
 
 /* ─── заголовок конструктора в строке ленты ─── */
 .wkh .wkttl{font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 6px 0 0;white-space:nowrap}
@@ -748,7 +748,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 /* ─── тип блока ─── */
 .blkh .ftype{height:24px;padding:0 9px;border-radius:20px;font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
   color:var(--tx3);background:var(--bg);border:1px dashed var(--tx4);flex:none;white-space:nowrap}
-.blkh .ftype:hover{color:var(--tx2);border-color:var(--tx4)}
+.blkh .ftype:hover{color:var(--tx2);border-color:var(--tx3)}
 .blkh .ftype.on{background:var(--acc-a);color:var(--acc-d);border:1px solid transparent;text-transform:none;letter-spacing:0;font-size:13.5px}
 .sug.ftp{width:440px}
 .ft-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
@@ -764,10 +764,10 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .wkh .cliSel{display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;background-image:none;-webkit-appearance:none;appearance:none;cursor:pointer;font-weight:600;font-size:15px}
 .wkh .cliSel .cn{white-space:nowrap}
 .wkh .cliSel svg{width:12px;height:12px;opacity:.75;flex:none}
-.cav{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;font-size:11.5px;font-weight:700;display:grid;place-items:center;flex:none;letter-spacing:0}
+.cav{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center;flex:none;letter-spacing:0}
 .sug.clipick{width:380px;padding:8px}
 .clipick .cl-s{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:var(--rad-m);background:var(--s1);margin-bottom:6px}
-.clipick .cl-s svg{width:14px;height:14px;color:var(--tx4);flex:none}
+.clipick .cl-s svg{width:14px;height:14px;color:var(--tx3);flex:none}
 .clipick .cl-s input{flex:1;min-width:0;height:100%;font-size:14.5px;border:0;outline:0;background:none;padding:0}
 .clipick .cl-s:focus-within{background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--acc)}
 .clipick .cl-s:focus-within svg{color:var(--acc)}
@@ -822,9 +822,9 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .crow .body b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .crow .body s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .crow.on .body b{color:var(--acc-d)}
-.crow .fl{flex:none;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:20px;background:#FBF1DE;color:var(--warn)}
+.crow .fl{flex:none;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:20px;background:#FBF1DE;color:var(--warn)}
 .crow .fl.rm{background:var(--rm-a);color:var(--rm)}
-.crow .fl.gh{background:var(--s1);color:var(--tx4)}
+.crow .fl.gh{background:var(--s1);color:var(--tx3)}
 
 /* липкая шапка календаря: «Сегодня» и переход к дате всегда под рукой */
 .calwrap .wkh{position:sticky;top:58px;z-index:4;background:var(--bg);margin:-12px -14px 6px;padding:12px 14px 10px;border-radius:var(--rad-l) var(--rad-l) 0 0;border-bottom:1px solid var(--line)}
@@ -840,19 +840,19 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .pane{background:var(--bg);border-radius:var(--rad-l);padding:0 14px 14px;min-height:60vh}
 .pane-h{position:sticky;top:58px;z-index:4;background:var(--bg);display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:12px 0 10px;margin:0 -14px 8px;padding-left:14px;padding-right:14px;border-bottom:1px solid var(--line);border-radius:var(--rad-l) var(--rad-l) 0 0}
-.pane-h .cnt{font-size:13.5px;font-weight:600;color:var(--tx4);background:var(--s1);border-radius:20px;padding:2px 8px;margin-left:-4px}
+.pane-h .cnt{font-size:13.5px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:20px;padding:2px 8px;margin-left:-4px}
 .pane-h .sp{flex:1}
 .pane-h .chk{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--tx2);cursor:pointer;white-space:nowrap}
 .pane .tblwrap{margin:0 -14px;overflow:visible}   /* overflow:auto сделал бы обёртку контейнером для sticky */
 .pane .tbl th{position:sticky;top:116px;background:var(--bg);z-index:3}
 .pane .tbl tbody tr.on{background:var(--acc-a)}
 .pane .tbl tbody tr.on td{border-bottom-color:transparent}
-.rhead{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4);padding:12px 8px 6px}
+.rhead{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:12px 8px 6px}
 .rlist{display:flex;flex-direction:column;gap:1px}
 .rlist button{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rad-m);font-size:14.5px;color:var(--tx2);width:100%;text-align:left}
 .rlist button:hover{background:var(--s1)}
 .rlist button.on{background:var(--acc-a);color:var(--acc-d);font-weight:600}
-.rlist button s{text-decoration:none;font-size:13px;color:var(--tx4)}
+.rlist button s{text-decoration:none;font-size:13px;color:var(--tx3)}
 .rprev{padding:2px 8px 8px}
 .rprev .rt{display:block;font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
 .rprev .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
@@ -877,7 +877,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .thumb img{object-fit:cover;object-position:center 40%}
 
 /* ─── дашборд: лента в две колонки + панель «Аккаунт» ─── */
-.evday{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx4);padding:12px 12px 6px}
+.evday{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:12px 12px 6px}
 .fev{display:flex;gap:11px;padding:11px 12px;border-bottom:1px solid var(--line);align-items:flex-start}
 .fev:last-child{border-bottom:0}
 .fev .ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--s1);color:var(--tx3);font-size:13px;font-weight:700;flex:none}
@@ -890,7 +890,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .fev .c{flex:1;min-width:0}
 .fev .h{display:flex;gap:8px;align-items:baseline}
 .fev .h b{font-size:14.5px;font-weight:600}
-.fev .h time{margin-left:auto;font-size:13px;color:var(--tx4);white-space:nowrap}
+.fev .h time{margin-left:auto;font-size:13px;color:var(--tx3);white-space:nowrap}
 .fev .tx{font-size:14px;color:var(--tx2);margin-top:2px;line-height:1.45}
 .fev .btn{flex:none;margin-top:1px}
 .fev .reply{display:flex;align-items:center;gap:8px;margin-top:9px;padding:8px 10px;border-radius:var(--rad-m);background:var(--s1)}
@@ -900,12 +900,12 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dash2 .col+.col{border-left:1px solid var(--line)}
 .dash2 .colh{display:flex;align-items:center;gap:8px;padding:12px 12px 4px}
 .dash2 .colh b{font-family:var(--disp);font-size:16.5px;font-weight:700;letter-spacing:-.02em}
-.dash2 .colh .n{font-size:13.5px;font-weight:600;color:var(--tx4);background:var(--s1);border-radius:20px;padding:2px 8px}
+.dash2 .colh .n{font-size:13.5px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:20px;padding:2px 8px}
 .pane-h .ph-sub{font-size:14.5px;color:var(--tx3)}
 .rkpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 8px 0}
 .rkpis .kpi{background:var(--s1);padding:10px 11px}
 .rkpis .kpi .v{font-size:21px;margin:3px 0 1px}
-.rkpis .kpi .k{font-size:11px}
+.rkpis .kpi .k{font-size:13px}
 .rkpis .kpi .d{font-size:13px}
 .kpi .tr{display:inline-block;margin-left:5px;font-size:13px;font-weight:600;color:var(--ok)}
 .kpi .tr.dn{color:var(--rm)}
@@ -926,8 +926,8 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .tabs2 button{height:28px;padding:0 11px;border-radius:20px;font-size:14px;font-weight:600;color:var(--tx2);background:none}
 .tabs2 button:hover{background:var(--s1)}
 .tabs2 button.on{background:var(--acc-a);color:var(--acc-d)}
-.tabs2 button s{text-decoration:none;font-weight:500;color:var(--tx4);margin-left:4px}
-.tchip{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--s1);color:var(--tx3);white-space:nowrap}
+.tabs2 button s{text-decoration:none;font-weight:500;color:var(--tx3);margin-left:4px}
+.tchip{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--s1);color:var(--tx3);white-space:nowrap}
 .tchip.t-pr{background:var(--acc-a);color:var(--acc-d)}
 .tchip.t-q{background:#E6F1FB;color:#185FA5}
 .tchip.t-miss{background:#FBF1DE;color:var(--warn)}
@@ -945,7 +945,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dmark[data-pub]{cursor:pointer}
 .dmark[data-pub]:hover{background:var(--bg);box-shadow:0 0 0 1px var(--line2)}
 .day.on .dmark[data-pub]:hover{background:var(--acc-a)}
-.day .stcell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 0 6px;color:var(--tx4);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.day .stcell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 0 6px;color:var(--tx3);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .day .stcell svg{width:28px;height:28px;stroke-width:2}
 .day .stcell s{text-decoration:none}
 .day .stcell.comp{color:#B8860B}
@@ -962,7 +962,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days .day:hover{background:var(--bg);border-color:var(--line2)}
 /* margin:0 — иначе общий .empty .d (пустое состояние) добавляет отступы шапке несоставленного дня */
 .days .day .d{display:flex;align-items:center;gap:6px;height:36px;flex:none;margin:0;padding:0 40px 0 12px;background:var(--s2);border-bottom:1px solid var(--line);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink)}
-.days .day .d s{text-decoration:none;color:var(--tx3);font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.days .day .d s{text-decoration:none;color:var(--tx3);font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
 .days .day .d .tdot{display:none}
 .days .day .dmark{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--tx3);background:var(--s1)}
 .days .day .dmark svg{width:18px;height:18px;stroke-width:2.2}
@@ -974,8 +974,8 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days .day .bl{display:flex;flex-direction:column;gap:2px;margin:8px 12px 12px;padding-top:8px;border-top:1px solid #EDEDED}
 .days .day .bl i{font-size:14.5px;color:var(--ink);line-height:22px}
 .days .day .bl.num i{grid-template-columns:20px minmax(0,1fr)}
-.days .day .bl.num i s{font-size:12.5px;color:var(--tx4);font-weight:700}
-.days .day .bl .more{font-size:12.5px;color:var(--tx4);padding-left:20px;line-height:20px}
+.days .day .bl.num i s{font-size:13px;color:var(--tx3);font-weight:700}
+.days .day .bl .more{font-size:13px;color:var(--tx3);padding-left:20px;line-height:20px}
 .days .day .stcell{flex:none;flex-direction:row;justify-content:flex-start;gap:8px;margin:10px 12px 12px;padding:0;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--tx3)}
 .days .day .stcell svg{width:26px;height:26px;flex:none}
 .days .day .stcell.rest{flex:1;align-items:center;justify-content:center;margin:2px 12px 10px}
@@ -1023,7 +1023,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dp-nav:hover{background:var(--acc-a);color:var(--acc-d)}
 .dp-nav svg{width:16px;height:16px}
 .dp-w{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:2px}
-.dp-w span{text-align:center;height:26px;line-height:26px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+.dp-w span{text-align:center;height:26px;line-height:26px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
 .dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .dp-d{height:44px;border-radius:var(--rad-m);font-size:15.5px;font-weight:600;color:var(--ink);background:none;font-variant-numeric:tabular-nums}
 .dp-d:hover{background:var(--s1)}
@@ -1042,3 +1042,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .doch .dst svg{width:16px;height:16px;stroke-width:2.2}
 .doch .dst.pub{background:#E4F4EA;color:var(--ok)}
 .doch .dst.draft{background:#FBF1DE;color:var(--warn)}
+
+/* главная кнопка шапки — кегль как у остальных кнопок действий */
+.tsplit .btn{font-size:15px;height:38px}
+.tsplit .btn.arrow{width:38px}

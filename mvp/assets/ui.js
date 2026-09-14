@@ -126,7 +126,7 @@ function sparkline(vals, w=64, h=20, color='var(--acc)'){
 }
 function lineChart(series, unit='кг'){
   const W=640, H=190, PL=44, PR=16, PT=18, PB=26;
-  if(!series || series.length<2) return `<div style="padding:26px;text-align:center;color:var(--tx4);font-size:13px">Недостаточно данных для графика</div>`;
+  if(!series || series.length<2) return `<div style="padding:26px;text-align:center;color:var(--tx3);font-size:13px">Недостаточно данных для графика</div>`;
   const vals = series.map(s=>s[1]);
   const min = Math.min(...vals), max = Math.max(...vals);
   const lo = min - (max-min||10)*.35, hi = max + (max-min||10)*.2;
@@ -282,7 +282,7 @@ function renderLibRail(cfg){
   if(!t){ railSet({title:kind, body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
   const st = tplStats(t);
   const facts = level==='блок'
-    ? `<s>Папка</s><b>${esc(t.folder||'—')}</b><s>Тип</s><b>${t.fmt ? esc(fmtLabel(t.fmt)) : '<span style="color:var(--tx4)">без типа</span>'}</b><s>Упражнений</s><b>${st.n}</b>`
+    ? `<s>Папка</s><b>${esc(t.folder||'—')}</b><s>Тип</s><b>${t.fmt ? esc(fmtLabel(t.fmt)) : '<span style="color:var(--tx3)">без типа</span>'}</b><s>Упражнений</s><b>${st.n}</b>`
     : level==='тренировка'
     ? `<s>Блоков</s><b>${st.blocks}</b><s>Упражнений</s><b>${st.n}</b>`
     : `<s>Дней</s><b>${t.days}</b><s>Цикл</s><b>${st.cycle} дн.</b><s>Тренировок</s><b>${st.workouts}</b>`;
