@@ -151,6 +151,7 @@ const ICON = {
  chat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 7.6a5.2 5.2 0 0 1-7.4 4.7L2.5 13.2l1-3.6A5.2 5.2 0 1 1 13.5 7.6z"/></svg>',
  photo:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h1.5l1-1.5h3l1 1.5H12a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 12 13H4a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="8" cy="8.5" r="2.3"/></svg>',
  vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
+ vdetail:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 5.5h6M7 8h4M7 10.5h4"/></svg>',
  vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
  search:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>',
@@ -214,7 +215,8 @@ function planStat(){
    а не заполняет семь ячеек. Полоса прокручивается, выбранный день в центре. */
 /* Вид ленты — свойство аккаунта: подробный (что внутри тренировок) или
    компактный (дата и статус). Запоминается вместе с остальным состоянием. */
-const laneView = () => STATE.laneView === 'compact' ? 'compact' : 'full';
+const laneView = () => STATE.laneView === 'compact' ? 'compact' : STATE.laneView === 'detail' ? 'detail' : 'full';
+(function(){ const v = Q.get('view'); if(v && ['compact','full','detail'].includes(v)){ STATE.laneView = v; saveState() } })();
 /* «24 августа – 6 сентября 2026»: подпись диапазона с месяцами и годом. */
 function rangeLabel(a, b){
   const da = new Date(a+'T00:00:00'), db = new Date(b+'T00:00:00');
@@ -254,11 +256,12 @@ function renderStrip(){
       <s class="wkrange">${rangeLabel(cells[0].date, cells[13].date)}</s>
       <span class="sp"></span>
       <span class="vtog" title="Вид ленты">
-        <button data-view="full" class="${laneView()==='full'?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
-        <button data-view="compact" class="${laneView()==='compact'?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
+        <button data-view="compact" class="${laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
+        <button data-view="full" class="${laneView()==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
+        <button data-view="detail" class="${laneView()==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
       </span>
     </div>
-    <div class="days ${laneView()==='compact'?'compact':''}" id="strip">
+    <div class="days ${laneView()==='compact'?'compact':''} ${laneView()==='detail'?'detail':''}" id="strip">
       ${cells.map((c,k)=>{
         const dt = new Date(c.date + 'T00:00:00');
         /* Месяц подписан на стыке и в первой ячейке — чтобы, листая недели,
@@ -275,7 +278,7 @@ function renderStrip(){
         const picked = S.sel && S.sel.has(c.i);
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
         const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
-        const blocks = blocksList(x);
+        const blocks = laneView()==='detail' ? blocksDetail(x, S.cid) : blocksList(x);
         if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}" data-day="${c.i}">
           ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
           ${head}${dayMark(st, S.pid + ':' + c.i)}

@@ -1169,3 +1169,17 @@ function ensureDay(cid, date){
   Object.entries(STATE.pstart||{}).forEach(([pid, q])=>{ const p = program(pid); if(!p || !q.shift) return;
     if(q.start < p.start){ const k = daysBetween(q.start, p.start); PLAN[pid] = Array(k).fill(null).concat(PLAN[pid] || []); p.start = q.start; p.days += k; } });
 })();
+
+/* ═══════════ ПОДРОБНЫЙ ВИД ДНЯ: блоки → упражнения со схемой и нагрузкой ═══════════
+   Третий вид календаря и полосы недель: видна иерархия «блок → упражнения»,
+   у упражнения — подходы×повторы, процент от ПМ и рабочий вес (или объём). */
+const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + ' %' : (it.val ? it.val + (it.unit ? ' ' + it.unit : '') : '')].filter(Boolean).join(' · ');
+function blocksDetail(x, cid){
+  const pm = cid ? pmOf(cid) : null;
+  const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId || y.raw)); if(!bs.length) return '';
+  return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
+    <div class="bxh"><s>${i+1}</s><b>${esc(b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
+    ${b.items.filter(y=>y.exId || y.raw).map(it=>{ const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
+      return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? ` <u>${fmtNum(kg)} кг</u>` : ''}</em></div>` }).join('')}
+  </div>`).join('')}</div>`;
+}

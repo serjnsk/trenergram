@@ -39,7 +39,8 @@
 const Q = new URLSearchParams(location.search);
 const C = { cid: Q.get('client') || STATE.curClient || 'c1', q:'', from:null, to:null };
 if(!client(C.cid)) C.cid = 'c1';
-const laneView = () => STATE.laneView === 'compact' ? 'compact' : 'full';
+const laneView = () => STATE.laneView === 'compact' ? 'compact' : STATE.laneView === 'detail' ? 'detail' : 'full';
+(function(){ const u = new URL(location.href), v = u.searchParams.get('view'); if(v && ['compact','full','detail'].includes(v)){ STATE.laneView = v; saveState(); u.searchParams.delete('view'); history.replaceState(null, '', u.pathname + (u.search || '')) } })();
 const ymIso = (y,m,d=1) => y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
 const ymOf = iso => ({y:+iso.slice(0,4), m:+iso.slice(5,7)-1});
 const ymAdd = ({y,m}, k) => { const t = y*12 + m + k; return {y:Math.floor(t/12), m:((t%12)+12)%12} };
@@ -47,6 +48,7 @@ const ymKey = ({y,m}) => ymIso(y,m);
 Object.assign(ICON, {      /* те же иконки, что в ленте конструктора */
   chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
   vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
+  vdetail:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 5.5h6M7 8h4M7 10.5h4"/></svg>',
   vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
 });
 
@@ -61,7 +63,7 @@ function initRange(){
   C.from = ymAdd(ymOf(dates[0]), -1); C.to = ymAdd(ymOf(dates[dates.length-1]), 1);
 }
 function monthHTML(y, m, ctx){
-  const {p, pid, plan, compact} = ctx;
+  const {c, p, pid, plan, compact, view} = ctx;
   const first = ymIso(y, m), dim = new Date(y, m+1, 0).getDate();
   const start = addDays(first, -dowMon(first));
   const nCells = Math.ceil((dowMon(first) + dim) / 7) * 7;
@@ -80,7 +82,7 @@ function monthHTML(y, m, ctx){
     const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
-    const blocks = blocksList(x);
+    const blocks = view === 'detail' ? blocksDetail(x, c.id) : blocksList(x);
     const mark = dayMark(st, p.id + ':' + i);
     if(compact) return `<a class="day cmp ${st}${cls}" href="${href}" data-date="${date}">${head}${mark}
       ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}</a>`;
@@ -90,12 +92,12 @@ function monthHTML(y, m, ctx){
   });
   return `<section class="mon" data-ym="${ymIso(y,m)}">
     <div class="monh"><b>${MONTHS_N[m]} ${y}</b><div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div></div>
-    <div class="days cal ${compact?'compact':''}">${cells.join('')}</div>
+    <div class="days cal ${compact?'compact':''} ${view==='detail'?'detail':''}">${cells.join('')}</div>
   </section>`;
 }
 function ctx(){
   const c = client(C.cid), pid = c.prog, p = pid ? program(pid) : null;
-  return {c, pid, p, plan: pid ? buildPlan(pid) : [], compact: laneView()==='compact'};
+  return {c, pid, p, plan: pid ? buildPlan(pid) : [], compact: laneView()==='compact', view: laneView()};
 }
 function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); k = ymAdd(k, 1)) out.push(k); return out }
 
@@ -111,8 +113,9 @@ function renderCal(keepYM){
       <button class="btn gh sm" id="mMonth" title="Пролистать к началу текущего месяца">Текущий месяц</button>
       <button class="btn gh sm jumpb" id="jumpBtn" title="Перейти к дате">${ICON.cal}<span>${dm(C.jump||TODAY)}.${(C.jump||TODAY).slice(0,4)}</span>${ICON.chev}</button>
       <span class="vtog" title="Вид">
-        <button data-view="full" class="${!x.compact?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
-        <button data-view="compact" class="${x.compact?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
+        <button data-view="compact" class="${x.view==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
+        <button data-view="full" class="${x.view==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
+        <button data-view="detail" class="${x.view==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
       </span>
     </div>
     <div id="topSent"></div>
