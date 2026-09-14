@@ -1180,6 +1180,6 @@ function blocksDetail(x, cid){
   return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
     <div class="bxh"><s>${i+1}</s><b>${esc(b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
     ${b.items.filter(y=>y.exId || y.raw).map(it=>{ const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
-      return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? ` <u>${fmtNum(kg)} кг</u>` : ''}</em></div>` }).join('')}
+      return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)} кг</u>` : ''}</em></div>` }).join('')}
   </div>`).join('')}</div>`;
 }
