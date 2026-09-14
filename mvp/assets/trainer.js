@@ -397,20 +397,22 @@ function renderDoc(){
              placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
       ${empty ? '' : `
         ${isDraft(d) ? `<span class="chip warn">черновик</span>` : (n ? `<span class="chip ok">в календаре</span>` : '')}
-        <span class="stat">${d.blocks.length} ${plural(d.blocks.length,'блок','блока','блоков')} · ${n} ${plural(n,'упражнение','упражнения','упражнений')}${raw?` · ${raw} остались текстом`:''}</span>
-        <button class="x" id="sav-wo" title="Сохранить тренировку в библиотеку">${ICON.star}</button>
-        <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>`}
+        <span class="stat">${d.blocks.length} ${plural(d.blocks.length,'блок','блока','блоков')} · ${n} ${plural(n,'упражнение','упражнения','упражнений')}${raw?` · ${raw} остались текстом`:''}</span>`}
+      <button class="x ${trainerMsg(d.date)?'note-on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>
+      <button class="x" id="sav-wo" title="Сохранить тренировку в библиотеку">${ICON.star}</button>
+      <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
     </div>
     <div class="docacts">
       <button class="btn gh sm" id="fromTpl">${ICON.tpl} Из шаблона</button>
       <button class="btn gh sm" id="copyFrom">${ICON.copy} Скопировать существующую</button>
       <button class="btn gh sm" id="w-ai">${ICON.ai} Текстом — ИИ разберёт</button>
     </div>
-    <label class="fld wmsg"><span class="k">${ICON.chat} Клиенту</span>
+    ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} Клиенту</span>
       <input id="w-msg" value="${esc(trainerMsg(d.date))}"
              placeholder="Сообщение ко всей тренировке — клиент увидит его первым">
       <kbd class="ent">↵ Enter</kbd>
-    </label>
+      <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
+    </label>` : ''}
     ${propose}
     ${S.compose==='text' ? emptyDay() : ''}
     ${S.compose==='text' && empty ? '' : d.blocks.map(blockHTML).join('')}
@@ -1313,9 +1315,10 @@ document.addEventListener('click', e=>{
   const nt = e.target.closest('[data-notetog]');
   if(nt){
     /* Заметки к блокам пишут редко, поэтому поле спрятано за иконкой: открыл —
-       пиши, закрыл пустым — исчезло. Заполненная заметка держит поле видимым. */
+       пиши, закрыл пустым — исчезло. Заполненная заметка держит поле видимым,
+       иконка тогда просто ставит курсор; удаление — крестиком в самой заметке. */
     const b = day().blocks.find(x=>x.id===nt.dataset.notetog);
-    if(b){ if(b.note){ b.note = ''; b.noteOpen = false; } else b.noteOpen = !b.noteOpen; render();
+    if(b){ if(!b.note) b.noteOpen = !b.noteOpen; render();
       const inp = $(`[data-blk="${b.id}"] .bnote input`); if(inp) inp.focus(); }
     return;
   }
@@ -1357,6 +1360,10 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#pd-no')){  cancelPending(); return }
   if(e.target.closest('#pd-src')){ showSource();   return }
   if(e.target.closest('#sav-wo')){ saveWorkout(); return }
+  /* Сообщение клиенту — тот же паттерн, что заметка к блоку: поле спрятано за
+     иконкой, открыл — пиши, заполненное держит поле видимым, удаляется крестиком. */
+  if(e.target.closest('#msg-tog')){ const dd = day(); S.msgOpen = (!trainerMsg(dd.date) && S.msgOpen===dd.date) ? null : dd.date; render(); const i = $('#w-msg'); if(i) i.focus(); return }
+  if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); S.msgOpen = null; render(); return }
   if(e.target.closest('#clr-wo')){ askClear(); return }
   const sb = e.target.closest('[data-savblk]');
   if(sb){ openFolder(sb); return }
