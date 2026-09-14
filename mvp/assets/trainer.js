@@ -152,6 +152,7 @@ const ICON = {
  photo:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h1.5l1-1.5h3l1 1.5H12a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 12 13H4a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="8" cy="8.5" r="2.3"/></svg>',
  vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
  vdetail:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 5.5h6M7 8h4M7 10.5h4"/></svg>',
+ vhide:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="6" width="12" height="4" rx="1.2"/></svg>',
  vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
  search:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>',
@@ -172,6 +173,7 @@ function renderTop(){
      Крошки, выбор клиента и «Назначить» переехали в рабочую зону — они
      относятся к тренировке, а не к приложению. */
   $('#topbar').innerHTML = `
+    <h1 class="ptitle">Создать тренировку</h1>
     <span class="sp"></span>
     ${topButton()}`;
   bindTopButton();
@@ -216,7 +218,7 @@ function planStat(){
 /* Вид ленты — свойство аккаунта: подробный (что внутри тренировок) или
    компактный (дата и статус). Запоминается вместе с остальным состоянием. */
 const laneView = () => STATE.laneView === 'compact' ? 'compact' : STATE.laneView === 'detail' ? 'detail' : 'full';
-(function(){ const v = Q.get('view'); if(v && ['compact','full','detail'].includes(v)){ STATE.laneView = v; saveState() } })();
+(function(){ const v = Q.get('view'); if(v==='hidden'){ STATE.laneHidden = true; saveState() } else if(v && ['compact','full','detail'].includes(v)){ STATE.laneHidden = false; STATE.laneView = v; saveState() } })();
 /* «24 августа – 6 сентября 2026»: подпись диапазона с месяцами и годом. */
 function rangeLabel(a, b){
   const da = new Date(a+'T00:00:00'), db = new Date(b+'T00:00:00');
@@ -237,7 +239,6 @@ function renderStrip(){
   });
   $('#wk').innerHTML = `
     <div class="wkh one">
-      <h1 class="wkttl">Создать тренировку</h1>
       <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cl-t"><b>${esc(client(S.cid).n)}</b><s>${esc(clientProgSub(client(S.cid)))}</s></span>${ICON.chev}</button>
       ${S.sel ? `<div class="selbar">
         <b class="seln">Выбрано ${S.sel.size}</b>
@@ -245,19 +246,20 @@ function renderStrip(){
         <button class="cp" id="selMove" ${S.sel.size?'':'disabled'}>${ICON.arr} Перенести</button>
         <button class="cp" id="selCancel">${ICON.x} Отмена</button></div>
       ` : (S.paste ? `<s class="hint">${S.paste==='copy'?'выберите день, куда скопировать':'выберите день, куда перенести'}</s>` : '')}
-      <div class="dates">
+      <div class="dates">${STATE.laneHidden ? '' : `
         <span class="wkn">
           <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
           <button id="dayNext" title="Неделей позже">${ICON.arr}</button>
-        </span>
+        </span>`}
       </div>
       <div class="views"><span class="vtog" title="Вид ленты">
-        <button data-view="compact" class="${laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
-        <button data-view="full" class="${laneView()==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
-        <button data-view="detail" class="${laneView()==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
+        <button data-view="hidden" class="${STATE.laneHidden?'on':''}" title="Скрыть календарь — только тренировка дня">${ICON.vhide}</button>
+        <button data-view="compact" class="${!STATE.laneHidden && laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
+        <button data-view="full" class="${!STATE.laneHidden && laneView()==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
+        <button data-view="detail" class="${!STATE.laneHidden && laneView()==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
       </span></div>
     </div>
-    <div class="days ${laneView()==='compact'?'compact':''} ${laneView()==='detail'?'detail':''}" id="strip">
+    <div class="days ${laneView()==='compact'?'compact':''} ${laneView()==='detail'?'detail':''} ${STATE.laneHidden?'hide':''}" id="strip">
       ${cells.map((c,k)=>{
         const dt = new Date(c.date + 'T00:00:00');
         /* Месяц подписан на стыке и в первой ячейке — чтобы, листая недели,
@@ -1330,7 +1332,7 @@ document.addEventListener('click', e=>{
   }
   /* Стрелки листают неделями: лента — это неделя, день внутри неё выбирают
      кликом. Встаём на тот же день недели, если он в сроке программы. */
-  const vt = e.target.closest('[data-view]'); if(vt){ STATE.laneView = vt.dataset.view; saveState(); renderStrip(); return }
+  const vt = e.target.closest('[data-view]'); if(vt){ const v = vt.dataset.view; if(v==='hidden') STATE.laneHidden = true; else { STATE.laneHidden = false; STATE.laneView = v } saveState(); renderStrip(); return }
   if(e.target.closest('#wkToday')){ bindClient(S.cid, TODAY); render(); return }
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
   if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; S.compose = null; render(); return }
@@ -1551,13 +1553,31 @@ document.addEventListener('dragstart', e=>{
   if(rail){ DRAG = rail.dataset.ex ? {t:'ex', v:rail.dataset.ex} : {t:'tpl', v:rail.dataset.tpl};
             e.dataTransfer.effectAllowed = 'copy'; return }
   const line = e.target.closest('.line');
-  if(line && line.draggable){ DRAG = {t:'line', v:line.dataset.item}; return }
+  if(line && line.draggable){ DRAG = {t:'line', v:line.dataset.item}; dragGhost(e, (line.querySelector('.nm')||line).textContent.trim() || 'Упражнение'); return }
   const blk = e.target.closest('.blk');
-  if(blk && blk.draggable){ DRAG = {t:'block', v:blk.dataset.blk}; return }
+  if(blk && blk.draggable){ DRAG = {t:'block', v:blk.dataset.blk}; dragGhost(e, ((blk.querySelector('.bt')||{}).value || '').trim() || 'Блок'); return }
   const doc = e.target.closest('.doc');
-  if(doc && doc.draggable){ DRAG = {t:'workout', v:S.i}; return }
+  if(doc && doc.draggable){
+    /* Тренировку кладут только на день в полосе недель: если полоса скрыта —
+       перетаскивать некуда, говорим об этом, а не молча ничего не делаем. */
+    const strip = $('#strip');
+    if(STATE.laneHidden || !strip){ e.preventDefault(); clearDrag(); toast('Покажите календарь — тренировку переносят на день в полосе недель'); return }
+    DRAG = {t:'workout', v:S.i};
+    dragGhost(e, day().title || 'Тренировка');
+    const r = strip.getBoundingClientRect(); if(r.top < 70) window.scrollBy({top: r.top - 90, behavior:'smooth'});
+    return;
+  }
   e.preventDefault();
 });
+/* Компактная «плашка» вместо снимка всего документа: снимок тренировки на весь
+   экран закрывал полосу недель, и бросить её было некуда. setData нужен
+   Firefox — без него перетаскивание там не начинается вовсе. */
+function dragGhost(e, text){
+  const g = document.createElement('div'); g.className = 'dragghost'; g.textContent = text;
+  document.body.appendChild(g);
+  try{ e.dataTransfer.setData('text/plain', text); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setDragImage(g, 14, 16) }catch(_){}
+  setTimeout(()=>g.remove(), 0);
+}
 document.addEventListener('dragover', e=>{
   if(!DRAG) return;
   e.preventDefault();
@@ -1630,8 +1650,14 @@ function dropOnDay(idx){
   if(idx === S.i && DRAG.t !== 'line'){ clearDrag(); return }
   const src = day(), dst = dayOf(idx);
   if(DRAG.t === 'workout'){
-    dst.title = src.title; dst.blocks = src.blocks;
-    src.title = ''; src.blocks = [];
+    /* Если на целевом дне уже есть тренировка — меняем дни местами, а не
+       затираем её молча. Статус соревнования переезжает вместе с днём. */
+    const had = dst.blocks.some(b=>b.items.some(i=>i.exId));
+    const t = {title:dst.title, blocks:dst.blocks, comp:dst.comp};
+    dst.title = src.title; dst.blocks = src.blocks; dst.comp = src.comp;
+    src.title = had ? t.title : ''; src.blocks = had ? t.blocks : []; src.comp = had ? t.comp : false;
+    const dt = new Date(dst.date+'T00:00:00');
+    toast(had ? 'Тренировки поменялись местами' : 'Тренировка перенесена на ' + dt.getDate() + ' ' + MON[dt.getMonth()]);
   }
   else if(DRAG.t === 'block'){
     const at = src.blocks.findIndex(x=>x.id===DRAG.v);

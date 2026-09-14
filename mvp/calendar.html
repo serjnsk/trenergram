@@ -106,7 +106,6 @@ function renderCal(keepYM){
   const done = pid ? composedDays(pid) : 0;
   $('#cal').innerHTML = `
     <div class="wkh one">
-      <h1 class="wkttl">Календарь</h1>
       <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
       <div class="dates">
         <button class="btn gh sm" id="mToday" title="Пролистать к сегодняшнему дню">Сегодня</button>
@@ -182,7 +181,7 @@ document.addEventListener('click', e=>{
   const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
 });
 render();
-initShell({page:'calendar.html'});
+initShell({page:'calendar.html', title:'Календарь'});
 </script>
 </body>
 </html>

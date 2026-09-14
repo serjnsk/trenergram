@@ -66,8 +66,18 @@ const ICON = {
    Одинакова на всех страницах и несёт ровно одно — главное действие тренера.
    Крошки и заголовок живут в рабочей зоне (renderHead): в шапке они делали
    её разной на каждом экране и отрывали название от содержимого. */
-function renderTop(){
+/* Название страницы живёт в шапке: один шрифт на всех страницах. Берётся из
+   cfg.title, из paneHead (setTopTitle) или из <title> документа. */
+let PT = null;
+function setTopTitle(title, count){
+  PT = {title, count};
+  const h = document.getElementById('ptitle');
+  if(h) h.innerHTML = esc(title) + (count != null ? `<span class="cnt">${count}</span>` : '');
+}
+function renderTop(cfg){
+  const t = (cfg && cfg.title) ? {title:cfg.title, count:cfg.count} : (PT || {title: document.title.split(' · ')[0]});
   $('#topbar').innerHTML = `
+    <h1 class="ptitle" id="ptitle">${esc(t.title)}${t.count != null ? `<span class="cnt">${t.count}</span>` : ''}</h1>
     <span class="sp"></span>
     ${topButton()}`;
   bindTopButton();
@@ -83,17 +93,16 @@ function renderHead(cfg){
   head.innerHTML = `
     ${crumb.length > 1 ? `<nav class="crumb">${crumb.slice(0,-1).map(c=>
       `<a href="${c.h}">${esc(c.n)}</a><span class="sep">/</span>`).join('')}</nav>` : ''}
-    <div class="ph-row">
-      <h1>${esc(title)}</h1>
+    ${cfg.sub || cfg.actions ? `<div class="ph-row">
       ${cfg.sub?`<span class="ph-sub">${esc(cfg.sub)}</span>`:''}
       <span class="sp"></span>
       ${cfg.actions||''}
-    </div>`;
+    </div>` : ''}`;
 }
 
 function initShell(cfg){
   renderNav(cfg.page);
-  renderTop();
+  renderTop(cfg);
   renderHead(cfg);
 }
 
@@ -231,11 +240,10 @@ const railSet = ({title, body, foot}) => {
   if(bd) bd.innerHTML = body || '';
   if(f) f.innerHTML = foot || '';
 };
-const paneHead = (title, count, controls) => `
+const paneHead = (title, count, controls) => { setTopTitle(title, count); return `
   <div class="pane-h">
-    <h1 class="wkttl">${esc(title)}</h1>${count != null ? `<span class="cnt">${count}</span>` : ''}
     ${controls || ''}
-  </div>`;
+  </div>` };
 /* Подсветка выбранной строки без перерисовки таблицы — иначе теряется прокрутка. */
 function markRow(tblId, id){
   $$(`[data-tbl="${tblId}"] tr[data-row]`).forEach(tr => tr.classList.toggle('on', tr.dataset.row === String(id)));
