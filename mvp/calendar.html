@@ -97,7 +97,7 @@ function monthHTML(y, m, ctx){
     return `<a class="day${n?'':' rest'}${cls}" href="${href}" data-date="${date}">${head}
       ${n ? `<span class="t">${esc(title)}</span>` : '<span class="e">отдых</span>'}
       ${x.draft && n ? '<span class="dr">черновик</span>' : ''}
-      ${n ? `<span class="bl">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map(b=>`<i>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</i>`).join('')}</span>` : ''}</a>`;
+      ${n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : ''}</a>`;
   });
   return `<section class="mon" data-ym="${ymIso(y,m)}">
     <div class="monh"><b>${MONTHS_N[m]} ${y}</b><div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div></div>

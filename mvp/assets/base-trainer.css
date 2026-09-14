@@ -126,6 +126,11 @@ button{cursor:pointer}
 .days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;container-type:inline-size}
 .day .bl{display:none;flex-direction:column;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
 .day .bl i{font-style:normal;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* нумерованный список блоков в дне календаря: номер в своей колонке, чтобы названия стояли ровно */
+.day .bl.num i{display:grid;grid-template-columns:16px minmax(0,1fr);gap:0 2px;align-items:baseline}
+.day .bl.num i s{text-decoration:none;font-size:12px;font-weight:600;color:var(--tx4);font-variant-numeric:tabular-nums}
+.day.on .bl.num i s{color:var(--acc-d)}
+.day .bl.num i b{font-weight:inherit;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @container (min-width:900px){
   .day{min-height:118px;padding:11px 12px 12px}
   .day .bl{display:flex}
