@@ -59,7 +59,7 @@ function laneHTML(){
   return `<div class="days cal compact">${Array.from({length:14},(_,k)=>{ const date=addDays(wk0,k), dt=new Date(date+'T00:00:00'); const i = P ? daysBetween(P.start, date) : -1;
     const inProg = !!P && i>=0 && i<P.days, x = inProg && i<plan.length ? plan[i] : null; const n = x ? x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length,0) : 0;
     const mon = (dt.getDate()===1 || k===0) ? ' '+MONTHS[dt.getMonth()].slice(0,3) : '';
-    const head=`<span class="d">${RU[dowMon(date)]} ${dt.getDate()}${mon}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+    const head=`<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = date===TODAY ? ' today' : '';
     if(!inProg) return `<span class="day out rest${cls}">${head}${restCell()}</span>`;
     if(!x) return `<a class="day empty rest${cls}" href="constructor.html?client=${C.id}&date=${date}" title="Составить этот день">${head}${restCell()}</a>`;

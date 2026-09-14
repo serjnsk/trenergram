@@ -1124,5 +1124,11 @@ function setPublished(pid, i, on){
   saveState(); return true;
 }
 const pubToggleMsg = on => on ? 'Тренировка опубликована — клиент её видит' : 'Тренировка скрыта от клиента — черновик';
-const restCell = () => `<span class="stcell rest">${DAYICON.rest}<s>отдых</s></span>`;
-const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>соревнование</s></span>`;
+/* Отдых — оригинальная иконка из брифа (assets/icons/rest.png), без перерисовки. */
+const restCell = () => `<span class="stcell rest"><img src="assets/icons/rest.png" alt=""><s>Отдых</s></span>`;
+/* Список блоков дня: номер в своей колонке, не больше max строк, остальное — «ещё N». */
+function blocksList(x, max=5){
+  const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId)); if(!bs.length) return '';
+  return `<span class="bl num">${bs.slice(0,max).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}${bs.length>max ? `<span class="more">ещё ${bs.length-max}</span>` : ''}</span>`;
+}
+const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>Соревнование</s></span>`;

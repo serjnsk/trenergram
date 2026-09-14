@@ -252,7 +252,7 @@ function renderStrip(){
            не терять, где мы; сегодняшний день помечен точкой. */
         const mon = (dt.getDate()===1 || k===0) ? ' ' + MON[dt.getMonth()] : '';
         const today = c.date === TODAY;
-        const head = `<span class="d">${RU[dowMon(c.date)]} ${dt.getDate()}${mon}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+        const head = `<span class="d"><s>${RU[dowMon(c.date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
         const cls = today ? ' today' : '';
         if(!c.inProg) return `<span class="day out rest${cls}">${head}${restCell()}</span>`;
         if(!c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" title="Составить этот день">${head}${restCell()}</button>`;
@@ -262,7 +262,7 @@ function renderStrip(){
         const picked = S.sel && S.sel.has(c.i);
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
         const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
-        const blocks = n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : '';
+        const blocks = blocksList(x);
         if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}" data-day="${c.i}">
           ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
           ${head}${dayMark(st, S.pid + ':' + c.i)}

@@ -71,7 +71,7 @@ function monthHTML(y, m, ctx){
     const today = date === TODAY;
     const i = p ? daysBetween(p.start, date) : -1;
     const inProg = !!p && i >= 0 && i < p.days, inPlan = inProg && i < plan.length;
-    const head = `<span class="d">${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+    const head = `<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = today ? ' today' : '';
     if(!inProg) return `<span class="day out rest${cls}" data-date="${date}">${head}${restCell()}</span>`;
     const href = `constructor.html?client=${C.cid}&date=${date}`;
@@ -81,7 +81,7 @@ function monthHTML(y, m, ctx){
     const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
-    const blocks = n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : '';
+    const blocks = blocksList(x);
     const mark = dayMark(st, p.id + ':' + i);
     if(compact) return `<a class="day cmp ${st}${cls}" href="${href}" data-date="${date}">${head}${mark}
       ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}</a>`;
