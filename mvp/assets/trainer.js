@@ -407,9 +407,6 @@ function renderDoc(){
       <span class="gr" title="Перетащить тренировку на другой день">${ICON.grip}</span>
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
-      ${empty ? '' : `
-        ${isDraft(d) ? `<span class="chip warn">черновик</span>` : (n ? `<span class="chip ok">в календаре</span>` : '')}
-        <span class="stat">${d.blocks.length} ${plural(d.blocks.length,'блок','блока','блоков')} · ${n} ${plural(n,'упражнение','упражнения','упражнений')}${raw?` · ${raw} остались текстом`:''}</span>`}
       ${d.comp ? '<span class="chip warn">соревнование</span>' : ''}
       <button class="x ${d.comp?'note-on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
       <button class="x ${trainerMsg(d.date)?'note-on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>

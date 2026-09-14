@@ -151,20 +151,22 @@ button{cursor:pointer}
 .day .ld{display:none}
 
 /* документ дня */
-.doc{background:var(--bg);border-radius:var(--rad-l);padding:15px 16px 18px}
+.doc{background:var(--bg);border-radius:var(--rad-l);padding:0 16px 18px;overflow:hidden}
 /* Шапка дня одной строкой: название, счёт, действия иконками — теми же,
    что у блоков. Одинаковые действия должны выглядеть одинаково на всех
    уровнях, иначе тренеру приходится запоминать два языка. */
-.doch{display:flex;align-items:center;gap:11px;margin-bottom:6px}
-.doch .x{width:30px;height:30px;border-radius:var(--rad-m);display:grid;place-items:center;
-  color:var(--tx2);flex:none;background:var(--s1)}
-.doch .x.note-on{color:var(--acc);background:var(--acc-a)}
-.doch .x:hover{background:var(--acc-a);color:var(--acc)}
-.doch .x.rm:hover{background:var(--rm-a);color:var(--rm)}
+/* Шапка тренировки — той же анатомии, что шапка блока и клетка дня: серая
+   полоса, название, действия справа квадратами с рамкой. */
+.doch{display:flex;align-items:center;gap:10px;margin:0 -16px 12px;padding:9px 14px 9px 12px;background:var(--s2);border-bottom:1px solid var(--line)}
+.doch .x{width:30px;height:30px;border-radius:var(--rad-s);display:grid;place-items:center;
+  color:var(--tx2);flex:none;background:var(--bg);border:1px solid var(--line2)}
+.doch .x.note-on{color:var(--acc);background:var(--acc-a);border-color:transparent}
+.doch .x:hover{background:var(--acc-a);color:var(--acc);border-color:transparent}
+.doch .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:transparent}
 .doch .x svg{width:15px;height:15px}
 .doch input{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.03em;flex:1;min-width:0;
   padding:3px 6px;margin-left:-6px;border-radius:var(--rad-s)}
-.doch input:focus{outline:0;background:var(--s1)}
+.doch input:focus{outline:0;background:var(--bg)}
 .doch .stat{font-size:14px;color:var(--tx3);white-space:nowrap;font-weight:500}
 
 .blk{background:var(--s1);border-radius:var(--rad-l);padding:11px 12px;margin-top:11px}
