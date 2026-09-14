@@ -190,3 +190,35 @@ function openDatePicker(btn, curDate, onPick){
   draw();
   return box;
 }
+
+/* ═══════════ ПОДСКАЗКИ ═══════════
+   Свои вместо системных title: крупнее, контрастнее и без секундной задержки.
+   Атрибут title переносится в data-tip при первом наведении, чтобы не
+   всплывала и системная. Позиция fixed — под элементом, у краёв экрана
+   прижимается, снизу — переворачивается наверх. */
+(function(){
+  let tipEl = null, timer = null, cur = null;
+  const box = () => tipEl || (tipEl = Object.assign(document.body.appendChild(document.createElement('div')), {className:'tip'}));
+  const show = (t, text) => {
+    if(!t.isConnected) return;
+    const b = box(); b.textContent = text; b.classList.add('on');
+    const r = t.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight;
+    let x = r.left + r.width/2 - w/2, y = r.bottom + 8;
+    if(y + h > innerHeight - 8) y = r.top - h - 8;
+    x = Math.max(8, Math.min(innerWidth - w - 8, x));
+    b.style.left = x + 'px'; b.style.top = y + 'px';
+  };
+  const hide = () => { clearTimeout(timer); timer = null; cur = null; if(tipEl) tipEl.classList.remove('on') };
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest ? e.target.closest('[title],[data-tip]') : null;
+    if(!t || t === cur) return;
+    hide(); cur = t;
+    if(t.hasAttribute('title')){ t.dataset.tip = t.getAttribute('title'); t.removeAttribute('title') }
+    const text = (t.dataset.tip || '').trim(); if(!text) return;
+    timer = setTimeout(() => show(t, text), 120);
+  });
+  document.addEventListener('mouseout', e => { if(cur && !(e.relatedTarget && cur.contains(e.relatedTarget))) hide() });
+  document.addEventListener('mousedown', hide, true);
+  addEventListener('scroll', hide, true);
+  addEventListener('keydown', hide, true);
+})();

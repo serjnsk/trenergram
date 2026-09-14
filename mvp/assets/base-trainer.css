@@ -1035,3 +1035,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dp-f{display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 .pubbar .btn:disabled{background:var(--s1);color:var(--tx4);cursor:default}
 .pubbar .btn:disabled svg{opacity:.5}
+
+/* ─── подсказки (вместо системных title) ─── */
+.tip{position:fixed;z-index:1000;max-width:340px;padding:7px 11px;border-radius:var(--rad-m);background:#1F1F1F;color:#fff;font-size:14px;font-weight:500;line-height:1.35;box-shadow:0 6px 20px rgba(0,0,0,.18);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .1s,transform .1s}
+.tip.on{opacity:1;transform:none}

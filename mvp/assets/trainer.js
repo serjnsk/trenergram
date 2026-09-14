@@ -1476,10 +1476,15 @@ document.addEventListener('input', e=>{
     const b = day().blocks.find(x=>x.id === f.closest('[data-blk]').dataset.blk);
     b[f.dataset.f] = f.value;
     if(f.dataset.f === 'title') renderStrip();
+    /* Иконка заметки заливается сразу, как появился текст, без перерисовки —
+       перерисовка сбила бы курсор в поле. */
+    if(f.dataset.f === 'note'){ const ic = document.querySelector(`[data-notetog="${b.id}"]`); if(ic){ ic.classList.toggle('on', !!f.value.trim()); ic.dataset.tip = f.value.trim() ? 'Заметка к блоку' : 'Добавить заметку к блоку'; ic.removeAttribute('title') } }
     return;
   }
   if(e.target.id === 'd-title'){ day().title = e.target.value; renderStrip(); return }
-  if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value); return }
+  if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value);
+    const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
+    return }
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
 });
 document.addEventListener('change', e=>{
