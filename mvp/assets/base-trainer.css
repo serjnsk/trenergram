@@ -219,10 +219,14 @@ button{cursor:pointer}
 .line .txt:focus{outline:0}
 .line .nm{font-weight:600;letter-spacing:-.01em}
 .line .sc{color:var(--tx2);font-weight:500}
-.line .pct{height:25px;padding:0 9px;border-radius:var(--rad-s);background:var(--acc-a);color:var(--acc-d);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;
-  font-size:13px;font-weight:700;flex:none}
-.line .pct.none{background:var(--s1);color:var(--tx3);font-weight:500}
-.line .kg{font-size:13.5px;color:var(--tx3);white-space:nowrap;font-weight:500;flex:none;min-width:56px;text-align:right}
+/* Правило подсветки параметров (одно для конструктора и календаря):
+   название — обычный текст; введённые подходы/повторы/проценты — оранжевый
+   текст; рассчитанное (рабочий вес от ПМ) — оранжевый чип с фоном. */
+.line .pct{height:25px;padding:0 4px;border-radius:var(--rad-s);background:none;color:var(--acc-d);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+.line .pct:hover{background:var(--acc-a)}
+.line .pct.none{background:none;color:var(--tx3);font-weight:500;border:1px dashed var(--tx4);padding:0 9px}
+.line .kg{font-size:13.5px;color:var(--acc-d);white-space:nowrap;font-weight:600;flex:none;font-variant-numeric:tabular-nums}
+.line .kg:not(:empty){background:var(--acc-a);border-radius:var(--rad-s);padding:0 9px;height:25px;display:inline-flex;align-items:center}
 .line .x{width:25px;height:25px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none}
 .line .x:hover{background:var(--rm-a);color:var(--rm)}
 .line .x:hover{background:var(--s1);color:var(--acc)}
@@ -1069,9 +1073,9 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
    текстовый перенос, без выравнивания вправо). */
 .days .day .bxi{display:block;padding:2px 0 2px 30px;font-size:13.5px;line-height:19px}
 .days .day .bxi span{color:var(--ink)}
-.days .day .bxi em{display:inline-block;max-width:100%;margin-left:8px;font-style:normal;font-size:13px;color:var(--tx2);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
+.days .day .bxi em{display:inline-block;max-width:100%;margin-left:8px;font-style:normal;font-size:13px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
 .days .day .bxi em:empty{display:none}
-.days .day .bxi em u{text-decoration:none;color:var(--acc-d)}
+.days .day .bxi em u{text-decoration:none;color:var(--acc-d);background:var(--acc-a);border-radius:5px;padding:0 6px;display:inline-block;line-height:18px}
 .days.cal.detail .day .bxi{font-size:14px;line-height:20px}
 .days.cal.detail .day .bxi em{font-size:13.5px}
 .days.detail .day.rest .stcell{min-height:110px}
