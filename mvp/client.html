@@ -63,7 +63,8 @@ function laneHTML(){
     const cls = date===TODAY ? ' today' : '';
     if(!inProg) return `<span class="day out${cls}">${head}<span class="e">${P?'вне программы':'нет программы'}</span></span>`;
     if(!x) return `<a class="day empty${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}<span class="e">не составлено</span></a>`;
-    return `<a class="day cmp${n?'':' rest'}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${!n?'<span class="e">отдых</span>':x.draft?'<span class="dr">черновик</span>':`<span class="t">${esc(x.title||'Без названия')}</span>`}</a>`; }).join('')}</div>`;
+    const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : (x.title||'Без названия');
+    return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st)}${st==='rest' ? restCell() : st==='draft' ? '<span class="dr">черновик</span>' : `<span class="t">${esc(tt)}</span>`}</a>`; }).join('')}</div>`;
 }
 /* Замеры в динамике: график по выбранному показателю и таблица по датам. */
 function measHTML(){

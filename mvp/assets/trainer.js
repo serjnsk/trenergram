@@ -261,18 +261,20 @@ function renderStrip(){
         const n  = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
         const picked = S.sel && S.sel.has(c.i);
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
-        if(laneView()==='compact') return `<button class="day cmp ${c.i===S.i&&!S.sel?'on':''}${n?'':' rest'}${picked?' picked':''}${S.paste?' target':''}${cls}" data-day="${c.i}">
+        const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
+        const blocks = n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : '';
+        if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}" data-day="${c.i}">
           ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
-          ${head}
-          ${!n ? '<span class="e">отдых</span>' : isDraft(x) ? '<span class="dr">черновик</span>' : `<span class="t">${esc(title)}</span>`}
+          ${head}${dayMark(st)}
+          ${st==='rest' ? restCell() : st==='draft' ? '<span class="dr">черновик</span>' : `<span class="t">${esc(tt)}</span>`}
         </button>`;
-        return `<button class="day ${c.i===S.i&&!S.sel?'on':''}${n?'':' rest'}${picked?' picked':''}${S.paste?' target':''}${cls}"
+        return `<button class="day ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}"
                         data-day="${c.i}" style="--load:${n||0}">
           ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
-          ${head}
-          ${n ? `<span class="t">${esc(title)}</span>` : '<span class="e">отдых</span>'}
-          ${isDraft(x) && (n || x.title) ? `<span class="dr">черновик</span>` : ''}
-          ${n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : ''}
+          ${head}${dayMark(st)}
+          ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
+          ${isDraft(x) && st!=='rest' ? `<span class="dr">черновик</span>` : ''}
+          ${blocks || (st==='comp' ? compCell() : '')}
           <span class="ld"><i style="flex:${n}"></i><u style="flex:${Math.max(1,10-n)}"></u><s>${n||''}</s></span>
         </button>`;
       }).join('')}
@@ -398,6 +400,8 @@ function renderDoc(){
       ${empty ? '' : `
         ${isDraft(d) ? `<span class="chip warn">черновик</span>` : (n ? `<span class="chip ok">в календаре</span>` : '')}
         <span class="stat">${d.blocks.length} ${plural(d.blocks.length,'блок','блока','блоков')} · ${n} ${plural(n,'упражнение','упражнения','упражнений')}${raw?` · ${raw} остались текстом`:''}</span>`}
+      ${d.comp ? '<span class="chip warn">соревнование</span>' : ''}
+      <button class="x ${d.comp?'note-on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
       <button class="x ${trainerMsg(d.date)?'note-on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>
       <button class="x" id="sav-wo" title="Сохранить тренировку в библиотеку">${ICON.star}</button>
       <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
@@ -743,8 +747,7 @@ function askClear(){
         из ${DOW_GEN[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}.</p>
       <p class="sub">${d.blocks.length} ${plural(d.blocks.length,'блок','блока','блоков')} ·
         ${n} ${plural(n,'упражнение','упражнения','упражнений')} — всё вместе с заметками.</p>
-      <div class="foot-note">Программа и остальные дни не изменятся. Если тренировка
-        пригодится дальше — закройте это окно и сначала нажмите «Сохранить».</div>
+      <div class="foot-note">Программа и остальные дни не изменятся. Если тренировка пригодится дальше — закройте окно и сохраните её в базу иконкой закладки в шапке тренировки или оставьте черновиком.</div>
     </div>
     <div class="mdf"><span class="sp"></span>
       <button class="btn gh cls">Отмена</button>
@@ -1365,6 +1368,7 @@ document.addEventListener('click', e=>{
   /* Сообщение клиенту — тот же паттерн, что заметка к блоку: поле спрятано за
      иконкой, открыл — пиши, заполненное держит поле видимым, удаляется крестиком. */
   if(e.target.closest('#msg-tog')){ const dd = day(); S.msgOpen = (!trainerMsg(dd.date) && S.msgOpen===dd.date) ? null : dd.date; render(); const i = $('#w-msg'); if(i) i.focus(); return }
+  if(e.target.closest('#comp-tog')){ const dd = day(); dd.comp = !dd.comp; render(); toast(dd.comp ? 'День отмечен как соревнование' : 'Статус соревнования снят'); return }
   if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); S.msgOpen = null; render(); return }
   if(e.target.closest('#clr-wo')){ askClear(); return }
   const sb = e.target.closest('[data-savblk]');

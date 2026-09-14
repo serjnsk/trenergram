@@ -932,3 +932,16 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .wmsg .x{width:26px;height:26px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--acc-d);flex:none}
 .wmsg .x:hover{background:var(--rm-a);color:var(--rm)}
 .wmsg .x svg{width:13px;height:13px}
+
+/* ─── статусы дня: отдых · черновик · опубликована · соревнование ─── */
+.day .dmark{position:absolute;top:8px;right:8px;width:20px;height:20px;display:grid;place-items:center;color:var(--tx4)}
+.day .dmark svg{width:15px;height:15px}
+.day .dmark.pub{color:var(--ok)} .day .dmark.draft{color:var(--warn)} .day .dmark.comp{color:#B8860B}
+.day .stcell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 0 6px;color:var(--tx4);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.day .stcell svg{width:26px;height:26px}
+.day .stcell s{text-decoration:none}
+.day .stcell.comp{color:#B8860B}
+.day.comp{background:#FFF8E6} .day.comp:hover{background:#FFF3D6} .day.comp.on{background:#FFF3D6;border-color:#E3B341}
+.day.draft{border-style:dashed;border-color:#E3C170}
+.days.compact .day .stcell{flex-direction:row;justify-content:flex-start;gap:6px;padding:0;text-transform:none;letter-spacing:0;font-size:14px;font-weight:500;color:var(--tx3)}
+.days.compact .day .stcell svg{width:16px;height:16px}

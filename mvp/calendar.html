@@ -92,12 +92,14 @@ function monthHTML(y, m, ctx){
     const n = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
     const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
-    if(compact) return `<a class="day cmp${n?'':' rest'}${cls}" href="${href}" data-date="${date}">${head}
-      ${!n ? '<span class="e">отдых</span>' : x.draft ? '<span class="dr">черновик</span>' : `<span class="t">${esc(title)}</span>`}</a>`;
-    return `<a class="day${n?'':' rest'}${cls}" href="${href}" data-date="${date}">${head}
-      ${n ? `<span class="t">${esc(title)}</span>` : '<span class="e">отдых</span>'}
-      ${x.draft && n ? '<span class="dr">черновик</span>' : ''}
-      ${n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : ''}</a>`;
+    const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
+    const blocks = n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : '';
+    if(compact) return `<a class="day cmp ${st}${cls}" href="${href}" data-date="${date}">${head}${dayMark(st)}
+      ${st==='rest' ? restCell() : st==='draft' ? '<span class="dr">черновик</span>' : `<span class="t">${esc(tt)}</span>`}</a>`;
+    return `<a class="day ${st}${cls}" href="${href}" data-date="${date}">${head}${dayMark(st)}
+      ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
+      ${x.draft && st!=='rest' ? '<span class="dr">черновик</span>' : ''}
+      ${blocks || (st==='comp' ? compCell() : '')}</a>`;
   });
   return `<section class="mon" data-ym="${ymIso(y,m)}">
     <div class="monh"><b>${MONTHS_N[m]} ${y}</b><div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div></div>

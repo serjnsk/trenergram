@@ -594,8 +594,8 @@ function buildDay(pid, i){
   const d = (PLAN[pid] || [])[i];
   const date = dayDate(pid, i);
   const base = {i, date, w: RU[dowMon(date)], d: dm(date)};
-  if(!d) return {...base, title:'Отдых', rest:true, blocks:[]};
-  return {...base, title:d.t, rest:false, blocks:d.b.map(b=>mkBlock(b[0],b[1],b[2],b[3],b[4]))};
+  if(!d) return {...base, title:'Отдых', rest:true, comp:false, blocks:[]};
+  return {...base, title:d.t, rest:false, comp:!!d.comp, blocks:d.b.map(b=>mkBlock(b[0],b[1],b[2],b[3],b[4]))};
 }
 /* ═══════ Черновики и публикация ═══════
    День, который тренер правил в конструкторе и не «добавил», — черновик: он
@@ -606,7 +606,7 @@ function buildDay(pid, i){
 /* Пустые блоки без названия и заметки в слепок не входят: конструктор заводит
    такой блок на каждом открытом пустом дне, и без этого правила любой клик
    по дню помечал бы его черновиком. */
-const serializeDay = x => JSON.stringify({t: x.title||'', b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
+const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
   i:(b.items||[]).map(it=>({e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||''}))}))});
 const restoreBlocks = rec => (rec.b||[]).map(b=>({id:nid('b'), kind:b.k||'strength', title:b.t||'', note:b.n||'', fmt:b.f||null,
   items:(b.i||[]).map(it=>({id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||''}))}));
@@ -621,7 +621,7 @@ function buildPlan(pid){
   while((PLAN[pid] ||= []).length < n) PLAN[pid].push(null);
   return PLAN[pid].map((_,i)=>{
     const x = buildDay(pid,i), rec = savedDay(pid,i);
-    if(rec && rec.c){ const c = JSON.parse(rec.c); x.title = c.t; x.blocks = restoreBlocks(c); x.rest = !x.blocks.length; }
+    if(rec && rec.c){ const c = JSON.parse(rec.c); x.title = c.t; x.blocks = restoreBlocks(c); x.rest = !x.blocks.length; x.comp = !!c.c; }
     x.pub = rec && !rec.draft ? rec.c : (rec ? (rec.pub||'') : serializeDay(x));
     x.draft = !!(rec && rec.draft);
     return x;
@@ -1078,6 +1078,15 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
     for(const k of Object.keys(o)){ const v = o[k]; if(KEYS.has(k) && typeof v === 'string') o[k] = shiftDate(v); else if(v && typeof v === 'object') walk(v) } };
   [PROFILE_DEF, CLIENTS, PROGRAMS, LOG].forEach(walk);
 })();
+/* Демо статуса «соревнование»: у Артёма (p1) в воскресенье текущей недели.
+   Статус — поле дня (comp), хранится вместе с днём и публикуется как правка. */
+(function(){
+  const p = PROGRAMS.find(x=>x.id==='p1'); if(!p || !PLAN.p1) return;
+  const i = daysBetween(p.start, addDays(TODAY, 6 - dowMon(TODAY)));
+  if(i >= 0 && i < PLAN.p1.length) PLAN.p1[i] = {t:'Соревнования · Open Cup', comp:true, b:[
+    ['warmup','Разминка','Спокойно, без отказа',null,[['rom','2×',null,'сек','60'],['pvc','2×10'],['row',null,null,'м','500']]],
+    ['metcon','«Fran» · 21-15-9','Два зачётных выхода, отдых 10 мин',null,[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]};
+})();
 const STATE = (function(){
   const def = {online:true, queue:0, ids:false, navc:false, curClient:'c1', curProg:'p1', curWeek:4,
                pm:Object.fromEntries(CLIENTS.map(c=>[c.id, {...c.pm}])), replied:{}, days:{}, profile:null};
@@ -1087,3 +1096,19 @@ const STATE = (function(){
 })();
 function saveState(){ try{ localStorage.setItem('trenergram.state', JSON.stringify(STATE)) }catch(_){} }
 const pmOf = cid => (STATE.pm[cid] ||= {...(client(cid)?.pm||{})});
+
+/* ═══════════ СТАТУСЫ ДНЯ (CAL-1) — общие для всех страниц, поэтому в data.js: отдых · черновик · опубликована · соревнование ═══════════
+   Отдых — любой день без упражнений; соревнование — отдельный флаг дня (comp),
+   ставится в шапке конструктора. Одни и те же иконки в календаре, полосе недель
+   конструктора и карточке клиента. */
+const DAYICON = {
+  rest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>',
+  comp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4.5a1.5 1.5 0 0 0 0 3H7M17 6h2.5a1.5 1.5 0 0 1 0 3H17"/></svg>',
+  draft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A10 10 0 0 1 12 5c5 0 9 7 9 7a17 17 0 0 1-3.2 3.7M6.1 6.1A17 17 0 0 0 3 12s4 7 9 7a10 10 0 0 0 4.9-1.3"/></svg>',
+  pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12s4-7 9-7 9 7 9 7-4 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+};
+const DAYST = {rest:'Отдых', draft:'Черновик — клиент не видит', pub:'Опубликована — клиент видит', comp:'Соревнование'};
+const dayStatus = (x, draft) => x.comp ? 'comp' : !(x.blocks||[]).some(b=>b.items.some(y=>y.exId)) ? 'rest' : draft ? 'draft' : 'pub';
+const dayMark = st => st==='rest' ? '' : `<i class="dmark ${st}" title="${DAYST[st]}">${DAYICON[st]}</i>`;
+const restCell = () => `<span class="stcell rest">${DAYICON.rest}<s>отдых</s></span>`;
+const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>соревнование</s></span>`;
