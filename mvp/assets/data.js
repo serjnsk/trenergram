@@ -1173,13 +1173,14 @@ function ensureDay(cid, date){
 /* ═══════════ ПОДРОБНЫЙ ВИД ДНЯ: блоки → упражнения со схемой и нагрузкой ═══════════
    Третий вид календаря и полосы недель: видна иерархия «блок → упражнения»,
    у упражнения — подходы×повторы, процент от ПМ и рабочий вес (или объём). */
-const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + ' %' : (it.val ? it.val + (it.unit ? ' ' + it.unit : '') : '')].filter(Boolean).join(' · ');
+/* Неразрывные пробелы внутри «40 %» и «500 м»: перенос допустим только между частями схемы. */
+const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + '\u00a0%' : (it.val ? it.val + (it.unit ? '\u00a0' + it.unit : '') : '')].filter(Boolean).join(' · ');
 function blocksDetail(x, cid){
   const pm = cid ? pmOf(cid) : null;
   const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId || y.raw)); if(!bs.length) return '';
   return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
     <div class="bxh"><s>${i+1}</s><b>${esc(b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
     ${b.items.filter(y=>y.exId || y.raw).map(it=>{ const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
-      return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)} кг</u>` : ''}</em></div>` }).join('')}
+      return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)}\u00a0кг</u>` : ''}</em></div>` }).join('')}
   </div>`).join('')}</div>`;
 }
