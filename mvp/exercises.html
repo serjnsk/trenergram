@@ -52,7 +52,7 @@ function matchEX(e){
 const EX_COLS = [
   {k:'ru', n:'Упражнение', sort:byStr('ru'), cell:e=>
     `<div class="cellname">
-       <span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:11px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
+       <span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:13px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
        <div style="min-width:0">
          <div class="n">${esc(e.ru)}</div>
          <div class="sub">${esc(e.en)}</div>
@@ -73,10 +73,10 @@ function render(){
   if(!list.some(e=>e.id===V.sel)) V.sel = list.length ? list[0].id : null;
   $('#page').innerHTML = paneHead('Упражнения', EX.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск упражнения…" value="${esc(V.q)}"></label>
-      <select class="inp" id="g" style="width:160px">
+      <select class="inp" id="g" style="width:190px">
         ${GROUPS.map(g=>`<option value="${esc(g)}" ${V.g===g?'selected':''}>${g==='Все'?'Все группы':esc(g)}</option>`).join('')}
       </select>
-      <select class="inp" id="eq" style="width:170px">
+      <select class="inp" id="eq" style="width:205px">
         <option value="">Любое оснащение</option>
         ${EQUIP.map(x=>`<option ${V.eq===x?'selected':''}>${esc(x)}</option>`).join('')}
       </select>
@@ -102,7 +102,7 @@ function renderRail(){
   const sec = (title, html) => `<div class="rhead" style="padding-left:0">${title}</div>${html}`;
   railSet({title:'Упражнение', body:`
     <div class="rprev">
-      <div class="avrow"><span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:12px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
+      <div class="avrow"><span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:13.5px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
         <span class="av-t"><b>${esc(e.ru)}</b><s>${esc(e.en)}</s></span></div>
       ${e.gif?`<img class="rgif" src="${e.gif}-360.gif" alt="${esc(e.ru)} — демонстрация">`:''}
       <div class="kv">
@@ -116,7 +116,8 @@ function renderRail(){
         <s>Единицы</s><b>${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</b>
         <s>От максимума</s><b>${e.pm ? `${esc(PMNAMES[e.pm]||e.pm)}` : '<span style="color:var(--tx4)">нет</span>'}</b>
         <s>Видео</s><b>${e.gif ? '<span class="chip ok">GIF</span> 4 размера' : e.m==='ok' ? 'есть' : '<span class="chip warn">ожидает</span>'}</b>
-        <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}${d ? ` <span style="color:var(--tx4)">· EDB ${esc(d.id)}</span>` : ''}</b>
+        <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
+        ${d ? `<s>ID в EDB</s><b>${esc(d.id)}</b>` : ''}
       </div>
       ${d ? sec('Описание', `<div class="rtext">${esc(d.description)}</div>`) : ''}
       ${d ? sec('Техника', `<ol class="rsteps">${d.instructions.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`) : ''}

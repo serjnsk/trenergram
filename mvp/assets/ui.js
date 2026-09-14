@@ -126,7 +126,7 @@ function sparkline(vals, w=64, h=20, color='var(--acc)'){
 }
 function lineChart(series, unit='кг'){
   const W=640, H=190, PL=44, PR=16, PT=18, PB=26;
-  if(!series || series.length<2) return `<div style="padding:26px;text-align:center;color:var(--tx4);font-size:11.5px">Недостаточно данных для графика</div>`;
+  if(!series || series.length<2) return `<div style="padding:26px;text-align:center;color:var(--tx4);font-size:13px">Недостаточно данных для графика</div>`;
   const vals = series.map(s=>s[1]);
   const min = Math.min(...vals), max = Math.max(...vals);
   const lo = min - (max-min||10)*.35, hi = max + (max-min||10)*.2;
@@ -148,7 +148,7 @@ function lineChart(series, unit='кг'){
         fill="${i===pts.length-1?'var(--acc)':'var(--bg)'}" stroke="var(--acc)" stroke-width="1.6"/>`).join('')}
     ${series.map((s,i)=>`<text class="yl" x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${dm(s[0])}</text>`).join('')}
     <text class="yl" x="${x(series.length-1).toFixed(1)}" y="${(y(series[series.length-1][1])-11).toFixed(1)}"
-      text-anchor="middle" fill="var(--acc)" style="font-size:11px;font-weight:700">${fmtNum(series[series.length-1][1])} ${unit}</text>
+      text-anchor="middle" fill="var(--acc)" style="font-size:13px;font-weight:700">${fmtNum(series[series.length-1][1])} ${unit}</text>
   </svg>`;
 }
 
