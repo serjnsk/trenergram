@@ -98,7 +98,7 @@ function bindClient(cid, date){
   if(!S.pid) return false;
   S.date = date || S.date;
   const i = daysBetween(program(S.pid).start, S.date);
-  if(i < 0 || i >= program(S.pid).days) return false;
+  if(i < 0) return false;
   extendPlan(i);
   S.i = i; S.compose = null; S.sel = null; S.paste = null;
   return true;
@@ -110,7 +110,7 @@ if(!bindClient(S.cid, S.date)) bindClient('c1', TODAY);
    существующей: открываем первый ещё не составленный день, он пуст. */
 if(!Q.get('date')){
   const n = composedDays(S.pid);
-  if(n < program(S.pid).days){ extendPlan(n); S.i = n; S.date = plan()[n].date; }
+  extendPlan(n); S.i = n; S.date = plan()[n].date;
 }
 const day  = () => plan()[S.i];
 const PM   = () => pmOf(S.cid);
@@ -218,7 +218,7 @@ function renderStrip(){
   const wk0 = addDays(cur.date, -dowMon(cur.date));
   const cells = Array.from({length:14}, (_,k)=>{
     const date = addDays(wk0, k), i = daysBetween(p.start, date);
-    return {date, i, inPlan: i>=0 && i<d.length, inProg: i>=0 && i<p.days};
+    return {date, i, inPlan: i>=0 && i<d.length, inProg: i>=0};
   });
   $('#wk').innerHTML = `
     <div class="wkh">
@@ -235,7 +235,7 @@ function renderStrip(){
     <div class="wkn2">
       <span class="wkn">
         <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
-        <button id="dayNext" title="Неделей позже" ${cells[13].i>=p.days-1?'disabled':''}>${ICON.arr}</button>
+        <button id="dayNext" title="Неделей позже">${ICON.arr}</button>
       </span>
       <button class="today" id="wkToday" ${cur.date===TODAY?'disabled':''}>Сегодня</button>
       <s class="wkrange">${rangeLabel(cells[0].date, cells[13].date)}</s>
@@ -564,7 +564,7 @@ function wizardHTML(){
 function wizardPlan(){
   const c = client(WZ.cid); if(!c || !c.prog) return {error:'У клиента нет программы'};
   const p = program(c.prog); const start = daysBetween(p.start, WZ.start);
-  if(isNaN(start) || start < 0 || start >= p.days) return {error:'Дата вне срока программы клиента'};
+  if(isNaN(start) || start < 0) return {error:'Дата раньше начала программы клиента'};
   let items = [...WZ.picked.values()];
   /* «Как в источнике»: дни идут с теми же промежутками, что были у клиента-
      источника; шаблоны, у которых даты нет, встают следом за последним. */
@@ -575,7 +575,7 @@ function wizardPlan(){
     const off = WZ.gap==='alt' ? idx*2 : WZ.gap==='src' ? (it.kind==='day' ? it.i - base : next) : idx;
     next = Math.max(next, off + 1);
     const i = start + off;
-    if(i >= p.days) return;
+    if(i >= p.days) p.days = i + 1;   /* программа открыта вперёд */
     const date = dayDate(c.prog, i);
     const existing = (planOf(c.prog)[i]||{});
     rows.push({it, i, date, w:RU[dowMon(date)], title: it.kind==='tpl' ? tplById(it.id).title : it.title, busy: !!(existing.blocks||[]).some(b=>b.items.some(x=>x.exId))});
@@ -1204,7 +1204,6 @@ function startPaste(mode){
 function pasteAt(target){
   const src = [...S.sel].sort((a,b)=>a-b), base = src[0];
   const need = target + (src[src.length-1] - base);
-  if(need >= program(S.pid).days) return toast('Набор не влезает до конца программы');
   extendPlan(need);
   const snap = src.map(i=>({off:i-base, title:plan()[i].title, blocks:copyBlocks(plan()[i].blocks)}));
   const move = S.paste === 'move';
@@ -1225,6 +1224,9 @@ function pasteAt(target){
    остальных днях и ещё не сохранил. Первая версия делала ровно это и вдобавок
    зависала: длина проверялась у старого массива и не менялась никогда. */
 function extendPlan(upto){
+  /* Срок программы — не потолок: тренер может назначить тренировку на любой
+     день после старта, программа просто удлиняется (CAL-1). */
+  const pr = program(S.pid); if(pr && upto >= pr.days) pr.days = upto + 1;
   while(plan().length <= upto){
     const i = plan().length;
     PLAN[S.pid].push(null);
@@ -1239,8 +1241,6 @@ function extendPlan(upto){
 /* Продление плана: день добавляется в конец, и это единственный способ
    расти — решётки, которую можно «открыть на неделю вперёд», больше нет. */
 function addDay(){
-  const p = program(S.pid);
-  if(plan().length >= p.days) return toast('План уже составлен до конца программы');
   extendPlan(plan().length);
   S.i = plan().length - 1; S.compose = null; render();
   toast('День ' + (S.i+1) + ' добавлен');
@@ -1322,7 +1322,7 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#wkToday')){ if(!bindClient(S.cid, TODAY)) return toast('Сегодня вне срока программы клиента'); render(); return }
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
   if(e.target.closest('#dayPrev')){ S.i = Math.max(0, S.i-7); S.compose = null; render(); return }
-  if(e.target.closest('#dayNext')){ const i = Math.min(program(S.pid).days-1, S.i+7); extendPlan(i); S.i = i; S.compose = null; render(); return }
+  if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; S.compose = null; render(); return }
   const nd = e.target.closest('[data-notedel]');
   if(nd){ e.preventDefault(); const b = day().blocks.find(x=>x.id===nd.dataset.notedel);
           if(b){ b.note = ''; b.noteOpen = false; render() } return }

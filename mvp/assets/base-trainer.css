@@ -966,7 +966,8 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days .day .bl .more{font-size:12.5px;color:var(--tx4);padding-left:20px;line-height:20px}
 .days .day .stcell{flex:none;flex-direction:row;justify-content:flex-start;gap:8px;margin:10px 12px 12px;padding:0;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--tx3)}
 .days .day .stcell svg{width:26px;height:26px;flex:none}
-.days .day .stcell img{width:30px;height:30px;flex:none;margin:-2px 0}
+.days .day .stcell.rest{flex:1;align-items:center;justify-content:center;margin:2px 12px 10px}
+.days .day .stcell.rest img{width:72px;height:72px;flex:none;opacity:.9}
 .days .day .stcell.comp{color:#8A6300}
 .days .day .stcell.comp svg{stroke-width:2}
 /* статусы */
@@ -991,7 +992,8 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days.compact .day .t{margin:8px 12px 10px;font-size:15.5px;-webkit-line-clamp:1}
 .days.compact .day .stcell{margin:7px 12px 9px}
 .days.compact .day .stcell svg{width:20px;height:20px}
-.days.compact .day .stcell img{width:24px;height:24px}
+.days.compact .day .stcell.rest{flex:none;justify-content:flex-start;margin:6px 12px 8px}
+.days.compact .day .stcell.rest img{width:24px;height:24px}
 /* календарь на всю ширину — чуть крупнее */
 .days.cal:not(.compact) .day{min-height:156px}
 .days.cal .day .t{font-size:17px}

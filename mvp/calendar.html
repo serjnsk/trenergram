@@ -70,7 +70,7 @@ function monthHTML(y, m, ctx){
     if(dt.getMonth() !== m) return '<span class="day void"></span>';
     const today = date === TODAY;
     const i = p ? daysBetween(p.start, date) : -1;
-    const inProg = !!p && i >= 0 && i < p.days, inPlan = inProg && i < plan.length;
+    const inProg = !!p && i >= 0, inPlan = inProg && i < plan.length;   /* программа открыта вперёд */
     const head = `<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = today ? ' today' : '';
     if(!inProg) return `<span class="day out rest${cls}" data-date="${date}">${head}${restCell()}</span>`;
@@ -103,7 +103,7 @@ function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); 
 function renderCal(keepYM){
   const x = ctx(), {c, pid, p} = x;
   const done = pid ? composedDays(pid) : 0;
-  const psum = p ? (done >= p.days ? 'составлена целиком' : done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено') : 'программа не назначена';
+  const psum = p ? (done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено') : 'программа не назначена';
   $('#cal').innerHTML = `
     <div class="wkh">
       <h1 class="wkttl">Календарь</h1>

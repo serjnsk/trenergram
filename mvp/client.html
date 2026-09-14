@@ -57,7 +57,7 @@ function laneHTML(){
   const P = C.prog ? program(C.prog) : null, plan = P ? buildPlan(C.prog) : [];
   const wk0 = addDays(TODAY, -dowMon(TODAY));
   return `<div class="days cal compact">${Array.from({length:14},(_,k)=>{ const date=addDays(wk0,k), dt=new Date(date+'T00:00:00'); const i = P ? daysBetween(P.start, date) : -1;
-    const inProg = !!P && i>=0 && i<P.days, x = inProg && i<plan.length ? plan[i] : null; const n = x ? x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length,0) : 0;
+    const inProg = !!P && i>=0, x = inProg && i<plan.length ? plan[i] : null; const n = x ? x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length,0) : 0;
     const mon = (dt.getDate()===1 || k===0) ? ' '+MONTHS[dt.getMonth()].slice(0,3) : '';
     const head=`<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = date===TODAY ? ' today' : '';
@@ -155,7 +155,7 @@ function render(){
     <nav class="ctabs" id="ctabs">${SECTIONS.map(([k,n],i)=>`<a href="#${k}" class="${i===0?'on':''}" data-sec="${k}">${n}</a>`).join('')}</nav>
 
     <section class="csec" id="cal">
-      <div class="sechead"><span class="t">Календарь</span><span class="ln"></span>${P?`<span class="n">${esc(P.title)} · составлено ${composedDays(C.prog)} из ${P.days}</span>`:''}<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a></div>
+      <div class="sechead"><span class="t">Календарь</span><span class="ln"></span>${P?`<span class="n">${esc(P.title)}${composedDays(C.prog)?' · составлено до '+dm(dayDate(C.prog, composedDays(C.prog)-1)):''}</span>`:''}<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a></div>
       <div class="card cb">${laneHTML()}</div>
     </section>
 

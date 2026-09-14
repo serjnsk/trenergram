@@ -1125,7 +1125,7 @@ function setPublished(pid, i, on){
 }
 const pubToggleMsg = on => on ? 'Тренировка опубликована — клиент её видит' : 'Тренировка скрыта от клиента — черновик';
 /* Отдых — оригинальная иконка из брифа (assets/icons/rest.png), без перерисовки. */
-const restCell = () => `<span class="stcell rest"><img src="assets/icons/rest.png" alt=""><s>Отдых</s></span>`;
+const restCell = () => `<span class="stcell rest" title="Отдых"><img src="assets/icons/rest.png" alt="Отдых"></span>`;
 /* Список блоков дня: номер в своей колонке, не больше max строк, остальное — «ещё N». */
 function blocksList(x, max=5){
   const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId)); if(!bs.length) return '';
