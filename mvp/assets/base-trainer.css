@@ -151,13 +151,16 @@ button{cursor:pointer}
 .day .ld{display:none}
 
 /* документ дня */
-.doc{background:var(--bg);border-radius:var(--rad-l);padding:0 16px 18px;overflow:hidden}
+.doc{background:var(--bg);border-radius:var(--rad-l);padding:0 16px 18px;overflow:hidden;border:1px solid var(--line)}
 /* Шапка дня одной строкой: название, счёт, действия иконками — теми же,
    что у блоков. Одинаковые действия должны выглядеть одинаково на всех
    уровнях, иначе тренеру приходится запоминать два языка. */
 /* Шапка тренировки — той же анатомии, что шапка блока и клетка дня: серая
    полоса, название, действия справа квадратами с рамкой. */
-.doch{display:flex;align-items:center;gap:10px;margin:0 -16px 12px;padding:9px 14px 9px 12px;background:var(--s2);border-bottom:1px solid var(--line)}
+/* Полоса в тон выбранного дня в полосе недель (акцентная), иначе серая шапка
+   сливается с серым фоном страницы. */
+.doch{display:flex;align-items:center;gap:10px;margin:0 -16px 12px;padding:9px 14px 9px 12px;background:var(--acc-a);border-bottom:1px solid #FFD9C4}
+.doch .gr{color:var(--acc-d);opacity:.6}
 .doch .x{width:30px;height:30px;border-radius:var(--rad-s);display:grid;place-items:center;
   color:var(--tx2);flex:none;background:var(--bg);border:1px solid var(--line2)}
 .doch .x.note-on{color:var(--acc);background:var(--acc-a);border-color:transparent}
