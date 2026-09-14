@@ -407,9 +407,9 @@ function renderDoc(){
   $('#doc').innerHTML = `
     <div class="doch">
       <span class="gr" title="Перетащить тренировку на другой день">${ICON.grip}</span>
+      ${n || isDraft(d) ? (isDraft(d) ? `<span class="dst draft" title="Черновик — клиент не видит. Опубликуйте кнопкой внизу">${DAYICON.draft}Черновик</span>` : `<span class="dst pub" title="Опубликована — клиент видит">${DAYICON.pub}Опубликована</span>`) : ''}
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
-      <button class="x st ${!isDraft(d) && n ? 'on':''}" id="pub-tog" title="${!isDraft(d) && n ? 'Опубликована — клиент видит · нажмите, чтобы скрыть' : 'Черновик — клиент не видит · нажмите, чтобы опубликовать'}">${!isDraft(d) && n ? DAYICON.pub : DAYICON.draft}</button>
       <button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
       <button class="x ${trainerMsg(d.date)?'on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>
       <button class="x ${S.tplSaved[d.date] === serializeDay(d) ? 'on':''}" id="sav-wo" title="${S.tplSaved[d.date] === serializeDay(d) ? 'Сохранена в базу тренировок' : 'Сохранить тренировку в базу'}">${ICON.star}</button>
@@ -431,8 +431,8 @@ function renderDoc(){
     ${S.compose==='text' && empty ? '' : d.blocks.map(blockHTML).join('')}
     ${S.compose==='text' && empty ? '' : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>`}
     ${S.compose==='text' && empty ? '' : `<div class="pubbar">
-        <s>${!n ? 'Добавьте блоки и упражнения — потом сохраните черновик или опубликуйте.' : isDraft(d) ? 'Черновик клиент не видит. Опубликуйте — и тренировка появится у него в календаре.' : 'Опубликована — клиент видит эту тренировку.'}</s>
-        <button class="btn gh" id="saveDraft" ${isDraft(d) ? '' : 'disabled'}>Сохранить как черновик</button>
+        <s>${!n ? 'Добавьте блоки и упражнения — потом сохраните черновик или опубликуйте.' : isDraft(d) ? 'Черновик клиент не видит. Опубликуйте — и тренировка появится у него в календаре.' : 'Опубликована — клиент видит эту тренировку. «Сохранить как черновик» скроет её от клиента.'}</s>
+        <button class="btn gh" id="saveDraft" ${isDraft(d) || n ? '' : 'disabled'} title="${!isDraft(d) && n ? 'Снять с публикации — клиент перестанет видеть тренировку' : ''}">Сохранить как черновик</button>
         <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
       </div>`}`;
 }
@@ -1350,7 +1350,9 @@ document.addEventListener('click', e=>{
     return;
   }
   if(e.target.closest('#publish')){ publishDay(); return }
-  if(e.target.closest('#saveDraft')){ persist(); render(); toast('Черновик сохранён — клиент его не видит'); return }
+  if(e.target.closest('#saveDraft')){ const dd = day();
+    if(!isDraft(dd)){ setPubIdx(S.i, false); return }          /* опубликованная → в черновик, клиент её больше не видит */
+    persist(); render(); toast('Черновик сохранён — клиент его не видит'); return }
   if(e.target.closest('#fromTpl')){ pickTemplate(); return }
   if(e.target.closest('#copyFrom')){ pickExisting(); return }
   if(e.target.closest('#selStart')){ S.sel = new Set(); S.paste = null; render(); return }
@@ -1391,8 +1393,6 @@ document.addEventListener('click', e=>{
   /* Сообщение клиенту — тот же паттерн, что заметка к блоку: поле спрятано за
      иконкой, открыл — пиши, заполненное держит поле видимым, удаляется крестиком. */
   if(e.target.closest('#msg-tog')){ const dd = day(); S.msgOpen = (!trainerMsg(dd.date) && S.msgOpen===dd.date) ? null : dd.date; render(); const i = $('#w-msg'); if(i) i.focus(); return }
-  if(e.target.closest('#pub-tog')){ const dd = day(); const on = !isDraft(dd); if(!on && !dd.blocks.some(b=>b.items.some(i=>i.exId))) return toast('Пустую тренировку публиковать нечего');
-    setPubIdx(S.i, !on); return }
   if(e.target.closest('#comp-tog')){ const dd = day(); dd.comp = !dd.comp; render(); toast(dd.comp ? 'День отмечен как соревнование' : 'Статус соревнования снят'); return }
   if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); S.msgOpen = null; render(); return }
   if(e.target.closest('#clr-wo')){ askClear(); return }
