@@ -61,7 +61,6 @@ function laneHTML(){
     const mon = (dt.getDate()===1 || k===0) ? ' '+MONTHS[dt.getMonth()].slice(0,3) : '';
     const head=`<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = date===TODAY ? ' today' : '';
-    if(!inProg) return `<span class="day out rest${cls}">${head}${restCell()}</span>`;
     if(!x) return `<a class="day empty rest${cls}" href="constructor.html?client=${C.id}&date=${date}" title="Составить этот день">${head}${restCell()}</a>`;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : (x.title||'Без названия');
     return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st, C.prog + ':' + i)}${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}</a>`; }).join('')}</div>`;

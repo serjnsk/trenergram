@@ -110,7 +110,7 @@ function bindTopButton(){
 const clientProgSub = c => {
   if(!c.prog) return 'программа не назначена';
   const p = program(c.prog), n = composedDays(c.prog);
-  return p.title + ' · ' + (n >= p.days ? 'составлена целиком' : n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено');
+  return p.title + ' · ' + (n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено');
 };
 function openClientPicker(btn, curId, onPick){
   document.querySelectorAll('.sug.clipick').forEach(x=>x.remove());

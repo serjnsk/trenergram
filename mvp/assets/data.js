@@ -902,7 +902,7 @@ function dayStats(date){
     if(!c.prog) return;
     const p = program(c.prog);
     const i = daysBetween(p.start, date);       /* номер дня в плане, от нуля */
-    if(i < 0 || i >= p.days) return;            /* вне срока программы */
+    if(i < 0) return;                           /* до старта календаря клиента */
     if(i < composedDays(c.prog)) return;        /* уже составлен */
     gaps++;
   });
@@ -1132,3 +1132,40 @@ function blocksList(x, max=5){
   return `<span class="bl num">${bs.slice(0,max).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}${bs.length>max ? `<span class="more">ещё ${bs.length-max}</span>` : ''}</span>`;
 }
 const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>Соревнование</s></span>`;
+
+/* ═══════════ КАЛЕНДАРЬ БЕЗ «СРОКА ПРОГРАММЫ» (CAL-1) ═══════════
+   Программа — только способ добавить набор тренировок разом; на календарь
+   она не накладывает границ. Контейнер дней у клиента один (c.prog): если
+   программы нет — создаём личную, если день раньше старта — сдвигаем старт
+   назад и переиндексируем план и сохранённые дни. Сдвиг и личные контейнеры
+   запоминаем в STATE, иначе после перезагрузки дни разъедутся. */
+function ensureDay(cid, date){
+  const c = client(cid); if(!c) return null;
+  if(!c.prog){
+    const id = 'cal_' + cid;
+    if(!program(id)) PROGRAMS.push({id, title:'Тренировки', goal:'', days:1, clients:[cid], start:date, kind:'individual', time:null});
+    PLAN[id] ||= []; c.prog = id;
+    ((STATE.calprog ||= {})[cid] = {id, start:date});
+  }
+  const p = program(c.prog); let shift = 0;
+  if(date < p.start){
+    shift = daysBetween(date, p.start);
+    PLAN[c.prog] = Array(shift).fill(null).concat(PLAN[c.prog] || []);
+    const bag = (STATE.days||{})[c.prog];
+    if(bag){ const nb = {}; Object.keys(bag).forEach(k=>{ nb[+k+shift] = bag[k] }); STATE.days[c.prog] = nb; }
+    p.start = date; p.days += shift;
+    ((STATE.pstart ||= {})[c.prog] = {start:p.start, shift:((STATE.pstart||{})[c.prog]||{}).shift + shift || shift});
+  }
+  const i = daysBetween(p.start, date);
+  if(i >= p.days) p.days = i + 1;
+  saveState();
+  return {pid:c.prog, i, shift};
+}
+/* Восстановление после перезагрузки: личные контейнеры и сдвинутые старты. */
+(function(){
+  Object.entries(STATE.calprog||{}).forEach(([cid, q])=>{ const c = client(cid); if(!c) return;
+    if(!program(q.id)) PROGRAMS.push({id:q.id, title:'Тренировки', goal:'', days:1, clients:[cid], start:q.start, kind:'individual', time:null});
+    PLAN[q.id] ||= []; c.prog = q.id; });
+  Object.entries(STATE.pstart||{}).forEach(([pid, q])=>{ const p = program(pid); if(!p || !q.shift) return;
+    if(q.start < p.start){ const k = daysBetween(q.start, p.start); PLAN[pid] = Array(k).fill(null).concat(PLAN[pid] || []); p.start = q.start; p.days += k; } });
+})();

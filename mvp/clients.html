@@ -113,7 +113,7 @@ function renderRail(){
     <div class="rprev">
       <div class="avrow"><span class="av">${esc(c.ini)}</span><span class="av-t"><b>${esc(c.n)}</b><s>${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</s></span></div>
       <div class="rhead">Программа</div>
-      ${p ? `<div class="kv"><s>Название</s><b>${esc(p.title)}</b><s>Сроки</s><b>${dm(p.start)} – ${dm(dayDate(c.prog, p.days-1))}</b><s>Составлено</s><b>${n >= p.days ? 'целиком' : n ? 'до ' + dm(dayDate(c.prog, n-1)) : 'нет'} ${runwayChip(c)}</b></div>`
+      ${p ? `<div class="kv"><s>Название</s><b>${esc(p.title)}</b><s>Начало</s><b>${dm(p.start)}</b><s>Составлено</s><b>${n ? 'до ' + dm(dayDate(c.prog, n-1)) : 'нет'} ${runwayChip(c)}</b></div>`
           : '<div class="hint">Программа не назначена — клиент видит пустой календарь.</div>'}
       <div class="rhead">Активность</div>
       <div class="kv"><s>Последняя</s><b>${c.last ? ago(c.last) : 'не заходил'}</b><s>Серия</s><b>${c.streak||0} ${plural(c.streak||0,'день','дня','дней')}</b><s>Без ответа</s><b>${u ? `<span class="chip acc">${u}</span>` : '—'}</b></div>

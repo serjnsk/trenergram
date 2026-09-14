@@ -91,14 +91,25 @@ const planOf = pid => PCACHE[pid] ||= (b => {
   });
   return b })(buildPlan(pid));
 const plan = () => planOf(S.pid);
+/* Переход на дату раньше старта: сбрасываем правки в STATE, сдвигаем старт и
+   пересобираем план — индексы всех дней меняются на величину сдвига. */
+function shiftTo(date){
+  persist();
+  const r = ensureDay(S.cid, date); if(!r) return;
+  delete PCACHE[S.pid];
+  S.i = r.i; S.compose = null; S.sel = null; S.paste = null; S.date = date;
+  extendPlan(S.i); render();
+}
 /* Привязка клиента к плану: программа берётся у клиента, день — из даты. */
 function bindClient(cid, date){
   const c = client(cid); if(!c) return false;
-  S.cid = cid; S.pid = c.prog || null;
-  if(!S.pid) return false;
-  S.date = date || S.date;
-  const i = daysBetween(program(S.pid).start, S.date);
-  if(i < 0) return false;
+  S.cid = cid; S.date = date || S.date;
+  /* Границ у программы нет: день раньше старта сдвигает старт, отсутствие
+     программы создаёт личный контейнер (ensureDay). */
+  const r = ensureDay(cid, S.date); if(!r) return false;
+  if(r.shift) delete PCACHE[r.pid];
+  S.pid = r.pid;
+  const i = r.i;
   extendPlan(i);
   S.i = i; S.compose = null; S.sel = null; S.paste = null;
   return true;
@@ -254,7 +265,7 @@ function renderStrip(){
         const today = c.date === TODAY;
         const head = `<span class="d"><s>${RU[dowMon(c.date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
         const cls = today ? ' today' : '';
-        if(!c.inProg) return `<span class="day out rest${cls}">${head}${restCell()}</span>`;
+        if(!c.inProg) return `<button class="day empty rest${cls}" data-day="${c.i}" title="Составить этот день">${head}${restCell()}</button>`;
         if(!c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" title="Составить этот день">${head}${restCell()}</button>`;
         const x = d[c.i];
         const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
@@ -505,7 +516,7 @@ const WZ = {step:1, tab:'tpl', src:null, picked:new Map(), cid:null, start:null,
 function openWizard(){
   Object.assign(WZ, {step:1, tab:'tpl', src:S.cid, picked:new Map(), cid:S.cid, gap:'daily', publish:true});
   const n = composedDays(S.pid);                     /* по умолчанию — первый несоставленный день */
-  WZ.start = n < program(S.pid).days ? dayDate(S.pid, n) : S.date;
+  WZ.start = dayDate(S.pid, n);
   const ov = document.createElement('div'); ov.className = 'ov on'; ov.id = 'wz';
   document.body.appendChild(ov);
   const draw = () => { ov.innerHTML = wizardHTML(); wireWizard(ov, draw) };
@@ -562,9 +573,10 @@ function wizardHTML(){
 }
 /* Раскладка набора по дням: индекс = старт + смещение по правилу промежутков. */
 function wizardPlan(){
-  const c = client(WZ.cid); if(!c || !c.prog) return {error:'У клиента нет программы'};
+  const c = client(WZ.cid); if(!c) return {error:'Клиент не найден'};
+  if(!c.prog) ensureDay(c.id, WZ.start || TODAY);          /* личный контейнер дней */
   const p = program(c.prog); const start = daysBetween(p.start, WZ.start);
-  if(isNaN(start) || start < 0) return {error:'Дата раньше начала программы клиента'};
+  if(isNaN(start)) return {error:'Укажите дату начала'};
   let items = [...WZ.picked.values()];
   /* «Как в источнике»: дни идут с теми же промежутками, что были у клиента-
      источника; шаблоны, у которых даты нет, встают следом за последним. */
@@ -584,8 +596,8 @@ function wizardPlan(){
   return {rows, pid:c.prog};
 }
 function wizardApply(){
+  bindClient(WZ.cid, WZ.start);                      /* сначала сдвиг/контейнер, потом раскладка */
   const pl = wizardPlan(); if(pl.error) return toast(pl.error);
-  bindClient(WZ.cid, WZ.start);
   pl.rows.forEach(r=>{
     extendPlan(r.i);
     const d = plan()[r.i];
@@ -1309,6 +1321,7 @@ document.addEventListener('click', e=>{
   const d = e.target.closest('[data-day]');
   if(d){
     const i = +d.dataset.day;
+    if(i < 0){ shiftTo(addDays(program(S.pid).start, i)); return }
     /* В режиме выбора клик по дню не переключает день, а отмечает его:
        иначе набор нельзя собрать, не потеряв уже отмеченное. */
     if(S.sel){ if(i < plan().length) toggleSel(i); return }
@@ -1319,9 +1332,9 @@ document.addEventListener('click', e=>{
   /* Стрелки листают неделями: лента — это неделя, день внутри неё выбирают
      кликом. Встаём на тот же день недели, если он в сроке программы. */
   const vt = e.target.closest('[data-view]'); if(vt){ STATE.laneView = vt.dataset.view; saveState(); renderStrip(); return }
-  if(e.target.closest('#wkToday')){ if(!bindClient(S.cid, TODAY)) return toast('Сегодня вне срока программы клиента'); render(); return }
+  if(e.target.closest('#wkToday')){ bindClient(S.cid, TODAY); render(); return }
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
-  if(e.target.closest('#dayPrev')){ S.i = Math.max(0, S.i-7); S.compose = null; render(); return }
+  if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; S.compose = null; render(); return }
   if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; S.compose = null; render(); return }
   const nd = e.target.closest('[data-notedel]');
   if(nd){ e.preventDefault(); const b = day().blocks.find(x=>x.id===nd.dataset.notedel);

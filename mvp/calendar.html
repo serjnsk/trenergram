@@ -73,8 +73,7 @@ function monthHTML(y, m, ctx){
     const inProg = !!p && i >= 0, inPlan = inProg && i < plan.length;   /* программа открыта вперёд */
     const head = `<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = today ? ' today' : '';
-    if(!inProg) return `<span class="day out rest${cls}" data-date="${date}">${head}${restCell()}</span>`;
-    const href = `constructor.html?client=${C.cid}&date=${date}`;
+    const href = `constructor.html?client=${C.cid}&date=${date}`;   /* любой день можно составить — границ у программы нет */
     if(!inPlan) return `<a class="day empty rest${cls}" href="${href}" data-date="${date}" title="Составить этот день">${head}${restCell()}</a>`;
     const x = plan[i];
     const n = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
