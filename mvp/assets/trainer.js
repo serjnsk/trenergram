@@ -250,8 +250,6 @@ function renderStrip(){
           <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
           <button id="dayNext" title="Неделей позже">${ICON.arr}</button>
         </span>
-        <button class="btn gh sm" id="wkToday" ${cur.date===TODAY?'disabled':''}>Сегодня</button>
-        <s class="wkrange">${rangeLabel(cells[0].date, cells[13].date)}</s>
       </div>
       <div class="views"><span class="vtog" title="Вид ленты">
         <button data-view="compact" class="${laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
