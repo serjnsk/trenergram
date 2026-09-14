@@ -102,12 +102,10 @@ function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); 
 function renderCal(keepYM){
   const x = ctx(), {c, pid, p} = x;
   const done = pid ? composedDays(pid) : 0;
-  const psum = p ? (done ? 'составлено до ' + dm(dayDate(pid, done-1)) : 'ничего не составлено') : 'программа не назначена';
   $('#cal').innerHTML = `
     <div class="wkh">
       <h1 class="wkttl">Календарь</h1>
-      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cn">${esc(c.n)}</span>${ICON.chev}</button>
-      <s class="psum">${psum}</s>
+      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
       <span class="sp"></span>
       <button class="btn gh sm" id="mToday" title="Пролистать к сегодняшнему дню">Сегодня</button>
       <button class="btn gh sm" id="mMonth" title="Пролистать к началу текущего месяца">Текущий месяц</button>

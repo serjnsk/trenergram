@@ -236,7 +236,7 @@ function renderStrip(){
   $('#wk').innerHTML = `
     <div class="wkh">
       <h1 class="wkttl">Создать тренировку</h1>
-      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cn">${esc(client(S.cid).n)}</span>${ICON.chev}</button>
+      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cl-t"><b>${esc(client(S.cid).n)}</b><s>${esc(clientProgSub(client(S.cid)))}</s></span>${ICON.chev}</button>
       <span class="sp"></span>
       ${S.sel ? `
         <b class="seln">Выбрано ${S.sel.size}</b>

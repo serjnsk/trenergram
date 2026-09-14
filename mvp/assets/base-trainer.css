@@ -1046,3 +1046,10 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 /* главная кнопка шапки — кегль как у остальных кнопок действий */
 .tsplit .btn{font-size:15px;height:38px}
 .tsplit .btn.arrow{width:38px}
+
+/* кнопка клиента в шапках календаря и конструктора — в две строки, как строка списка выбора */
+.wkh .cliSel{height:46px;padding:0 30px 0 7px;gap:9px;text-align:left}
+.wkh .cliSel .cl-t{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.wkh .cliSel .cl-t b{font-size:15px;font-weight:600;color:var(--acc-d);white-space:nowrap}
+.wkh .cliSel .cl-t s{text-decoration:none;font-size:13px;font-weight:500;color:var(--tx3);white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis}
+.wkh .cliSel .cav{width:30px;height:30px;font-size:12.5px}
