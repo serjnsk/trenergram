@@ -438,3 +438,9 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .pmt .pmin{width:72px}
 .mchart{padding:12px 16px 8px}
 .mchart .chartbox{padding-top:6px}
+
+/* новый блок из базы: строка состава — упражнение (datalist) · схема · убрать */
+.nb-row{display:grid;grid-template-columns:minmax(0,1fr) 170px 30px;gap:8px;align-items:center;margin-bottom:8px}
+.nb-row .iact{width:30px;height:30px;color:var(--tx4)}
+.nb-row .iact:hover{color:var(--rm)}
+#nbItems + div{margin-top:2px}

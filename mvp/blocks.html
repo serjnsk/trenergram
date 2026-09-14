@@ -37,10 +37,52 @@
 /* ═══════════ БАЗА БЛОКОВ И КОМПЛЕКСОВ (TPL-1, TPL-2) ═══════════
    Единственный уровень с папками: разминок у тренера много, и без папок
    список нечитаем. Папки заданы в TPL_FOLDERS. */
-const cfg = { level:'блок', title:'Блоки', railTitle:'Блок', ph:'Поиск блока или комплекса…', add:'Сохранить блок' };
+/* «Создать блок» прямо в базе (TPL-1): название, папка, тип блока с одним
+   параметром, состав строками «упражнение · схема». Упражнение подбирается
+   из базы по имени (datalist), неточное имя добираем matchEx. */
+const NB_KIND = {'Разминки':'warmup','Силовые блоки':'strength','Комплексы':'metcon','Заминки':'cooldown'};
+const NB_PARAM = {'AMRAP':['Минут',f=>f.total/60],'EMOM':['Минут',f=>f.rounds],'FOR TIME':['Лимит, мин · необязательно',f=>f.total?f.total/60:''],'TABATA':['Раундов',f=>f.rounds],'ИНТЕРВАЛЫ':['Раундов',f=>f.rounds]};
+const nbFmtOf = (k, p) => { const t = FMT_TYPES.find(x=>(x.k||'')===k); if(!t || !t.k) return null; const f = {k:t.k, ...t.d}; const n = parseFloat(String(p).replace(',','.'));
+  if(isFinite(n) && n>0){ if(k==='AMRAP'){ f.total=Math.round(n*60); f.work=f.total } else if(k==='EMOM'){ f.rounds=Math.round(n); f.total=f.rounds*f.work } else if(k==='FOR TIME'){ f.total=Math.round(n*60) } else if(k==='TABATA'||k==='ИНТЕРВАЛЫ'){ f.rounds=Math.round(n); f.total=f.rounds*(f.work+f.rest) } }
+  return f };
+const nbResolve = v => { const q = norm(v||''); if(!q) return null; const e = EX.find(x=>norm(x.ru)===q) || EX.find(x=>norm(x.en||'')===q); if(e) return e; const m = matchEx(v); return m ? (m.id ? m : m.e || null) : null };
+const nbRow = () => `<div class="nb-row"><input class="inp" list="nbEx" placeholder="Упражнение" data-ex><input class="inp" placeholder="3×5 · 10 · 500 м" data-sch><button class="iact" data-del title="Убрать">✕</button></div>`;
+function nbOpen(rerender){
+  openModal({title:'Новый блок', body:`
+    <div class="cols3">
+      <div class="formfld"><span class="k">Название</span><input class="inp" id="nbTitle" placeholder="Например: Разминка перед приседом"></div>
+      <div class="formfld"><span class="k">Папка</span><select class="inp" id="nbFolder">${TPL_FOLDERS.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select></div>
+      <div class="formfld"><span class="k">Тип блока</span><select class="inp" id="nbFmt">${FMT_TYPES.map(t=>`<option value="${t.k||''}">${esc(t.n)}</option>`).join('')}</select></div>
+    </div>
+    <div class="cols3" id="nbParamRow" style="margin-top:12px" hidden><div class="formfld"><span class="k" id="nbParamK">Минут</span><input class="inp" id="nbParam"></div></div>
+    <div class="formfld" style="margin-top:14px"><span class="k">Состав</span>
+      <div id="nbItems">${nbRow()}${nbRow()}</div>
+      <div><button class="btn gh sm" id="nbAddRow">${ICON.plus} Упражнение</button></div>
+    </div>
+    <datalist id="nbEx">${EX.slice().sort((a,b)=>a.ru.localeCompare(b.ru,'ru')).map(e=>`<option value="${esc(e.ru)}"></option>`).join('')}</datalist>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nbSave">Создать блок</button>`});
+  const fmtSel = $('#nbFmt'), prow = $('#nbParamRow');
+  const syncParam = () => { const k = fmtSel.value, pd = NB_PARAM[k]; prow.hidden = !pd; if(pd){ const t = FMT_TYPES.find(x=>x.k===k); $('#nbParamK').textContent = pd[0]; $('#nbParam').value = pd[1](t.d) } };
+  fmtSel.onchange = syncParam; syncParam();
+  $('#nbAddRow').onclick = () => { $('#nbItems').insertAdjacentHTML('beforeend', nbRow()); const r = $('#nbItems').lastElementChild; r.querySelector('[data-ex]').focus() };
+  $('#nbItems').onclick = e => { const d = e.target.closest('[data-del]'); if(d && $$('#nbItems .nb-row').length>1) d.closest('.nb-row').remove() };
+  $('#nbTitle').focus();
+  $('#nbSave').onclick = () => {
+    const title = $('#nbTitle').value.trim(); if(!title){ toast('Дайте блоку название'); $('#nbTitle').focus(); return }
+    const items = [], missing = [];
+    $$('#nbItems .nb-row').forEach(r => { const v = r.querySelector('[data-ex]').value.trim(); if(!v) return; const e = nbResolve(v); if(e) items.push([e.id, r.querySelector('[data-sch]').value.trim()]); else missing.push(v) });
+    if(missing.length){ toast('Не нашли в базе: ' + missing.join(', ')); return }
+    if(!items.length){ toast('Добавьте хотя бы одно упражнение'); return }
+    const folder = $('#nbFolder').value;
+    const t = {id:nid('t'), lvl:'блок', own:true, at:TODAY, folder, kind:NB_KIND[folder]||'strength', title, fmt:nbFmtOf(fmtSel.value, $('#nbParam').value), used:0, items};
+    TPL.unshift(t); LIB.sel = t.id; closeModal(); toast('Блок «' + title + '» создан'); rerender();
+  };
+}
+const cfg = { level:'блок', title:'Блоки', railTitle:'Блок', ph:'Поиск блока или комплекса…', add:'Создать блок', onAdd:nbOpen };
 renderLib(cfg);
 initShell({page:'blocks.html'});
 initRail();
+if(new URLSearchParams(location.search).get('new')) nbOpen(()=>renderLib(cfg));
 </script>
 </body>
 </html>

@@ -270,7 +270,7 @@ function renderLib(cfg){
   const fs = $('#folder'); if(fs) fs.onchange=e=>{ LIB.folder=e.target.value; renderLib(cfg) };
   $('#own').onchange=e=>{ LIB.own=e.target.checked; renderLib(cfg) };
   $('#q').oninput=e=>{ LIB.q=e.target.value; renderLib(cfg) };
-  $('#btnAdd').onclick=()=>toast('В конструкторе: соберите и нажмите «Сохранить в библиотеку»');
+  $('#btnAdd').onclick=()=> cfg.onAdd ? cfg.onAdd(()=>renderLib(cfg)) : toast('В конструкторе: соберите и нажмите «Сохранить в библиотеку»');
   bindTable('lib-'+level, ()=>renderLib(cfg), id=>{ LIB.sel = id; markRow('lib-'+level, id); renderLibRail(cfg) });
   markRow('lib-'+level, LIB.sel);
   renderLibRail(cfg);
