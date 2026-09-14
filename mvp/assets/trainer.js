@@ -418,8 +418,9 @@ function renderDoc(){
     ${S.compose==='text' && empty ? '' : d.blocks.map(blockHTML).join('')}
     ${S.compose==='text' && empty ? '' : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>`}
     ${!empty && isDraft(d) ? `<div class="pubbar">
-        <s>Черновик сохраняется сам. Клиент увидит тренировку после добавления в календарь.</s>
-        <button class="btn" id="publish">${ICON.chk} Добавить тренировку</button>
+        <s>Черновик клиент не видит. Опубликуйте — и тренировка появится у него в календаре.</s>
+        <button class="btn gh" id="saveDraft">Сохранить как черновик</button>
+        <button class="btn" id="publish">${ICON.chk} Опубликовать тренировку</button>
       </div>` : ''}`;
 }
 
@@ -1323,6 +1324,7 @@ document.addEventListener('click', e=>{
     return;
   }
   if(e.target.closest('#publish')){ publishDay(); return }
+  if(e.target.closest('#saveDraft')){ persist(); render(); toast('Черновик сохранён — клиент его не видит'); return }
   if(e.target.closest('#fromTpl')){ pickTemplate(); return }
   if(e.target.closest('#copyFrom')){ pickExisting(); return }
   if(e.target.closest('#selStart')){ S.sel = new Set(); S.paste = null; render(); return }
