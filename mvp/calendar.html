@@ -17,22 +17,10 @@
   <div class="main">
     <header class="topbar" id="topbar"></header>
     <div class="page">
-      <div class="cons">
+      <div class="cons one">
         <main>
           <section class="calwrap" id="cal"></section>
         </main>
-        <aside class="rail" data-min="Клиенты">
-          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
-          <div class="railhead">
-            <div class="railttl">Клиенты</div>
-            <label class="search">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
-              <input id="q" placeholder="Имя" autocomplete="off">
-            </label>
-          </div>
-          <div class="railbody" id="clients"></div>
-          <div class="railfoot" id="railfoot">Клик по дню открывает конструктор на этом клиенте и дне.</div>
-        </aside>
       </div>
     </div>
   </div>
@@ -170,25 +158,7 @@ function observe(){ io.disconnect(); io.observe($('#topSent')); io.observe($('#b
 /* Правая панель: клиенты по срочности — первыми те, у кого написанные
    тренировки кончаются раньше всех; справа — через сколько дней. Поиск —
    только по имени. Без программы — в конце. */
-const runway = c => { if(!c.prog) return Infinity; const n = composedDays(c.prog); return daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1))) };
-function renderClients(){
-  const qq = norm(C.q);
-  const list = CLIENTS.filter(c=>!qq || norm(c.n).includes(qq))
-    .sort((a,b)=>(runway(a)-runway(b)) || a.n.localeCompare(b.n,'ru'));
-  const flag = c => {
-    const r = runway(c);
-    if(r === Infinity) return '<span class="fl gh">нет программы</span>';
-    if(r < 0) return '<span class="fl rm">кончилась</span>';
-    if(r === 0) return '<span class="fl">сегодня</span>';
-    return `<span class="fl ${r <= 7 ? '' : 'gh'}">${r} ${plural(r,'день','дня','дней')}</span>`;
-  };
-  $('#clients').innerHTML = list.length ? list.map(c=>`
-    <button class="crow ${c.id===C.cid?'on':''}" data-cli="${c.id}">
-      <span class="cav">${esc(c.ini)}</span>
-      <span class="body"><b>${esc(c.n)}</b></span>${flag(c)}
-    </button>`).join('') : '<div class="empty">Никого не нашли</div>';
-}
-function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); renderClients(); if(document.readyState==='complete') observe(); }
+function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); if(document.readyState==='complete') observe(); }
 /* Прокрутка до load сбрасывается браузером (восстановление позиции), поэтому
    к сегодняшнему месяцу едем после загрузки, и только потом включаем
    дорастание ленты — иначе верхний датчик срабатывает на старте. */
@@ -200,16 +170,13 @@ document.addEventListener('click', e=>{
   const pb = e.target.closest('[data-pub]');
   if(pb){ e.preventDefault(); e.stopPropagation(); const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft');
     if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on)); render(true) } return }
-  const row = e.target.closest('.crow'); if(row){ switchClient(row.dataset.cli); return }
   const vt = e.target.closest('[data-view]'); if(vt){ const keep = topMonth(); STATE.laneView = vt.dataset.view; saveState(); render(keep); return }
   if(e.target.closest('#mToday')){ scrollToMonth(TODAY.slice(0,7)+'-01', true); return }
   const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
 });
-document.addEventListener('input', e=>{ if(e.target.id==='q'){ C.q = e.target.value; renderClients() } });
 document.addEventListener('change', e=>{ if(e.target.id==='jumpDate' && e.target.value) jumpTo(e.target.value) });
 render();
 initShell({page:'calendar.html'});
-initRail();
 </script>
 </body>
 </html>
