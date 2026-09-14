@@ -615,8 +615,9 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 
 /* ─── лента недели: пустые и несуществующие дни ─── */
 .day.void{visibility:hidden}
-.day.empty{background:none;border:1.5px dashed var(--line2);color:var(--tx4)}
-.day.empty:hover{border-color:var(--acc);color:var(--acc-d)}
+.day.empty{background:var(--s1)}
+.day.empty:hover{border-color:var(--acc)}
+.day.out{cursor:default}
 .wkh .hint{text-decoration:none;font-size:14px;color:var(--acc-d);font-weight:600}
 /* действия тренировки — под названием, над блоками */
 .docacts{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 10px}
@@ -934,11 +935,14 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .wmsg .x svg{width:13px;height:13px}
 
 /* ─── статусы дня: отдых · черновик · опубликована · соревнование ─── */
-.day .dmark{position:absolute;top:8px;right:8px;width:20px;height:20px;display:grid;place-items:center;color:var(--tx4)}
-.day .dmark svg{width:15px;height:15px}
+.day .dmark{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--tx3);background:none;padding:0}
+.day .dmark svg{width:21px;height:21px;stroke-width:2.4}
 .day .dmark.pub{color:var(--ok)} .day .dmark.draft{color:var(--warn)} .day .dmark.comp{color:#B8860B}
+.dmark[data-pub]{cursor:pointer}
+.dmark[data-pub]:hover{background:var(--bg);box-shadow:0 0 0 1px var(--line2)}
+.day.on .dmark[data-pub]:hover{background:var(--acc-a)}
 .day .stcell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 0 6px;color:var(--tx4);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.day .stcell svg{width:26px;height:26px}
+.day .stcell svg{width:28px;height:28px;stroke-width:2}
 .day .stcell s{text-decoration:none}
 .day .stcell.comp{color:#B8860B}
 .day.comp{background:#FFF8E6} .day.comp:hover{background:#FFF3D6} .day.comp.on{background:#FFF3D6;border-color:#E3B341}

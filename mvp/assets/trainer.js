@@ -254,8 +254,8 @@ function renderStrip(){
         const today = c.date === TODAY;
         const head = `<span class="d">${RU[dowMon(c.date)]} ${dt.getDate()}${mon}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
         const cls = today ? ' today' : '';
-        if(!c.inProg) return `<span class="day void${cls}">${head}</span>`;
-        if(!c.inPlan) return `<button class="day empty${cls}" data-day="${c.i}" title="Составить этот день">${head}<span class="e">не составлено</span></button>`;
+        if(!c.inProg) return `<span class="day out rest${cls}">${head}${restCell()}</span>`;
+        if(!c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" title="Составить этот день">${head}${restCell()}</button>`;
         const x = d[c.i];
         const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
         const n  = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
@@ -265,15 +265,14 @@ function renderStrip(){
         const blocks = n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : '';
         if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}" data-day="${c.i}">
           ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
-          ${head}${dayMark(st)}
-          ${st==='rest' ? restCell() : st==='draft' ? '<span class="dr">черновик</span>' : `<span class="t">${esc(tt)}</span>`}
+          ${head}${dayMark(st, S.pid + ':' + c.i)}
+          ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
         </button>`;
         return `<button class="day ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}"
                         data-day="${c.i}" style="--load:${n||0}">
           ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
-          ${head}${dayMark(st)}
+          ${head}${dayMark(st, S.pid + ':' + c.i)}
           ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
-          ${isDraft(x) && st!=='rest' ? `<span class="dr">черновик</span>` : ''}
           ${blocks || (st==='comp' ? compCell() : '')}
           <span class="ld"><i style="flex:${n}"></i><u style="flex:${Math.max(1,10-n)}"></u><s>${n||''}</s></span>
         </button>`;
@@ -477,6 +476,15 @@ function persist(){
     if(dirty || x.draft){ x.draft = true; mine[i] = {c: serializeDay(x), pub: x.pub, draft: true}; }
   });
   saveState();
+}
+/* Глазик в полосе недель: опубликовать черновик или скрыть опубликованное.
+   Работает по живому плану конструктора, а не по слепку в STATE. */
+function setPubIdx(i, on){
+  const x = plan()[i]; if(!x) return;
+  const bag = ((STATE.days ||= {})[S.pid] ||= {});
+  if(on){ x.pub = serializeDay(x); x.draft = false; bag[i] = {c: x.pub, draft: false} }
+  else { x.draft = true; bag[i] = {c: serializeDay(x), pub: x.pub, draft: true} }
+  saveState(); render(); toast(pubToggleMsg(on));
 }
 function publishDay(){
   const x = day();
@@ -1296,6 +1304,8 @@ function tplLabel(t){
    как был вырезан вместе с недельными функциями: они лежали в одном диапазоне
    файла, и удаление по границам функций захватило и его. */
 document.addEventListener('click', e=>{
+  const pb = e.target.closest('[data-pub]');
+  if(pb){ e.preventDefault(); e.stopPropagation(); setPubIdx(+pb.dataset.pub.split(':')[1], pb.classList.contains('draft')); return }
   const d = e.target.closest('[data-day]');
   if(d){
     const i = +d.dataset.day;

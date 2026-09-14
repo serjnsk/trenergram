@@ -61,10 +61,10 @@ function laneHTML(){
     const mon = (dt.getDate()===1 || k===0) ? ' '+MONTHS[dt.getMonth()].slice(0,3) : '';
     const head=`<span class="d">${RU[dowMon(date)]} ${dt.getDate()}${mon}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
     const cls = date===TODAY ? ' today' : '';
-    if(!inProg) return `<span class="day out${cls}">${head}<span class="e">${P?'вне программы':'нет программы'}</span></span>`;
-    if(!x) return `<a class="day empty${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}<span class="e">не составлено</span></a>`;
+    if(!inProg) return `<span class="day out rest${cls}">${head}${restCell()}</span>`;
+    if(!x) return `<a class="day empty rest${cls}" href="constructor.html?client=${C.id}&date=${date}" title="Составить этот день">${head}${restCell()}</a>`;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : (x.title||'Без названия');
-    return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st)}${st==='rest' ? restCell() : st==='draft' ? '<span class="dr">черновик</span>' : `<span class="t">${esc(tt)}</span>`}</a>`; }).join('')}</div>`;
+    return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st, C.prog + ':' + i)}${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}</a>`; }).join('')}</div>`;
 }
 /* Замеры в динамике: график по выбранному показателю и таблица по датам. */
 function measHTML(){
@@ -174,6 +174,8 @@ function render(){
       ${pmHTML()}
     </section>`;
 
+  $('#cal').onclick = e => { const pb = e.target.closest('[data-pub]'); if(!pb) return; e.preventDefault(); e.stopPropagation();
+    const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft'); if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on)); render() } };
   $$('[data-meas]').forEach(b=>b.onclick=()=>{ V.meas=b.dataset.meas; render() });
   $$('[data-pm-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input')) return; V.metric=r.dataset.pmRow; render() });
   $$('[data-pm-pick]').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.pmPick; render() });

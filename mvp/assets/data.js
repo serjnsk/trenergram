@@ -1109,6 +1109,19 @@ const DAYICON = {
 };
 const DAYST = {rest:'Отдых', draft:'Черновик — клиент не видит', pub:'Опубликована — клиент видит', comp:'Соревнование'};
 const dayStatus = (x, draft) => x.comp ? 'comp' : !(x.blocks||[]).some(b=>b.items.some(y=>y.exId)) ? 'rest' : draft ? 'draft' : 'pub';
-const dayMark = st => st==='rest' ? '' : `<i class="dmark ${st}" title="${DAYST[st]}">${DAYICON[st]}</i>`;
+/* Метка статуса. Для черновика/опубликованной — кнопка: клик переключает
+   видимость для клиента (key = «программа:индекс дня»). */
+const dayMark = (st, key) => st==='rest' ? ''
+  : (st==='comp' || !key) ? `<i class="dmark ${st}" title="${DAYST[st]}">${DAYICON[st]}</i>`
+  : `<i class="dmark ${st}" role="button" tabindex="0" data-pub="${key}" title="${DAYST[st]} · нажмите, чтобы ${st==='draft'?'опубликовать':'скрыть от клиента'}">${DAYICON[st]}</i>`;
+/* Не <button>: клетки дня в конструкторе сами кнопки, вложенная кнопка ломает разметку. */
+/* Публикация/скрытие дня со страниц без живого плана (календарь, карточка клиента). */
+function setPublished(pid, i, on){
+  const x = buildPlan(pid)[i]; if(!x) return false;
+  const bag = ((STATE.days ||= {})[pid] ||= {}), c = serializeDay(x);
+  bag[i] = on ? {c, draft:false} : {c, pub: x.pub, draft:true};
+  saveState(); return true;
+}
+const pubToggleMsg = on => on ? 'Тренировка опубликована — клиент её видит' : 'Тренировка скрыта от клиента — черновик';
 const restCell = () => `<span class="stcell rest">${DAYICON.rest}<s>отдых</s></span>`;
 const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>соревнование</s></span>`;
