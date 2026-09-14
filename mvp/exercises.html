@@ -96,8 +96,10 @@ function render(){
 }
 /* Правая панель — карточка выбранного упражнения: только его данные, по полкам. */
 function renderRail(){
-  const e = byId(V.sel);
+  const e = byId(V.sel), d = edbOf(e);
   if(!e){ railSet({title:'Упражнение', body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
+  const rel = (list, withTypes) => `<div class="rrel">${list.map(x=>`<div class="it" title="${esc(x.r.map(k=>EDB_R[k]).join(' · '))}"><b>${esc(x.n)}</b><span class="chip ${x.conf==='high'?'ok':'warn'}">${x.score}</span>${withTypes && x.t && x.t.length ? `<span class="tt">${x.t.map(t=>`<span class="chip">${esc(EDB_T[t]||t)}</span>`).join('')}</span>` : ''}</div>`).join('')}</div>`;
+  const sec = (title, html) => `<div class="rhead" style="padding-left:0">${title}</div>${html}`;
   railSet({title:'Упражнение', body:`
     <div class="rprev">
       <div class="avrow"><span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:12px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
@@ -106,14 +108,26 @@ function renderRail(){
       <div class="kv">
         <s>Группа</s><b>${esc(e.g)}</b>
         <s>Оснащение</s><b>${esc(e.eq)}</b>
+        ${d ? `<s>Часть тела</s><b>${esc(d.bodyPart)}</b>
+        <s>Целевая мышца</s><b>${esc(d.target)}</b>
+        <s>Вспомогательные</s><b>${d.secondary.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</b>
+        <s>Сложность</s><b>${esc(d.difficulty)}</b>
+        <s>Категория</s><b>${esc(d.category)}</b>` : ''}
         <s>Единицы</s><b>${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</b>
         <s>От максимума</s><b>${e.pm ? `${esc(PMNAMES[e.pm]||e.pm)}` : '<span style="color:var(--tx4)">нет</span>'}</b>
-        <s>Видео</s><b>${e.gif ? '<span class="chip ok">GIF</span>' : e.m==='ok' ? 'есть' : '<span class="chip warn">ожидает</span>'}</b>
-        <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
+        <s>Видео</s><b>${e.gif ? '<span class="chip ok">GIF</span> 4 размера' : e.m==='ok' ? 'есть' : '<span class="chip warn">ожидает</span>'}</b>
+        <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}${d ? ` <span style="color:var(--tx4)">· EDB ${esc(d.id)}</span>` : ''}</b>
       </div>
-      ${TECH[e.id]?`<div class="rhead" style="padding-left:0">Техника</div><div class="rtext">${esc(TECH[e.id])}</div>`:''}
+      ${d ? sec('Описание', `<div class="rtext">${esc(d.description)}</div>`) : ''}
+      ${d ? sec('Техника', `<ol class="rsteps">${d.instructions.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`) : ''}
+      ${TECH[e.id]?sec('Акценты тренера', `<div class="rtext">${esc(TECH[e.id])}</div>`):''}
+      ${d ? sec('Классификация движения', `<div class="kv">${d.taxonomy.map(([k,v])=>`<s>${esc(k)}</s><b>${esc(v)}</b>`).join('')}</div>`) : ''}
+      ${d ? sec(`Похожие · ${d.similar.length}`, rel(d.similar)) : ''}
+      ${d ? sec(`Замены · ${d.subs.length}`, rel(d.subs, true)) : ''}
+      ${d ? sec(`Прогрессии · ${d.progr.length}`, rel(d.progr, true)) : ''}
+      ${d ? sec(`Регрессии · ${d.regr.length}`, rel(d.regr, true)) : ''}
       <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} В тренировку</a>${e.own?'<button class="btn gh sm" id="rEdit">Изменить</button>':''}</div>
-    </div>`, foot:''});
+    </div>`, foot: d ? 'Демо: поля из сэмпла EDB 0025 (barbell bench press) показаны для всех упражнений. Число у связи — оценка совпадения, причины — по наведению.' : ''});
   const ed = $('#rEdit'); if(ed) ed.onclick = () => toast('Редактирование своего упражнения — в следующей итерации');
 }
 function openAddModal(){

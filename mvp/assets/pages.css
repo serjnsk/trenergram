@@ -444,3 +444,12 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .nb-row .iact{width:30px;height:30px;color:var(--tx4)}
 .nb-row .iact:hover{color:var(--rm)}
 #nbItems + div{margin-top:2px}
+
+/* карточка упражнения: шаги техники и связи из EDB */
+.rsteps{margin:4px 0 0;padding-left:18px;font-size:12.5px;line-height:1.45;color:var(--tx2)}
+.rsteps li{margin-bottom:4px;padding-left:2px}
+.rrel{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.rrel .it{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;font-size:12.5px;line-height:1.3;cursor:default}
+.rrel .it b{font-weight:600;flex:1;min-width:0}
+.rrel .it .chip{height:18px;font-size:10px;padding:0 6px;flex:none}
+.rrel .it .tt{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px}
