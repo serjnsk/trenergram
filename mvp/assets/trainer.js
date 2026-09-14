@@ -77,7 +77,9 @@ const Q = new URLSearchParams(location.search);
 const S = { cid: Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
             tab:'ex', q:'', compose:null,
             sel:null,    /* Set выбранных дней или null — режим выключен */
-            paste:null   /* 'copy' | 'move' — ждём, куда вставить набор */ };
+            paste:null,  /* 'copy' | 'move' — ждём, куда вставить набор */
+            tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
+const blockSig = b => serializeDay({title:'', blocks:[b]});
 const PCACHE = {};
 /* planOf строит план один раз на программу и сразу переносит формат блока в
    название (fmtIntoTitle): раньше это делалось только для стартовой
@@ -329,8 +331,8 @@ function blockHTML(b){
       <input class="bt" data-f="title" value="${esc(b.title)}"
              placeholder="${b.fmt ? 'Название блока (необязательно)' : 'Введите название блока'}">
       <button class="ftype ${b.fmt?'on':''}" data-ftype="${b.id}" title="${b.fmt ? esc(fmtDesc(b.fmt)) : 'AMRAP, EMOM, на время, табата…'}">${b.fmt ? esc(fmtLabel(b.fmt)) : 'тип блока'}</button>
-      <button class="x ${b.note?'note-on':''}" data-notetog="${b.id}" title="${b.note?'Заметка к блоку':'Добавить заметку к блоку'}">${ICON.chat}</button>
-      <button class="x" data-savblk="${b.id}" title="Сохранить блок в библиотеку">${ICON.star}</button>
+      <button class="x ${b.note?'on':''}" data-notetog="${b.id}" title="${b.note?'Заметка к блоку':'Добавить заметку к блоку'}">${ICON.chat}</button>
+      <button class="x ${b.savedSig === blockSig(b) ? 'on':''}" data-savblk="${b.id}" title="${b.savedSig === blockSig(b) ? 'Сохранён в базу блоков' : 'Сохранить блок в базу'}">${ICON.star}</button>
       <button class="x" data-delblk="${b.id}">${ICON.x}</button>
     </div>
     ${b.note || b.noteOpen ? `<label class="bnote"><span>${ICON.chat}</span>
@@ -407,10 +409,10 @@ function renderDoc(){
       <span class="gr" title="Перетащить тренировку на другой день">${ICON.grip}</span>
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
-      ${d.comp ? '<span class="chip warn">соревнование</span>' : ''}
-      <button class="x ${d.comp?'note-on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
-      <button class="x ${trainerMsg(d.date)?'note-on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>
-      <button class="x" id="sav-wo" title="Сохранить тренировку в библиотеку">${ICON.star}</button>
+      <button class="x st ${!isDraft(d) && n ? 'on':''}" id="pub-tog" title="${!isDraft(d) && n ? 'Опубликована — клиент видит · нажмите, чтобы скрыть' : 'Черновик — клиент не видит · нажмите, чтобы опубликовать'}">${!isDraft(d) && n ? DAYICON.pub : DAYICON.draft}</button>
+      <button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
+      <button class="x ${trainerMsg(d.date)?'on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>
+      <button class="x ${S.tplSaved[d.date] === serializeDay(d) ? 'on':''}" id="sav-wo" title="${S.tplSaved[d.date] === serializeDay(d) ? 'Сохранена в базу тренировок' : 'Сохранить тренировку в базу'}">${ICON.star}</button>
       <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
     </div>
     <div class="docacts">
@@ -428,11 +430,11 @@ function renderDoc(){
     ${S.compose==='text' ? emptyDay() : ''}
     ${S.compose==='text' && empty ? '' : d.blocks.map(blockHTML).join('')}
     ${S.compose==='text' && empty ? '' : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>`}
-    ${!empty && isDraft(d) ? `<div class="pubbar">
-        <s>Черновик клиент не видит. Опубликуйте — и тренировка появится у него в календаре.</s>
-        <button class="btn gh" id="saveDraft">Сохранить как черновик</button>
-        <button class="btn" id="publish">${ICON.chk} Опубликовать тренировку</button>
-      </div>` : ''}`;
+    ${S.compose==='text' && empty ? '' : `<div class="pubbar">
+        <s>${!n ? 'Добавьте блоки и упражнения — потом сохраните черновик или опубликуйте.' : isDraft(d) ? 'Черновик клиент не видит. Опубликуйте — и тренировка появится у него в календаре.' : 'Опубликована — клиент видит эту тренировку.'}</s>
+        <button class="btn gh" id="saveDraft" ${isDraft(d) ? '' : 'disabled'}>Сохранить как черновик</button>
+        <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
+      </div>`}`;
 }
 
 /* ─── панель источников: три уровня, которыми наполняют день ─── */
@@ -1116,7 +1118,7 @@ function blockToTpl(b, folder){
 function saveBlock(id, folder){
   const b = day().blocks.find(x=>x.id===id);
   if(!b || !b.items.some(i=>i.exId)) return toast('В пустом блоке нечего сохранять');
-  blockToTpl(b, folder);
+  blockToTpl(b, folder); b.savedSig = blockSig(b);
   toast('Блок «' + (b.title||'без названия') + '» — в папке «' + folder + '»');
   renderSrc();
 }
@@ -1127,9 +1129,10 @@ function saveWorkout(){
   const ids = blocks.map(b => blockToTpl(b));
   TPL.unshift({id:nid('t'), lvl:'тренировка', used:0,
                title: d.title || 'Тренировка без названия', blocks: ids});
+  S.tplSaved[d.date] = serializeDay(d);
   toast('Тренировка и ' + blocks.length + ' ' +
-        plural(blocks.length,'блок','блока','блоков') + ' — в библиотеке');
-  renderSrc();
+        plural(blocks.length,'блок','блока','блоков') + ' — в базе');
+  render();
 }
 /* Папка блока — требование TPL-1. Предлагаем по содержимому, но выбор
    оставляем тренеру: «Разминка перед приседом» может лежать и там и там. */
@@ -1388,6 +1391,8 @@ document.addEventListener('click', e=>{
   /* Сообщение клиенту — тот же паттерн, что заметка к блоку: поле спрятано за
      иконкой, открыл — пиши, заполненное держит поле видимым, удаляется крестиком. */
   if(e.target.closest('#msg-tog')){ const dd = day(); S.msgOpen = (!trainerMsg(dd.date) && S.msgOpen===dd.date) ? null : dd.date; render(); const i = $('#w-msg'); if(i) i.focus(); return }
+  if(e.target.closest('#pub-tog')){ const dd = day(); const on = !isDraft(dd); if(!on && !dd.blocks.some(b=>b.items.some(i=>i.exId))) return toast('Пустую тренировку публиковать нечего');
+    setPubIdx(S.i, !on); return }
   if(e.target.closest('#comp-tog')){ const dd = day(); dd.comp = !dd.comp; render(); toast(dd.comp ? 'День отмечен как соревнование' : 'Статус соревнования снят'); return }
   if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); S.msgOpen = null; render(); return }
   if(e.target.closest('#clr-wo')){ askClear(); return }

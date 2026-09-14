@@ -161,11 +161,17 @@ button{cursor:pointer}
    сливается с серым фоном страницы. */
 .doch{display:flex;align-items:center;gap:10px;margin:0 -16px 12px;padding:9px 14px 9px 12px;background:var(--acc-a);border-bottom:1px solid #FFD9C4}
 .doch .gr{color:var(--acc-d);opacity:.6}
+/* Кнопки-действия шапок: покой — белый квадрат с рамкой; наведение — рамка и
+   иконка акцентом; активно (есть заметка, сохранено, соревнование,
+   опубликовано) — залито акцентом с белой иконкой. */
 .doch .x{width:30px;height:30px;border-radius:var(--rad-s);display:grid;place-items:center;
-  color:var(--tx2);flex:none;background:var(--bg);border:1px solid var(--line2)}
-.doch .x.note-on{color:var(--acc);background:var(--acc-a);border-color:transparent}
-.doch .x:hover{background:var(--acc-a);color:var(--acc);border-color:transparent}
-.doch .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:transparent}
+  color:var(--tx2);flex:none;background:var(--bg);border:1px solid var(--line2);transition:.12s}
+.doch .x:hover{border-color:var(--acc);color:var(--acc-d)}
+.doch .x.on,.doch .x.note-on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.doch .x.on:hover,.doch .x.note-on:hover{background:var(--acc-d);border-color:var(--acc-d);color:var(--on-acc)}
+.doch .x.st.on{background:var(--ok);border-color:var(--ok)}
+.doch .x.st.on:hover{background:#15804A;border-color:#15804A}
+.doch .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:var(--rm)}
 .doch .x svg{width:15px;height:15px}
 .doch input{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.03em;flex:1;min-width:0;
   padding:3px 6px;margin-left:-6px;border-radius:var(--rad-s)}
@@ -179,8 +185,11 @@ button{cursor:pointer}
   padding:4px 7px;margin-left:-7px;border-radius:var(--rad-s)}
 .blkh .bt:focus{outline:0;background:var(--bg)}
 .blkh .x{width:28px;height:28px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx2);background:var(--bg);border:1px solid var(--line2);flex:none}
-.blkh .x:hover{background:var(--acc-a);color:var(--acc);border-color:transparent}
-.blkh .x[data-delblk]:hover,.blkh .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:transparent}
+.blkh .x{transition:.12s}
+.blkh .x:hover{border-color:var(--acc);color:var(--acc-d)}
+.blkh .x.on,.blkh .x.note-on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.blkh .x.on:hover,.blkh .x.note-on:hover{background:var(--acc-d);border-color:var(--acc-d);color:var(--on-acc)}
+.blkh .x[data-delblk]:hover,.blkh .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:var(--rm)}
 .blkh .x svg{width:14px;height:14px}
 
 .bmeta{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
@@ -642,7 +651,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 /* ─── заметка к блоку: за иконкой, компактной строкой ───
    Заметки пишут к 5–10 % блоков; постоянная полоса под каждым заголовком
    давала им вес, которого у них нет. */
-.blkh .x.note-on{color:var(--acc);background:var(--acc-a);border-color:transparent}
+
 .bnote{display:flex;align-items:center;gap:7px;padding:2px 2px 6px;color:var(--tx3)}
 .bnote span{display:flex;flex:none}
 .bnote span svg{width:13px;height:13px}
@@ -1024,3 +1033,5 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .dp-d.today{box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc-d)}
 .dp-d.sel{background:var(--acc);color:var(--on-acc);box-shadow:none}
 .dp-f{display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.pubbar .btn:disabled{background:var(--s1);color:var(--tx4);cursor:default}
+.pubbar .btn:disabled svg{opacity:.5}
