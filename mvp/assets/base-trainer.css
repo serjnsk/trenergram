@@ -998,3 +998,24 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days.cal:not(.compact) .day{min-height:156px}
 .days.cal .day .t{font-size:17px}
 .days.cal .day .bl i{font-size:15px}
+
+/* ─── шапка календаря: кнопки-действия и выбор даты ─── */
+.wkh .btn.sm{height:32px;padding:0 13px;font-size:14px}
+.wkh .jumpb{gap:7px;padding:0 10px 0 11px}
+.wkh .jumpb svg{width:15px;height:15px;color:var(--tx3)}
+.wkh .jumpb span{font-variant-numeric:tabular-nums}
+.sug.dpick{min-width:0;width:372px;padding:12px 12px 10px}
+.dp-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dp-h b{font-family:var(--disp);font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.dp-nav{width:32px;height:32px;border-radius:var(--rad-s);background:var(--s1);display:grid;place-items:center;color:var(--tx2)}
+.dp-nav:hover{background:var(--acc-a);color:var(--acc-d)}
+.dp-nav svg{width:16px;height:16px}
+.dp-w{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:2px}
+.dp-w span{text-align:center;height:26px;line-height:26px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+.dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dp-d{height:44px;border-radius:var(--rad-m);font-size:15.5px;font-weight:600;color:var(--ink);background:none;font-variant-numeric:tabular-nums}
+.dp-d:hover{background:var(--s1)}
+.dp-d.out{color:var(--tx4);font-weight:500}
+.dp-d.today{box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc-d)}
+.dp-d.sel{background:var(--acc);color:var(--on-acc);box-shadow:none}
+.dp-f{display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}

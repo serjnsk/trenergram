@@ -109,8 +109,9 @@ function renderCal(keepYM){
       <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(c.ini)}</span><span class="cn">${esc(c.n)}</span>${ICON.chev}</button>
       <s class="psum">${psum}</s>
       <span class="sp"></span>
-      <button class="today" id="mToday">Сегодня</button>
-      <label class="jump" title="Перейти к дате">${ICON.cal}<input type="date" id="jumpDate" value="${TODAY}"></label>
+      <button class="btn gh sm" id="mToday" title="Пролистать к сегодняшнему дню">Сегодня</button>
+      <button class="btn gh sm" id="mMonth" title="Пролистать к началу текущего месяца">Текущий месяц</button>
+      <button class="btn gh sm jumpb" id="jumpBtn" title="Перейти к дате">${ICON.cal}<span>${dm(C.jump||TODAY)}.${(C.jump||TODAY).slice(0,4)}</span>${ICON.chev}</button>
       <span class="vtog" title="Вид">
         <button data-view="full" class="${!x.compact?'on':''}" title="Подробно — что внутри тренировок">${ICON.vfull}</button>
         <button data-view="compact" class="${x.compact?'on':''}" title="Компактно — только дата и статус">${ICON.vcompact}</button>
@@ -129,9 +130,11 @@ function jumpTo(date){
     if(ymKey(ym) < ymKey(C.from)) C.from = ymAdd(ym, -1); else C.to = ymAdd(ym, 1);
     renderCal(); observe();
   }
-  scrollToMonth(ymKey(ym), true);
+  /* Листаем к самому дню (под липкими шапками), а не к началу месяца. */
   const cell = document.querySelector(`.day[data-date="${date}"]`);
-  if(cell){ cell.classList.add('flash'); setTimeout(()=>cell.classList.remove('flash'), 1600) }
+  if(cell){ window.scrollTo({top: cell.getBoundingClientRect().top + scrollY - HEAD - 56, behavior:'smooth'});
+    cell.classList.add('flash'); setTimeout(()=>cell.classList.remove('flash'), 1600) }
+  else scrollToMonth(ymKey(ym), true);
 }
 function scrollToMonth(ym, smooth){
   const el = document.querySelector(`.mon[data-ym="${ym}"]`); if(!el) return;
@@ -170,10 +173,11 @@ document.addEventListener('click', e=>{
   if(pb){ e.preventDefault(); e.stopPropagation(); const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft');
     if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on)); render(true) } return }
   const vt = e.target.closest('[data-view]'); if(vt){ const keep = topMonth(); STATE.laneView = vt.dataset.view; saveState(); render(keep); return }
-  if(e.target.closest('#mToday')){ scrollToMonth(TODAY.slice(0,7)+'-01', true); return }
+  if(e.target.closest('#mToday')){ C.jump = TODAY; jumpTo(TODAY); return }
+  if(e.target.closest('#mMonth')){ scrollToMonth(TODAY.slice(0,7)+'-01', true); return }
+  const jb = e.target.closest('#jumpBtn'); if(jb){ openDatePicker(jb, C.jump||TODAY, d => { C.jump = d; jb.querySelector('span').textContent = dm(d)+'.'+d.slice(0,4); jumpTo(d) }); return }
   const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
 });
-document.addEventListener('change', e=>{ if(e.target.id==='jumpDate' && e.target.value) jumpTo(e.target.value) });
 render();
 initShell({page:'calendar.html'});
 </script>

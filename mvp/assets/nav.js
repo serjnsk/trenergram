@@ -157,3 +157,36 @@ function initRail(){
   b.onclick = () => setRailMin(!document.body.classList.contains('railmin'));
   try{ if(localStorage.getItem('tg.railmin')) setRailMin(true) }catch(_){}
 }
+
+/* ═══════════ ВЫБОР ДАТЫ (календарь, «перейти к дате») ═══════════
+   Свой попап вместо системного <input type=date>: сетка месяца с понедельника,
+   сегодня обведено, выбранная дата залита; стрелки листают месяцы, Esc закрывает. */
+function openDatePicker(btn, curDate, onPick){
+  document.querySelectorAll('.sug.dpick').forEach(x=>x.remove());
+  const box = document.createElement('div'); box.className = 'sug dpick';
+  document.body.appendChild(box);
+  const r = btn.getBoundingClientRect();
+  box.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  box.style.left = Math.max(8, r.right - 372) + 'px';
+  const chev = d => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d<0?'M10 3 5 8l5 5':'M6 3l5 5-5 5'}"/></svg>`;
+  let sel = curDate || TODAY, view = sel.slice(0,7);
+  const draw = () => {
+    const [y, m] = view.split('-').map(Number);
+    const first = `${view}-01`, off = dowMon(first), start = addDays(first, -off);
+    const cells = Array.from({length:42}, (_,k)=>{ const d = addDays(start, k), out = d.slice(0,7)!==view;
+      return `<button type="button" class="dp-d ${out?'out':''} ${d===TODAY?'today':''} ${d===sel?'sel':''}" data-date="${d}">${+d.slice(8)}</button>` });
+    box.innerHTML = `<div class="dp-h"><button type="button" class="dp-nav" data-dp="-1" title="Предыдущий месяц">${chev(-1)}</button><b>${MONTHS_N[m-1]} ${y}</b><button type="button" class="dp-nav" data-dp="1" title="Следующий месяц">${chev(1)}</button></div>
+      <div class="dp-w">${RU.map(d=>`<span>${d}</span>`).join('')}</div><div class="dp-g">${cells.join('')}</div>
+      <div class="dp-f"><button type="button" class="btn gh sm" data-dp-today>Сегодня</button></div>`;
+  };
+  const close = () => { box.remove(); document.removeEventListener('click', off, true); document.removeEventListener('keydown', key, true) };
+  const off = e => { if(!box.isConnected){ close(); return } if(!box.contains(e.target) && !btn.contains(e.target)) close() };
+  const key = e => { if(e.key==='Escape'){ e.preventDefault(); close() } };
+  setTimeout(()=>{ document.addEventListener('click', off, true); document.addEventListener('keydown', key, true) });
+  box.addEventListener('click', e => { e.stopPropagation();
+    const nav = e.target.closest('[data-dp]'); if(nav){ const [y,m] = view.split('-').map(Number); const d = new Date(y, m-1+ +nav.dataset.dp, 1); view = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; draw(); return }
+    if(e.target.closest('[data-dp-today]')){ close(); onPick(TODAY); return }
+    const c = e.target.closest('[data-date]'); if(c){ close(); onPick(c.dataset.date) } });
+  draw();
+  return box;
+}
