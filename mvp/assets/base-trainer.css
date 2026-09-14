@@ -1064,14 +1064,14 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days .day .bx:first-child{border-top:0;padding-top:0}
 .days .day .bxh{margin-bottom:1px}
 /* Номер вплотную к названию блока; упражнения внутри — глубже названия, чтобы иерархия читалась по отступу. */
-.days .day .bxh{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:baseline;gap:0 4px;font-size:15.5px;font-weight:500;line-height:21px}
+.days .day .bxh{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:0 6px;font-size:15.5px;font-weight:500;line-height:21px}
 .days .day .bxh s{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--tx3);font-variant-numeric:tabular-nums}
 .days .day .bxh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .days .day .bxh i{font-style:normal;font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--acc-d)}
 /* Упражнение: название и параметры в одной строке, если помещаются; если нет —
    параметры целиком переносятся на следующую строку под название (обычный
    текстовый перенос, без выравнивания вправо). */
-.days .day .bxi{display:block;padding:2px 0 2px 30px;font-size:14.5px;line-height:20px}
+.days .day .bxi{display:block;padding:2px 0 2px 22px;font-size:14.5px;line-height:20px}
 .days .day .bxi span{color:var(--ink)}
 .days .day .bxi em{display:inline-block;max-width:100%;margin-left:8px;font-style:normal;font-size:14px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
 .days .day .bxi em:empty{display:none}
