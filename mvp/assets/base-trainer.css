@@ -1064,18 +1064,18 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days .day .bx:first-child{border-top:0;padding-top:0}
 .days .day .bxh{margin-bottom:1px}
 /* Номер вплотную к названию блока; упражнения внутри — глубже названия, чтобы иерархия читалась по отступу. */
-.days .day .bxh{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:baseline;gap:0 4px;font-size:14.5px;font-weight:600;line-height:20px}
+.days .day .bxh{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:baseline;gap:0 4px;font-size:15.5px;font-weight:500;line-height:21px}
 .days .day .bxh s{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--tx3);font-variant-numeric:tabular-nums}
 .days .day .bxh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .days .day .bxh i{font-style:normal;font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--acc-d)}
 /* Упражнение: название и параметры в одной строке, если помещаются; если нет —
    параметры целиком переносятся на следующую строку под название (обычный
    текстовый перенос, без выравнивания вправо). */
-.days .day .bxi{display:block;padding:2px 0 2px 30px;font-size:13.5px;line-height:19px}
+.days .day .bxi{display:block;padding:2px 0 2px 30px;font-size:14.5px;line-height:20px}
 .days .day .bxi span{color:var(--ink)}
-.days .day .bxi em{display:inline-block;max-width:100%;margin-left:8px;font-style:normal;font-size:13px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
+.days .day .bxi em{display:inline-block;max-width:100%;margin-left:8px;font-style:normal;font-size:14px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
 .days .day .bxi em:empty{display:none}
-.days .day .bxi em u{text-decoration:none;color:var(--acc-d);background:var(--acc-a);border-radius:5px;padding:0 6px;display:inline-block;line-height:18px}
-.days.cal.detail .day .bxi{font-size:14px;line-height:20px}
-.days.cal.detail .day .bxi em{font-size:13.5px}
+.days .day .bxi em u{text-decoration:none;color:var(--acc-d);background:var(--acc-a);border-radius:5px;padding:0 6px;display:inline-block;line-height:19px}
+.days.cal.detail .day .bxi{font-size:15px;line-height:21px}
+.days.cal.detail .day .bxi em{font-size:14.5px}
 .days.detail .day.rest .stcell{min-height:110px}
