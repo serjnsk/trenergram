@@ -272,8 +272,7 @@ function renderStrip(){
           ${head}
           ${n ? `<span class="t">${esc(title)}</span>` : '<span class="e">отдых</span>'}
           ${isDraft(x) && (n || x.title) ? `<span class="dr">черновик</span>` : ''}
-          ${n ? `<span class="k">${bl} ${plural(bl,'блок','блока','блоков')} · ${n} упр</span>` : ''}
-          ${n ? `<span class="bl">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map(b=>`<i>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</i>`).join('')}</span>` : ''}
+          ${n ? `<span class="bl num">${x.blocks.filter(b=>b.items.some(y=>y.exId)).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}</span>` : ''}
           <span class="ld"><i style="flex:${n}"></i><u style="flex:${Math.max(1,10-n)}"></u><s>${n||''}</s></span>
         </button>`;
       }).join('')}
