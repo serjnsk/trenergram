@@ -1082,13 +1082,11 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:46px;left
 .days.cal.detail .day .bxi em{font-size:14.5px}
 .days.detail .day.rest .stcell{min-height:110px}
 
-/* ─── единая шапка календаря и конструктора: слева заголовок и клиент, справа даты и вид ─── */
-.wkh.two{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:nowrap;gap:16px}
-.wkh.two .hl,.wkh.two .hr{display:flex;flex-direction:column;gap:10px;min-width:0}
-.wkh.two .hl{align-items:flex-start}
-.wkh.two .hr{align-items:flex-end;flex:none}
-.wkh.two .wkttl{line-height:32px;margin:0}
-.wkh.two .dates{display:flex;align-items:center;gap:8px;height:32px}
-.wkh.two .views{display:flex;align-items:center;min-height:46px}
-.wkh.two .selbar{display:flex;align-items:center;gap:8px}
-.wkh.two .cliSel{margin:0}
+/* ─── единая шапка календаря и конструктора в одну строку:
+   заголовок · клиент по центру · даты · вид ─── */
+.wkh.one{display:flex;align-items:center;flex-wrap:nowrap;gap:14px;min-height:46px}
+.wkh.one .wkttl{margin:0;line-height:32px}
+.wkh.one .cliSel{margin:0 auto}
+.wkh.one .dates{display:flex;align-items:center;gap:8px;flex:none}
+.wkh.one .views{display:flex;align-items:center;flex:none;margin-left:6px}
+.wkh.one .selbar{display:flex;align-items:center;gap:8px}
