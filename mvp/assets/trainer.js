@@ -341,7 +341,7 @@ function blockHTML(b){
         <button class="x" data-notedel="${b.id}" title="Удалить заметку">${ICON.x}</button>
       </label>` : ''}
     ${b.items.map(lineHTML).join('')}
-    <button class="addl" data-add="${b.id}">${ICON.plus} Упражнение — печатайте как в тетради: «Присед 5×3 80%»</button>
+    <button class="addl" data-add="${b.id}">${ICON.plus} Добавить упражнение</button>
   </div>`;
 }
 /* Пустой день — момент, когда тренер выбирает, КАК начать. Здесь развилка
@@ -432,7 +432,6 @@ function renderDoc(){
     ${S.compose==='text' && empty ? '' : d.blocks.map(blockHTML).join('')}
     ${S.compose==='text' && empty ? '' : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>`}
     ${S.compose==='text' && empty ? '' : `<div class="pubbar">
-        <s>${!n ? 'Добавьте блоки и упражнения — потом сохраните черновик или опубликуйте.' : isDraft(d) ? 'Черновик клиент не видит. Опубликуйте — и тренировка появится у него в календаре.' : 'Опубликована — клиент видит эту тренировку. «Сохранить как черновик» скроет её от клиента.'}</s>
         <button class="btn gh" id="saveDraft" ${isDraft(d) || n ? '' : 'disabled'} title="${!isDraft(d) && n ? 'Снять с публикации — клиент перестанет видеть тренировку' : ''}">Сохранить как черновик</button>
         <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
       </div>`}`;
@@ -453,7 +452,7 @@ function renderSrc(){
           <span class="en">${esc(e.en)} · ${esc(e.eq)}</span></span>
         <button class="add" data-addex="${e.id}" title="В открытый блок">${ICON.plus}</button>
       </div>`).join('')}`).join('') || '<div class="empty">Ничего не нашлось</div>';
-    $('#railfoot').textContent = 'Всё это можно просто напечатать в строке — панель нужна, когда хочется посмотреть, что есть.';
+    $('#railfoot').textContent = '';   /* подпись убрана: панель и так понятна */
   } else {
     const lvl = S.tab === 'blk' ? 'блок' : 'тренировка';
     TPL.filter(t=>t.lvl==='блок').forEach(normFmt);        /* формат — в тип, название чистое */

@@ -265,6 +265,7 @@ button{cursor:pointer}
 .search input{flex:1;min-width:0;font-size:14.5px}
 .search input:focus{outline:0}
 .railbody{flex:1;overflow-y:auto;padding:9px 10px 12px}
+.railfoot:empty{display:none}
 .railfoot{border-top:1px solid var(--line);padding:10px 13px;flex:none;
   font-size:13px;color:var(--tx3);line-height:1.5}
 
@@ -648,7 +649,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 /* ─── черновик и публикация ─── */
 .day .dr{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--warn);background:#FBF1DE;border-radius:4px;padding:1px 5px;width:fit-content}
-.pubbar{display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.pubbar{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .pubbar s{text-decoration:none;flex:1;font-size:14px;color:var(--tx3);line-height:1.45}
 .pubbar .btn{height:40px;padding:0 20px;font-size:15.5px}
 
