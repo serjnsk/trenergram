@@ -273,6 +273,8 @@ const TPL = [
   items:[['wb','',15,'повт'],['du','',50,'повт'],['box','10']]},
  {id:'b10', lvl:'блок', own:true, at:'2026-05-18', folder:'Заминки', kind:'cooldown', title:'Заминка / растяжка · 8 мин', used:29,
   items:[['couch','2×',90,'сек'],['plank','3×',45,'сек']]},
+ {id:'b11', lvl:'блок', own:true, at:'2026-09-10', folder:'Силовые блоки', kind:'strength', title:'Жим + тяга гантелей', used:4,
+  items:[['@ss',4,'90 сек'],['dbpress','10',22.5,'кг','',1],['dbrow','10',22.5,'кг','',1]]},
 
  /* ── уровень: тренировка — внутри блоки, а не россыпь упражнений ── */
  {id:'w1', lvl:'тренировка', own:true, at:'2026-06-25', title:'Силовой день · присед + жим', used:8, blocks:['b1','b4','b5','b10']},
@@ -340,11 +342,13 @@ function tplKind(t){
 }
 
 /* Разворачивание шаблона в рабочие сущности — уровень определяет результат */
-function tplLine([ex, scheme, val, unit, txt]){
+function tplLine([ex, scheme, val, unit, txt, sub]){
+  if(ex === SS_TAG) return ssItem(scheme, val);          /* [SS_TAG, круги, отдых] */
   const i = mkItem(ex, scheme||'');
   if(unit==='%') i.pct = parseFloat(val);
   else if(val!=null && val!==''){ i.unit = unit || i.unit; i.val = String(val) }
   if(txt) i.txt = txt;
+  if(sub) i.sub = true;
   return i;
 }
 const tplToBlock = t => ({id:nid('b'), kind:t.kind||'strength', title:t.title.replace(/\s·.*$/,''),
@@ -362,9 +366,9 @@ function tplToSeq(t){
 }
 /* сколько дней с тренировками и упражнений внутри — для карточек библиотеки */
 function tplStats(t){
-  if(t.lvl==='блок') return {n:(t.items||[]).length};
+  if(t.lvl==='блок') return {n:(t.items||[]).filter(x=>x[0]!==SS_TAG).length};
   if(t.lvl==='тренировка'){ const w=tplToWorkout(t);
-    return {n:w.blocks.reduce((a,b)=>a+b.items.length,0), blocks:w.blocks.length} }
+    return {n:w.blocks.reduce((a,b)=>a+b.items.filter(i=>!i.ss).length,0), blocks:w.blocks.length} }
   if(t.lvl==='программа'){ const q=tplToSeq(t);
     return {days:t.days, cycle:q.length, workouts:q.filter(Boolean).length} }
   return {n:0};
@@ -446,13 +450,61 @@ let uid = 0; const nid = p => p+(++uid);
 /* txt — «как в тетради»: сложная запись (разный вес по подходам, дроп-сет…),
    которая не ложится в подходы×повторы + нагрузка. Заполнен txt — структурные
    поля пусты, клиент видит текст как есть. */
+/* ─── СУПЕРСЕТ ───
+   В плоском списке упражнений блока: строка-заголовок {ss, rounds, rest} и
+   идущие за ней подряд упражнения с флагом sub. У суперсета — круги и отдых
+   между кругами, у упражнения внутри — нагрузка на один круг. Плоская модель
+   выбрана намеренно: все проверки «есть ли в дне упражнения» и счётчики
+   работают как раньше, копирование и сохранение переносят группу без правок. */
+const SS_TAG = '@ss';
+const ssItem = (rounds = 3, rest = '') => ({id:nid('i'), ss:true, rounds:Math.max(1, +rounds || 3), rest:rest || '', exId:null, raw:null, scheme:'', pct:null, unit:'', val:'', txt:''});
 function mkItem(exId, scheme='', pct=null, unit=null, val='', txt=''){
   const e = byId(exId);
   return {id:nid('i'), exId, raw:null, scheme, pct, unit: unit || (e ? e.u[0] : ''), val, txt: txt||''};
 }
 const rawItem = txt => ({id:nid('i'), exId:null, raw:txt, scheme:'', pct:null, unit:'', val:'', txt:''});
 const mkBlock = (kind,title,note,fmt,items) => ({id:nid('b'), kind, title, note:note||'', fmt:fmt||null,
-  items:(items||[]).map(a=>mkItem(a[0],a[1]||'',a[2]??null,a[3]||null,a[4]||'',a[5]||''))});
+  items:(items||[]).map(a => a[0] === SS_TAG ? ssItem(a[1], a[2])
+    : Object.assign(mkItem(a[0],a[1]||'',a[2]??null,a[3]||null,a[4]||'',a[5]||''), a[6] ? {sub:true} : {}))});
+/* Конец группы: индекс первой строки после участников суперсета с заголовком в k. */
+const ssEnd = (items, k) => { let j = k + 1; while(j < items.length && items[j].sub && !items[j].ss) j++; return j };
+/* Порядок в блоке: заголовок без двух участников распускается, sub без заголовка сверху снимается. */
+function normSS(b){
+  const src = b.items || [], out = [];
+  for(let k = 0; k < src.length; k++){
+    const it = src[k];
+    if(it.ss){
+      const j = ssEnd(src, k);
+      if(j - k - 1 < 2){ for(let m = k + 1; m < j; m++) src[m].sub = false; continue }
+      out.push(it); continue;
+    }
+    const prev = out[out.length - 1];
+    if(it.sub && !(prev && (prev.ss || prev.sub))) it.sub = false;
+    out.push(it);
+  }
+  b.items = out;
+  return b;
+}
+const ssLabel = h => 'Суперсет · ' + h.rounds + ' ' + plural3(+h.rounds, 'круг', 'круга', 'кругов') + (h.rest ? ' · отдых ' + h.rest : '');
+/* Заголовок суперсета в тексте: «Суперсет 3 круга», «3 круга:», «3 раза», «Суперсет ×4, отдых 90 сек»,
+   перечень — в той же строке после двоеточия или следующими строками. «3 раунда на время», AMRAP,
+   EMOM и табата — это тип блока, не суперсет. */
+function parseSSHead(text){
+  let L = String(text || '').trim();
+  if(!L || /на\s*время|for\s*time|amrap|emom|табат|tabata|кажд/i.test(L)) return null;
+  let list = '';
+  const ci = L.search(/(?<!\d):|:(?!\d)/);           /* двоеточие в «1:30» — время, не перечень */
+  if(ci >= 0){ list = L.slice(ci + 1).trim(); L = L.slice(0, ci).trim() }
+  let rest = '';
+  const mr = L.match(/[,;]?\s*отдых\s*(?:между\s*круг[а-яё]*\s*)?(\d+:\d{2}|\d+(?:[.,]\d+)?\s*(?:сек|мин|с|м)[а-яё]*\.?)\s*$/i);
+  if(mr){ rest = mr[1].trim(); L = L.slice(0, mr.index).trim() }
+  L = L.replace(/[,;.\s]+$/, '');
+  const m = L.match(/^(?:суперсет\s*[x×х]?\s*)?(\d{1,2})\s*(?:раза?|круг[а-яё]*|раунд[а-яё]*)$/i)
+         || L.match(/^суперсет(?:\s*[x×х]\s*(\d{1,2}))?$/i);
+  if(!m) return null;
+  const items = list ? list.split(/\s*;\s*|,\s+/).map(t => t.replace(/^[-–—•*]\s*/, '').trim()).filter(Boolean) : [];
+  return {rounds: m[1] ? +m[1] : 3, rest, list: items};
+}
 
 /* Недельный рисунок программы: 7 дней, null = отдых */
 /* ─── Фактически записанные результаты (CLI-2) ───
@@ -513,7 +565,7 @@ const DAYS = {
   {t:'Сила · присед + жим', b:[
     ['warmup','Разминка','Темп спокойный, без отказа',null,[['rom','2×',null,'сек','60'],['pvc','2×10'],['row',null,null,'м','500']]],
     ['strength','Присед','Пауза 1 сек в нижней точке',null,[['squat','5×3',80],['squat','1×3',85]]],
-    ['strength','Жим лёжа + подтягивания','',null,[['bench','5×5',75],['pullup','5×8']]],
+    ['strength','Жим лёжа + подтягивания','',null,[['@ss',5,'90 сек'],['bench','5',75,null,'','',1],['pullup','8',null,null,'','',1]]],
     ['cooldown','Заминка','',null,[['couch','2×',null,'сек','90']]]]},
   {t:'Комплекс «Fran»', b:[
     ['warmup','Разминка','',null,[['rom','2×',null,'сек','60'],['burpee','2×8']]],
@@ -607,9 +659,9 @@ function buildDay(pid, i){
    такой блок на каждом открытом пустом дне, и без этого правила любой клик
    по дню помечал бы его черновиком. */
 const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
-  i:(b.items||[]).map(it=>({e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||''}))}))});
+  i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''} : ({e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||'', ...(it.sub ? {g:1} : {})}))}))});
 const restoreBlocks = rec => (rec.b||[]).map(b=>({id:nid('b'), kind:b.k||'strength', title:b.t||'', note:b.n||'', fmt:b.f||null,
-  items:(b.i||[]).map(it=>({id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||''}))}));
+  items:(b.i||[]).map(it=> it.ss ? ssItem(it.n, it.z) : ({id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||'', ...(it.g ? {sub:true} : {})}))}));
 const savedDay = (pid,i) => ((STATE.days||{})[pid]||{})[i] || null;
 /* Черновики могут лежать за концом заготовок — план дотягиваем до них. */
 function planLength(pid){
@@ -1177,10 +1229,22 @@ function ensureDay(cid, date){
 const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + '\u00a0%' : (it.val ? it.val + (it.unit ? '\u00a0' + it.unit : '') : '')].filter(Boolean).join(' · ');
 function blocksDetail(x, cid){
   const pm = cid ? pmOf(cid) : null;
-  const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId || y.raw)); if(!bs.length) return '';
+  const has = y => y.exId || y.raw;
+  const bs = (x.blocks||[]).filter(b=>b.items.some(has)); if(!bs.length) return '';
+  const row = it => { const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
+    return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)}\u00a0кг</u>` : ''}</em></div>` };
+  /* Суперсет — подгруппой: подпись «Суперсет · 3 круга» и его упражнения. */
+  const body = b => { let h = '', k = 0; const its = b.items;
+    while(k < its.length){
+      if(its[k].ss){ const j = ssEnd(its, k), mem = its.slice(k + 1, j).filter(has);
+        if(mem.length) h += `<div class="bxss"><div class="bxssh">${esc(ssLabel(its[k]))}</div>${mem.map(row).join('')}</div>`;
+        k = j; continue }
+      if(has(its[k])) h += row(its[k]);
+      k++;
+    }
+    return h };
   return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
     <div class="bxh"><s>${i+1}</s><b>${esc(b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
-    ${b.items.filter(y=>y.exId || y.raw).map(it=>{ const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
-      return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)}\u00a0кг</u>` : ''}</em></div>` }).join('')}
+    ${body(b)}
   </div>`).join('')}</div>`;
 }

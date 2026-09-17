@@ -186,7 +186,8 @@ const libSort = (a,b) =>
 
 function libLines(t){
   if(t.lvl==='блок')
-    return (t.items||[]).map(x=>`<span>${esc((byId(x[0])||{}).ru || x[0])}${x[1]?' · '+esc(x[1]):''}</span>`).join('');
+    return (t.items||[]).map(x=> x[0] === SS_TAG ? `<span class="ssl">${esc(ssLabel({rounds:+x[1]||3, rest:x[2]||''}))}</span>`
+      : `<span class="${x[5]?'sub':''}">${esc((byId(x[0])||{}).ru || x[0])}${x[1]?' · '+esc(x[1]):''}</span>`).join('');
   if(t.lvl==='тренировка')
     return (t.blocks||[]).map(id=>`<span>${esc((tplById(id)||{}).title || id)}</span>`).join('');
   if(t.lvl==='программа'){
@@ -204,7 +205,7 @@ function libCols(level){
   const nameCol = {k:'title', n:'Название', sort:byStr('title'), cell:t=>
     `<div class="cellname"><div style="min-width:0">
        <div class="n">${esc(t.title)}</div>
-       <div class="sub">${libLines(t).replace(/<\/span><span>/g,' · ').replace(/<\/?span>/g,'')}</div>
+       <div class="sub">${libLines(t).replace(/<\/span><span[^>]*>/g,' · ').replace(/<\/?span[^>]*>/g,'')}</div>
      </div></div>`};
   const ownCol = {k:'own', n:'Источник', w:'110px', sort:byNum(t=>t.own?0:1), cell:t=>
     t.own ? `<span class="chip ok">своё</span>` : `<span class="chip ghost">общая</span>`};

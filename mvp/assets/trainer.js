@@ -131,6 +131,7 @@ const PM   = () => pmOf(S.cid);
 
 /* ─── навигация по рабочему пространству ─── */
 const ICON = {
+ ungroup:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="1.5" y="3" width="5" height="10" rx="1.2"/><rect x="9.5" y="3" width="5" height="10" rx="1.2"/></svg>',
  dash:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.6"/><rect x="11" y="2.5" width="6.5" height="4" rx="1.6"/><rect x="11" y="8.5" width="6.5" height="9" rx="1.6"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.6"/></svg>',
  users:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><circle cx="8" cy="6.5" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M14 4.2a3 3 0 0 1 0 5.6M15.5 12.6c1.6.7 2.8 2.3 2.8 4.4"/></svg>',
  cal:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="4" width="15" height="13.5" rx="2"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3"/></svg>',
@@ -315,6 +316,32 @@ function lineHTML(it){
 /* Подпись чипа: «5×3 · 80 %», «500 м», «3×12 · RPE 8». */
 const itemLoad = it => it.pct ? fmtN(it.pct)+' %' : (it.val ? it.val+' '+it.unit : '');
 const itemChip = it => it.txt ? it.txt : [it.scheme, itemLoad(it)].filter(Boolean).join(' · ');
+/* Строки блока: обычные упражнения и суперсеты (заголовок + участники подряд). */
+function itemsHTML(b){
+  let h = '', k = 0;
+  while(k < b.items.length){
+    const it = b.items[k];
+    if(it.ss){ const j = ssEnd(b.items, k); h += ssHTML(it, b.items.slice(k + 1, j)); k = j; continue }
+    h += lineHTML(it); k++;
+  }
+  return h;
+}
+function ssHTML(h, mem){
+  const r = Math.max(1, +h.rounds || 1);
+  return `<div class="ssg" data-ss="${h.id}">
+    <div class="line ssh" data-item="${h.id}">
+      <span class="gr" title="Перетащить суперсет">${ICON.grip}</span>
+      <span class="nm ssb">Суперсет</span>
+      <label class="ssf"><input class="ssn" data-ssf="rounds" data-ss-id="${h.id}" value="${r}" inputmode="numeric" maxlength="2"><s data-ss-rl="${h.id}">${plural(r,'круг','круга','кругов')}</s></label>
+      <label class="ssf"><s>отдых</s><input class="ssrest" data-ssf="rest" data-ss-id="${h.id}" value="${esc(h.rest||'')}" placeholder="без отдыха"></label>
+      <span class="sp"></span>
+      <button class="x" data-ssungroup="${h.id}" title="Разгруппировать — упражнения останутся в блоке">${ICON.ungroup}</button>
+      <button class="x" data-delss="${h.id}" title="Удалить суперсет вместе с упражнениями">${ICON.x}</button>
+    </div>
+    ${mem.map(lineHTML).join('')}
+    <button class="addl in" data-addin="${h.id}">${ICON.plus} Упражнение в суперсет</button>
+  </div>`;
+}
 function blockHTML(b){
   return `<div class="blk ${PENDING && PENDING.ids.has(b.id) ? 'pending' : ''}" data-blk="${b.id}">
     <div class="blkh">
@@ -330,8 +357,11 @@ function blockHTML(b){
         <input data-f="note" value="${esc(b.note||'')}" placeholder="Заметка к блоку — увидит клиент">
         <button class="x" data-notedel="${b.id}" title="Удалить заметку">${ICON.x}</button>
       </label>` : ''}
-    ${b.items.map(lineHTML).join('')}
-    <button class="addl" data-add="${b.id}">${ICON.plus} Добавить упражнение</button>
+    ${itemsHTML(b)}
+    <div class="addrow">
+      <button class="addl" data-add="${b.id}">${ICON.plus} Добавить упражнение</button>
+      <button class="addl" data-addss="${b.id}">${ICON.plus} Добавить суперсет</button>
+    </div>
   </div>`;
 }
 /* Пустой день — момент, когда тренер выбирает, КАК начать. Здесь развилка
@@ -347,7 +377,9 @@ function emptyDay(){
 мобилити плеч с PVC 2×10
 
 Присед 5×3 80%
-Жим лёжа 5×5"></textarea>
+Суперсет 3 круга:
+- гребля 500 м
+- планка 60 сек"></textarea>
     <div class="pastef">
       <button class="lnk" id="pt-back">← ${day().blocks.some(b=>b.items.length) ? 'Отмена' : 'Собрать вручную'}</button>
       <label class="lnk ptphoto" title="Фото тетради или скриншот — распознавание подключим вместе с ИИ-модулем">
@@ -382,7 +414,7 @@ function renderDoc(){
      упражнения, без карточек-подсказок — они дублировали кнопки под названием. */
   if(!d.blocks.length && S.compose !== 'text') d.blocks.push(mkBlock('strength','','',null,[]));
   const n   = d.blocks.reduce((a,b)=>a+b.items.filter(x=>x.exId).length,0);
-  const raw = d.blocks.reduce((a,b)=>a+b.items.filter(x=>!x.exId).length,0);
+  const raw = d.blocks.reduce((a,b)=>a+b.items.filter(x=>!x.exId && !x.ss).length,0);
   /* Пустой — без содержимого, а не без блоков: заготовка пустого блока
      появляется на каждом открытом дне и пустоты не отменяет. */
   const empty = !d.blocks.some(b => b.items.length || b.title || b.note);
@@ -456,9 +488,10 @@ function renderSrc(){
           <span class="nm">${esc(t.title || (t.fmt ? fmtLabel(t.fmt) : ''))}</span>${t.fmt && t.title ? `<s class="ft">${esc(fmtLabel(t.fmt))}</s>` : ''}
           </div>
         <div class="ls">${lvl==='блок'
-          ? t.items.map(i=>{ const e=byId(i[0]) || {ru:i[0]};   /* неизвестный id — показываем как есть, не роняем панель */
+          ? t.items.map(i=>{ if(i[0] === SS_TAG) return `<span class="ssl">${esc(ssLabel({rounds:+i[1]||3, rest:i[2]||''}))}</span>`;
+              const e=byId(i[0]) || {ru:i[0]};   /* неизвестный id — показываем как есть, не роняем панель */
               const v = i[4] ? ` · ${i[4]}` : i[2] ? ` · ${i[2]}${i[3]==='%'?' %':' '+(i[3]||'')}` : '';
-              return `<span>${esc(e.ru)}${i[1]?' — '+esc(i[1]):''}${esc(v)}</span>` }).join('')
+              return `<span class="${i[5]?'sub':''}">${esc(e.ru)}${i[1]?' — '+esc(i[1]):''}${esc(v)}</span>` }).join('')
           : (t.blocks||[]).map(id=>{ const b=tplById(id); return b?`<span>${esc(b.title)}</span>`:'' }).join('')}</div>
       </div>`).join('') || '<div class="empty">Пусто</div>';
     $('#railfoot').textContent = lvl === 'блок'
@@ -495,7 +528,7 @@ function publishDay(){
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
-function render(){ persist(); renderStrip(); renderDoc(); renderSrc(); }
+function render(){ const cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); renderSrc(); }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -700,15 +733,33 @@ const isHeader = L => L.length <= 42 && (/:$/.test(L) || !/\d/.test(L));
 
 function textToBlocks(text){
   const blocks = [];
-  let cur = null;
-  const open = title => { cur = {title: title || '', items: [], src: []}; blocks.push(cur) };
+  let cur = null, ss = null;             /* ss — открытый суперсет: {bullets:null|true|false} */
+  const open = title => { cur = {title: title || '', items: [], src: []}; blocks.push(cur); ss = null };
   for(const line of String(text).split('\n')){
     const L = line.trim();
-    if(!L){ cur = null; continue }                       /* пустая строка — граница */
-    if(fmtPart(L) || isHeader(L)){ open(L.replace(/:$/,'')); cur.src.push(L); continue }
+    if(!L){ cur = null; ss = null; continue }                       /* пустая строка — граница */
+    const bullet = /^[-–—•*]\s*/.test(L), body = L.replace(/^[-–—•*]\s*/, '');
+    if(!bullet && fmtPart(L)){ open(L.replace(/:$/,'')); cur.src.push(L); continue }
+    /* «Суперсет 3 круга:» / «3 раза» — заголовок суперсета внутри текущего блока;
+       участники — перечень после двоеточия или следующие строки. Если строки
+       с дефисом, первая строка без дефиса закрывает суперсет. */
+    const sh = bullet ? null : parseSSHead(L);
+    if(sh){
+      if(!cur) open('');
+      cur.items.push(ssItem(sh.rounds, sh.rest)); cur.src.push(L);
+      sh.list.forEach(t => { const it = parseLine(t) || rawItem(t); it.sub = true; cur.items.push(it) });
+      ss = sh.list.length ? null : {bullets:null};
+      continue;
+    }
+    if(ss){
+      if(ss.bullets === null) ss.bullets = bullet;
+      if((ss.bullets && !bullet) || /:$/.test(L)) ss = null;
+    }
+    if(!ss && !bullet && isHeader(L)){ open(L.replace(/:$/,'')); cur.src.push(L); continue }
     if(!cur) open('');
-    const parsed = parseLine(L);
-    cur.items.push(parsed || rawItem(L));
+    const it = parseLine(body) || rawItem(body);
+    if(ss) it.sub = true;
+    cur.items.push(it);
     cur.src.push(L);
   }
   return blocks.filter(b => b.items.length);
@@ -814,7 +865,7 @@ function showSource(){
 /* Сводка по предложению: сколько разобралось и сколько осталось текстом. */
 function pendingStat(){
   const bs = day().blocks.filter(b=>PENDING.ids.has(b.id));
-  const items = bs.flatMap(b=>b.items);
+  const items = bs.flatMap(b=>b.items).filter(i=>!i.ss);
   const raw = items.filter(i=>!i.exId).length;
   return bs.length + ' ' + plural(bs.length,'блок','блока','блоков') + ' · ' +
     items.length + ' ' + plural(items.length,'упражнение','упражнения','упражнений') +
@@ -850,7 +901,14 @@ const findItem = id => {
   return {};
 };
 function commitLine(id, text){
-  const {i} = findItem(id); if(!i) return;
+  const {b, i} = findItem(id); if(!i) return;
+  /* «3 круга: гребля 500 м, планка 60 сек» в одной строке — сразу суперсет. Внутри суперсета вложенный не создаём. */
+  const ss = !i.sub && parseSSHead(text);
+  if(ss && ss.list.length >= 2){
+    const mem = ss.list.map(t => { const it = parseLine(t) || rawItem(t); it.sub = true; return it });
+    b.items.splice(b.items.indexOf(i), 1, ssItem(ss.rounds, ss.rest), ...mem);
+    render(); return;
+  }
   const p = parseLine(text);
   /* В тексте теперь только название, поэтому «Присед» без цифр — это
      переименование, а не сброс схемы: параметры берём из текста, если они
@@ -1098,9 +1156,12 @@ function blockToTpl(b, folder){
   const t = {
     id: nid('t'), lvl:'блок', folder: folder || FOLDER_OF(b), used: 0,
     title: b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок без названия'), fmt: b.fmt ? {...b.fmt} : null,
-    items: b.items.filter(i=>i.exId).map(i =>
-      i.pct != null ? [i.exId, i.scheme||'', i.pct, '%', i.txt||'']
-                    : [i.exId, i.scheme||'', i.val||'', i.unit||'', i.txt||'']),
+    /* Строки текстом в шаблон не идут; если из-за этого в суперсете осталось
+       меньше двух упражнений, он распускается — на копиях, не на живом дне. */
+    items: normSS({items: b.items.filter(i=>i.exId || i.ss).map(i=>({...i}))}).items.map(i =>
+      i.ss ? [SS_TAG, i.rounds, i.rest||'']
+      : i.pct != null ? [i.exId, i.scheme||'', i.pct, '%', i.txt||'', i.sub?1:0]
+                      : [i.exId, i.scheme||'', i.val||'', i.unit||'', i.txt||'', i.sub?1:0]),
   };
   TPL.unshift(t);
   return t.id;
@@ -1238,12 +1299,12 @@ function repeatPrev(){
    случае. Разница в метке inline: с ней запись обслуживает только свою
    неделю и в панель источников не попадает. */
 const sigItems = items => (items||[])
-  .filter(i => i.exId)
-  .map(i => `${i.exId}|${i.scheme||''}|${i.pct??''}|${i.val||''}`).join(';');
+  .filter(i => i.exId || i.ss)
+  .map(i => i.ss ? `${SS_TAG}|${i.rounds}|${i.rest||''}` : `${i.exId}|${i.scheme||''}|${i.pct??''}|${i.val||''}|${i.sub?1:''}`).join(';');
 /* Элементы шаблона хранятся массивами [ex, scheme, val, unit] — приводим
    к той же форме, иначе одинаковые блоки не совпадут. */
 const sigTplItems = items => (items||[])
-  .map(i => `${i[0]}|${i[1]||''}|${i[3]==='%'?i[2]:''}|${i[3]==='%'?'':(i[2]??'')}`).join(';');
+  .map(i => i[0] === SS_TAG ? `${SS_TAG}|${i[1]}|${i[2]||''}` : `${i[0]}|${i[1]||''}|${i[3]==='%'?i[2]:''}|${i[3]==='%'?'':(i[2]??'')}|${i[5]?1:''}`).join(';');
 const sigBlock  = b => sigItems(b.items);
 const sigTplBlk = t => sigTplItems(t.items);
 const sigDay    = d => d.blocks.filter(b=>b.items.some(i=>i.exId)).map(sigBlock).join('§');
@@ -1319,6 +1380,38 @@ document.addEventListener('click', e=>{
     const b = day().blocks.find(x=>x.id===add.dataset.add);
     b.items.push(rawItem('')); render();
     const last = $$(`[data-blk="${b.id}"] [data-edit]`).pop(); if(last) last.focus();
+    return;
+  }
+  /* Суперсет: новый — заголовок и две пустые строки; внутрь — строка в конец группы. */
+  const addss = e.target.closest('[data-addss]');
+  if(addss){
+    const b = day().blocks.find(x=>x.id===addss.dataset.addss);
+    const h = ssItem(3, ''), m1 = rawItem(''), m2 = rawItem(''); m1.sub = m2.sub = true;
+    b.items.push(h, m1, m2); render();
+    const el = document.querySelector(`[data-item="${m1.id}"] [data-edit]`); if(el) el.focus();
+    return;
+  }
+  const addin = e.target.closest('[data-addin]');
+  if(addin){
+    const {b} = findItem(addin.dataset.addin); if(!b) return;
+    const it = rawItem(''); it.sub = true;
+    b.items.splice(ssEnd(b.items, b.items.findIndex(x=>x.id===addin.dataset.addin)), 0, it); render();
+    const el = document.querySelector(`[data-item="${it.id}"] [data-edit]`); if(el) el.focus();
+    return;
+  }
+  const ung = e.target.closest('[data-ssungroup]');
+  if(ung){
+    const {b} = findItem(ung.dataset.ssungroup); if(!b) return;
+    const k = b.items.findIndex(x=>x.id===ung.dataset.ssungroup), j = ssEnd(b.items, k);
+    for(let m = k + 1; m < j; m++) b.items[m].sub = false;
+    b.items.splice(k, 1); render(); return;
+  }
+  const dss = e.target.closest('[data-delss]');
+  if(dss){
+    const {b} = findItem(dss.dataset.delss); if(!b) return;
+    const k = b.items.findIndex(x=>x.id===dss.dataset.delss), removed = b.items.splice(k, ssEnd(b.items, k) - k);
+    render();
+    toast('Суперсет удалён', 'Отменить', () => { b.items.splice(k, 0, ...removed); render() });
     return;
   }
   if(e.target.closest('#w-hand')){
@@ -1416,6 +1509,17 @@ document.addEventListener('input', e=>{
     if(SUG){ SUG.dataset.forItem = ed.dataset.edit; SUG.dataset.text = ed.textContent }
     return;
   }
+  /* Круги и отдых суперсета — в модель на каждый символ, без перерисовки документа. */
+  const sf = e.target.closest('[data-ssf]');
+  if(sf){
+    const {i: h} = findItem(sf.dataset.ssId); if(!h) return;
+    if(sf.dataset.ssf === 'rounds'){
+      const n = parseInt(sf.value.replace(/\D/g, ''), 10);
+      if(n > 0){ h.rounds = Math.min(n, 99); const lb = document.querySelector(`[data-ss-rl="${h.id}"]`); if(lb) lb.textContent = plural(h.rounds, 'круг', 'круга', 'кругов') }
+    } else h.rest = sf.value.trim();
+    renderStrip();
+    return;
+  }
   const f = e.target.closest('[data-f]');
   if(f){
     const b = day().blocks.find(x=>x.id === f.closest('[data-blk]').dataset.blk);
@@ -1433,6 +1537,14 @@ document.addEventListener('input', e=>{
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
 });
 document.addEventListener('change', e=>{
+  /* Поле кругов не остаётся пустым; «90» в отдыхе — это секунды. */
+  const sfc = e.target.closest('[data-ssf]');
+  if(sfc){
+    const {i: h} = findItem(sfc.dataset.ssId); if(!h) return;
+    if(sfc.dataset.ssf === 'rounds') sfc.value = h.rounds;
+    else if(/^\d+$/.test(h.rest)){ h.rest += ' сек'; sfc.value = h.rest; renderStrip() }
+    return;
+  }
   const tf = e.target.closest('[data-f="title"]');
   if(tf){
     const b = day().blocks.find(x=>x.id === tf.closest('[data-blk]').dataset.blk);
@@ -1462,7 +1574,7 @@ document.addEventListener('keydown', e=>{
     const id = ed.dataset.edit, txt = ed.textContent; closeSug(); commitLine(id, txt); return }
   /* Enter в названии блока или тренировки — «готово»: снимаем фокус, а
      change уже подхватывает набранный формат («AMRAP 15») как тип. */
-  if(e.key === 'Enter' && (e.target.closest('[data-f="title"]') || e.target.id === 'd-title')){
+  if(e.key === 'Enter' && (e.target.closest('[data-f="title"]') || e.target.closest('[data-ssf]') || e.target.id === 'd-title')){
     e.preventDefault(); e.target.dispatchEvent(new Event('change', {bubbles:true})); e.target.blur(); return }
   if(e.key === 'Escape'){ closeSug(); $('#ov').classList.remove('on'); const w = $('#wz'); if(w) w.remove() }
 });
@@ -1489,8 +1601,8 @@ document.addEventListener('mousedown', e=>{
 function clearDrag(){
   DRAG = null;
   $$('[draggable="true"]').forEach(x=>x.draggable = false);
-  $$('.over,.dropafter,.dropbefore,.dayover').forEach(x=>
-    x.classList.remove('over','dropafter','dropbefore','dayover'));
+  $$('.over,.dropafter,.dropbefore,.dropmerge,.dayover').forEach(x=>
+    x.classList.remove('over','dropafter','dropbefore','dropmerge','dayover'));
 }
 document.addEventListener('dragstart', e=>{
   const rail = e.target.closest('[data-ex],[data-tpl]');
@@ -1525,17 +1637,22 @@ function dragGhost(e, text){
 document.addEventListener('dragover', e=>{
   if(!DRAG) return;
   e.preventDefault();
-  $$('.over,.dropafter,.dropbefore,.dayover').forEach(x=>
-    x.classList.remove('over','dropafter','dropbefore','dayover'));
+  $$('.over,.dropafter,.dropbefore,.dropmerge,.dayover').forEach(x=>
+    x.classList.remove('over','dropafter','dropbefore','dropmerge','dayover'));
   const d = e.target.closest('.day');
   if(d && DRAG.t !== 'ex'){ d.classList.add('dayover'); return }
   if(DRAG.t === 'workout') return;
   const line = e.target.closest('.line');
   if(line && DRAG.t !== 'block'){
-    const r = line.getBoundingClientRect();
-    line.classList.add(e.clientY < r.top + r.height/2 ? 'dropbefore' : 'dropafter');
+    /* Средняя зона строки — «объединить в суперсет»; края — вставить до или после. */
+    const r = line.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
+    const dragged = DRAG.t === 'line' ? (findItem(DRAG.v) || {}).i : null;
+    const merge = dragged && !dragged.ss && line.dataset.item !== DRAG.v && y > .3 && y < .7;
+    line.classList.add(merge ? 'dropmerge' : y < .5 ? 'dropbefore' : 'dropafter');
     return;
   }
+  const grp = e.target.closest('.ssg');
+  if(grp && DRAG.t === 'line' && !(findItem(DRAG.v).i || {}).ss){ grp.classList.add('over'); return }
   const blk = e.target.closest('.blk');
   if(blk){
     if(DRAG.t === 'block'){
@@ -1564,18 +1681,40 @@ function dropFromRail(e){
   } else addTplRaw(tplById(DRAG.v));
   clearDrag(); render();
 }
-/* Упражнение переезжает в тот блок, над строкой которого его отпустили. */
+/* Упражнение переезжает в тот блок, над строкой которого его отпустили.
+   Середина строки — объединить в суперсет (или войти в суперсет цели);
+   край строки участника — встать в тот же суперсет; заголовок суперсета
+   тащит всю группу, и вложить её в другой суперсет нельзя. */
 function dropLine(e){
-  const {b:from, i:item} = findItem(DRAG.v);
+  const {b:from, i:item} = findItem(DRAG.v) || {};
   const onLine = e.target.closest('.line'), onBlk = e.target.closest('.blk');
-  if(!onBlk){ clearDrag(); return }
+  if(!onBlk || !item){ clearDrag(); return }
   const to = day().blocks.find(x=>x.id===onBlk.dataset.blk);
-  from.items.splice(from.items.indexOf(item), 1);
-  if(onLine && onLine.dataset.item !== DRAG.v){
-    const r = onLine.getBoundingClientRect();
-    const at = to.items.findIndex(x=>x.id===onLine.dataset.item);
-    to.items.splice(e.clientY < r.top + r.height/2 ? at : at+1, 0, item);
-  } else to.items.push(item);
+  const k0 = from.items.indexOf(item);
+  const moving = from.items.splice(k0, item.ss ? ssEnd(from.items, k0) - k0 : 1);
+  if(onLine && moving.some(x => x.id === onLine.dataset.item)){ from.items.splice(k0, 0, ...moving); clearDrag(); return }
+  const target = onLine ? to.items.find(x=>x.id===onLine.dataset.item) : null;
+  const r = onLine && onLine.getBoundingClientRect(), y = r ? (e.clientY - r.top) / r.height : 1;
+  const zone = y < .3 ? 'before' : y > .7 ? 'after' : 'merge';
+  const grp = !onLine && !item.ss && e.target.closest('.ssg');
+  if(grp){ const k = to.items.findIndex(x=>x.id===grp.dataset.ss); item.sub = true; to.items.splice(ssEnd(to.items, k), 0, item) }
+  else if(!target){ if(!item.ss) item.sub = false; to.items.push(...moving) }
+  else if(item.ss){
+    let k = to.items.indexOf(target);
+    if(target.sub) while(k > 0 && !to.items[k].ss) k--;
+    const at = (zone === 'before' || (zone === 'merge' && y < .5)) ? k : (to.items[k].ss ? ssEnd(to.items, k) : k + 1);
+    to.items.splice(at, 0, ...moving);
+  } else if(zone === 'merge'){
+    const k = to.items.indexOf(target);
+    item.sub = true;
+    if(target.ss) to.items.splice(ssEnd(to.items, k), 0, item);          /* на заголовок — в конец суперсета */
+    else if(target.sub) to.items.splice(k + 1, 0, item);                  /* на участника — следом за ним */
+    else { target.sub = true; to.items.splice(k, 0, ssItem(3, '')); to.items.splice(k + 2, 0, item) }
+  } else {
+    const k = to.items.indexOf(target);
+    item.sub = target.ss ? zone === 'after' : !!target.sub;
+    to.items.splice(zone === 'before' ? k : k + 1, 0, item);
+  }
   clearDrag(); render();
 }
 function dropBlock(e){
@@ -1611,8 +1750,10 @@ function dropOnDay(idx){
   else if(DRAG.t === 'line'){
     const {b:from, i:item} = findItem(DRAG.v);
     if(!dst.blocks.length) dst.blocks.push(mkBlock('strength','Новый блок','',null,[]));
-    from.items.splice(from.items.indexOf(item), 1);
-    dst.blocks[dst.blocks.length-1].items.push(item);
+    const k0 = from.items.indexOf(item), moving = from.items.splice(k0, item.ss ? ssEnd(from.items, k0) - k0 : 1);
+    if(!item.ss) item.sub = false;
+    dst.blocks[dst.blocks.length-1].items.push(...moving);
+    src.blocks.forEach(normSS); dst.blocks.forEach(normSS);
   }
   else if(DRAG.t === 'tpl'){ S.i = idx; addTplRaw(tplById(DRAG.v)) }
   clearDrag();

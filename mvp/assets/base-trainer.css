@@ -1162,3 +1162,32 @@ body.bk-on .toast{bottom:96px}
 .bkd-warn{display:inline-flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;color:#8A5A00;min-width:0}
 .bkmd .mdf .btn{white-space:nowrap;flex:none}
 .bkd-warn svg{width:17px;height:17px;flex:none}
+
+/* ═══════════ суперсет ═══════════ */
+.addrow{display:flex;gap:4px;flex-wrap:wrap}
+.addrow .addl{width:auto;flex:none}
+.ssg{margin:4px 0 8px;padding:4px 6px 2px;border-radius:var(--rad-l);background:var(--acc-a);border:1.5px solid var(--acc-p)}
+.ssg.over{border-color:var(--acc)}
+.line.ssh{background:none;border-color:transparent;padding:6px 4px 6px 4px;margin-bottom:2px}
+.line.ssh:hover{border-color:transparent}
+.ssh .ssb{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc-d)}
+.ssh .ssf{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;color:var(--tx2)}
+.ssh .ssf s{text-decoration:none}
+.ssh .ssf input{height:30px;border-radius:var(--rad-s);background:var(--bg);border:1px solid var(--line2);font-size:14.5px;font-weight:600;color:var(--ink);padding:0 8px}
+.ssh .ssf input:focus{outline:0;border-color:var(--acc)}
+.ssh .ssn{width:46px;text-align:center}
+.ssh .ssrest{width:120px}
+.ssh .ssrest::placeholder{color:var(--tx4);font-weight:500}
+.ssh .sp{flex:1}
+.ssg .addl.in{padding:6px 10px;font-size:14px}
+.app .ssg .line:hover{background:rgba(255,255,255,.6)}
+.ssg .line .kg:not(:empty){background:var(--bg)}
+.dropmerge{box-shadow:inset 0 0 0 2px var(--acc) !important;background:var(--acc-a) !important}
+/* календарь, подробный вид */
+.days .day .bxss{margin:3px 0 2px 20px;padding:1px 0 1px 8px;border-left:2px solid var(--acc)}
+.days .day .bxss .bxi{padding-left:12px}
+.days .day .bxssh{font-size:13.5px;font-weight:700;color:var(--acc-d);line-height:18px;margin-bottom:1px}
+/* шаблоны блоков: подпись суперсета и участники */
+.rprev .rlines .ssl,.tplc .ls .ssl{color:var(--acc-d);font-weight:600}
+.rprev .rlines .sub{padding-left:14px}
+.tplc .ls .sub{padding-left:12px}
