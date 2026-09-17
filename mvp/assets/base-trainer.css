@@ -1296,3 +1296,35 @@ body.bk-on .toast{bottom:96px}
 /* в конструкторе панель шире: переключатель источников и календарь не влезали в 318px */
 body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 @media (max-width:1120px){ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr)} }
+
+/* ═══════════ строка упражнения: схема и нагрузка прямо в строке ═══════════ */
+.blk{--nmw:220px}
+.line:not(.raw):not(.ssh) > .txt{flex:none;width:var(--nmw)}
+.ssg .line:not(.raw) > .txt{width:calc(var(--nmw) - 9px)}
+.nm-measure .line:not(.raw) > .txt{width:auto !important;white-space:nowrap}
+.line .prm{display:flex;align-items:center;gap:6px;flex:none;min-width:0}
+.line .pf{display:inline-flex;align-items:center;height:30px;border-radius:7px;background:var(--s2);border:1.5px solid transparent;color:var(--acc-d);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.line input.pf{padding:0 9px;font-family:inherit}
+.line .pf input{height:100%;border:0;background:none;padding:0 0 0 9px;font-family:inherit;font-size:15px;font-weight:600;color:inherit;min-width:0;font-variant-numeric:tabular-nums}
+.line .pf u{text-decoration:none;padding:0 9px 0 3px;opacity:.8;cursor:pointer;user-select:none;white-space:nowrap}
+.line .pf u:hover{opacity:1}
+.line input.pf:focus,.line .pf:focus-within{outline:0;background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
+.line .pf input:focus{outline:0}
+.line input.pf::placeholder,.line .pf input::placeholder{color:var(--tx4);font-weight:500}
+.app .line:hover .pf,.app .line.act .pf{background:var(--bg)}
+.line .prm .kg{background:none !important;padding:0 0 0 2px;height:auto;font-size:14px}
+.line.txtmode .pf.ld,.line.txtmode .prm .kg,.line.txtmode .pmf{display:none !important}
+.line .pmf{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--tx2);white-space:nowrap;margin-left:2px}
+.line .pmf.off{display:none}
+.line .pmf .pf{color:var(--ink)}
+.line .sp{flex:1}
+.app .line.act{background:var(--acc-a) !important;box-shadow:inset 3px 0 0 var(--acc) !important}
+.keyhint{display:flex;align-items:center;flex-wrap:wrap;gap:4px 16px;padding:6px 6px 9px 30px;font-size:13.5px;color:var(--tx3)}
+.keyhint kbd,.sugkeys kbd{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--tx2);background:var(--s1);border-radius:5px;padding:1px 6px;margin-right:5px}
+.keyhint kbd + kbd,.sugkeys kbd + kbd{margin-left:-2px}
+.keyhint .r{margin-left:auto}
+.sug .sugkeys{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 10px 4px;margin-top:4px;border-top:1px solid var(--line);font-size:13px;color:var(--tx3)}
+/* подсказки в пустых полях — только у строки, которую правят или над которой мышь */
+.line:not(.act):not(:hover) input.pf::placeholder,.line:not(.act):not(:hover) .pf input::placeholder{color:transparent}
+.line .pf.ld.empty u{opacity:.45}
+.keyhint{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}

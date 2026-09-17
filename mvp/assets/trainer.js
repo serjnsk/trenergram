@@ -299,24 +299,31 @@ function lineHTML(it){
      одним нажатием. Текст при этом сохраняется как есть. */
   if(!ex) return `<div class="line raw" data-item="${it.id}">
     <span class="gr">${ICON.grip}</span>
-    <span class="txt" contenteditable data-edit="${it.id}">${esc(it.raw||'')}</span>
-    <button class="pick" data-pickfor="${it.id}">Выбрать упражнение</button>
-    <button class="x" data-del="${it.id}">${ICON.x}</button>
+    <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false">${esc(it.raw||'')}</span>
+    <button class="pick" data-pickfor="${it.id}" tabindex="-1">Выбрать упражнение</button>
+    <button class="x" data-del="${it.id}" tabindex="-1">${ICON.x}</button>
   </div>`;
-  const kg = workKg(it, PM());
-  /* Подходы, повторы и нагрузка живут в чипе, а не в тексте: текст — это
-     название, которое можно перепечатать; чип открывает панель настройки.
-     Набранное «как в тетради» («Присед 5×3 80%») парсер раскладывает туда же. */
-  return `<div class="line" data-item="${it.id}">
+  /* Схема и нагрузка — поля сразу за названием, без отдельной панели: их
+     видно и в них печатают сразу. Колонка полей выровнена внутри блока по
+     самому длинному названию (alignNames). */
+  const L = loadInfo(it), kg = workKg(it, PM());
+  const sch = it.txt || it.scheme || '', ld = it.pct != null ? fmtN(it.pct) : fmtN(it.val || '');
+  const w = (v, min, pad) => `calc(${Math.max(String(v).length, min)}ch + ${pad}px)`;
+  return `<div class="line ${it.txt ? 'txtmode' : ''}" data-item="${it.id}">
     <span class="gr">${ICON.grip}</span>
-    <span class="txt" contenteditable data-edit="${it.id}"><span class="nm">${esc(ex.ru)}</span></span>
-    <button class="pct ${itemChip(it)?'':'none'}" data-setup="${it.id}" title="Подходы, повторы, нагрузка">${esc(itemChip(it) || 'настроить')}</button>
-    <span class="kg">${kg!=null ? fmtN(kg)+' кг' : ''}</span>
-    <button class="x" data-del="${it.id}">${ICON.x}</button>
+    <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"><span class="nm">${esc(ex.ru)}</span></span>
+    <span class="prm">
+      <input class="pf sch" data-pf="sch" data-for="${it.id}" value="${esc(sch)}" placeholder="${it.sub ? 'повт' : '3×10'}" autocomplete="off" spellcheck="false" style="width:${w(sch, 4, 20)}">
+      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${w(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>` : ''}
+      <span class="kg">${kg != null ? '→ ' + fmtN(kg) + ' кг' : ''}</span>
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${w('', 3, 4)}"><u>кг</u></span></span>` : ''}
+    </span>
+    <span class="sp"></span>
+    <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить упражнение">${ICON.x}</button>
   </div>`;
 }
 /* Подпись чипа: «5×3 · 80 %», «500 м», «3×12 · RPE 8». */
-const itemLoad = it => it.pct ? fmtN(it.pct)+' %' : (it.val ? it.val+' '+it.unit : '');
+const itemLoad = it => it.pct ? fmtN(it.pct)+' %' : (it.val ? fmtN(it.val)+(it.unit ? ' '+it.unit : '') : '');
 const itemChip = it => it.txt ? it.txt : [it.scheme, itemLoad(it)].filter(Boolean).join(' · ');
 /* Строки блока: обычные упражнения и суперсеты (заголовок + участники подряд). */
 function itemsHTML(b){
@@ -451,7 +458,7 @@ function renderDoc(){
   $('#doc').innerHTML = `
     <div class="doch">
       <span class="gr" title="Перетащить тренировку на другой день">${ICON.grip}</span>
-      ${n || isDraft(d) ? (isDraft(d) ? `<span class="dst draft" title="Черновик — клиент не видит. Опубликуйте кнопкой внизу">${DAYICON.draft}Черновик</span>` : `<span class="dst pub" title="Опубликована — клиент видит">${DAYICON.pub}Опубликована</span>`) : ''}
+      ${docStatusHTML(d, n)}
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
       <button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
@@ -661,7 +668,7 @@ function publishDay(){
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
-function render(){ const cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); if(S.src === 'cal') renderRailHead(); renderSrc(); }
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -1007,22 +1014,41 @@ function pendingStat(){
 
 let SUG = null;
 const closeSug = () => { if(SUG){ SUG.remove(); SUG = null } };
+/* Кандидаты — упражнения, где каждое набранное слово начинает какое-то слово
+   названия: «жим ган» → «Жим гантелей лёжа», но не «Жим лёжа». */
+function exCands(text){
+  const toks = norm(exNameOf(text) || text).split(' ').filter(t => t && !/^\d/.test(t));
+  if(!toks.length) return [];
+  const out = [];
+  for(const {e, c} of CAND){
+    let best = 0;
+    for(const cand of c){ const ws = cand.split(' ');
+      if(toks.every(t => ws.some(w => w.startsWith(t)))){ const sc = 100 - ws.length * 3 + (ws[0].startsWith(toks[0]) ? 20 : 0); if(sc > best) best = sc } }
+    if(best) out.push([best, e]);
+  }
+  return out.sort((a, b) => b[0] - a[0]).map(x => x[1]);
+}
 function showSug(el, text){
   closeSug();
   const t = (text||'').trim(); if(!t) return;
-  const p = parseLine(t), first = norm(t.split(/\s+/)[0]);
-  const cands = EX.filter(e => norm(e.ru).includes(first) || norm(e.en).includes(first))
-                  .filter(e => !p || e.id !== p.exId).slice(0,5);
+  let p = parseLine(t);
+  const all = exCands(t);
+  /* Разбор ищет похожее и по одному слову («жим ган» → «Z-жим»). Если есть
+     упражнения, где совпали все набранные слова, слабый разбор им уступает. */
+  if(p && all.length && !all.some(e => e.id === p.exId)) p = null;
+  const cands = all.filter(e => !p || e.id !== p.exId).slice(0, 5);
   const box = document.createElement('div');
-  box.className = 'sug';
-  const r = el.getBoundingClientRect();
+  box.className = 'sug exsug';
+  /* Под строкой может стоять подсказка клавиш — список открываем под ней. */
+  const line = el.closest('.line'), hint = line && line.nextElementSibling && line.nextElementSibling.id === 'keyhint' ? line.nextElementSibling : null;
+  const r = el.getBoundingClientRect(), rb = (hint || el).getBoundingClientRect();
   box.style.left = r.left + 'px';
-  box.style.top  = (r.bottom + window.scrollY + 6) + 'px';
+  box.style.top  = (rb.bottom + window.scrollY + 4) + 'px';
   const name = exNameOf(t);
   box.innerHTML =
     (p
       ? `<div class="cap">Разобрано</div>
-         <button class="row on" data-pick="${p.exId}"><b>${esc(byId(p.exId).ru)}</b>
+         <button class="row" data-pick="${p.exId}"><b>${esc(byId(p.exId).ru)}</b>
            <s>${esc([p.scheme, p.pct?fmtN(p.pct)+' %':(p.val?p.val+' '+p.unit:'')].filter(Boolean).join(' '))}</s></button>`
       : '') +
     (cands.length ? '<div class="cap">Из базы</div>' + cands.map(e=>
@@ -1031,9 +1057,19 @@ function showSug(el, text){
        оставить строку текстом (разбор такого текста ИИ — следующий шаг). */
     (!p && name ? `<div class="cap">${cands.length ? 'Нет нужного?' : 'В базе такого нет'}</div>
          <button class="row newex" data-newex><b>${ICON.plus} Добавить «${esc(name)}» в базу</b><s>будет подсказываться при наборе</s></button>
-         <button class="row keep" data-keeptext><b>Оставить текстом</b><s>Enter</s></button>` : '');
+         <button class="row keep" data-keeptext><b>Оставить текстом</b><s></s></button>` : '') +
+    `<div class="sugkeys"><span>${KB('↑')}${KB('↓')}выбрать</span><span>${KB('Enter')}или ${KB('Tab')}вставить</span><span>${KB('Esc')}закрыть</span></div>`;
   document.body.appendChild(box);
   SUG = box;
+  /* По умолчанию подсвечен разобранный вариант или лучший кандидат; если
+     узнать нечего — «Оставить текстом», чтобы Enter не подменил набранное. */
+  const rows = [...box.querySelectorAll('.row')];
+  const def = p || cands.length ? rows[0] : box.querySelector('[data-keeptext]');
+  if(def) def.classList.add('on');
+  box.addEventListener('mousedown', ev => ev.preventDefault());      /* курсор остаётся в строке */
+  box.addEventListener('mousemove', ev => { const rw = ev.target.closest('.row'); if(rw && !rw.classList.contains('on')){ rows.forEach(x => x.classList.remove('on')); rw.classList.add('on') } });
+  box.dataset.forItem = el.dataset.edit || el.dataset.pickfor || '';
+  box.dataset.text = text;
 }
 /* Название из набранной строки — всё до первой цифры, схемы или процента:
    «подъём гантелей 3×5» → «Подъём гантелей». */
@@ -1081,7 +1117,7 @@ function openNewEx(id, text){
         ? {exId: ex.id, scheme: p.scheme||'', pct: p.pct??null, unit: p.unit||'', val: p.val||'', txt: p.txt||'', raw: ''}
         : {exId: ex.id, scheme: '', pct: null, unit: ex.u[0]||'', val: '', txt: tail.trim(), raw: ''});
     }
-    render(); renderSrc();
+    render(); renderSrc(); focusLineField(id, 'sch');
     toast('«' + ex.ru + '» — в вашей базе упражнений');
   };
   ov.addEventListener('click', e => {
@@ -1117,135 +1153,303 @@ function commitLine(id, text){
   render();
 }
 
-/* ─── проценты от ПМ (CON-16): сразу с весом под каждым ─── */
-const PCTS = [60,65,70,75,80,85,90,95];
-/* Одна панель на всё: подходы × повторы, лесенка, нагрузка в нужной единице.
-   Меняется на лету — строка и вес пересчитываются без перерисовки документа,
-   чтобы панель не пропадала под руками. Enter/Готово/клик мимо закрывают. */
-/* Панель настройки упражнения: подписи слева, значения справа, два ряда.
-   «Вес» — для упражнений с весом (% от ПМ / кг / без веса), «Объём» — для
-   остальных (м / сек / кал). Максимум клиента вводится здесь же и сохраняется.
-   Меняется на лету — строка и вес пересчитываются без перерисовки документа. */
-const VOL_UNITS = ['м','сек','кал'];
-function openSetup(btn){
-  closeSug();
-  const {i} = findItem(btn.dataset.setup); if(!i) return;
-  const ex = byId(i.exId), key = pmKey(ex), weighted = !!key;
-  const units = [...(weighted ? ['%','кг'] : []), ...(ex.u||[]).filter(u=>VOL_UNITS.includes(u))];
-  if(i.unit && i.val && i.unit!=='RPE' && !units.includes(i.unit)) units.push(i.unit);
-  const hasLoad = units.length > 0;
-  /* Пустое поле — и есть «без нагрузки»: отдельного состояния нет. Если
-     нагрузка не задана, переключатель стоит на % (когда максимум известен)
-     или на первой единице, поле пустое. */
-  let cur = i.pct != null ? '%' : (i.val && i.unit ? i.unit : (weighted && PM()[key] ? '%' : units[0]));
-  const ui = {ladder: !!(i.scheme && !/^\d+×\d*$/.test(i.scheme)), pm:false};
-  const box = document.createElement('div');
-  box.className = 'sug setup';
-  document.body.appendChild(box); SUG = box;
-  /* Панель прижата правым краем к чипу и всегда внутри окна; если снизу
-     не хватает места — раскрывается вверх. Размеры известны только после
-     первой отрисовки, поэтому позиционируем после draw(). */
-  const place = () => {
-    const r = btn.getBoundingClientRect(), W = document.documentElement.clientWidth, H = innerHeight;
-    box.style.left = Math.max(12, Math.min(r.right - box.offsetWidth, W - box.offsetWidth - 12)) + 'px';
-    const below = r.bottom + 6 + box.offsetHeight <= H - 8;
-    box.style.top = (window.scrollY + (below ? r.bottom + 6 : Math.max(8, r.top - box.offsetHeight - 6))) + 'px';
-  };
-  const pmVal = () => PM()[key];
-  const readout = () => {
-    const kg = workKg(i, PM());
-    if(cur==='%') return kg!=null ? `% → <b>${fmtN(kg)} кг</b>` : (pmVal() ? '%' : '% · <i>ПМ не задан</i>');
-    return esc(cur);
-  };
-  const headPM = () => weighted ? `${pmVal() ? 'ПМ '+fmtN(pmVal())+' кг' : 'ПМ не задан'} · <a class="st-lnk" data-st-pm>${pmVal() ? 'изменить' : 'ввести'}</a>` : '';
-  let draw = () => {
-    const m = (i.scheme||'').match(/^(\d+)×(\d*)$/);
-    box.innerHTML = `
-      <div class="st-head"><b>${esc(ex.ru)}</b><s id="st-headpm">${headPM()}</s></div>
-      ${ui.pm ? `<div class="st-pmrow"><span>Максимум клиента</span><input class="st-n" id="st-pm" type="number" min="0" step="2.5" value="${pmVal() ?? ''}" placeholder="0"><span>кг</span>
-        <s>1ПМ или расчётный — по нему считаются проценты</s></div>` : ''}
-      <div class="st-grid">
-        <span class="st-l dim">Подходы × повторы</span>
-        <span class="st-v dim">
-          <input class="st-n" id="st-sets" type="number" min="1" max="99" placeholder="—" value="${m ? m[1] : ''}">
-          <i>×</i>
-          <input class="st-n" id="st-reps" type="number" min="1" max="999" placeholder="—" value="${m ? m[2] : ''}">
-          ${ui.ladder ? '' : `<a class="st-lnk" data-st-ladder>лесенка</a>`}
-        </span>
-        ${ui.ladder ? `<span class="st-l"></span><span class="st-v"><input class="st-n wide" id="st-scheme" placeholder="5-5-3-3-1" value="${m ? '' : esc(i.scheme||'')}"><a class="st-lnk" data-st-noladder>обычная схема</a></span>` : ''}
-        ${hasLoad ? `
-        <span class="st-l dim">${weighted ? 'Вес' : 'Объём'}</span>
-        <span class="st-v">
-          <span class="st-seg">${units.map(u=>`<button data-st-u="${u}" class="${cur===u?'on':''}">${u==='%'?'% от ПМ':u}</button>`).join('')}</span>
-          <input class="st-n" id="st-val" type="number" min="0" step="${cur==='%'?'5':cur==='кг'?'2.5':cur==='м'?'50':'1'}" placeholder="—"
-                 value="${cur==='%' ? (i.pct ?? '') : (i.unit===cur ? esc(i.val||'') : '')}">
-          <s class="st-res" id="st-res">${readout()}</s>
-        </span>` : ''}
-        <span class="st-l">Текстом</span>
-        <span class="st-v"><input class="st-n full" id="st-txt" placeholder="60×5, 70×5, 80×3×3 — любой формат, когда схема не ложится" value="${esc(i.txt||'')}"></span>
-      </div>
-      <div class="st-foot"><button class="lnk" data-st-clear>Убрать параметры</button><span class="sp"></span><button class="btn sm" data-st-ok>Готово ↵</button></div>`;
-  };
-  const sync = () => {                       /* строка и вес — без render() */
-    const chip = itemChip(i), el = $(`[data-setup="${i.id}"]`);
-    if(el){ el.textContent = chip || 'настроить'; el.classList.toggle('none', !chip);
-            const kg = workKg(i, PM()); el.parentElement.querySelector('.kg').textContent = kg!=null ? fmtN(kg)+' кг' : '' }
-    const rs = $('#st-res'); if(rs) rs.innerHTML = readout();
-    const hp = $('#st-headpm'); if(hp) hp.innerHTML = headPM();
-  };
-  const setLoad = v => {
-    const num = v === '' ? null : +v;
-    if(cur==='%'){ i.pct = num || null; i.unit=''; i.val=''; }
-    else { i.pct = null; i.unit = num==null ? '' : cur; i.val = num==null ? '' : String(v); }
-    sync();
-  };
-  /* Текст и структура взаимоисключающие: заполнил текст — подходы и вес
-     очищаются и гаснут; тронул структуру — текст уходит. */
-  const dropTxt = () => { if(i.txt){ i.txt=''; const f=$('#st-txt'); if(f) f.value=''; } box.classList.remove('txt-on') };
-  box.addEventListener('input', e=>{
-    const id = e.target.id;
-    if(id==='st-txt'){
-      i.txt = e.target.value.trim();
-      if(i.txt){ Object.assign(i, {scheme:'', pct:null, unit:'', val:''}); ['st-sets','st-reps','st-val','st-scheme'].forEach(x=>{ const f=$('#'+x); if(f) f.value='' }); box.classList.add('txt-on') }
-      else box.classList.remove('txt-on');
-      sync(); return }
-    if(id==='st-sets' || id==='st-reps' || id==='st-scheme' || id==='st-val') dropTxt();
-    if(id==='st-sets' || id==='st-reps'){
-      const s = $('#st-sets').value.trim(), rp = $('#st-reps').value.trim();
-      i.scheme = s && rp ? `${s}×${rp}` : s ? `${s}×` : ''; sync(); return }
-    if(id==='st-scheme'){ i.scheme = e.target.value.trim(); $('#st-sets').value = ''; $('#st-reps').value = ''; sync(); return }
-    if(id==='st-val'){ setLoad(e.target.value.trim()); return }
-    if(id==='st-pm'){ const v = +e.target.value; if(v > 0) PM()[key] = v; else delete PM()[key]; saveState(); sync(); return }
-  });
-  /* Клик внутри панели не должен дойти до общего обработчика: тот закрывает
-     всплывашки по клику «мимо», а после перерисовки панели нажатая кнопка
-     уже отвязана от DOM и выглядит как клик мимо. */
-  box.addEventListener('click', e=>{
-    e.stopPropagation();
-    const u = e.target.closest('[data-st-u]');
-    if(u){ const v = $('#st-val') ? $('#st-val').value.trim() : ''; cur = u.dataset.stU; setLoad(v); draw(); const f = $('#st-val'); if(f) f.focus(); return }
-    if(e.target.closest('[data-st-ladder]')){ ui.ladder = true; draw(); $('#st-scheme').focus(); return }
-    if(e.target.closest('[data-st-noladder]')){ ui.ladder = false; if(!/^\d+×\d*$/.test(i.scheme||'')) i.scheme = ''; draw(); sync(); return }
-    if(e.target.closest('[data-st-pm]')){ ui.pm = !ui.pm; draw(); const f = $('#st-pm'); if(f) f.focus(); return }
-    if(e.target.closest('[data-st-clear]')){ Object.assign(i, {scheme:'', pct:null, unit:'', val:''}); cur = weighted && PM()[key] ? '%' : units[0]; ui.ladder = false; draw(); sync(); return }
-    if(e.target.closest('[data-st-ok]')){ closeSug(); render(); return }
-  });
-  box.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); if(e.target.id==='st-pm'){ ui.pm = false; draw(); sync(); return } closeSug(); render() } });
-  const draw0 = draw;
-  const drawAndPlace = () => { draw0(); place() };
-  draw = drawAndPlace;
-  draw();
-  if(i.txt) box.classList.add('txt-on');
-  const f = $(i.txt ? '#st-txt' : '#st-sets'); if(f) f.focus();
+/* ═══════════ ПАРАМЕТРЫ УПРАЖНЕНИЯ В СТРОКЕ (CON-16) ═══════════
+   Отдельной панели настройки больше нет: схема и нагрузка — поля прямо в
+   строке, и весь ввод идёт с клавиатуры. Tab — по полям строки, Enter —
+   следующее упражнение, ↑↓ — то же поле строкой выше или ниже, Esc — готово.
+   «Нагрузка» — число в текущей единице; единицу меняет символ после числа
+   (80% · 100к · 500м · 60с · 20кал). Процент считается от 1ПМ клиента: если
+   его нет, в строке появляется поле «1ПМ клиента». */
+const VOL_UNITS = ['м','сек','мин','кал'];
+const UNITSEL = {};              /* единица строки, выбранная до ввода числа (на сессию) */
+function loadInfo(it){
+  const ex = byId(it.exId), key = pmKey(ex), weighted = !!key;
+  const units = [...(weighted ? ['%','кг'] : []), ...((ex && ex.u) || []).filter(u => VOL_UNITS.includes(u))];
+  if(it.unit && it.val && !units.includes(it.unit)) units.push(it.unit);
+  const def = weighted ? (PM()[key] ? '%' : 'кг') : (units[0] || '');
+  const textVal = it.val && !it.unit && !/^\d+(\.\d+)?$/.test(it.val);
+  const cur = it.pct != null ? '%' : textVal ? '' : (it.val && it.unit) ? it.unit : (units.includes(UNITSEL[it.id]) ? UNITSEL[it.id] : def);
+  return {key, weighted, units, cur, has: units.length > 0};
 }
+/* «Схема» понимает и нагрузку, набранную вместе со схемой («5x3 80%»); всё,
+   что в схему и нагрузку не раскладывается, остаётся текстом —
+   «60×5, 70×5, 80×3×3». */
+function parseParamsText(v){
+  const src = String(v || '').trim();
+  if(!src) return {scheme:'', pct:null, unit:'', val:''};
+  let rest = ' ' + src.replace(/\*/g, '×') + ' ', pct = null, unit = '', val = '';
+  const mp = rest.match(/@?\s*(\d{1,3}(?:[.,]\d)?)\s*%/);
+  if(mp){ pct = parseFloat(mp[1].replace(',', '.')); rest = rest.replace(mp[0], ' ') }
+  const mm = rest.match(/(\d+(?:[.,]\d+)?)\s*мин[а-яё]*\.?/i);
+  if(mm){ unit = 'мин'; val = mm[1].replace(',', '.'); rest = rest.replace(mm[0], ' ') }
+  else for(const [u, re] of UNITS){ const m = rest.match(re); if(m){ unit = u; val = m[1].replace(',', '.'); rest = rest.replace(m[0], ' '); break } }
+  let scheme = '';
+  const ms = rest.match(RE_SCHEME) || rest.match(RE_SETS);
+  if(ms){ scheme = ms[0].replace(/\s/g, '').replace(/[xхХ]/g, '×'); rest = rest.replace(ms[0], ' ') }
+  else { const lead = rest.match(/^\s*(\d+)\s*$/) || rest.match(/^\s*(\d+)\s+(?=\S)/); if(lead){ scheme = lead[1]; rest = rest.replace(lead[0], ' ') } }
+  if(unit === 'повт' && !scheme){ scheme = val; unit = ''; val = '' }
+  rest = rest.replace(/(^|\s)(по|на|с|@|x|×)(?=\s|$)/gi, ' ');
+  if(/[^\s,;·]/.test(rest)) return {txt: src};
+  return {scheme, pct, unit, val};
+}
+function applyScheme(i, v){
+  const r = parseParamsText(v);
+  if(r.txt != null){ Object.assign(i, {txt:r.txt, scheme:'', pct:null, unit:'', val:''}); return }
+  i.txt = ''; i.scheme = r.scheme;
+  if(r.pct != null){ i.pct = r.pct; i.unit = ''; i.val = ''; UNITSEL[i.id] = '%' }
+  else if(r.val){ i.pct = null; i.unit = r.unit; i.val = r.val; UNITSEL[i.id] = r.unit }
+}
+/* Порядок важен: «ка» — калории, а одиночное «к» — килограммы; «ми» — минуты, «м» — метры. */
+const LOAD_SUFFIX = [[/^(%|проц)/i,'%'], [/^(кал|ка|cal)/i,'кал'], [/^(кг|kg|к|k)\.?$/i,'кг'], [/^(мин|ми|min)/i,'мин'],
+                     [/^(м|m|метр)/i,'м'], [/^(сек|с|sec|s)/i,'сек'], [/^(повт|раз|rep)/i,'повт']];
+function parseLoad(raw){
+  const s = String(raw || '').trim();
+  if(!s) return {empty:true};
+  const mt = s.match(/^(\d+):(\d{2})$/); if(mt) return {num: +mt[1] * 60 + +mt[2], unit:'сек'};
+  const m = s.replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+  if(!m) return {text:s};
+  const suf = m[2].trim();
+  if(!suf) return {num: +m[1], unit:null};
+  const hit = LOAD_SUFFIX.find(([re]) => re.test(suf));
+  return hit ? {num: +m[1], unit: hit[1]} : {text:s};
+}
+function applyLoad(i, raw, force){
+  const r = parseLoad(raw);
+  if(r.empty){ i.pct = null; i.val = ''; i.unit = ''; return }
+  if(r.text != null){ i.pct = null; i.val = r.text; i.unit = ''; return }
+  const u = r.unit || force || loadInfo(i).cur;
+  if(r.unit) UNITSEL[i.id] = r.unit;
+  if(u === '%'){ i.pct = r.num; i.unit = ''; i.val = '' } else { i.pct = null; i.unit = u; i.val = String(r.num) }
+}
+const autoWidth = f => { const sch = f.dataset.pf === 'sch';
+  f.style.width = `calc(${Math.max(f.value.length, (f.placeholder || '').length, sch ? 4 : 3)}ch + ${sch ? 20 : 4}px)` };
+/* Вес, единица, поле 1ПМ и «текстовый» режим — на месте, без перерисовки:
+   перерисовка сбила бы курсор. Поле 1ПМ, в котором сейчас печатают, не прячем. */
+function syncLoads(){
+  $$('#doc .line[data-item]').forEach(l => {
+    const {i} = findItem(l.dataset.item); if(!i || !i.exId) return;
+    const L = loadInfo(i), kg = workKg(i, PM());
+    l.classList.toggle('txtmode', !!i.txt);
+    const k = l.querySelector('.prm .kg'); if(k) k.textContent = kg != null ? '→ ' + fmtN(kg) + ' кг' : '';
+    const u = l.querySelector('[data-pfu]'); if(u){ u.textContent = L.cur; u.parentElement.classList.toggle('empty', !u.parentElement.querySelector('input').value.trim()) }
+    const pm = l.querySelector('.pmf');
+    if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key]));
+  });
+}
+/* Поле покинули — привести запись к виду: «5x3» → 5×3, суффикс единицы уходит в подпись. */
+function normField(pf){
+  const {i} = findItem(pf.dataset.for); if(!i) return;
+  const kind = pf.dataset.pf, line = pf.closest('.line');
+  if(kind === 'sch'){
+    applyScheme(i, pf.value);
+    pf.value = i.txt || i.scheme || '';
+    const ld = line && line.querySelector('[data-pf="ld"]');
+    if(ld){ ld.value = i.pct != null ? fmtN(i.pct) : fmtN(i.val || ''); autoWidth(ld) }
+  }
+  if(kind === 'ld'){ applyLoad(i, pf.value); pf.value = i.pct != null ? fmtN(i.pct) : fmtN(i.val || '') }
+  if(kind === 'pm'){ const v = PM()[loadInfo(i).key]; pf.value = v ? fmtN(v) : '' }
+  autoWidth(pf); syncLoads();
+}
+/* Статус дня и кнопки публикации — без перерисовки документа. */
+const docStatusHTML = (d, n) => n || isDraft(d) ? (isDraft(d)
+  ? `<span class="dst draft" title="Черновик — клиент не видит. Опубликуйте кнопкой внизу">${DAYICON.draft}Черновик</span>`
+  : `<span class="dst pub" title="Опубликована — клиент видит">${DAYICON.pub}Опубликована</span>`) : '';
+function refreshChrome(){
+  const d = day(); if(!d) return;
+  const n = d.blocks.reduce((a, b) => a + b.items.filter(x => x.exId).length, 0), dr = isDraft(d), html = docStatusHTML(d, n);
+  const old = $('#doc .doch .dst');
+  if(old) old.outerHTML = html; else if(html){ const gr = $('#doc .doch > .gr'); if(gr) gr.insertAdjacentHTML('afterend', html) }
+  const sd = $('#saveDraft'), pb = $('#publish');
+  if(sd) sd.disabled = !(dr || n);
+  if(pb) pb.disabled = !(dr && n);
+}
+const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads() };
 
-/* ═══════════ ВЫБОР КЛИЕНТА ═══════════ (общий список с поиском — в nav.js) */
-function openCliPick(btn){
-  closeSug();
-  SUG = openClientPicker(btn, S.cid, id => { SUG = null; if(id !== S.cid) bulkReset(); const date = plan()[S.i].date, follow = CSRC.cid === S.cid;
-    if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы');
-    if(follow) csrcReset(id); render() });
+/* ─── фокус и переходы по строкам ─── */
+const lineEl = id => $(`#doc .line[data-item="${id}"]`);
+const lineEls = () => $$('#doc .line[data-item]:not(.ssh)');
+const fieldIn = (line, kind) => !line ? null : kind === 'e' ? line.querySelector('[data-edit]') : line.querySelector(`[data-pf="${kind}"]`);
+const shown = el => !!el && el.getClientRects().length > 0;
+const lineFields = line => ['e','sch','ld','pm'].map(k => fieldIn(line, k)).filter(shown);
+const caretEnd = el => { const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r) };
+function focusField(el){
+  if(!el) return false;
+  el.focus({preventScroll:true});
+  if(el.isContentEditable) caretEnd(el); else el.select();
+  const r = el.getBoundingClientRect();
+  if(r.top < 90 || r.bottom > innerHeight - 90) el.scrollIntoView({block:'center', behavior:'smooth'});
+  return true;
 }
+const focusLineField = (id, kind) => { const f = fieldIn(lineEl(id), kind); return shown(f) && focusField(f) };
+function neighborId(line, kind, dir){
+  const ls = lineEls(); let k = ls.indexOf(line);
+  if(k < 0) return null;
+  for(k += dir; k >= 0 && k < ls.length; k += dir) if(shown(fieldIn(ls[k], kind))) return ls[k].dataset.item;
+  return null;
+}
+/* Перерисовка документа не должна выбивать курсор: запоминаем поле и позицию
+   и возвращаем их на новую разметку. */
+function caretOffset(el){
+  const sel = getSelection(); if(!sel.rangeCount || !el.contains(sel.anchorNode)) return null;
+  const r = sel.getRangeAt(0), pre = r.cloneRange(); pre.selectNodeContents(el); pre.setEnd(r.endContainer, r.endOffset);
+  return pre.toString().length;
+}
+function setCaret(el, off){
+  if(off == null){ caretEnd(el); return }
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n, left = off;
+  while((n = w.nextNode())){ if(left <= n.length){ const r = document.createRange(); r.setStart(n, left); r.collapse(true); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); return } left -= n.length }
+  caretEnd(el);
+}
+function focusSnap(){
+  const a = document.activeElement; if(!a || !a.closest) return null;
+  const ed = a.closest('#doc [data-edit]'); if(ed) return {k:'e', id: ed.dataset.edit, off: caretOffset(ed)};
+  const pf = a.closest('#doc [data-pf]'); if(pf) return {k: pf.dataset.pf, id: pf.dataset.for, s: pf.selectionStart, e: pf.selectionEnd};
+  return null;
+}
+function focusRestore(f){
+  if(!f) return;
+  const el = fieldIn(lineEl(f.id), f.k); if(!shown(el)) return;
+  el.focus({preventScroll:true});
+  if(f.k === 'e') setCaret(el, f.off); else { try{ el.setSelectionRange(f.s, f.e) }catch(_){} }
+}
+/* Новая строка сразу под текущей — в том же блоке и том же суперсете. Если
+   под ней уже пустая строка, переходим в неё, а не плодим пустые. */
+function newLineAfter(id){
+  const {b, i} = findItem(id); if(!b) return;
+  const k = b.items.indexOf(i), sub = !!i.sub, nx = b.items[k + 1];
+  if(nx && !nx.exId && !nx.raw && !nx.ss && !!nx.sub === sub){ render(); focusLineField(nx.id, 'e'); return }
+  const it = rawItem(''); if(sub) it.sub = true;
+  b.items.splice(k + 1, 0, it);
+  render(); focusLineField(it.id, 'e');
+}
+function dropEmptyLine(id){
+  const {b, i} = findItem(id); if(!b) return;
+  b.items = b.items.filter(x => x !== i);
+  closeSug(); if(document.activeElement) document.activeElement.blur();
+  render();
+}
+/* Название зафиксировано: упражнение узнано — дальше «Схема» (или следующая
+   строка, если параметры уже набраны одной строкой); не узнано — строка текстом. */
+function commitName(id, text, mode){
+  closeSug();
+  commitLine(id, text);
+  const {i} = findItem(id); if(!i) return;           /* строка стала суперсетом */
+  const hasP = !!(i.scheme || i.pct != null || i.val || i.txt);
+  if(!i.exId){ if(mode === 'enter') newLineAfter(id); else { const to = neighborId(lineEl(id), 'e', 1); if(to) focusLineField(to, 'e') } return }
+  if(mode === 'enter' && hasP) newLineAfter(id); else focusLineField(id, 'sch');
+}
+function commitIfChanged(id, text){
+  const {i} = findItem(id); if(!i) return;
+  const now = i.exId ? (byId(i.exId) || {}).ru || '' : (i.raw || '');
+  if(String(text).trim() !== now.trim()){ closeSug(); commitLine(id, text) }
+}
+/* Выбор из подсказки. Параметры, набранные после названия («жим ган 3x10»),
+   переезжают в поля; переименование без параметров старые не трогает. */
+function pickExercise(id, exId, text, mode){
+  closeSug();
+  const {i} = findItem(id); if(!i) return;
+  const cur = parseLine(text);
+  let prm;
+  if(cur && cur.exId === exId) prm = {scheme: cur.scheme || '', pct: cur.pct ?? null, unit: cur.unit || '', val: cur.val || '', txt: cur.txt || ''};
+  else { const tail = String(text || '').trim().slice(exNameOf(text).length).trim(), r = parseParamsText(tail);
+    prm = r.txt != null ? {txt: r.txt, scheme:'', pct:null, unit:'', val:''} : {scheme: r.scheme, pct: r.pct, unit: r.unit, val: r.val, txt:''} }
+  const empty = !prm.scheme && prm.pct == null && !prm.val && !prm.txt;
+  Object.assign(i, {exId, raw:''}, empty && i.exId ? {} : prm);
+  render();
+  const hasP = !!(i.scheme || i.pct != null || i.val || i.txt);
+  if(mode === 'enter' && hasP) newLineAfter(id); else focusLineField(id, 'sch');
+}
+function activateSugRow(row, mode){
+  const id = SUG.dataset.forItem, text = SUG.dataset.text || '';
+  if(row.dataset.pick){ pickExercise(id, row.dataset.pick, text, mode); return }
+  closeSug();
+  if(row.hasAttribute('data-newex')){ openNewEx(id, text); return }
+  if(row.hasAttribute('data-keeptext')){
+    commitLine(id, text);
+    if(mode === 'enter') newLineAfter(id);
+    else if(mode === 'tab'){ const to = neighborId(lineEl(id), 'e', 1); if(to) focusLineField(to, 'e') }
+  }
+}
+/* Названия блока — одной колонкой по самому длинному: поля стоят близко к
+   названию и ровно друг под другом. Замер — на время снимаем ширину. */
+function alignNames(){
+  const doc = $('#doc'); if(!doc) return;
+  doc.classList.add('nm-measure');
+  const ws = [...doc.querySelectorAll('.blk')].map(bk => {
+    let w = 0;
+    bk.querySelectorAll('.line:not(.raw) > .txt').forEach(t => { w = Math.max(w, t.getBoundingClientRect().width + (t.closest('.ssg') ? 9 : 0)) });
+    return [bk, w];
+  });
+  doc.classList.remove('nm-measure');
+  ws.forEach(([bk, w]) => bk.style.setProperty('--nmw', Math.ceil(Math.min(Math.max(w, 160), 380)) + 'px'));
+}
+/* Подсказка клавиш — всегда под строкой, в которой идёт ввод. */
+const KB = k => `<kbd>${k}</kbd>`;
+const KEYHINT = {
+  e:   `<span>${KB('Enter')}выбрать</span><span>${KB('↑')}${KB('↓')}подсказка / строка</span><span>${KB('Esc')}готово</span><span class="r">можно одной строкой: присед 5x3 80%</span>`,
+  sch: `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">5x3 · 21-15-9 · 8 — или текстом</span>`,
+  ld:  `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">80% · 100к · 500м · 60с · 20кал</span>`,
+  pm:  `<span>${KB('Tab')}дальше</span><span>${KB('Enter')}следующее</span><span>${KB('Esc')}готово</span><span class="r">1ПМ клиента — от него считаются проценты</span>`,
+};
+document.addEventListener('focusin', e => {
+  const f = e.target.closest && e.target.closest('#doc [data-edit], #doc [data-pf]');
+  const line = f && f.closest('.line');
+  $$('#doc .line.act').forEach(l => { if(l !== line) l.classList.remove('act') });
+  let h = $('#keyhint');
+  if(!line){ if(h) h.remove(); return }
+  if(f.dataset.pf === 'ld'){ const {i} = findItem(f.dataset.for); if(i && !UNITSEL[i.id]) UNITSEL[i.id] = loadInfo(i).cur }
+  line.classList.add('act');
+  if(!h){ h = document.createElement('div'); h.id = 'keyhint'; h.className = 'keyhint' }
+  h.innerHTML = KEYHINT[f.dataset.pf || 'e'];
+  if(line.nextElementSibling !== h) line.after(h);
+});
+document.addEventListener('focusout', e => {
+  if(!(e.target.closest && e.target.closest('#doc [data-edit], #doc [data-pf]'))) return;
+  const pf = e.target.closest('[data-pf]');
+  if(pf && pf.isConnected){ normField(pf); commitSoft() }
+  setTimeout(() => {
+    const a = document.activeElement;
+    if(a && a.closest && a.closest('#doc [data-edit], #doc [data-pf]')) return;
+    const h = $('#keyhint'); if(h) h.remove();
+    $$('#doc .line.act').forEach(l => l.classList.remove('act'));
+  }, 0);
+});
+/* Клавиатура в строке упражнения. */
+document.addEventListener('keydown', e => {
+  if(e.isComposing || e.defaultPrevented || !e.target.closest) return;
+  const ed = e.target.closest('#doc [data-edit]'), pf = e.target.closest('#doc [data-pf]');
+  if(!ed && !pf) return;
+  const line = e.target.closest('.line'), id = line && line.dataset.item; if(!id) return;
+  const down = e.key === 'ArrowDown', up = e.key === 'ArrowUp';
+  if(ed){
+    if(SUG && SUG.dataset.forItem === id){
+      const rows = [...SUG.querySelectorAll('.row')]; let k = rows.findIndex(r => r.classList.contains('on'));
+      if((down || up) && rows.length){ e.preventDefault(); if(k >= 0) rows[k].classList.remove('on');
+        k = (k + (down ? 1 : -1) + rows.length) % rows.length; rows[k].classList.add('on'); rows[k].scrollIntoView({block:'nearest'}); return }
+      if(e.key === 'Escape'){ e.preventDefault(); closeSug(); return }
+      if((e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) && k >= 0){ e.preventDefault(); activateSugRow(rows[k], e.key === 'Tab' ? 'tab' : 'enter'); return }
+    }
+    const text = ed.textContent;
+    if(e.key === 'Enter'){ e.preventDefault(); if(!text.trim()){ dropEmptyLine(id); return } commitName(id, text, 'enter'); return }
+    if(e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); if(text.trim()) commitName(id, text, 'tab'); return }
+    if(e.key === 'Tab' && e.shiftKey){ e.preventDefault(); commitIfChanged(id, text);
+      const pl = lineEls()[lineEls().indexOf(lineEl(id)) - 1]; if(pl){ const fs = lineFields(pl); focusField(fs[fs.length - 1]) } return }
+    if(e.key === 'Escape'){ e.preventDefault(); closeSug(); ed.blur(); return }
+    if(down || up){ e.preventDefault(); const to = neighborId(line, 'e', down ? 1 : -1); commitIfChanged(id, text); if(to) focusLineField(to, 'e'); return }
+    return;
+  }
+  const kind = pf.dataset.pf;
+  if(e.key === 'Tab'){
+    e.preventDefault(); normField(pf);
+    const fs = lineFields(line), next = fs[fs.indexOf(pf) + (e.shiftKey ? -1 : 1)];
+    if(next) focusField(next);
+    else if(!e.shiftKey){ const to = neighborId(line, 'e', 1); if(to) focusLineField(to, 'e') }
+    commitSoft(); return;
+  }
+  if(e.key === 'Enter'){ e.preventDefault(); normField(pf); newLineAfter(id); return }
+  if(e.key === 'Escape'){ e.preventDefault(); normField(pf); pf.blur(); render(); return }
+  if(down || up){ e.preventDefault(); normField(pf); const to = neighborId(line, kind, down ? 1 : -1); if(to) focusLineField(to, kind); commitSoft(); return }
+});
 
 /* ═══════════ ТИП БЛОКА ═══════════
    Панель под меткой типа: сверху тип блока, у комплекса ниже — его настройка
@@ -1343,7 +1547,7 @@ function flash(id){
 function addEx(exId){
   const it = mkItem(exId, '', null, null, '');
   lastBlock().items.push(it);
-  render(); flash(it.id);
+  render(); flash(it.id); focusLineField(it.id, 'sch');
 }
 /* ═══════════ СОХРАНЕНИЕ В ШАБЛОНЫ (TPL-1, TPL-3) ═══════════
    Тренировка живёт внутри программы и привязана к дате. Шаблон — отдельная
@@ -1675,7 +1879,11 @@ document.addEventListener('click', e=>{
     S.blkText = false; S.blkTextVal = ''; applyText(v); return;
   }
   if(e.target.closest('[data-newex]') && SUG){ const id = SUG.dataset.forItem, text = SUG.dataset.text || ''; closeSug(); openNewEx(id, text); return }
-  if(e.target.closest('[data-keeptext]') && SUG){ const id = SUG.dataset.forItem, text = SUG.dataset.text || ''; closeSug(); commitLine(id, text); return }
+  const kt = e.target.closest('[data-keeptext]'); if(kt && SUG){ activateSugRow(kt, 'click'); return }
+  const pfu = e.target.closest('[data-pfu]');
+  if(pfu){ const {i} = findItem(pfu.dataset.pfu); if(!i) return; const L = loadInfo(i), inp = pfu.parentElement.querySelector('input');
+    if(L.units.length > 1){ const nu = L.units[(L.units.indexOf(L.cur) + 1) % L.units.length]; UNITSEL[i.id] = nu; applyLoad(i, inp.value, nu); syncLoads(); commitSoft() }
+    inp.focus(); return }
   if(e.target.closest('#add-blk')){
     /* Кнопка стоит сверху — значит и блок появляется сверху, под курсором,
        а не улетает в конец длинного дня. */
@@ -1691,22 +1899,15 @@ document.addEventListener('click', e=>{
   if(db){ const d2 = day(); d2.blocks = d2.blocks.filter(b=>b.id!==db.dataset.delblk); render(); return }
   const dl = e.target.closest('[data-del]');
   if(dl){ const {b} = findItem(dl.dataset.del); b.items = b.items.filter(x=>x.id!==dl.dataset.del); render(); return }
-  const st = e.target.closest('[data-setup]'); if(st){ openSetup(st); return }
   const ft = e.target.closest('[data-ftype]'); if(ft){ openFtype(ft); return }
   const pf = e.target.closest('[data-pickfor]');
-  if(pf){ const {i} = findItem(pf.dataset.pickfor);
-          showSug(pf, i.raw || '');
-          if(SUG){ SUG.dataset.forItem = pf.dataset.pickfor; SUG.dataset.text = i.raw || '' }
+  if(pf){ const {i} = findItem(pf.dataset.pickfor); const ed = fieldIn(lineEl(pf.dataset.pickfor), 'e');
+          if(ed) focusField(ed);
+          showSug(ed || pf, i.raw || '');
           return; }
 
   const pick = e.target.closest('[data-pick]');
-  if(pick && SUG){
-    const {i} = findItem(SUG.dataset.forItem);
-    if(i){ const cur = parseLine(SUG.dataset.text) || {};
-           Object.assign(i, {exId:pick.dataset.pick, scheme:cur.scheme||'', pct:cur.pct??null,
-                             unit:cur.unit||'', val:cur.val||'', raw:''}) }
-    closeSug(); render(); return;
-  }
+  if(pick && SUG){ pickExercise(SUG.dataset.forItem, pick.dataset.pick, SUG.dataset.text || '', 'click'); return }
   if(e.target.closest('#md-cancel') || e.target.closest('#md-x') ||
      e.target === $('#ov') || e.target.closest('#md-ok')){
     $('#ov').classList.remove('on'); return }
@@ -1750,6 +1951,17 @@ document.addEventListener('input', e=>{
     ed.closest('.line').classList.add('edit');
     showSug(ed, ed.textContent);
     if(SUG){ SUG.dataset.forItem = ed.dataset.edit; SUG.dataset.text = ed.textContent }
+    return;
+  }
+  /* Поля строки: нагрузка и 1ПМ — в модель на каждый символ (вес и единица
+     видны сразу), схема — при выходе из поля: пока печатают «60×5, 7…»,
+     строка не должна мигать между схемой и текстом. */
+  const pfi = e.target.closest('[data-pf]');
+  if(pfi){
+    const {i} = findItem(pfi.dataset.for); if(!i) return;
+    if(pfi.dataset.pf === 'ld') applyLoad(i, pfi.value);
+    if(pfi.dataset.pf === 'pm'){ const k = loadInfo(i).key, v = parseFloat(pfi.value.replace(',', '.')); if(v > 0) PM()[k] = v; else delete PM()[k]; saveState() }
+    autoWidth(pfi); syncLoads();
     return;
   }
   /* Круги и отдых суперсета — в модель на каждый символ, без перерисовки документа. */
@@ -1808,7 +2020,7 @@ document.addEventListener('change', e=>{
   }
 });
 document.addEventListener('keydown', e=>{
-  const ed = e.target.closest('[data-edit]');
+  if(e.defaultPrevented) return;
   if(e.target.id === 'w-msg' && e.key === 'Enter'){
     /* Поле пишет в модель на каждый символ, так что Enter ничего не «сохраняет».
        Но тренеру нужен сигнал, что он закончил мысль, — Enter снимает фокус
@@ -1820,8 +2032,6 @@ document.addEventListener('keydown', e=>{
     setTimeout(()=>{ k.textContent = '↵ Enter'; k.classList.remove('done') }, 1400);
     return;
   }
-  if(ed && e.key === 'Enter'){ e.preventDefault();
-    const id = ed.dataset.edit, txt = ed.textContent; closeSug(); commitLine(id, txt); return }
   /* Enter в названии блока или тренировки — «готово»: снимаем фокус, а
      change уже подхватывает набранный формат («AMRAP 15») как тип. */
   if(e.key === 'Enter' && (e.target.closest('[data-f="title"]') || e.target.closest('[data-ssf]') || e.target.id === 'd-title')){
@@ -1830,7 +2040,15 @@ document.addEventListener('keydown', e=>{
 });
 document.addEventListener('focusout', e=>{
   const ed = e.target.closest('[data-edit]');
-  if(ed) setTimeout(()=>{ if(!SUG) commitLine(ed.dataset.edit, ed.textContent) }, 120);
+  if(!ed) return;
+  setTimeout(()=>{
+    if(!ed.isConnected) return;                       /* строку уже перерисовали — разбор прошёл */
+    const id = ed.dataset.edit, {b, i} = findItem(id), a = document.activeElement;
+    if(a && a.closest && a.closest(`.line[data-item="${id}"]`)) return;   /* ушли в поле той же строки */
+    /* Пустая строка, из которой ушли, не остаётся в тренировке. */
+    if(i && !i.exId && !i.raw && !ed.textContent.trim()){ b.items = b.items.filter(x => x !== i); render(); return }
+    if(!SUG || SUG.dataset.forItem !== id) commitIfChanged(id, ed.textContent);
+  }, 120);
 });
 
 /* ═══════════ ПЕРЕТАСКИВАНИЕ (CON-8, CON-13) ═══════════
@@ -1955,11 +2173,13 @@ function dropCalBlock(e){
 }
 function dropFromRail(e){
   const blk = e.target.closest('.blk');
+  let it = null;
   if(DRAG.t === 'ex'){
     const b = blk ? day().blocks.find(x=>x.id===blk.dataset.blk) : lastBlock();
-    b.items.push(mkItem(DRAG.v, '', null, null, ''));
+    it = mkItem(DRAG.v, '', null, null, ''); b.items.push(it);
   } else addTplRaw(tplById(DRAG.v));
   clearDrag(); render();
+  if(it) focusLineField(it.id, 'sch');
 }
 /* Упражнение переезжает в тот блок, над строкой которого его отпустили.
    Середина строки — объединить в суперсет (или войти в суперсет цели);

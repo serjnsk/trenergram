@@ -1275,7 +1275,7 @@ function ensureDay(cid, date){
    Третий вид календаря и полосы недель: видна иерархия «блок → упражнения»,
    у упражнения — подходы×повторы, процент от ПМ и рабочий вес (или объём). */
 /* Неразрывные пробелы внутри «40 %» и «500 м»: перенос допустим только между частями схемы. */
-const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + '\u00a0%' : (it.val ? it.val + (it.unit ? '\u00a0' + it.unit : '') : '')].filter(Boolean).join(' · ');
+const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + '\u00a0%' : (it.val ? fmtNum(it.val) + (it.unit ? '\u00a0' + it.unit : '') : '')].filter(Boolean).join(' · ');
 function blocksDetail(x, cid){
   const pm = cid ? pmOf(cid) : null;
   const has = y => y.exId || y.raw;
