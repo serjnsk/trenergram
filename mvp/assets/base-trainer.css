@@ -1191,3 +1191,9 @@ body.bk-on .toast{bottom:96px}
 .rprev .rlines .ssl,.tplc .ls .ssl{color:var(--acc-d);font-weight:600}
 .rprev .rlines .sub{padding-left:14px}
 .tplc .ls .sub{padding-left:12px}
+
+/* ═══════════ тип блока и настройка комплекса ═══════════ */
+[hidden]{display:none !important}
+.st-head.cx{align-items:flex-start}
+.st-head.cx s{white-space:normal;text-align:right}
+.tplc .ty{font-size:13px;font-weight:600;color:var(--acc-d);margin:-3px 0 5px}

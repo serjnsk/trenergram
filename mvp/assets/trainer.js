@@ -57,8 +57,9 @@ const TIMER = false;
    и пересобирает их через mkItem. Если передать туда готовые объекты, он
    молча вернёт блок с пустыми упражнениями — без ошибки, без предупреждения.
    Там, где элементы уже собраны, пользуемся этим: он их не трогает. */
+/* Тип не передан (разбор текста) — берём из слова в названии: «Разминка» → разминка. */
 const blockOf = (title, items, note, kind, fmt) => normFmt({
-  id: nid('b'), kind: kind || 'strength', title: title || '',
+  id: nid('b'), kind: kind === undefined ? typeOfTitle(title) : (kind || null), title: title || '',
   note: note || '', fmt: fmt || null, items: items || [],
 });
 
@@ -347,8 +348,8 @@ function blockHTML(b){
     <div class="blkh">
       <span class="gr" title="Перетащить блок">${ICON.grip}</span>
       <input class="bt" data-f="title" value="${esc(b.title)}"
-             placeholder="${b.fmt ? 'Название блока (необязательно)' : 'Введите название блока'}">
-      <button class="ftype ${b.fmt?'on':''}" data-ftype="${b.id}" title="${b.fmt ? esc(fmtDesc(b.fmt)) : 'AMRAP, EMOM, на время, табата…'}">${b.fmt ? esc(fmtLabel(b.fmt)) : 'тип блока'}</button>
+             placeholder="${b.kind ? 'Название блока (необязательно)' : 'Введите название блока'}">
+      <button class="ftype ${b.kind?'on':''}" data-ftype="${b.id}" title="${b.fmt ? esc(fmtDesc(b.fmt)) : b.kind ? '' : 'Разминка, силовая, комплекс…'}">${b.kind ? esc(blockTypeLabel(b)) : 'тип блока'}</button>
       <button class="x ${b.note?'on':''}" data-notetog="${b.id}" title="${b.note?'Заметка к блоку':'Добавить заметку к блоку'}">${ICON.chat}</button>
       <button class="x ${b.savedSig === blockSig(b) ? 'on':''}" data-savblk="${b.id}" title="${b.savedSig === blockSig(b) ? 'Сохранён в базу блоков' : 'Сохранить блок в базу'}">${ICON.star}</button>
       <button class="x" data-delblk="${b.id}">${ICON.x}</button>
@@ -412,7 +413,7 @@ function renderDoc(){
   const d = day(), dt = new Date(d.date + 'T00:00:00');
   /* Пустой день открывается как ручной ввод: сразу пустой блок со строкой
      упражнения, без карточек-подсказок — они дублировали кнопки под названием. */
-  if(!d.blocks.length && S.compose !== 'text') d.blocks.push(mkBlock('strength','','',null,[]));
+  if(!d.blocks.length && S.compose !== 'text') d.blocks.push(mkBlock(null,'','',null,[]));
   const n   = d.blocks.reduce((a,b)=>a+b.items.filter(x=>x.exId).length,0);
   const raw = d.blocks.reduce((a,b)=>a+b.items.filter(x=>!x.exId && !x.ss).length,0);
   /* Пустой — без содержимого, а не без блоков: заготовка пустого блока
@@ -485,8 +486,9 @@ function renderSrc(){
     box.innerHTML = list.map(t=>`
       <div class="tplc" draggable="true" data-tpl="${t.id}">
         <div class="h">
-          <span class="nm">${esc(t.title || (t.fmt ? fmtLabel(t.fmt) : ''))}</span>${t.fmt && t.title ? `<s class="ft">${esc(fmtLabel(t.fmt))}</s>` : ''}
+          <span class="nm">${esc(t.title || blockTypeLabel(t))}</span>
           </div>
+        ${lvl==='блок' && t.kind && t.title ? `<div class="ty">${esc(blockTypeLabel(t))}</div>` : ''}
         <div class="ls">${lvl==='блок'
           ? t.items.map(i=>{ if(i[0] === SS_TAG) return `<span class="ssl">${esc(ssLabel({rounds:+i[1]||3, rest:i[2]||''}))}</span>`;
               const e=byId(i[0]) || {ru:i[0]};   /* неизвестный id — показываем как есть, не роняем панель */
@@ -1049,8 +1051,9 @@ function openCliPick(btn){
 }
 
 /* ═══════════ ТИП БЛОКА ═══════════
-   Панель под чипом типа: выбор типа и его параметры. Меняется на лету,
-   чип в шапке блока обновляется без перерисовки документа. */
+   Панель под меткой типа: сверху тип блока, у комплекса ниже — его настройка
+   (AMRAP, EMOM, на время…) с параметрами. Меняется на лету, метка в шапке
+   блока обновляется без перерисовки документа. */
 function openFtype(btn){
   closeSug();
   const b = day().blocks.find(x=>x.id===btn.dataset.ftype); if(!b) return;
@@ -1083,9 +1086,11 @@ function openFtype(btn){
   };
   const draw = () => {
     box.innerHTML = `
-      <div class="st-head"><b>Тип блока</b><s>${b.fmt ? esc(fmtDesc(b.fmt)) : 'обычный список подходов'}</s></div>
+      <div class="st-head"><b>Тип блока</b></div>
+      <div class="ft-list">${BLOCK_TYPES.map(t=>`<button data-bt-k="${t.k||''}" class="${(b.kind||null)===t.k?'on':''}">${t.n}</button>`).join('')}</div>
+      ${b.kind === 'complex' ? `<div class="st-head cx"><b>Настройка комплекса</b><s class="st-desc">${b.fmt ? esc(fmtDesc(b.fmt)) : ''}</s></div>
       <div class="ft-list">${FMT_TYPES.map(t=>`<button data-ft-k="${t.k||''}" class="${(b.fmt?b.fmt.k:null)===t.k?'on':''}">${t.n}</button>`).join('')}</div>
-      ${b.fmt && b.fmt.k!=='NFT' ? `<div class="st-grid">${params()}</div>` : ''}
+      ${b.fmt && b.fmt.k!=='NFT' ? `<div class="st-grid">${params()}</div>` : ''}` : ''}
       <div class="st-foot"><span class="sp"></span><button class="btn sm" data-st-ok>Готово ↵</button></div>`;
     place();
   };
@@ -1102,13 +1107,16 @@ function openFtype(btn){
   };
   const sync = () => {
     const chip = $(`[data-ftype="${b.id}"]`);
-    if(chip){ chip.textContent = b.fmt ? fmtLabel(b.fmt) : 'тип блока'; chip.classList.toggle('on', !!b.fmt); chip.title = b.fmt ? fmtDesc(b.fmt) : '' }
-    const hs = box.querySelector('.st-head s'); if(hs) hs.textContent = b.fmt ? fmtDesc(b.fmt) : 'обычный список подходов';
+    if(chip){ chip.textContent = b.kind ? blockTypeLabel(b) : 'тип блока'; chip.classList.toggle('on', !!b.kind); chip.title = b.fmt ? fmtDesc(b.fmt) : b.kind ? '' : 'Разминка, силовая, комплекс…' }
+    const hs = box.querySelector('.st-desc'); if(hs) hs.textContent = b.fmt ? fmtDesc(b.fmt) : '';
     const rs = box.querySelector('.st-v .st-res'); if(rs && b.fmt && b.fmt.k==='EMOM') rs.textContent = 'всего ' + mmss(b.fmt.total);
   };
   box.addEventListener('input', recalc);
   box.addEventListener('click', e=>{
     e.stopPropagation();
+    /* Не комплекс — настройки нет: сбрасываем, а не прячем. */
+    const bt = e.target.closest('[data-bt-k]');
+    if(bt){ b.kind = bt.dataset.btK || null; if(b.kind !== 'complex') b.fmt = null; draw(); sync(); return }
     const k = e.target.closest('[data-ft-k]');
     if(k){ const t = FMT_TYPES.find(x=>(x.k||'')===k.dataset.ftK); b.fmt = t.k ? {k:t.k, ...t.d} : null; draw(); sync(); return }
     const w = e.target.closest('[data-ft-work]');
@@ -1122,7 +1130,7 @@ function openFtype(btn){
 /* ─── вставка из панели источников ─── */
 const lastBlock = () => {
   const d = day();
-  if(!d.blocks.length) d.blocks.push(mkBlock('strength','Новый блок','',null,[]));
+  if(!d.blocks.length) d.blocks.push(mkBlock(null,'Новый блок','',null,[]));
   return d.blocks[d.blocks.length-1];
 };
 /* Из панели упражнение падает в последний блок дня. Куда именно — не
@@ -1148,14 +1156,14 @@ function addEx(exId){
    Шаблон тренировки ссылается на шаблоны блоков (так устроен tplToWorkout),
    поэтому сохранение дня кладёт в библиотеку и блоки — заодно они становятся
    доступны поодиночке, чего TPL-1 и хочет. */
-const FOLDER_OF = b => fmtPart(b.title) ? 'Комплексы'
+const FOLDER_OF = b => TYPE_FOLDER[b.kind] || (fmtPart(b.title) ? 'Комплексы'
   : b.items.some(i => i.pct != null || i.unit === 'кг') ? 'Силовые блоки'
-  : /заминк|растяж|заверш/i.test(b.title) ? 'Заминки' : 'Разминки';
+  : /заминк|растяж|заверш/i.test(b.title) ? 'Заминки' : 'Разминки');
 
 function blockToTpl(b, folder){
   const t = {
-    id: nid('t'), lvl:'блок', folder: folder || FOLDER_OF(b), used: 0,
-    title: b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок без названия'), fmt: b.fmt ? {...b.fmt} : null,
+    id: nid('t'), lvl:'блок', folder: folder || FOLDER_OF(b), used: 0, kind: b.kind || null,
+    title: b.title || blockTypeLabel(b) || 'Блок без названия', fmt: b.fmt ? {...b.fmt} : null,
     /* Строки текстом в шаблон не идут; если из-за этого в суперсете осталось
        меньше двух упражнений, он распускается — на копиях, не на живом дне. */
     items: normSS({items: b.items.filter(i=>i.exId || i.ss).map(i=>({...i}))}).items.map(i =>
@@ -1228,7 +1236,7 @@ function toast(text, actionLabel, onAction){
 function addTplRaw(t){
   const d = day();
   if(t.lvl === 'блок'){
-    d.blocks.push(blockOf(t.title, t.items.map(tplLine), '', t.kind));
+    d.blocks.push(blockOf(t.title, t.items.map(tplLine), '', t.kind, fmtCopy(t.fmt)));
   } else {
     const w = tplToWorkout(t);
     d.title = w.title || d.title; d.blocks = w.blocks;
@@ -1439,7 +1447,7 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#add-blk')){
     /* Кнопка стоит сверху — значит и блок появляется сверху, под курсором,
        а не улетает в конец длинного дня. */
-    day().blocks.push(mkBlock('strength','','',null,[]));
+    day().blocks.push(mkBlock(null,'','',null,[]));
     render();
     const t = document.querySelector('.blk .bt'); if(t) t.focus();
     return;
@@ -1548,7 +1556,13 @@ document.addEventListener('change', e=>{
   const tf = e.target.closest('[data-f="title"]');
   if(tf){
     const b = day().blocks.find(x=>x.id === tf.closest('[data-blk]').dataset.blk);
-    if(b && !b.fmt && findFmt(tf.value)){ normFmt(b); render(); toast('Тип блока: ' + fmtLabel(b.fmt)) }
+    /* Тип из названия — только пока тренер не выбрал его сам: «AMRAP 15» делает
+       блок комплексом с настройкой, «Разминка» — разминкой. */
+    if(b && (!b.kind || (b.kind === 'complex' && !b.fmt))){
+      if(findFmt(tf.value)){ normFmt(b); render(); toast('Тип блока: ' + blockTypeLabel(b)); return }
+      const k = !b.kind && typeOfTitle(tf.value);
+      if(k){ b.kind = k; render(); toast('Тип блока: ' + typeName(k)) }
+    }
     return;
   }
   if(e.target.id === 'pt-photo'){
@@ -1749,7 +1763,7 @@ function dropOnDay(idx){
   }
   else if(DRAG.t === 'line'){
     const {b:from, i:item} = findItem(DRAG.v);
-    if(!dst.blocks.length) dst.blocks.push(mkBlock('strength','Новый блок','',null,[]));
+    if(!dst.blocks.length) dst.blocks.push(mkBlock(null,'Новый блок','',null,[]));
     const k0 = from.items.indexOf(item), moving = from.items.splice(k0, item.ss ? ssEnd(from.items, k0) - k0 : 1);
     if(!item.ss) item.sub = false;
     dst.blocks[dst.blocks.length-1].items.push(...moving);

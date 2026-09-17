@@ -265,15 +265,15 @@ const TPL = [
   items:[['bench','5×5',75,'%'],['pullup','5×8']]},
  {id:'b6', lvl:'блок', own:true, at:'2026-07-28', folder:'Силовые блоки', kind:'strength', title:'Становая 3×5 @ 70 %', used:9,
   items:[['dead','3×5',70,'%'],['ttb','3×12']]},
- {id:'b7', lvl:'блок', own:true, at:'2026-05-22', folder:'Комплексы', kind:'metcon', title:'«Fran» · 21-15-9', used:7, fmt:'For time 8',
+ {id:'b7', lvl:'блок', own:true, at:'2026-05-22', folder:'Комплексы', kind:'complex', title:'«Fran» · 21-15-9', used:7, fmt:'For time 8',
   items:[['thrust','21-15-9',43,'кг'],['pullup','21-15-9']]},
- {id:'b8', lvl:'блок', own:true, at:'2026-08-11', folder:'Комплексы', kind:'metcon', title:'EMOM 12 · сила + кардио', used:11, fmt:'EMOM 12',
+ {id:'b8', lvl:'блок', own:true, at:'2026-08-11', folder:'Комплексы', kind:'complex', title:'EMOM 12 · сила + кардио', used:11, fmt:'EMOM 12',
   items:[['clean','3',70,'%'],['bike','',12,'кал']]},
- {id:'b9', lvl:'блок', own:true, at:'2026-08-19', folder:'Комплексы', kind:'metcon', title:'AMRAP 15 · гимнастика', used:6, fmt:'AMRAP 15',
+ {id:'b9', lvl:'блок', own:true, at:'2026-08-19', folder:'Комплексы', kind:'complex', title:'AMRAP 15 · гимнастика', used:6, fmt:'AMRAP 15',
   items:[['wb','',15,'повт'],['du','',50,'повт'],['box','10']]},
  {id:'b10', lvl:'блок', own:true, at:'2026-05-18', folder:'Заминки', kind:'cooldown', title:'Заминка / растяжка · 8 мин', used:29,
   items:[['couch','2×',90,'сек'],['plank','3×',45,'сек']]},
- {id:'b11', lvl:'блок', own:true, at:'2026-09-10', folder:'Силовые блоки', kind:'strength', title:'Жим + тяга гантелей', used:4,
+ {id:'b11', lvl:'блок', own:true, at:'2026-09-10', folder:'Силовые блоки', kind:'accessory', title:'Жим + тяга гантелей', used:4,
   items:[['@ss',4,'90 сек'],['dbpress','10',22.5,'кг','',1],['dbrow','10',22.5,'кг','',1]]},
 
  /* ── уровень: тренировка — внутри блоки, а не россыпь упражнений ── */
@@ -301,11 +301,11 @@ const TPL = [
   items:[['squat','3×5',75,'%']]},
  {id:'sb4', lvl:'блок', own:false, folder:'Силовые блоки', kind:'strength', title:'Жим стоя 5×5', used:0,
   items:[['press','5×5',70,'%'],['ttb','3×10']]},
- {id:'sb5', lvl:'блок', own:false, folder:'Комплексы', kind:'metcon', title:'«Cindy» · AMRAP 20', used:0, fmt:'AMRAP 20',
+ {id:'sb5', lvl:'блок', own:false, folder:'Комплексы', kind:'complex', title:'«Cindy» · AMRAP 20', used:0, fmt:'AMRAP 20',
   items:[['pullup','5'],['pushup','10'],['squat','15']]},
- {id:'sb6', lvl:'блок', own:false, folder:'Комплексы', kind:'metcon', title:'«Helen»', used:0, fmt:'3 раунда на время',
+ {id:'sb6', lvl:'блок', own:false, folder:'Комплексы', kind:'complex', title:'«Helen»', used:0, fmt:'3 раунда на время',
   items:[['row','',400,'м'],['kbs','21'],['pullup','12']]},
- {id:'sb7', lvl:'блок', own:false, folder:'Заминки', kind:'cooldown', title:'Растяжка задней цепи · 6 мин', used:0,
+ {id:'sb7', lvl:'блок', own:false, folder:'Заминки', kind:'stretch', title:'Растяжка задней цепи · 6 мин', used:0,
   items:[['couch','2×',60,'сек']]},
 
  {id:'sw1', lvl:'тренировка', own:false, title:'Базовый силовой день', used:0, blocks:['sb1','sb3','sb4','sb7']},
@@ -351,8 +351,11 @@ function tplLine([ex, scheme, val, unit, txt, sub]){
   if(sub) i.sub = true;
   return i;
 }
-const tplToBlock = t => ({id:nid('b'), kind:t.kind||'strength', title:t.title.replace(/\s·.*$/,''),
-                          note:'', fmt:t.fmt||null, items:(t.items||[]).map(tplLine)});
+/* Копия настройки: объект из шаблона нельзя отдавать блоку по ссылке — правка
+   параметров в тренировке молча меняла бы шаблон в базе. */
+const fmtCopy = f => !f ? null : typeof f === 'string' ? f : {...f};
+const tplToBlock = t => normFmt({id:nid('b'), kind:t.kind||null, title:t.title.replace(/\s·.*$/,''),
+                          note:'', fmt:fmtCopy(t.fmt), items:(t.items||[]).map(tplLine)});
 function tplToWorkout(t){
   return {title:t.title, blocks:(t.blocks||[]).map(id=>tplToBlock(tplById(id))).filter(Boolean)};
 }
@@ -488,7 +491,7 @@ function normSS(b){
 const ssLabel = h => 'Суперсет · ' + h.rounds + ' ' + plural3(+h.rounds, 'круг', 'круга', 'кругов') + (h.rest ? ' · отдых ' + h.rest : '');
 /* Заголовок суперсета в тексте: «Суперсет 3 круга», «3 круга:», «3 раза», «Суперсет ×4, отдых 90 сек»,
    перечень — в той же строке после двоеточия или следующими строками. «3 раунда на время», AMRAP,
-   EMOM и табата — это тип блока, не суперсет. */
+   EMOM и табата — это настройки комплекса, не суперсет. */
 function parseSSHead(text){
   let L = String(text || '').trim();
   if(!L || /на\s*время|for\s*time|amrap|emom|табат|tabata|кажд/i.test(L)) return null;
@@ -569,20 +572,20 @@ const DAYS = {
     ['cooldown','Заминка','',null,[['couch','2×',null,'сек','90']]]]},
   {t:'Комплекс «Fran»', b:[
     ['warmup','Разминка','',null,[['rom','2×',null,'сек','60'],['burpee','2×8']]],
-    ['metcon','«Fran» 21-15-9','Цель — sub 5:00','For time 8',[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]},
+    ['complex','«Fran» 21-15-9','Цель — sub 5:00','For time 8',[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]},
   {t:'Сила · становая + гимнастика', b:[
     ['warmup','Разминка','Мобилити т/б сустава',null,[['rom','2×',null,'сек','90'],['row',null,null,'кал','15'],['pvc','2×10']]],
     ['strength','Становая тяга','Каждый подход с пола, сброс',null,[['dead','3×5',70],['dead','2×3',82.5]]],
-    ['metcon','EMOM 12','Нечётные — взятие, чётные — эйрбайк','EMOM 12',[['clean','3',70],['bike',null,null,'кал','12']]],
-    ['strength','Гимнастика','',null,[['ttb','4×12'],['ring','4×8'],['hspu','4×6']]],
+    ['complex','EMOM 12','Нечётные — взятие, чётные — эйрбайк','EMOM 12',[['clean','3',70],['bike',null,null,'кал','12']]],
+    ['gymnastics','Гимнастика','',null,[['ttb','4×12'],['ring','4×8'],['hspu','4×6']]],
     ['cooldown','Заминка','',null,[['plank','3×',null,'сек','45'],['couch','2×',null,'сек','90']]]]},
   null,
   {t:'ТА + метком', b:[
     ['warmup','Разминка ТА','',null,[['pvc','3×10'],['snatch','3×3',40]]],
     ['strength','Рывок','На технику, вес не выше 80 %',null,[['snatch','6×2',75]]],
-    ['metcon','AMRAP 15','','AMRAP 15',[['wb','15',null,'повт','15'],['du',null,null,'повт','50'],['box','10']]]]},
+    ['complex','AMRAP 15','','AMRAP 15',[['wb','15',null,'повт','15'],['du',null,null,'повт','50'],['box','10']]]]},
   {t:'Длинное кардио', b:[
-    ['metcon','Аэробная база','Пульс 140–150',null,[['run',null,null,'м','5000'],['row',null,null,'м','2000']]]]},
+    [null,'Аэробная база','Пульс 140–150',null,[['run',null,null,'м','5000'],['row',null,null,'м','2000']]]]},
   null],
  p2:[
   {t:'Сила · нижняя часть', b:[
@@ -590,7 +593,7 @@ const DAYS = {
     ['strength','Присед','Проценты индивидуальные',null,[['squat','5×5',75]]],
     ['strength','Тяга саней','',null,[['sled','4×',null,'м','20']]]]},
   {t:'Метком', b:[
-    ['metcon','EMOM 12','','EMOM 12',[['kbs','12',null,'кг','24'],['burpee','10']]]]},
+    ['complex','EMOM 12','','EMOM 12',[['kbs','12',null,'кг','24'],['burpee','10']]]]},
   {t:'Восстановление · мобилити', b:[
     ['warmup','Мобилити','Лёгкая аэробная работа',null,[['copen','3×',null,'сек','45'],['pvc','3×10'],['row',null,null,'м','2000']]]]},
   {t:'Сила · верх тела', b:[
@@ -598,9 +601,9 @@ const DAYS = {
     ['strength','Жим лёжа','',null,[['bench','5×5',75]]],
     ['strength','Подтягивания + канат','',null,[['pullup','5×8'],['ropec','4×1']]]]},
   {t:'Комплекс', b:[
-    ['metcon','AMRAP 15','','AMRAP 15',[['thrust','12',null,'кг','40'],['c2b','9'],['du',null,null,'повт','40']]]]},
+    ['complex','AMRAP 15','','AMRAP 15',[['thrust','12',null,'кг','40'],['c2b','9'],['du',null,null,'повт','40']]]]},
   {t:'Открытая тренировка', b:[
-    ['metcon','Аэробная работа','',null,[['row',null,null,'м','3000'],['bike',null,null,'кал','40']]]]},
+    [null,'Аэробная работа','',null,[['row',null,null,'м','3000'],['bike',null,null,'кал','40']]]]},
   null],
  p3:[
   {t:'Ноги · щадяще', b:[
@@ -613,7 +616,7 @@ const DAYS = {
     ['strength','Жим + тяга','',null,[['bench','4×8',65],['pullup','4×6']]]]},
   null,
   {t:'Полное тело', b:[
-    ['strength','Круговая','Без ударной нагрузки на колено',null,[['dead','4×6',65],['plank','3×',null,'сек','45'],['row',null,null,'м','1000']]]]},
+    ['complex','Круговая','Без ударной нагрузки на колено',null,[['dead','4×6',65],['plank','3×',null,'сек','45'],['row',null,null,'м','1000']]]]},
   null,null],
 };
 /* Докуда программа реально составлена (дальше — пустые недели, сигнал на дашборде) */
@@ -647,7 +650,7 @@ function buildDay(pid, i){
   const date = dayDate(pid, i);
   const base = {i, date, w: RU[dowMon(date)], d: dm(date)};
   if(!d) return {...base, title:'Отдых', rest:true, comp:false, blocks:[]};
-  return {...base, title:d.t, rest:false, comp:!!d.comp, blocks:d.b.map(b=>mkBlock(b[0],b[1],b[2],b[3],b[4]))};
+  return {...base, title:d.t, rest:false, comp:!!d.comp, blocks:d.b.map(b=>normFmt(mkBlock(b[0],b[1],b[2],b[3],b[4])))};
 }
 /* ═══════ Черновики и публикация ═══════
    День, который тренер правил в конструкторе и не «добавил», — черновик: он
@@ -660,7 +663,7 @@ function buildDay(pid, i){
    по дню помечал бы его черновиком. */
 const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
   i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''} : ({e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||'', ...(it.sub ? {g:1} : {})}))}))});
-const restoreBlocks = rec => (rec.b||[]).map(b=>({id:nid('b'), kind:b.k||'strength', title:b.t||'', note:b.n||'', fmt:b.f||null,
+const restoreBlocks = rec => (rec.b||[]).map(b=>normFmt({id:nid('b'), kind:b.k||null, title:b.t||'', note:b.n||'', fmt:b.f||null,
   items:(b.i||[]).map(it=> it.ss ? ssItem(it.n, it.z) : ({id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||'', ...(it.g ? {sub:true} : {})}))}));
 const savedDay = (pid,i) => ((STATE.days||{})[pid]||{})[i] || null;
 /* Черновики могут лежать за концом заготовок — план дотягиваем до них. */
@@ -769,11 +772,40 @@ function parseFmt(s){
     return {src:m[0],k:'FOR TIME',rounds:1,work:0,rest:0,total:m[1]?+m[1]*60:0};
   return null;
 }
-/* ═══════ Тип блока ═══════
-   Тип — явное поле блока (fmt), а не часть названия. Название остаётся
-   чистым; набранное в нём «AMRAP 15» распознаётся и переезжает в тип. */
+/* ═══════ Тип блока и настройка комплекса ═══════
+   Блок и комплекс — не синонимы: комплекс — один из типов блока. Тип — явное
+   поле блока (kind), по умолчанию его нет. Настройка (fmt: AMRAP, EMOM, на
+   время…) бывает только у комплекса. Набранное в названии «AMRAP 15»
+   распознаётся, переезжает в настройку и делает блок комплексом. */
+const BLOCK_TYPES = [
+  {k:null,         n:'без типа'},
+  {k:'warmup',     n:'Разминка'},
+  {k:'strength',   n:'Силовая'},
+  {k:'complex',    n:'Комплекс'},
+  {k:'cooldown',   n:'Заминка'},
+  {k:'stretch',    n:'Растяжка'},
+  {k:'accessory',  n:'Подкачка'},
+  {k:'gymnastics', n:'Гимнастика'},
+];
+const typeName = k => (BLOCK_TYPES.find(t => t.k === (k || null)) || BLOCK_TYPES[0]).n;
+/* Подпись типа для метки в шапке и карточек: «Разминка», «Комплекс · AMRAP 15»; без типа — пусто. */
+const blockTypeLabel = b => !b || !b.kind || !BLOCK_TYPES.some(t => t.k === b.kind) ? ''
+  : b.kind === 'complex' && b.fmt && typeof b.fmt === 'object' ? 'Комплекс · ' + fmtLabel(b.fmt) : typeName(b.kind);
+/* Папка базы, в которую блок ложится по типу. */
+const TYPE_FOLDER = {warmup:'Разминки', strength:'Силовые блоки', complex:'Комплексы', cooldown:'Заминки',
+                     stretch:'Заминки', accessory:'Силовые блоки', gymnastics:'Силовые блоки'};
+/* Тип по слову в названии: «Разминка ТА» — разминка. Только явные слова; если
+   их несколько, решает первое. \b кириллицу не видит — границу слова задаём сами. */
+const TYPE_WORDS = [['warmup','разминк'], ['strength','силов'], ['complex','комплекс'], ['cooldown','заминк'],
+                    ['stretch','растяжк'], ['accessory','подкачк'], ['gymnastics','гимнастик']];
+function typeOfTitle(title){
+  const t = ' ' + String(title || '').toLowerCase().replace(/ё/g, 'е');
+  let best = null, at = Infinity;
+  for(const [k, w] of TYPE_WORDS){ const m = t.match(new RegExp('[^а-я]' + w)); if(m && m.index < at){ best = k; at = m.index } }
+  return best;
+}
 const FMT_TYPES = [
-  {k:null,       n:'без типа'},
+  {k:null,       n:'без настройки'},
   {k:'AMRAP',    n:'AMRAP',        d:{rounds:1,work:900,rest:0,total:900}},
   {k:'EMOM',     n:'EMOM',         d:{rounds:12,work:60,rest:0,total:720}},
   {k:'FOR TIME', n:'На время',     d:{rounds:1,work:0,rest:0,total:0}},
@@ -829,6 +861,9 @@ function normFmt(b){
   if(!b.fmt && fromTitle) b.fmt = fromTitle;
   if(fromTitle) b.title = stripFmt(b.title);
   if(b.fmt) delete b.fmt.src;
+  /* Старый вид «metcon» — это комплекс; настройка бывает только у комплекса. */
+  if(b.kind && !BLOCK_TYPES.some(t => t.k === b.kind)) b.kind = b.kind === 'metcon' ? 'complex' : null;
+  if(b.fmt) b.kind = 'complex';
   return b;
 }
 
@@ -1137,7 +1172,7 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
   const i = daysBetween(p.start, addDays(TODAY, 6 - dowMon(TODAY)));
   if(i >= 0 && i < PLAN.p1.length) PLAN.p1[i] = {t:'Соревнования · Open Cup', comp:true, b:[
     ['warmup','Разминка','Спокойно, без отказа',null,[['rom','2×',null,'сек','60'],['pvc','2×10'],['row',null,null,'м','500']]],
-    ['metcon','«Fran» · 21-15-9','Два зачётных выхода, отдых 10 мин',null,[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]};
+    ['complex','«Fran» · 21-15-9','Два зачётных выхода, отдых 10 мин',null,[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]};
 })();
 const STATE = (function(){
   const def = {online:true, queue:0, ids:false, navc:false, curClient:'c1', curProg:'p1', curWeek:4,
@@ -1181,7 +1216,7 @@ const restCell = () => `<span class="stcell rest" title="Отдых"><img src="a
 /* Список блоков дня: номер в своей колонке, не больше max строк, остальное — «ещё N». */
 function blocksList(x, max=5){
   const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId)); if(!bs.length) return '';
-  return `<span class="bl num">${bs.slice(0,max).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || fmtLabel(b.fmt) || 'блок')}</b></i>`).join('')}${bs.length>max ? `<span class="more">ещё ${bs.length-max}</span>` : ''}</span>`;
+  return `<span class="bl num">${bs.slice(0,max).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || 'блок')}</b></i>`).join('')}${bs.length>max ? `<span class="more">ещё ${bs.length-max}</span>` : ''}</span>`;
 }
 const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>Соревнование</s></span>`;
 
@@ -1244,7 +1279,7 @@ function blocksDetail(x, cid){
     }
     return h };
   return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
-    <div class="bxh"><s>${i+1}</s><b>${esc(b.title || (b.fmt ? fmtLabel(b.fmt) : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
+    <div class="bxh"><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || 'Блок')}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
     ${body(b)}
   </div>`).join('')}</div>`;
 }

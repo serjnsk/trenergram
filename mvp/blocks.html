@@ -34,13 +34,12 @@
 <script src="assets/nav.js"></script>
 <script src="assets/ui.js"></script>
 <script>
-/* ═══════════ БАЗА БЛОКОВ И КОМПЛЕКСОВ (TPL-1, TPL-2) ═══════════
+/* ═══════════ БАЗА БЛОКОВ (TPL-1, TPL-2) ═══════════
    Единственный уровень с папками: разминок у тренера много, и без папок
    список нечитаем. Папки заданы в TPL_FOLDERS. */
-/* «Создать блок» прямо в базе (TPL-1): название, папка, тип блока с одним
-   параметром, состав строками «упражнение · схема». Упражнение подбирается
-   из базы по имени (datalist), неточное имя добираем matchEx. */
-const NB_KIND = {'Разминки':'warmup','Силовые блоки':'strength','Комплексы':'metcon','Заминки':'cooldown'};
+/* «Создать блок» прямо в базе (TPL-1): название, тип блока, папка; у комплекса —
+   настройка с одним параметром; состав строками «упражнение · схема». Упражнение
+   подбирается из базы по имени (datalist), неточное имя добираем matchEx. */
 const NB_PARAM = {'AMRAP':['Минут',f=>f.total/60],'EMOM':['Минут',f=>f.rounds],'FOR TIME':['Лимит, мин · необязательно',f=>f.total?f.total/60:''],'TABATA':['Раундов',f=>f.rounds],'ИНТЕРВАЛЫ':['Раундов',f=>f.rounds]};
 const nbFmtOf = (k, p) => { const t = FMT_TYPES.find(x=>(x.k||'')===k); if(!t || !t.k) return null; const f = {k:t.k, ...t.d}; const n = parseFloat(String(p).replace(',','.'));
   if(isFinite(n) && n>0){ if(k==='AMRAP'){ f.total=Math.round(n*60); f.work=f.total } else if(k==='EMOM'){ f.rounds=Math.round(n); f.total=f.rounds*f.work } else if(k==='FOR TIME'){ f.total=Math.round(n*60) } else if(k==='TABATA'||k==='ИНТЕРВАЛЫ'){ f.rounds=Math.round(n); f.total=f.rounds*(f.work+f.rest) } }
@@ -51,19 +50,26 @@ function nbOpen(rerender){
   openModal({title:'Новый блок', body:`
     <div class="cols3">
       <div class="formfld"><span class="k">Название</span><input class="inp" id="nbTitle" placeholder="Например: Разминка перед приседом"></div>
+      <div class="formfld"><span class="k">Тип блока</span><select class="inp" id="nbType">${BLOCK_TYPES.map(t=>`<option value="${t.k||''}">${esc(t.n)}</option>`).join('')}</select></div>
       <div class="formfld"><span class="k">Папка</span><select class="inp" id="nbFolder">${TPL_FOLDERS.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select></div>
-      <div class="formfld"><span class="k">Тип блока</span><select class="inp" id="nbFmt">${FMT_TYPES.map(t=>`<option value="${t.k||''}">${esc(t.n)}</option>`).join('')}</select></div>
     </div>
-    <div class="cols3" id="nbParamRow" style="margin-top:12px" hidden><div class="formfld"><span class="k" id="nbParamK">Минут</span><input class="inp" id="nbParam"></div></div>
+    <div class="cols3" id="nbCxRow" style="margin-top:12px" hidden>
+      <div class="formfld"><span class="k">Настройка комплекса</span><select class="inp" id="nbFmt">${FMT_TYPES.map(t=>`<option value="${t.k||''}">${esc(t.n)}</option>`).join('')}</select></div>
+      <div class="formfld" id="nbParamFld" hidden><span class="k" id="nbParamK">Минут</span><input class="inp" id="nbParam"></div>
+    </div>
     <div class="formfld" style="margin-top:14px"><span class="k">Состав</span>
       <div id="nbItems">${nbRow()}${nbRow()}</div>
       <div><button class="btn gh sm" id="nbAddRow">${ICON.plus} Упражнение</button></div>
     </div>
     <datalist id="nbEx">${EX.slice().sort((a,b)=>a.ru.localeCompare(b.ru,'ru')).map(e=>`<option value="${esc(e.ru)}"></option>`).join('')}</datalist>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nbSave">Создать блок</button>`});
-  const fmtSel = $('#nbFmt'), prow = $('#nbParamRow');
-  const syncParam = () => { const k = fmtSel.value, pd = NB_PARAM[k]; prow.hidden = !pd; if(pd){ const t = FMT_TYPES.find(x=>x.k===k); $('#nbParamK').textContent = pd[0]; $('#nbParam').value = pd[1](t.d) } };
-  fmtSel.onchange = syncParam; syncParam();
+  const typeSel = $('#nbType'), fmtSel = $('#nbFmt'), folderSel = $('#nbFolder');
+  const syncParam = () => { const k = fmtSel.value, pd = NB_PARAM[k]; $('#nbParamFld').hidden = !pd; if(pd){ const t = FMT_TYPES.find(x=>x.k===k); $('#nbParamK').textContent = pd[0]; $('#nbParam').value = pd[1](t.d) } };
+  /* Настройка есть только у комплекса. Папка идёт за типом, пока тренер не выбрал её сам. */
+  let folderTouched = false;
+  folderSel.onchange = () => { folderTouched = true };
+  const syncType = () => { const k = typeSel.value; $('#nbCxRow').hidden = k !== 'complex'; if(!folderTouched && TYPE_FOLDER[k]) folderSel.value = TYPE_FOLDER[k] };
+  typeSel.onchange = syncType; fmtSel.onchange = syncParam; syncType(); syncParam();
   $('#nbAddRow').onclick = () => { $('#nbItems').insertAdjacentHTML('beforeend', nbRow()); const r = $('#nbItems').lastElementChild; r.querySelector('[data-ex]').focus() };
   $('#nbItems').onclick = e => { const d = e.target.closest('[data-del]'); if(d && $$('#nbItems .nb-row').length>1) d.closest('.nb-row').remove() };
   $('#nbTitle').focus();
@@ -73,12 +79,12 @@ function nbOpen(rerender){
     $$('#nbItems .nb-row').forEach(r => { const v = r.querySelector('[data-ex]').value.trim(); if(!v) return; const e = nbResolve(v); if(e) items.push([e.id, r.querySelector('[data-sch]').value.trim()]); else missing.push(v) });
     if(missing.length){ toast('Не нашли в базе: ' + missing.join(', ')); return }
     if(!items.length){ toast('Добавьте хотя бы одно упражнение'); return }
-    const folder = $('#nbFolder').value;
-    const t = {id:nid('t'), lvl:'блок', own:true, at:TODAY, folder, kind:NB_KIND[folder]||'strength', title, fmt:nbFmtOf(fmtSel.value, $('#nbParam').value), used:0, items};
+    const folder = folderSel.value, kind = typeSel.value || null;
+    const t = {id:nid('t'), lvl:'блок', own:true, at:TODAY, folder, kind, title, fmt: kind === 'complex' ? nbFmtOf(fmtSel.value, $('#nbParam').value) : null, used:0, items};
     TPL.unshift(t); LIB.sel = t.id; closeModal(); toast('Блок «' + title + '» создан'); rerender();
   };
 }
-const cfg = { level:'блок', title:'Блоки', railTitle:'Блок', ph:'Поиск блока или комплекса…', add:'Создать блок', onAdd:nbOpen };
+const cfg = { level:'блок', title:'Блоки', railTitle:'Блок', ph:'Поиск блока…', add:'Создать блок', onAdd:nbOpen };
 renderLib(cfg);
 initShell({page:'blocks.html'});
 initRail();

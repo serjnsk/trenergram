@@ -177,7 +177,7 @@ document.addEventListener('keydown', e=>{
 
    В каждой базе рядом лежит своё и общее (как у упражнений, EX-2):
    личное помечено чипом и всегда выше, внутри личного — новое первым. */
-const LIB = { q:'', own:false, folder:'Все', tab:0, sel:null };
+const LIB = { q:'', own:false, folder:'Все', type:'all', tab:0, sel:null };
 
 const libSort = (a,b) =>
   a.own !== b.own ? (a.own ? -1 : 1)                       /* своё выше общего */
@@ -212,6 +212,8 @@ function libCols(level){
   const usedCol = {k:'used', n:'Исп.', w:'70px', r:true, num:true, sort:byNum(t=>t.used),
     cell:t=>t.used ? t.used+'×' : '—'};
   if(level==='блок') return [nameCol,
+    {k:'kind', n:'Тип', w:'200px', sort:(a,b)=>blockTypeLabel(a).localeCompare(blockTypeLabel(b),'ru'),
+      cell:t=>t.kind ? esc(blockTypeLabel(t)) : '<span style="color:var(--tx3)">—</span>'},
     {k:'folder', n:'Папка', w:'140px', sort:byStr('folder'), cell:t=>esc(t.folder||'—')},
     {k:'n', n:'Упр.', w:'70px', r:true, num:true, sort:byNum(t=>tplStats(t).n),
       cell:t=>tplStats(t).n},
@@ -261,6 +263,7 @@ function renderLib(cfg){
   const list = all.filter(t=>{
     if(LIB.own && !t.own) return false;
     if(withFolders && LIB.folder!=='Все' && t.folder!==LIB.folder) return false;
+    if(withFolders && LIB.type!=='all' && (t.kind || 'none') !== LIB.type) return false;
     if(LIB.q && norm(t.title).indexOf(norm(LIB.q))<0) return false;
     return true;
   }).sort(libSort);
@@ -269,7 +272,8 @@ function renderLib(cfg){
   const cols = libCols(level);
   $('#page').innerHTML = paneHead(cfg.title, all.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="${esc(cfg.ph)}" value="${esc(LIB.q)}"></label>
-      ${withFolders ? `<select class="inp" id="folder" style="width:160px">${['Все',...TPL_FOLDERS].map(f=>`<option value="${esc(f)}" ${LIB.folder===f?'selected':''}>${f==='Все'?'Все папки':esc(f)}</option>`).join('')}</select>` : ''}
+      ${withFolders ? `<select class="inp" id="folder" style="width:160px">${['Все',...TPL_FOLDERS].map(f=>`<option value="${esc(f)}" ${LIB.folder===f?'selected':''}>${f==='Все'?'Все папки':esc(f)}</option>`).join('')}</select>
+        <select class="inp" id="btype" style="width:160px">${[['all','Все типы'], ...BLOCK_TYPES.map(t=>[t.k||'none', t.k ? t.n : 'Без типа'])].map(([v,n])=>`<option value="${v}" ${LIB.type===v?'selected':''}>${esc(n)}</option>`).join('')}</select>` : ''}
       <label class="chk"><input type="checkbox" id="own" ${LIB.own?'checked':''}> Только свои</label>
       <span class="sp"></span>
       <button class="btn gh" id="btnAdd">${ICON.plus} ${esc(cfg.add)}</button>`)
@@ -277,6 +281,7 @@ function renderLib(cfg){
        : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
 
   const fs = $('#folder'); if(fs) fs.onchange=e=>{ LIB.folder=e.target.value; renderLib(cfg) };
+  const ts = $('#btype'); if(ts) ts.onchange=e=>{ LIB.type=e.target.value; renderLib(cfg) };
   $('#own').onchange=e=>{ LIB.own=e.target.checked; renderLib(cfg) };
   $('#q').oninput=e=>{ LIB.q=e.target.value; renderLib(cfg) };
   $('#btnAdd').onclick=()=> cfg.onAdd ? cfg.onAdd(()=>renderLib(cfg)) : toast('В конструкторе: соберите и нажмите «Сохранить в библиотеку»');
@@ -291,7 +296,7 @@ function renderLibRail(cfg){
   if(!t){ railSet({title:kind, body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
   const st = tplStats(t);
   const facts = level==='блок'
-    ? `<s>Папка</s><b>${esc(t.folder||'—')}</b><s>Тип</s><b>${t.fmt ? esc(fmtLabel(t.fmt)) : '<span style="color:var(--tx3)">без типа</span>'}</b><s>Упражнений</s><b>${st.n}</b>`
+    ? `<s>Тип</s><b>${t.kind ? esc(typeName(t.kind)) : '<span style="color:var(--tx3)">без типа</span>'}</b>${t.kind==='complex' ? `<s>Настройка</s><b>${t.fmt ? esc(fmtLabel(t.fmt)) : '<span style="color:var(--tx3)">без настройки</span>'}</b>` : ''}<s>Папка</s><b>${esc(t.folder||'—')}</b><s>Упражнений</s><b>${st.n}</b>`
     : level==='тренировка'
     ? `<s>Блоков</s><b>${st.blocks}</b><s>Упражнений</s><b>${st.n}</b>`
     : `<s>Дней</s><b>${t.days}</b><s>Цикл</s><b>${st.cycle} дн.</b><s>Тренировок</s><b>${st.workouts}</b>`;
