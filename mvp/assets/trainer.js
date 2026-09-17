@@ -76,7 +76,7 @@ const REST_TITLES = new Set(['Отдых','—','']);
    ?client=&date= ведёт сразу в редактор нужного дня. */
 const Q = new URLSearchParams(location.search);
 const S = { cid: Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
-            tab:'ex', q:'', compose:null,
+            tab:'ex', q:'', compose:null, src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
             tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
 const blockSig = b => serializeDay({title:'', blocks:[b]});
 const PCACHE = {};
@@ -98,7 +98,7 @@ function shiftTo(date){
   persist();
   const r = ensureDay(S.cid, date); if(!r) return;
   delete PCACHE[S.pid];
-  S.i = r.i; S.compose = null; S.date = date;
+  S.i = r.i; S.compose = null; S.blkText = false; S.date = date;
   extendPlan(S.i); render();
 }
 /* Привязка клиента к плану: программа берётся у клиента, день — из даты. */
@@ -112,7 +112,7 @@ function bindClient(cid, date){
   S.pid = r.pid;
   const i = r.i;
   extendPlan(i);
-  S.i = i; S.compose = null;
+  S.i = i; S.compose = null; S.blkText = false;
   return true;
 }
 /* Если из адреса пришло что-то негодное — откатываемся на клиента по умолчанию
@@ -132,6 +132,7 @@ const PM   = () => pmOf(S.cid);
 
 /* ─── навигация по рабочему пространству ─── */
 const ICON = {
+ pen:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M10.5 2.8l2.7 2.7-7.6 7.6-3.3.6.6-3.3z"/><path d="M9.2 4.1l2.7 2.7"/></svg>',
  ungroup:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="1.5" y="3" width="5" height="10" rx="1.2"/><rect x="9.5" y="3" width="5" height="10" rx="1.2"/></svg>',
  dash:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.6"/><rect x="11" y="2.5" width="6.5" height="4" rx="1.6"/><rect x="11" y="8.5" width="6.5" height="9" rx="1.6"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.6"/></svg>',
  users:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><circle cx="8" cy="6.5" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M14 4.2a3 3 0 0 1 0 5.6M15.5 12.6c1.6.7 2.8 2.3 2.8 4.4"/></svg>',
@@ -409,6 +410,22 @@ function emptyDay(){
     </div>`;
 }
 
+/* Блок текстом: вставить или напечатать, по «Добавить» разбор превращает текст
+   в упражнения (сейчас правила, дальше — ИИ) и предлагает принять или отменить. */
+const blkTextHTML = () => `<div class="blk btxt">
+    <div class="btxt-h">${ICON.ai}<b>Блок текстом</b><s>разберём на упражнения — проверите и примете</s></div>
+    <textarea class="paste" id="bt-paste" rows="6" placeholder="Название блока первой строкой, ниже — упражнения.
+
+AMRAP 12:
+трастеры 10 × 40 кг
+подтягивания 8
+гребля 250 м">${esc(S.blkTextVal || '')}</textarea>
+    <div class="pastef">
+      <button class="lnk" id="bt-cancel">Отмена</button>
+      <span class="sp"></span>
+      <button class="btn" id="bt-go">${ICON.ai} Добавить</button>
+    </div>
+  </div>`;
 function renderDoc(){
   const d = day(), dt = new Date(d.date + 'T00:00:00');
   /* Пустой день открывается как ручной ввод: сразу пустой блок со строкой
@@ -422,6 +439,9 @@ function renderDoc(){
   /* Полоса стоит вплотную над блоками, которыми управляет: заголовок и
      сообщение клиенту к разбору отношения не имеют, а блоки ниже — это
      ровно то, что она предлагает принять или отменить. */
+  /* Полоса разбора стоит над первым распознанным блоком: блок текстом
+     добавляется в конец дня, и полоса сверху оказалась бы далеко от него. */
+  const pendAt = PENDING ? d.blocks.findIndex(b => PENDING.ids.has(b.id)) : -1;
   const propose = PENDING ? `<div class="propose">
       <span class="t"><b>${ICON.ai} Распознано ИИ</b><s>${pendingStat()}</s></span>
       <button class="lnk" id="pd-src">Показать исходник</button>
@@ -439,29 +459,140 @@ function renderDoc(){
       <button class="x ${S.tplSaved[d.date] === serializeDay(d) ? 'on':''}" id="sav-wo" title="${S.tplSaved[d.date] === serializeDay(d) ? 'Сохранена в базу тренировок' : 'Сохранить тренировку в базу'}">${ICON.star}</button>
       <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
     </div>
-    <div class="docacts">
-      <button class="btn gh sm" id="fromTpl">${ICON.tpl} Из шаблона</button>
-      <button class="btn gh sm" id="copyFrom">${ICON.copy} Скопировать существующую</button>
-      <button class="btn gh sm" id="w-ai">${ICON.ai} Текстом — ИИ разберёт</button>
-    </div>
+    <div class="ways4" role="group" aria-label="Как создать тренировку">${[
+      ['hand', ICON.pen,  'Вручную'],
+      ['tpl',  ICON.tpl,  'Скопировать из шаблона'],
+      ['cal',  ICON.cal,  'Скопировать из календаря'],
+      ['text', ICON.ai,   'Скопировать текстом/фото'],
+    ].map(([k, ic, n]) => `<button class="way4 ${(S.compose === 'text' ? 'text' : 'hand') === k ? 'on' : ''}" data-way="${k}">${ic}<span>${n}</span></button>`).join('')}</div>
     ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} Клиенту</span>
       <input id="w-msg" value="${esc(trainerMsg(d.date))}"
              placeholder="Сообщение ко всей тренировке — клиент увидит его первым">
       <kbd class="ent">↵ Enter</kbd>
       <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
     </label>` : ''}
-    ${propose}
+    ${pendAt < 0 ? propose : ''}
     ${S.compose==='text' ? emptyDay() : ''}
-    ${S.compose==='text' && empty ? '' : d.blocks.map(blockHTML).join('')}
-    ${S.compose==='text' && empty ? '' : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>`}
+    ${S.compose==='text' && empty ? '' : d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b)).join('')}
+    ${S.blkText && !(S.compose==='text' && empty) ? blkTextHTML() : ''}
+    ${S.compose==='text' && empty ? '' : `<div class="addbrow">
+      <button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
+      <button class="addb ${S.blkText ? 'on' : ''}" id="add-blk-text">${ICON.ai} Добавить блок текстом</button>
+    </div>`}
     ${S.compose==='text' && empty ? '' : `<div class="pubbar">
         <button class="btn gh" id="saveDraft" ${isDraft(d) || n ? '' : 'disabled'} title="${!isDraft(d) && n ? 'Снять с публикации — клиент перестанет видеть тренировку' : ''}">Сохранить как черновик</button>
         <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
       </div>`}`;
 }
 
+/* ═══════════ ПРАВАЯ ПАНЕЛЬ: ОТКУДА БРАТЬ МАТЕРИАЛ ═══════════
+   Задача панели — подавать материал для быстрого копирования. Два источника:
+   календарь (самый частый — уже составленные тренировки, свои или другого
+   клиента) и базы шаблонов. В календаре точки — дни с тренировками; выбранный
+   день раскрыт ниже, и из него берут тренировку целиком, блок или одно
+   упражнение — кнопкой или перетаскиванием. Это та же «Скопировать из
+   календаря», только без модалки: дни можно листать и смотреть, не вставляя. */
+const CSRC = {cid:null, date:null, month:null};
+const csrcHas = x => !!x && x.blocks.some(b => b.items.some(it => it.exId || it.raw));
+const csrcPlan = cid => { const c = client(cid); return c && c.prog && program(c.prog) ? planOf(c.prog) : [] };
+const csrcDay = () => CSRC.date ? (csrcPlan(CSRC.cid).find(x => x.date === CSRC.date) || null) : null;
+/* По умолчанию — последняя тренировка до открытого дня: чаще всего её и повторяют. */
+function csrcReset(cid){
+  CSRC.cid = cid;
+  const days = csrcPlan(cid).filter(csrcHas).map(x => x.date), before = days.filter(d => d < S.date);
+  CSRC.date = before.length ? before[before.length - 1] : (days[0] || null);
+  CSRC.month = (CSRC.date || S.date).slice(0, 7);
+}
+function mcalHTML(){
+  const [y, m] = CSRC.month.split('-').map(Number);
+  const lead = dowMon(CSRC.month + '-01'), n = new Date(y, m, 0).getDate();
+  const has = new Map();
+  csrcPlan(CSRC.cid).forEach(x => { if(x.date.slice(0, 7) === CSRC.month && csrcHas(x)) has.set(x.date, isDraft(x) ? 'draft' : 'pub') });
+  const cells = [];
+  for(let k = 0; k < lead; k++) cells.push('<span class="pad"></span>');
+  for(let dd = 1; dd <= n; dd++){
+    const date = CSRC.month + '-' + String(dd).padStart(2, '0'), st = has.get(date);
+    const cls = [st ? 'has ' + st : '', date === CSRC.date ? 'on' : '', date === TODAY ? 'today' : '', CSRC.cid === S.cid && date === S.date ? 'cur' : ''].filter(Boolean).join(' ');
+    cells.push(`<button class="${cls}" data-mday="${date}" ${st ? '' : 'disabled'}>${dd}${st ? '<i></i>' : ''}</button>`);
+  }
+  return `<div class="mcal">
+    <div class="mcal-h"><button data-mcal="-1" title="Предыдущий месяц">‹</button><b>${MONTHS_N[m - 1]} ${y}</b><button data-mcal="1" title="Следующий месяц">›</button></div>
+    <div class="mcal-g">${RU.map(w => `<s>${w}</s>`).join('')}${cells.join('')}</div>
+  </div>`;
+}
+function renderRailHead(){
+  const h = $('#railhead'); if(!h) return;
+  const sw = `<div class="srcsw">
+      <button data-srcsw="cal" class="${S.src === 'cal' ? 'on' : ''}">${ICON.cal}<span>Календарь</span></button>
+      <button data-srcsw="tpl" class="${S.src === 'tpl' ? 'on' : ''}">${ICON.tpl}<span>Базы шаблонов</span></button>
+    </div>`;
+  if(S.src === 'tpl'){
+    h.innerHTML = sw + `
+      <div class="tabs" id="tabs"><button data-tab="ex" class="${S.tab === 'ex' ? 'on' : ''}">Упражнения</button><button data-tab="blk" class="${S.tab === 'blk' ? 'on' : ''}">Блоки</button></div>
+      <label class="search">${ICON.search}<input id="q" placeholder="Поиск…" autocomplete="off" value="${esc(S.q)}"></label>`;
+    return;
+  }
+  const c = client(CSRC.cid) || client(S.cid);
+  h.innerHTML = sw + `
+    <button class="csrc-cli" id="cs-cli" title="Чей календарь смотреть"><span class="cav">${esc(c.ini)}</span>
+      <span class="cl-t"><b>${esc(c.n)}</b><s>${c.id === S.cid ? 'клиент в конструкторе' : esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
+    ${mcalHTML()}`;
+}
+const csrcItemAt = ref => { const x = csrcDay(); if(!x) return null; const [bi, k] = String(ref).split(':').map(Number); return ((x.blocks[bi] || {}).items || [])[k] || null };
+/* Копии, а не ссылки: правка в открытом дне не должна менять день-источник. */
+function csrcCopyItems(ref){
+  const x = csrcDay(); if(!x) return null;
+  const [bi, k] = String(ref).split(':').map(Number), b = x.blocks[bi]; if(!b || !b.items[k]) return null;
+  return b.items[k].ss ? b.items.slice(k, ssEnd(b.items, k)).map(y => ({...y, id:nid('i')})) : [{...b.items[k], id:nid('i'), sub:false}];
+}
+const csrcCopyBlock = bi => { const x = csrcDay(), b = x && x.blocks[+bi]; return b ? copyBlocks([b])[0] : null };
+/* Пустая заготовка блока (появляется на каждом пустом дне) не должна оставаться над вставленным. */
+const dropEmptyBlocks = d => { d.blocks = d.blocks.filter(b => b.items.length || b.title || b.note) };
+function csrcCopyWorkout(){
+  const x = csrcDay(); if(!x) return;
+  const d = day(), snap = {title: d.title, blocks: d.blocks}, had = d.blocks.some(b => b.items.length);
+  d.title = x.title; d.blocks = copyBlocks(x.blocks); S.compose = null; S.blkText = false;
+  render();
+  toast(had ? 'Тренировка дня заменена копией' : 'Тренировка скопирована', 'Отменить', () => { d.title = snap.title; d.blocks = snap.blocks; render() });
+}
+const csrcItemHTML = (it, bi, k, sub) => { const e = it.exId ? byId(it.exId) : null, chip = it.exId ? itemChip(it) : '';
+  return `<div class="csi ${sub ? 'sub' : ''}" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(e ? e.ru : it.raw || '')}</span>${chip ? `<em>${esc(chip)}</em>` : ''}<button class="add" data-ciadd="${bi}:${k}" title="Добавить в тренировку">${ICON.plus}</button></div>` };
+function csrcBlockHTML(b, bi){
+  const rows = []; let k = 0;
+  while(k < b.items.length){
+    const it = b.items[k];
+    if(it.ss){ const j = ssEnd(b.items, k);
+      rows.push(`<div class="csi ssl" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(ssLabel(it))}</span><button class="add" data-ciadd="${bi}:${k}" title="Добавить суперсет в тренировку">${ICON.plus}</button></div>`);
+      for(let m = k + 1; m < j; m++) rows.push(csrcItemHTML(b.items[m], bi, m, true));
+      k = j; continue }
+    if(it.exId || it.raw) rows.push(csrcItemHTML(it, bi, k, false));
+    k++;
+  }
+  return `<div class="csb" draggable="true" data-cblk="${bi}">
+    <div class="csb-h"><span class="gr">${ICON.grip}</span><span class="tt"><b>${esc(b.title || blockTypeLabel(b) || 'Блок')}</b>${typeNote(b) && b.title ? `<s class="ty">${esc(typeNote(b))}</s>` : ''}</span><button class="add" data-cbadd="${bi}" title="Добавить блок в тренировку">${ICON.plus}</button></div>
+    ${rows.join('')}
+  </div>`;
+}
+function renderCalSrc(){
+  const box = $('#src'); $('#railfoot').textContent = '';
+  const x = csrcDay();
+  if(!csrcHas(x)){
+    box.innerHTML = `<div class="empty">${csrcPlan(CSRC.cid).some(csrcHas) ? 'Выберите день с точкой — тренировка появится здесь' : 'У клиента пока нет тренировок в календаре'}</div>`;
+    return;
+  }
+  const cur = day(), cd = D(cur.date), xd = D(x.date), same = CSRC.cid === S.cid && x.date === cur.date;
+  const nb = x.blocks.filter(b => b.items.some(it => it.exId || it.raw)).length;
+  box.innerHTML = `<div class="csrc">
+    <div class="csrc-h"><b>${esc(x.title && !REST_TITLES.has(x.title) ? x.title : 'Тренировка')}</b>
+      <s>${RU[dowMon(x.date)]}, ${xd.getDate()} ${MON[xd.getMonth()]} · ${nb} ${plural(nb, 'блок', 'блока', 'блоков')}</s></div>
+    <button class="btn sm csrc-copy" id="cs-copy" ${same ? 'disabled title="Этот день открыт в конструкторе"' : ''}>${ICON.copy} Скопировать в ${RU[dowMon(cur.date)]}, ${cd.getDate()} ${MON[cd.getMonth()]}</button>
+    ${x.blocks.map((b, bi) => b.items.some(it => it.exId || it.raw) ? csrcBlockHTML(b, bi) : '').join('')}
+  </div>`;
+}
+
 /* ─── панель источников: три уровня, которыми наполняют день ─── */
 function renderSrc(){
+  if(S.src === 'cal'){ renderCalSrc(); return }
   const q = norm(S.q), box = $('#src');
   if(S.tab === 'ex'){
     const list = EX.filter(e=>!q || norm(e.ru).includes(q) || norm(e.en).includes(q) ||
@@ -488,7 +619,7 @@ function renderSrc(){
         <div class="h">
           <span class="nm">${esc(t.title || blockTypeLabel(t))}</span>
           </div>
-        ${lvl==='блок' && t.kind && t.title ? `<div class="ty">${esc(blockTypeLabel(t))}</div>` : ''}
+        ${lvl==='блок' && typeNote(t) && t.title ? `<div class="ty">${esc(typeNote(t))}</div>` : ''}
         <div class="ls">${lvl==='блок'
           ? t.items.map(i=>{ if(i[0] === SS_TAG) return `<span class="ssl">${esc(ssLabel({rounds:+i[1]||3, rest:i[2]||''}))}</span>`;
               const e=byId(i[0]) || {ru:i[0]};   /* неизвестный id — показываем как есть, не роняем панель */
@@ -530,7 +661,7 @@ function publishDay(){
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
-function render(){ const cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); renderSrc(); }
+function render(){ const cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); if(S.src === 'cal') renderRailHead(); renderSrc(); }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -660,7 +791,7 @@ if(Q.get('wizard')) addEventListener('load', openWizard);
    требует: пустой день уже есть, блоки накидываются из панели или текстом. */
 function pickTemplate(){
   const list = TPL.filter(t=>t.lvl==='тренировка');
-  openPick('Тренировка из шаблона', list.map(t=>`
+  openPick('Скопировать из шаблона', list.map(t=>`
     <button class="pk" data-tpl="${t.id}"><b>${esc(t.title)}</b>
       <s>${t.own?'своё':'общая база'} · ${tplStats(t).blocks} ${plural(tplStats(t).blocks,'блок','блока','блоков')}</s></button>`).join(''),
     el => { const t = tplById(el.dataset.tpl); const w = tplToWorkout(t); const d = day();
@@ -680,7 +811,7 @@ function pickExisting(){
         <s>${x.w} ${dm(x.date)} · ${x.blocks.length} ${plural(x.blocks.length,'блок','блока','блоков')}</s></button>`).join('')
       : '<p class="warn">У клиента пока нет составленных тренировок.</p>'}`;
   };
-  openPick('Скопировать тренировку', draw(), el => {
+  openPick('Скопировать из календаря', draw(), el => {
     const src = planOf(client(el.dataset.src).prog)[+el.dataset.i]; const d = day();
     d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks); render();
     toast('Скопировано: «' + src.title + '» → день ' + (S.i+1));
@@ -782,9 +913,9 @@ async function applyText(text){
   const snapshot = {title: d.title, blocks: d.blocks.slice()};
   const refined = await aiRefine(parsed, text);
   const made = refined.map(b => blockOf(b.title, b.items));
-  d.blocks = d.blocks.concat(made);
+  d.blocks = d.blocks.filter(b => b.items.length || b.title || b.note).concat(made);
   PENDING = {ids: new Set(made.map(b=>b.id)), snapshot, source: text};
-  S.compose = null;
+  S.compose = null; S.blkText = false;
   render();
 }
 /* Убрать тренировку — не диалог «вы уверены?», а отмена. Подтверждения
@@ -826,7 +957,7 @@ function clearDay(){
   if(!d.blocks.length) return;
   const snap = {title: d.title, blocks: d.blocks};
   d.title = ''; d.blocks = [];
-  PENDING = null; S.compose = null;
+  PENDING = null; S.compose = null; S.blkText = false;
   render();
   toast('День очищен', 'Вернуть', ()=>{
     const cur = day();
@@ -887,16 +1018,81 @@ function showSug(el, text){
   const r = el.getBoundingClientRect();
   box.style.left = r.left + 'px';
   box.style.top  = (r.bottom + window.scrollY + 6) + 'px';
+  const name = exNameOf(t);
   box.innerHTML =
     (p
       ? `<div class="cap">Разобрано</div>
          <button class="row on" data-pick="${p.exId}"><b>${esc(byId(p.exId).ru)}</b>
            <s>${esc([p.scheme, p.pct?fmtN(p.pct)+' %':(p.val?p.val+' '+p.unit:'')].filter(Boolean).join(' '))}</s></button>`
-      : '<div class="cap">Пока текстом — выберите из базы</div>') +
+      : '') +
     (cands.length ? '<div class="cap">Из базы</div>' + cands.map(e=>
-      `<button class="row" data-pick="${e.id}"><b>${esc(e.ru)}</b><s>${esc(e.g)}</s></button>`).join('') : '');
+      `<button class="row" data-pick="${e.id}"><b>${esc(e.ru)}</b><s>${esc(e.g)}</s></button>`).join('') : '') +
+    /* Не узнали — два честных пути: завести упражнение в своей базе или
+       оставить строку текстом (разбор такого текста ИИ — следующий шаг). */
+    (!p && name ? `<div class="cap">${cands.length ? 'Нет нужного?' : 'В базе такого нет'}</div>
+         <button class="row newex" data-newex><b>${ICON.plus} Добавить «${esc(name)}» в базу</b><s>будет подсказываться при наборе</s></button>
+         <button class="row keep" data-keeptext><b>Оставить текстом</b><s>Enter</s></button>` : '');
   document.body.appendChild(box);
   SUG = box;
+}
+/* Название из набранной строки — всё до первой цифры, схемы или процента:
+   «подъём гантелей 3×5» → «Подъём гантелей». */
+const exNameOf = t => { const m = String(t||'').trim().match(/^(.*?)(?=\s+[\d@(]|\s*$)/); const n = (m ? m[1] : '').replace(/[\s,;:—–-]+$/, '').trim();
+  return n ? n[0].toUpperCase() + n.slice(1) : '' };
+/* Новое упражнение в своей базе прямо из строки тренировки. Строка сразу
+   становится этим упражнением: схема и нагрузка разбираются из того же текста. */
+function openNewEx(id, text){
+  const name = exNameOf(text);
+  const UN = ['повт','кг','м','сек','кал'], guess = new Set();
+  if(/кг/i.test(text)) guess.add('кг');
+  if(/\d\s*(м|метр)(?![а-я])/i.test(text)) guess.add('м');
+  if(/сек|мин|\d:\d\d/i.test(text)) guess.add('сек');
+  if(/кал/i.test(text)) guess.add('кал');
+  if(!guess.size || /\d\s*[x×х]\s*\d/i.test(text)) guess.add('повт');
+  const ov = document.createElement('div'); ov.className = 'ov on';
+  ov.innerHTML = `<div class="md ask nexmd">
+    <div class="mdh"><span class="dot"></span><h2>Новое упражнение в базе</h2><button class="cls">✕</button></div>
+    <div class="mdb">
+      <label class="nx-f"><span>Название</span><input id="nx-ru" value="${esc(name)}" autocomplete="off"></label>
+      <div class="nx-2">
+        <label class="nx-f"><span>Группа</span><select id="nx-g"><option value="">не указана</option>${GROUPS.filter(g=>g!=='Все').map(g=>`<option>${esc(g)}</option>`).join('')}</select></label>
+        <label class="nx-f"><span>Оснащение</span><select id="nx-eq">${EQUIP.map(x=>`<option ${x==='—'?'selected':''}>${esc(x)}</option>`).join('')}</select></label>
+      </div>
+      <div class="nx-f"><span>Чем задаётся нагрузка</span><div class="nx-u">${UN.map(u=>`<button class="${guess.has(u)?'on':''}" data-nxu="${u}">${u}</button>`).join('')}</div></div>
+      <p class="nx-note">Упражнение появится в вашей базе и будет подсказываться при наборе.${text.trim() ? ` Строка «${esc(text.trim())}» станет этим упражнением.` : ''}</p>
+    </div>
+    <div class="mdf"><span class="sp"></span><button class="btn gh" data-nx-keep>Оставить текстом</button><button class="btn" data-nx-ok>${ICON.plus} Добавить в базу</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const inp = ov.querySelector('#nx-ru'); inp.focus(); inp.select();
+  const keep = () => { ov.remove(); if(text.trim()) commitLine(id, text) };
+  const save = () => {
+    const ru = inp.value.trim(); if(!ru){ inp.focus(); toast('Укажите название упражнения'); return }
+    const ex = EX.find(x => norm(x.ru) === norm(ru)) || addOwnEx({ru, g: ov.querySelector('#nx-g').value, eq: ov.querySelector('#nx-eq').value,
+      u: [...ov.querySelectorAll('[data-nxu].on')].map(b => b.dataset.nxu)});
+    ov.remove();
+    const {i} = findItem(id);
+    if(i){
+      /* Имя в строке заменяем на сохранённое — тогда разбор узнаёт упражнение
+         наверняка, даже если название в окне поправили. */
+      const tail = text.trim().slice(exNameOf(text).length);
+      const p = parseLine(ex.ru + tail);
+      Object.assign(i, p && p.exId === ex.id
+        ? {exId: ex.id, scheme: p.scheme||'', pct: p.pct??null, unit: p.unit||'', val: p.val||'', txt: p.txt||'', raw: ''}
+        : {exId: ex.id, scheme: '', pct: null, unit: ex.u[0]||'', val: '', txt: tail.trim(), raw: ''});
+    }
+    render(); renderSrc();
+    toast('«' + ex.ru + '» — в вашей базе упражнений');
+  };
+  ov.addEventListener('click', e => {
+    const u = e.target.closest('[data-nxu]'); if(u){ u.classList.toggle('on'); return }
+    if(e.target.closest('[data-nx-ok]')){ save(); return }
+    if(e.target === ov || e.target.closest('.cls') || e.target.closest('[data-nx-keep]')) keep();
+  });
+  ov.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && e.target.id === 'nx-ru'){ e.preventDefault(); save() }
+    if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); keep() }
+  });
 }
 const findItem = id => {
   for(const b of day().blocks){ const i = b.items.find(x=>x.id===id); if(i) return {b,i} }
@@ -1046,8 +1242,9 @@ function openSetup(btn){
 /* ═══════════ ВЫБОР КЛИЕНТА ═══════════ (общий список с поиском — в nav.js) */
 function openCliPick(btn){
   closeSug();
-  SUG = openClientPicker(btn, S.cid, id => { SUG = null; if(id !== S.cid) bulkReset(); const date = plan()[S.i].date;
-    if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы'); render() });
+  SUG = openClientPicker(btn, S.cid, id => { SUG = null; if(id !== S.cid) bulkReset(); const date = plan()[S.i].date, follow = CSRC.cid === S.cid;
+    if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы');
+    if(follow) csrcReset(id); render() });
 }
 
 /* ═══════════ ТИП БЛОКА ═══════════
@@ -1276,7 +1473,7 @@ function extendPlan(upto){
    расти — решётки, которую можно «открыть на неделю вперёд», больше нет. */
 function addDay(){
   extendPlan(plan().length);
-  S.i = plan().length - 1; S.compose = null; render();
+  S.i = plan().length - 1; S.compose = null; S.blkText = false; render();
   toast('День ' + (S.i+1) + ' добавлен');
 }
 
@@ -1291,7 +1488,7 @@ function repeatPrev(){
   cur.title  = src.title;
   cur.rest   = false;
   cur.blocks = copyBlocks(src.blocks);
-  S.compose = null; render();
+  S.compose = null; S.blkText = false; render();
   const n = cur.blocks.reduce((a,b)=>a+b.items.filter(i=>i.exId).length,0);
   toast('День ' + (j+1) + ' повторён · ' + n + ' ' + plural(n,'упражнение','упражнения','упражнений'));
 }
@@ -1345,15 +1542,15 @@ document.addEventListener('click', e=>{
     const i = +d.dataset.day;
     if(i < 0){ shiftTo(addDays(program(S.pid).start, i)); return }
     extendPlan(i);
-    S.i = i; S.compose = null; closeSug(); render(); return;
+    S.i = i; S.compose = null; S.blkText = false; closeSug(); render(); return;
   }
   /* Стрелки листают неделями: лента — это неделя, день внутри неё выбирают
      кликом. Встаём на тот же день недели, если он в сроке программы. */
   const vt = e.target.closest('[data-view]'); if(vt){ const v = vt.dataset.view; if(v==='hidden') STATE.laneHidden = true; else { STATE.laneHidden = false; STATE.laneView = v } saveState(); renderStrip(); return }
   if(e.target.closest('#wkToday')){ bindClient(S.cid, TODAY); render(); return }
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
-  if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; S.compose = null; render(); return }
-  if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; S.compose = null; render(); return }
+  if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; S.compose = null; S.blkText = false; render(); return }
+  if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; S.compose = null; S.blkText = false; render(); return }
   const nd = e.target.closest('[data-notedel]');
   if(nd){ e.preventDefault(); const b = day().blocks.find(x=>x.id===nd.dataset.notedel);
           if(b){ b.note = ''; b.noteOpen = false; render() } return }
@@ -1424,12 +1621,12 @@ document.addEventListener('click', e=>{
   }
   if(e.target.closest('#w-hand')){
     day().blocks.push(blockOf('', []));
-    S.compose = null; render();
+    S.compose = null; S.blkText = false; render();
     const t = $('.blk .bt'); if(t) t.focus();
     return;
   }
   if(e.target.closest('#w-ai')){ S.compose = 'text'; render(); const p = $('#paste'); if(p) p.focus(); return }
-  if(e.target.closest('#pt-back')){ S.compose = null; render(); return }
+  if(e.target.closest('#pt-back')){ S.compose = null; S.blkText = false; render(); return }
   if(e.target.closest('#pt-go')){ applyText($('#paste').value); return }
   if(e.target.closest('#w-prev')){ copyPrev(); return }
   if(e.target.closest('#pd-yes')){ acceptPending(); return }
@@ -1444,12 +1641,50 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#clr-wo')){ askClear(); return }
   const sb = e.target.closest('[data-savblk]');
   if(sb){ openFolder(sb); return }
+  const ssw = e.target.closest('[data-srcsw]');
+  if(ssw){ S.src = ssw.dataset.srcsw; STATE.railSrc = S.src; saveState(); renderRailHead(); renderSrc(); return }
+  const csc = e.target.closest('#cs-cli');
+  if(csc){ closeSug(); SUG = openClientPicker(csc, CSRC.cid, id => { SUG = null; csrcReset(id); renderRailHead(); renderSrc() }, {all:true}); return }
+  const mc = e.target.closest('[data-mcal]');
+  if(mc){ const [y, m] = CSRC.month.split('-').map(Number), dt = new Date(y, m - 1 + (+mc.dataset.mcal), 1);
+    CSRC.month = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); renderRailHead(); return }
+  const mday = e.target.closest('[data-mday]');
+  if(mday){ CSRC.date = mday.dataset.mday; renderRailHead(); renderSrc(); return }
+  if(e.target.closest('#cs-copy')){ csrcCopyWorkout(); return }
+  const cba = e.target.closest('[data-cbadd]');
+  if(cba){ const nb = csrcCopyBlock(cba.dataset.cbadd); if(!nb) return; const d = day(); dropEmptyBlocks(d); d.blocks.push(nb); render(); flash(nb.id); return }
+  const cia = e.target.closest('[data-ciadd]');
+  if(cia){ const its = csrcCopyItems(cia.dataset.ciadd); if(!its) return; lastBlock().items.push(...its); render(); flash(its[0].id); return }
+  const way = e.target.closest('[data-way]');
+  if(way){
+    const k = way.dataset.way;
+    if(k === 'hand'){ if(S.compose){ S.compose = null; S.blkText = false; render() } return }
+    if(k === 'tpl'){ pickTemplate(); return }
+    if(k === 'cal'){ pickExisting(); return }
+    S.compose = 'text'; render(); const p = $('#paste'); if(p) p.focus(); return;
+  }
+  if(e.target.closest('#add-blk-text')){
+    S.blkText = true; render();
+    const t = $('#bt-paste'); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:'center', behavior:'smooth'}) }
+    return;
+  }
+  if(e.target.closest('#bt-cancel')){ S.blkText = false; S.blkTextVal = ''; render(); return }
+  if(e.target.closest('#bt-go')){
+    const v = ($('#bt-paste') || {}).value || '';
+    if(!v.trim()){ toast('Вставьте или напечатайте текст блока'); return }
+    S.blkText = false; S.blkTextVal = ''; applyText(v); return;
+  }
+  if(e.target.closest('[data-newex]') && SUG){ const id = SUG.dataset.forItem, text = SUG.dataset.text || ''; closeSug(); openNewEx(id, text); return }
+  if(e.target.closest('[data-keeptext]') && SUG){ const id = SUG.dataset.forItem, text = SUG.dataset.text || ''; closeSug(); commitLine(id, text); return }
   if(e.target.closest('#add-blk')){
     /* Кнопка стоит сверху — значит и блок появляется сверху, под курсором,
        а не улетает в конец длинного дня. */
-    day().blocks.push(mkBlock(null,'','',null,[]));
+    const nb = mkBlock(null,'','',null,[]);
+    day().blocks.push(nb);
     render();
-    const t = document.querySelector('.blk .bt'); if(t) t.focus();
+    /* Фокус — в название именно нового блока: он последний в дне, а не первый. */
+    const t = document.querySelector(`[data-blk="${nb.id}"] .bt`);
+    if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:'center', behavior:'smooth'}) }
     return;
   }
   const db = e.target.closest('[data-delblk]');
@@ -1543,6 +1778,7 @@ document.addEventListener('input', e=>{
     const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
     return }
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
+  if(e.target.id === 'bt-paste'){ S.blkTextVal = e.target.value; return }
 });
 document.addEventListener('change', e=>{
   /* Поле кругов не остаётся пустым; «90» в отдыхе — это секунды. */
@@ -1622,6 +1858,11 @@ document.addEventListener('dragstart', e=>{
   const rail = e.target.closest('[data-ex],[data-tpl]');
   if(rail){ DRAG = rail.dataset.ex ? {t:'ex', v:rail.dataset.ex} : {t:'tpl', v:rail.dataset.tpl};
             e.dataTransfer.effectAllowed = 'copy'; return }
+  /* Из календаря в панели: упражнение (или суперсет целиком) и блок — копией. */
+  const cit = e.target.closest('[data-cit]');
+  if(cit){ DRAG = {t:'cit', v:cit.dataset.cit}; dragGhost(e, cit.querySelector('.nm').textContent.trim()); try{ e.dataTransfer.effectAllowed = 'copy' }catch(_){} return }
+  const cbl = e.target.closest('[data-cblk]');
+  if(cbl){ DRAG = {t:'cblk', v:cbl.dataset.cblk}; dragGhost(e, cbl.querySelector('.csb-h b').textContent.trim()); try{ e.dataTransfer.effectAllowed = 'copy' }catch(_){} return }
   const line = e.target.closest('.line');
   if(line && line.draggable){ DRAG = {t:'line', v:line.dataset.item}; dragGhost(e, (line.querySelector('.nm')||line).textContent.trim() || 'Упражнение'); return }
   const blk = e.target.closest('.blk');
@@ -1654,22 +1895,22 @@ document.addEventListener('dragover', e=>{
   $$('.over,.dropafter,.dropbefore,.dropmerge,.dayover').forEach(x=>
     x.classList.remove('over','dropafter','dropbefore','dropmerge','dayover'));
   const d = e.target.closest('.day');
-  if(d && DRAG.t !== 'ex'){ d.classList.add('dayover'); return }
+  if(d && DRAG.t !== 'ex' && DRAG.t !== 'cit'){ d.classList.add('dayover'); return }
   if(DRAG.t === 'workout') return;
   const line = e.target.closest('.line');
-  if(line && DRAG.t !== 'block'){
+  if(line && DRAG.t !== 'block' && DRAG.t !== 'cblk'){
     /* Средняя зона строки — «объединить в суперсет»; края — вставить до или после. */
     const r = line.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
-    const dragged = DRAG.t === 'line' ? (findItem(DRAG.v) || {}).i : null;
+    const dragged = DRAG.t === 'line' ? (findItem(DRAG.v) || {}).i : DRAG.t === 'cit' ? csrcItemAt(DRAG.v) : null;
     const merge = dragged && !dragged.ss && line.dataset.item !== DRAG.v && y > .3 && y < .7;
     line.classList.add(merge ? 'dropmerge' : y < .5 ? 'dropbefore' : 'dropafter');
     return;
   }
   const grp = e.target.closest('.ssg');
-  if(grp && DRAG.t === 'line' && !(findItem(DRAG.v).i || {}).ss){ grp.classList.add('over'); return }
+  if(grp && (DRAG.t === 'line' || DRAG.t === 'cit') && !((DRAG.t === 'line' ? findItem(DRAG.v).i : csrcItemAt(DRAG.v)) || {}).ss){ grp.classList.add('over'); return }
   const blk = e.target.closest('.blk');
   if(blk){
-    if(DRAG.t === 'block'){
+    if(DRAG.t === 'block' || DRAG.t === 'cblk'){
       const r = blk.getBoundingClientRect();
       blk.classList.add(e.clientY < r.top + r.height/2 ? 'dropbefore' : 'dropafter');
     } else blk.classList.add('over');
@@ -1679,14 +1920,39 @@ document.addEventListener('drop', e=>{
   if(!DRAG) return;
   e.preventDefault();
   const d = e.target.closest('.day');
-  if(d && DRAG.t !== 'ex'){ dropOnDay(+d.dataset.day); return }
+  if(d && DRAG.t !== 'ex' && DRAG.t !== 'cit'){ dropOnDay(+d.dataset.day); return }
   if(DRAG.t === 'ex' || DRAG.t === 'tpl'){ dropFromRail(e); return }
+  if(DRAG.t === 'cit'){ dropCalItem(e); return }
+  if(DRAG.t === 'cblk'){ dropCalBlock(e); return }
   if(DRAG.t === 'line')  { dropLine(e);  return }
   if(DRAG.t === 'block') { dropBlock(e); return }
   clearDrag();
 });
 document.addEventListener('dragend', clearDrag);
 
+/* Упражнение из календаря встаёт туда, куда его отпустили, по тем же правилам,
+   что и перенос строки внутри дня (до, после, в суперсет): копию кладём в блок
+   и дальше двигаем её как обычную строку. */
+function dropCalItem(e){
+  const its = e.target.closest('#doc') && csrcCopyItems(DRAG.v);
+  if(!its){ clearDrag(); return }
+  const blkEl = e.target.closest('.blk');
+  const to = (blkEl && day().blocks.find(x => x.id === blkEl.dataset.blk)) || lastBlock();
+  to.items.push(...its);
+  if(blkEl && (e.target.closest('.line') || e.target.closest('.ssg'))){ DRAG = {t:'line', v: its[0].id}; dropLine(e) }
+  else { clearDrag(); render() }
+  flash(its[0].id);
+}
+function dropCalBlock(e){
+  const nb = e.target.closest('#doc') && csrcCopyBlock(DRAG.v);
+  if(!nb){ clearDrag(); return }
+  const d = day(); dropEmptyBlocks(d);
+  const onBlk = e.target.closest('.blk'), k = onBlk ? d.blocks.findIndex(x => x.id === onBlk.dataset.blk) : -1;
+  let at = d.blocks.length;
+  if(k >= 0){ const r = onBlk.getBoundingClientRect(); at = e.clientY < r.top + r.height / 2 ? k : k + 1 }
+  d.blocks.splice(at, 0, nb);
+  clearDrag(); render(); flash(nb.id);
+}
 function dropFromRail(e){
   const blk = e.target.closest('.blk');
   if(DRAG.t === 'ex'){
@@ -1744,7 +2010,7 @@ function dropBlock(e){
 /* Перенос на другой день (CON-13). После переноса открываем тот день,
    куда положили: иначе тренер не увидит результата своего действия. */
 function dropOnDay(idx){
-  if(idx === S.i && DRAG.t !== 'line'){ clearDrag(); return }
+  if(idx === S.i && (DRAG.t === 'workout' || DRAG.t === 'block')){ clearDrag(); return }
   const src = day(), dst = dayOf(idx);
   if(DRAG.t === 'workout'){
     /* Если на целевом дне уже есть тренировка — меняем дни местами, а не
@@ -1770,6 +2036,7 @@ function dropOnDay(idx){
     src.blocks.forEach(normSS); dst.blocks.forEach(normSS);
   }
   else if(DRAG.t === 'tpl'){ S.i = idx; addTplRaw(tplById(DRAG.v)) }
+  else if(DRAG.t === 'cblk'){ const nb = csrcCopyBlock(DRAG.v); if(nb){ dropEmptyBlocks(dst); dst.blocks.push(nb) } }
   clearDrag();
   S.i = idx;
   render();
@@ -1815,7 +2082,7 @@ bulkInit({
   beforeOp: () => persist(),
   afterOp: () => { const date = (plan()[S.i] || {}).date || S.date; Object.keys(PCACHE).forEach(k => delete PCACHE[k]); bindClient(S.cid, date); render() },
 });
-renderNav('constructor.html'); renderTop(); render();
+renderNav('constructor.html'); renderTop(); csrcReset(S.cid); renderRailHead(); render();
 
 /* Сворачивание панели источников — состояние переживает перезагрузку,
    как и у левого меню. */

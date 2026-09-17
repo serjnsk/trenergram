@@ -1197,3 +1197,102 @@ body.bk-on .toast{bottom:96px}
 .st-head.cx{align-items:flex-start}
 .st-head.cx s{white-space:normal;text-align:right}
 .tplc .ty{font-size:13px;font-weight:600;color:var(--acc-d);margin:-3px 0 5px}
+
+/* ═══════════ список клиентов: оплата ═══════════ */
+.paycell{display:flex;flex-direction:column;align-items:flex-start;gap:3px;white-space:nowrap}
+.paycell .pd{font-size:13.5px;color:var(--tx2);font-variant-numeric:tabular-nums;padding-left:2px}
+
+/* ═══════════ конструктор: как создать тренировку ═══════════ */
+.ways4{display:flex;flex-wrap:wrap;width:max-content;max-width:100%;margin:2px 0 12px;border:1px solid var(--line);border-radius:var(--rad-m);overflow:hidden}
+.way4{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;font-size:14.5px;font-weight:600;color:var(--tx2);background:var(--bg);border-right:1px solid var(--line)}
+.way4:last-child{border-right:0}
+.way4:hover{background:var(--s2);color:var(--ink)}
+.way4.on{background:var(--acc-a);color:var(--acc-d)}
+.way4 svg{width:15px;height:15px;flex:none}
+
+/* ═══════════ добавить блок / блок текстом ═══════════ */
+.addbrow{display:flex;gap:8px;margin-top:11px}
+.addbrow .addb{flex:1;margin-top:0}
+.addbrow .addb.on{border-color:var(--acc);color:var(--acc-d);background:var(--acc-a)}
+.addbrow .addb svg{width:15px;height:15px}
+.app .blk.btxt{border:1.5px dashed var(--acc);padding:10px 12px 10px}
+.btxt-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--acc-d)}
+.btxt-h svg{width:15px;height:15px}
+.btxt-h b{font-size:15px;font-weight:600;color:var(--ink)}
+.btxt-h s{text-decoration:none;font-size:14px;color:var(--tx3)}
+.btxt .paste{width:100%}
+
+/* ═══════════ подсказка упражнения: добавить в базу ═══════════ */
+.sug .row.newex b{display:inline-flex;align-items:center;gap:6px;color:var(--acc-d)}
+.sug .row.newex svg{width:13px;height:13px}
+.sug .row.keep b{font-weight:500;color:var(--tx2)}
+.md.nexmd{max-width:520px}
+.nexmd .mdb{display:flex;flex-direction:column;gap:12px}
+.nx-f{display:flex;flex-direction:column;gap:5px}
+.nx-f > span{font-size:13.5px;font-weight:600;color:var(--tx2)}
+.nx-f input,.nx-f select{height:38px;padding:0 11px;border-radius:var(--rad-m);background:var(--s2);font-size:15px;color:var(--ink);border:1.5px solid transparent}
+.nx-f input:focus,.nx-f select:focus{outline:0;border-color:var(--acc);background:var(--bg)}
+.nx-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.nx-u{display:flex;flex-wrap:wrap;gap:6px}
+.nx-u button{height:32px;padding:0 13px;border-radius:20px;font-size:14.5px;font-weight:600;background:var(--s1);color:var(--tx2)}
+.nx-u button.on{background:var(--acc);color:#fff}
+.nx-note{margin:0;font-size:14px;line-height:1.45;color:var(--tx3)}
+
+/* ═══════════ правая панель конструктора: календарь или базы шаблонов ═══════════ */
+.srcsw{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 32px 11px 0}
+.srcsw button{display:flex;align-items:center;justify-content:center;gap:7px;height:34px;border-radius:var(--rad-m);border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--tx2);white-space:nowrap}
+.srcsw button:hover{border-color:var(--tx4);color:var(--ink)}
+.srcsw button.on{background:var(--acc-a);border-color:var(--acc);color:var(--acc-d)}
+.srcsw svg{width:15px;height:15px;flex:none}
+.csrc-cli{display:flex;align-items:center;gap:9px;width:100%;height:46px;padding:0 10px 0 7px;border-radius:var(--rad-m);background:var(--s2);text-align:left}
+.csrc-cli:hover{background:var(--s1)}
+.csrc-cli .cav{width:30px;height:30px;font-size:12.5px}
+.csrc-cli .cl-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.csrc-cli .cl-t b{font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csrc-cli .cl-t s{text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csrc-cli > svg{width:13px;height:13px;color:var(--tx3);flex:none}
+.mcal{margin-top:10px}
+.mcal-h{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.mcal-h b{flex:1;text-align:center;font-size:15px;font-weight:600}
+.mcal-h button{width:30px;height:30px;border-radius:var(--rad-s);font-size:20px;line-height:1;color:var(--tx2);display:grid;place-items:center}
+.mcal-h button:hover{background:var(--s1);color:var(--ink)}
+.mcal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mcal-g s{text-decoration:none;text-align:center;font-size:12.5px;font-weight:600;color:var(--tx3);padding:3px 0 4px}
+.mcal-g button{position:relative;height:34px;border-radius:var(--rad-s);font-size:14.5px;font-weight:500;color:var(--tx3);font-variant-numeric:tabular-nums}
+.mcal-g button:disabled{cursor:default}
+.mcal-g button.has{color:var(--ink);font-weight:600}
+.mcal-g button.has:hover{background:var(--s1)}
+.mcal-g button i{position:absolute;left:50%;bottom:3px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--acc)}
+.mcal-g button.draft i{background:var(--tx3)}
+.mcal-g button.today{box-shadow:inset 0 0 0 1px var(--line2)}
+.mcal-g button.cur{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.mcal-g button.on{background:var(--acc);color:#fff}
+.mcal-g button.on i{background:#fff}
+.csrc-h{padding:4px 4px 8px}
+.csrc-h b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.csrc-h s{text-decoration:none;font-size:13.5px;color:var(--tx3)}
+.csrc-copy{width:100%;justify-content:center;margin-bottom:10px;height:34px}
+.csrc-copy svg{width:14px;height:14px}
+.csb{border:1px solid var(--line);border-radius:var(--rad-m);margin-bottom:8px;overflow:hidden;cursor:grab;background:var(--bg)}
+.csb-h{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 4px;background:var(--s2);border-bottom:1px solid var(--line)}
+.csb-h .tt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.csb-h b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csb-h .ty{text-decoration:none;font-size:12.5px;font-weight:600;color:var(--acc-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csi{display:flex;align-items:center;gap:6px;padding:5px 6px 5px 4px;font-size:14px;cursor:grab}
+.csi + .csi{border-top:1px solid var(--line)}
+.csi:hover{background:var(--acc-a)}
+.csi .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csi em{font-style:normal;font-size:13.5px;font-weight:600;color:var(--acc-d);white-space:nowrap;font-variant-numeric:tabular-nums}
+.csi.sub{padding-left:20px}
+.csi.ssl .nm{font-size:13px;font-weight:700;color:var(--acc-d)}
+.csb .gr{color:var(--tx4);display:grid;place-items:center;flex:none}
+.csb .gr svg{width:12px;height:12px}
+.csb .add{width:24px;height:24px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none;opacity:0}
+.csb-h:hover .add,.csi:hover .add{opacity:1}
+.csb .add:hover{background:var(--acc-a);color:var(--acc)}
+.csb .add svg{width:13px;height:13px}
+/* клиенты: с колонкой оплаты длинные заголовки переносятся, иначе таблица шире панели */
+.tbl[data-tbl="cli"] th{white-space:normal;line-height:1.35;vertical-align:bottom}
+/* в конструкторе панель шире: переключатель источников и календарь не влезали в 318px */
+body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
+@media (max-width:1120px){ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr)} }

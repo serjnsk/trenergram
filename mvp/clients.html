@@ -48,6 +48,14 @@ const runwayChip = c => { const r = runway(c);
   if(r === 0) return '<span class="chip warn">сегодня</span>';
   return `<span class="chip ${r<=7?'warn':'ghost'}">${r} ${plural(r,'день','дня','дней')}</span>`; };
 
+/* Оплата: статус по дате «оплачено до» — просрочена, заканчивается (неделя и
+   меньше), оплачено; даты нет — не внесена. Год пишем, только если не текущий. */
+const payState = c => { if(!c.paidUntil) return 'none'; const r = daysBetween(TODAY, c.paidUntil); return r < 0 ? 'late' : r <= 7 ? 'soon' : 'ok' };
+const payCell = c => { const d = c.paidUntil, st = payState(c), r = d ? daysBetween(TODAY, d) : 0;
+  const [cls, t] = {none:['ghost','не внесена'], late:['rm','просрочена'], soon:['warn', r === 0 ? 'последний день' : 'ещё ' + r + ' ' + plural(r,'день','дня','дней')], ok:['ok','оплачено']}[st];
+  const date = d ? dm(d) + (d.slice(0,4) !== TODAY.slice(0,4) ? '.' + d.slice(0,4) : '') : '';
+  return `<div class="paycell"><span class="chip ${cls}">${t}</span>${d ? `<span class="pd">${st === 'late' ? 'истекла' : 'до'} ${date}</span>` : ''}</div>` };
+
 function match(c){
   if(V.f==='noprog' && c.prog) return false;
   if(V.f==='attn' && !needsAttention(c)) return false;
@@ -62,6 +70,7 @@ function render(){
     run:  (a,b)=>(runway(a) ?? 9999)-(runway(b) ?? 9999),
     done: (a,b)=>(a.done/a.plan||0)-(b.done/b.plan||0),
     last: (a,b)=>String(a.last||'').localeCompare(String(b.last||'')),
+    pay:  (a,b)=>String(a.paidUntil||'9999').localeCompare(String(b.paidUntil||'9999')),
   };
   if(CS.k && SORTS[CS.k]) list = [...list].sort((a,b)=>SORTS[CS.k](a,b)*CS.dir);
   if(!list.some(c=>c.id===V.sel)) V.sel = list.length ? list[0].id : null;
@@ -72,7 +81,7 @@ function render(){
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск по имени…" value="${esc(V.q)}"></label>
       <div class="filters">${FILTERS.map(([k,n])=>`<button data-f="${k}" class="${V.f===k?'on':''}">${esc(n)}</button>`).join('')}</div>`)
     + (list.length ? `<div class="tblwrap"><table class="tbl" data-tbl="cli"><thead><tr>
-        ${th('n','Клиент')}${th('prog','Программа')}${th('run','Составлено на')}${th('done','Прогресс')}${th('last','Последняя активность')}${th(null,'Динамика приседа')}
+        ${th('n','Клиент')}${th('prog','Программа')}${th('run','Составлено на')}${th('pay','Оплата')}${th('done','Прогресс')}${th('last','Последняя активность')}${th(null,'Динамика приседа')}
       </tr></thead><tbody>
         ${list.map(c=>{
           const u = unreadOf(c), pr = program(c.prog);
@@ -88,6 +97,7 @@ function render(){
             </div></td>
             <td>${pr?esc(pr.title):`<span style="color:var(--tx3)">без программы</span>`}</td>
             <td>${runwayChip(c)}</td>
+            <td>${payCell(c)}</td>
             <td>${c.plan?`<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:64px"><i style="width:${Math.round(c.done/c.plan*100)}%"></i></div><span style="font-size:13.5px;color:var(--tx3)">${c.done}/${c.plan}</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>
             <td>${c.last?`<span class="chip ${idle?'warn':'ok'}">${ago(c.last)}</span>`:`<span class="chip ghost">не заходил</span>`}</td>
             <td>${sq?`<div style="display:flex;align-items:center;gap:9px">${sparkline(sq.map(h=>h[1]),56,20)}<span style="font-size:14px;font-weight:600">${fmtNum(c.pm.squat)} кг</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>

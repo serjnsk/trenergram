@@ -791,6 +791,10 @@ const typeName = k => (BLOCK_TYPES.find(t => t.k === (k || null)) || BLOCK_TYPES
 /* Подпись типа для метки в шапке и карточек: «Разминка», «Комплекс · AMRAP 15»; без типа — пусто. */
 const blockTypeLabel = b => !b || !b.kind || !BLOCK_TYPES.some(t => t.k === b.kind) ? ''
   : b.kind === 'complex' && b.fmt && typeof b.fmt === 'object' ? 'Комплекс · ' + fmtLabel(b.fmt) : typeName(b.kind);
+/* Подпись типа рядом с названием — только если название его не называет:
+   «Разминка ТА» не нужно подписывать «Разминка», а ««Fran»» — «Комплекс · На время». */
+const typeNote = b => { const l = blockTypeLabel(b); if(!l || !b.title) return l;
+  return typeOfTitle(b.title) === b.kind && !(b.kind === 'complex' && b.fmt) ? '' : l };
 /* Папка базы, в которую блок ложится по типу. */
 const TYPE_FOLDER = {warmup:'Разминки', strength:'Силовые блоки', complex:'Комплексы', cooldown:'Заминки',
                      stretch:'Заминки', accessory:'Силовые блоки', gymnastics:'Силовые блоки'};
@@ -1182,6 +1186,16 @@ const STATE = (function(){
   return s;
 })();
 function saveState(){ try{ localStorage.setItem('trenergram.state', JSON.stringify(STATE)) }catch(_){} }
+/* Упражнения, которые тренер добавил в свою базу (из конструктора или со страницы
+   базы). Лежат в STATE: без этого после перезагрузки строки дня ссылались бы
+   на исчезнувшее упражнение и показывались пустыми. */
+function addOwnEx({ru, en, g, eq, u}){
+  const e = {id:'own' + Date.now().toString(36), ru, en: en || '', g: g || 'Без группы', eq: eq || '—', pm:null, u: u && u.length ? u : ['повт'], m:'ok', own:true};
+  EX.push(e); CAND.push({e, c:[e.ru, e.en].map(norm).filter(Boolean)});
+  (STATE.ownEx ||= []).push(e); saveState();
+  return e;
+}
+(STATE.ownEx || []).forEach(e => { if(!byId(e.id)){ EX.push(e); CAND.push({e, c:[e.ru, e.en].map(norm).filter(Boolean)}) } });
 const pmOf = cid => (STATE.pm[cid] ||= {...(client(cid)?.pm||{})});
 
 /* ═══════════ СТАТУСЫ ДНЯ (CAL-1) — общие для всех страниц, поэтому в data.js: отдых · черновик · опубликована · соревнование ═══════════

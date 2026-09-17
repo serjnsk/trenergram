@@ -145,7 +145,7 @@ function openAddModal(){
   $('#nSave').onclick=()=>{
     const ru=$('#nRu').value.trim(), en=$('#nEn').value.trim();
     if(!ru) return toast('Укажите название упражнения');
-    EX.push({id:'own'+(EX.length+1), ru, en:en||ru, g:$('#nG').value, eq:$('#nEq').value, pm:null, u:['кг','повт'], m:'ok', own:true});
+    addOwnEx({ru, en:en||ru, g:$('#nG').value, eq:$('#nEq').value, u:['кг','повт']});
     closeModal(); toast('Упражнение добавлено в вашу базу'); render();
   };
 }
