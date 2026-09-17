@@ -29,6 +29,7 @@
 <script src="assets/data.js"></script>
 <script src="assets/nav.js"></script>
 <script src="assets/ui.js"></script>
+<script src="assets/bulk.js"></script>
 <script>
 /* ═══════════ КАЛЕНДАРЬ — МЕСЯЦ ОДНОГО КЛИЕНТА (CAL-1) ═══════════
    Та же логика, что у ленты конструктора, но другой паттерн: тренер заходит
@@ -84,9 +85,11 @@ function monthHTML(y, m, ctx){
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
     const blocks = view === 'detail' ? blocksDetail(x, c.id) : blocksList(x);
     const mark = dayMark(st, p.id + ':' + i);
-    if(compact) return `<a class="day cmp ${st}${cls}" href="${href}" data-date="${date}">${head}${mark}
+    /* Галочка массового выбора — только у дней с тренировкой или соревнованием. */
+    const hs = st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(date)), sc = st === 'rest' ? '' : bulkCls(date);
+    if(compact) return `<a class="day cmp ${st}${cls}${sc}" href="${href}" data-date="${date}">${hs}${mark}
       ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}</a>`;
-    return `<a class="day ${st}${cls}" href="${href}" data-date="${date}">${head}${mark}
+    return `<a class="day ${st}${cls}${sc}" href="${href}" data-date="${date}">${hs}${mark}
       ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
       ${blocks || (st==='comp' ? compCell() : '')}</a>`;
   });
@@ -168,7 +171,7 @@ function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); if(document
    дорастание ленты — иначе верхний датчик срабатывает на старте. */
 history.scrollRestoration = 'manual';
 addEventListener('load', ()=> setTimeout(()=>{ scrollToMonth(TODAY.slice(0,7)+'-01', false); observe() }, 60));
-function switchClient(id){ const keep = topMonth(); C.cid = id; STATE.curClient = id; saveState(); C.from = null; render(keep); }
+function switchClient(id){ bulkReset(); const keep = topMonth(); C.cid = id; STATE.curClient = id; saveState(); C.from = null; render(keep); }
 
 document.addEventListener('click', e=>{
   const pb = e.target.closest('[data-pub]');
@@ -180,6 +183,9 @@ document.addEventListener('click', e=>{
   const jb = e.target.closest('#jumpBtn'); if(jb){ openDatePicker(jb, C.jump||TODAY, d => { C.jump = d; jb.querySelector('span').textContent = dm(d)+'.'+d.slice(0,4); jumpTo(d) }); return }
   const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
 });
+/* Массовые действия: после изменения данных перерисовываем месяцы на той же прокрутке. */
+const calRefresh = () => { const y = scrollY; render(); window.scrollTo(0, y) };
+bulkInit({ cid: () => C.cid, refresh: calRefresh, beforeOp: () => {}, afterOp: calRefresh });
 render();
 initShell({page:'calendar.html', title:'Календарь'});
 </script>

@@ -76,8 +76,6 @@ const REST_TITLES = new Set(['Отдых','—','']);
 const Q = new URLSearchParams(location.search);
 const S = { cid: Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
             tab:'ex', q:'', compose:null,
-            sel:null,    /* Set выбранных дней или null — режим выключен */
-            paste:null,  /* 'copy' | 'move' — ждём, куда вставить набор */
             tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
 const blockSig = b => serializeDay({title:'', blocks:[b]});
 const PCACHE = {};
@@ -99,7 +97,7 @@ function shiftTo(date){
   persist();
   const r = ensureDay(S.cid, date); if(!r) return;
   delete PCACHE[S.pid];
-  S.i = r.i; S.compose = null; S.sel = null; S.paste = null; S.date = date;
+  S.i = r.i; S.compose = null; S.date = date;
   extendPlan(S.i); render();
 }
 /* Привязка клиента к плану: программа берётся у клиента, день — из даты. */
@@ -113,7 +111,7 @@ function bindClient(cid, date){
   S.pid = r.pid;
   const i = r.i;
   extendPlan(i);
-  S.i = i; S.compose = null; S.sel = null; S.paste = null;
+  S.i = i; S.compose = null;
   return true;
 }
 /* Если из адреса пришло что-то негодное — откатываемся на клиента по умолчанию
@@ -240,12 +238,6 @@ function renderStrip(){
   $('#wk').innerHTML = `
     <div class="wkh one">
       <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cl-t"><b>${esc(client(S.cid).n)}</b><s>${esc(clientProgSub(client(S.cid)))}</s></span>${ICON.chev}</button>
-      ${S.sel ? `<div class="selbar">
-        <b class="seln">Выбрано ${S.sel.size}</b>
-        <button class="cp" id="selCopy" ${S.sel.size?'':'disabled'}>${ICON.copy} Скопировать</button>
-        <button class="cp" id="selMove" ${S.sel.size?'':'disabled'}>${ICON.arr} Перенести</button>
-        <button class="cp" id="selCancel">${ICON.x} Отмена</button></div>
-      ` : (S.paste ? `<s class="hint">${S.paste==='copy'?'выберите день, куда скопировать':'выберите день, куда перенести'}</s>` : '')}
       <div class="dates">${STATE.laneHidden ? '' : `
         <span class="wkn">
           <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
@@ -268,24 +260,22 @@ function renderStrip(){
         const today = c.date === TODAY;
         const head = `<span class="d"><s>${RU[dowMon(c.date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
         const cls = today ? ' today' : '';
-        if(!c.inProg) return `<button class="day empty rest${cls}" data-day="${c.i}" title="Составить этот день">${head}${restCell()}</button>`;
-        if(!c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" title="Составить этот день">${head}${restCell()}</button>`;
+        if(!c.inProg || !c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" data-date="${c.date}" title="Составить этот день">${head}${restCell()}</button>`;
         const x = d[c.i];
         const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
         const n  = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
-        const picked = S.sel && S.sel.has(c.i);
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
         const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
         const blocks = laneView()==='detail' ? blocksDetail(x, S.cid) : blocksList(x);
-        if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}" data-day="${c.i}">
-          ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
-          ${head}${dayMark(st, S.pid + ':' + c.i)}
+        /* Галочка массового выбора — только у дней с тренировкой или соревнованием. */
+        const hs = st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(c.date)), sc = st === 'rest' ? '' : bulkCls(c.date);
+        if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i?'on':''}${cls}${sc}" data-day="${c.i}" data-date="${c.date}">
+          ${hs}${dayMark(st, S.pid + ':' + c.i)}
           ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
         </button>`;
-        return `<button class="day ${st} ${c.i===S.i&&!S.sel?'on':''}${picked?' picked':''}${S.paste?' target':''}${cls}"
-                        data-day="${c.i}" style="--load:${n||0}">
-          ${S.sel ? `<span class="tick">${picked?ICON.chk:''}</span>` : ''}
-          ${head}${dayMark(st, S.pid + ':' + c.i)}
+        return `<button class="day ${st} ${c.i===S.i?'on':''}${cls}${sc}"
+                        data-day="${c.i}" data-date="${c.date}" style="--load:${n||0}">
+          ${hs}${dayMark(st, S.pid + ':' + c.i)}
           ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
           ${blocks || (st==='comp' ? compCell() : '')}
           <span class="ld"><i style="flex:${n}"></i><u style="flex:${Math.max(1,10-n)}"></u><s>${n||''}</s></span>
@@ -996,7 +986,7 @@ function openSetup(btn){
 /* ═══════════ ВЫБОР КЛИЕНТА ═══════════ (общий список с поиском — в nav.js) */
 function openCliPick(btn){
   closeSug();
-  SUG = openClientPicker(btn, S.cid, id => { SUG = null; const date = plan()[S.i].date;
+  SUG = openClientPicker(btn, S.cid, id => { SUG = null; if(id !== S.cid) bulkReset(); const date = plan()[S.i].date;
     if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('У клиента нет программы'); render() });
 }
 
@@ -1192,43 +1182,6 @@ const addTpl = t => {
    а не открытый день. Копия глубокая, иначе правки поедут в обе недели. */
 const copyBlocks = bs => bs.map(b =>
   blockOf(b.title, b.items.map(i => ({...i, id:nid('i')})), b.note, b.kind, b.fmt ? {...b.fmt} : null));
-/* ═══════════ ПРОИЗВОЛЬНЫЙ НАБОР ТРЕНИРОВОК (CON-4, CON-14) ═══════════
-   Копия недели была частным случаем: отметить семь подряд и вставить семью
-   днями позже. Здесь набор произвольный — подряд или вразбивку. */
-
-const hasWork = d => d.blocks.some(b=>b.items.some(i=>i.exId));
-
-function toggleSel(i){
-  if(!hasWork(plan()[i])) return toast('В этом дне нечего копировать');
-  S.sel.has(i) ? S.sel.delete(i) : S.sel.add(i);
-  render();
-}
-
-function startPaste(mode){
-  if(!S.sel || !S.sel.size) return toast('Сначала отметьте тренировки');
-  S.paste = mode; render();
-  toast(mode==='copy' ? 'Куда скопировать? Выберите день' : 'Куда перенести? Выберите день');
-}
-
-/* Относительные промежутки сохраняются: отметили 1-й, 3-й и 6-й дни, вставили
-   с 10-го — лягут на 10-й, 12-й и 15-й. Так «копия недели» остаётся частным
-   случаем, а ритм набора не ломается. */
-function pasteAt(target){
-  const src = [...S.sel].sort((a,b)=>a-b), base = src[0];
-  const need = target + (src[src.length-1] - base);
-  extendPlan(need);
-  const snap = src.map(i=>({off:i-base, title:plan()[i].title, blocks:copyBlocks(plan()[i].blocks)}));
-  const move = S.paste === 'move';
-  if(move) src.forEach(i=>{ const x=plan()[i]; x.title=''; x.rest=true; x.blocks=[] });
-  snap.forEach(x=>{
-    const t = plan()[target + x.off];
-    t.title = x.title; t.rest = false; t.blocks = x.blocks;
-  });
-  const n = snap.length;
-  S.sel = null; S.paste = null; S.i = target; render();
-  toast((move?'Перенесено ':'Скопировано ') + n + ' ' +
-        plural(n,'тренировка','тренировки','тренировок') + ' с дня ' + (target+1));
-}
 
 /* Продлеваем план до индекса включительно, дописывая пустые дни.
    Именно дописываем, а не пересобираем через buildPlan: пересборка создаёт
@@ -1322,10 +1275,6 @@ document.addEventListener('click', e=>{
   if(d){
     const i = +d.dataset.day;
     if(i < 0){ shiftTo(addDays(program(S.pid).start, i)); return }
-    /* В режиме выбора клик по дню не переключает день, а отмечает его:
-       иначе набор нельзя собрать, не потеряв уже отмеченное. */
-    if(S.sel){ if(i < plan().length) toggleSel(i); return }
-    if(S.paste){ pasteAt(i); return }
     extendPlan(i);
     S.i = i; S.compose = null; closeSug(); render(); return;
   }
@@ -1355,10 +1304,6 @@ document.addEventListener('click', e=>{
     persist(); render(); toast('Черновик сохранён — клиент его не видит'); return }
   if(e.target.closest('#fromTpl')){ pickTemplate(); return }
   if(e.target.closest('#copyFrom')){ pickExisting(); return }
-  if(e.target.closest('#selStart')){ S.sel = new Set(); S.paste = null; render(); return }
-  if(e.target.closest('#selCancel')){ S.sel = null; S.paste = null; render(); return }
-  if(e.target.closest('#selCopy')){ startPaste('copy'); return }
-  if(e.target.closest('#selMove')){ startPaste('move'); return }
 
   const tb = e.target.closest('[data-tab]');
   if(tb){ S.tab = tb.dataset.tab;
@@ -1707,6 +1652,14 @@ function clientRow(c, key, needsPm){
 
 /* В данных формат лежал отдельным полем — переносим в название один раз,
    чтобы источник остался один. */
+/* Массовые действия: до операции сбрасываем правки на диск, после — перечитываем
+   планы всех клиентов (данные могли поменяться и у других) и встаём на тот же день. */
+bulkInit({
+  cid: () => S.cid,
+  refresh: () => renderStrip(),
+  beforeOp: () => persist(),
+  afterOp: () => { const date = (plan()[S.i] || {}).date || S.date; Object.keys(PCACHE).forEach(k => delete PCACHE[k]); bindClient(S.cid, date); render() },
+});
 renderNav('constructor.html'); renderTop(); render();
 
 /* Сворачивание панели источников — состояние переживает перезагрузку,

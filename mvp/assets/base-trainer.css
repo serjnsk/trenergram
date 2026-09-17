@@ -601,17 +601,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
   writing-mode:vertical-rl;white-space:nowrap;font-family:var(--ui);font-size:14px;font-weight:600;letter-spacing:0;color:var(--tx2)}
 @media (max-width:1120px){ .railtog{display:none} }
 
-/* ─── выбор набора тренировок (CON-4, CON-14) ─── */
-.wkh .seln{color:var(--acc-d)}
 .day{position:relative}
-.day .tick{position:absolute;top:7px;right:7px;width:16px;height:16px;border-radius:4px;
-  border:1.5px solid var(--line2);background:var(--bg);display:grid;place-items:center}
-.day .tick svg{width:11px;height:11px;color:#fff}
-.day.picked{border-color:var(--acc);background:var(--acc-a)}
-.day.picked .tick{background:var(--acc);border-color:var(--acc)}
-/* В режиме вставки любой день — возможная цель, это надо показать курсором. */
-.day.target{cursor:copy}
-.day.target:hover{border-color:var(--acc);background:var(--acc-a)}
 
 /* ─── конструктор: клиент в строке дорожки ─── */
 .wkh .cliSel{height:32px;padding:0 30px 0 11px;border-radius:var(--rad-m);background:var(--acc-a);
@@ -1004,7 +994,6 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 .days .day.on{border-color:var(--acc);background:var(--bg);box-shadow:0 0 0 2px var(--acc-p)}
 .days .day.on .d{background:var(--acc-a);color:var(--acc-d)}
 .days .day.on .d s{color:var(--acc-d)}
-.days .day.picked{border-color:var(--acc)}
 /* компактный вид: шапка + одна строка */
 .days.compact .day{min-height:auto;padding:0;gap:0}
 .days.compact .day .d{height:32px}
@@ -1093,7 +1082,6 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 .wkh.one .dates{margin-left:auto}
 .wkh.one .dates{display:flex;align-items:center;gap:8px;flex:none}
 .wkh.one .views{display:flex;align-items:center;flex:none;margin-left:6px}
-.wkh.one .selbar{display:flex;align-items:center;gap:8px}
 
 /* ─── название страницы в шапке приложения: один шрифт везде ─── */
 .topbar .ptitle{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0;white-space:nowrap;display:flex;align-items:center;gap:9px}
@@ -1102,3 +1090,81 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 
 /* плашка при перетаскивании упражнения, блока или тренировки */
 .dragghost{position:fixed;top:-200px;left:0;z-index:9999;padding:8px 13px;border-radius:var(--rad-m);background:var(--ink);color:#fff;font:600 14px/1.2 var(--ui);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+
+/* ═══════════ массовые действия с днями ═══════════ */
+/* галочка в шапке дня — видна всегда */
+.bk-box{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--tx3);background:var(--bg);display:inline-grid;place-items:center;flex:none;cursor:pointer;color:transparent;margin-right:2px;user-select:none;transition:border-color .1s,background .1s}
+.bk-box svg{width:12px;height:12px}
+.bk-box:hover{border-color:var(--acc)}
+.bk-box.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.days .day.bksel{outline:2px solid var(--acc);outline-offset:-1px}
+.days .day.bksel .d{background:var(--acc-a)}
+/* выбор даты кликом по календарю */
+body.bk-picking .days .day[data-date]{cursor:copy}
+body.bk-picking .days .day[data-date]:hover{outline:2px dashed var(--acc);outline-offset:-1px}
+/* строка действий снизу */
+.bk-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:70;display:none;align-items:center;gap:2px;padding:7px 8px 7px 18px;border-radius:14px;background:#1F1F1F;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.28);white-space:nowrap}
+body.bk-on .bk-bar{display:flex}
+body.bk-on .page{padding-bottom:96px}
+body.bk-on .toast{bottom:96px}
+.bk-bar .bk-n{display:flex;flex-direction:column;line-height:1.2;margin-right:8px}
+.bk-bar .bk-n b{font-size:15px;font-weight:600}
+.bk-bar .bk-n s{text-decoration:none;font-size:13px;color:rgba(255,255,255,.7)}
+.bk-bar .bk-sep{width:1px;height:28px;background:rgba(255,255,255,.18);margin:0 6px}
+.bk-bar button{height:40px;padding:0 12px;border-radius:9px;color:#fff;font-size:14.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.bk-bar button svg{width:17px;height:17px;flex:none}
+.bk-bar button:hover{background:rgba(255,255,255,.12)}
+.bk-bar button.rm{color:#FF9A8A}
+.bk-bar button.rm:hover{background:rgba(255,110,90,.18)}
+.bk-bar .bk-pickmsg{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;margin-right:6px}
+.bk-bar .bk-pickmsg svg{width:17px;height:17px}
+/* всплывающие списки поверх окон */
+.sug.clipick,.sug.dpick{z-index:95}
+/* окно копирования и перемещения */
+.md.bkmd{max-width:1120px}
+.bkd{display:grid;grid-template-columns:400px minmax(0,1fr);padding:0;overflow:hidden}
+.bkd-l{padding:16px 20px 20px;border-right:1px solid var(--line);overflow-y:auto}
+.bkd-r{padding:16px 20px 20px;overflow-y:auto;max-height:calc(100vh - 210px)}
+.bkd .lab{margin:18px 0 8px}
+.bkd .bkd-l .lab:first-child,.bkd .bkd-r .lab:first-child{margin-top:0}
+.bkd .cav{width:30px;height:30px;font-size:12px}
+.bkd-src{display:flex;align-items:center;gap:10px}
+.bkd-src b{display:block;font-size:15.5px;font-weight:600}
+.bkd-src s{display:block;text-decoration:none;font-size:14px;color:var(--tx2)}
+.bkd-to{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bkd-chip{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 4px 0 4px;border-radius:19px;background:var(--acc-a);color:var(--acc-d)}
+.bkd-chip b{font-size:14.5px;font-weight:600}
+.bkd-chip button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--acc-d)}
+.bkd-chip button svg{width:13px;height:13px}
+.bkd-chip button:hover{background:rgba(217,70,0,.12)}
+.bkd-add{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:19px;border:1.5px dashed var(--tx4);color:var(--tx2);font-size:14.5px;font-weight:600}
+.bkd-add svg{width:14px;height:14px}
+.bkd-add:hover{border-color:var(--acc);color:var(--acc-d)}
+.bkd-cli{display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 12px 0 7px;border-radius:var(--rad-m);border:1.5px solid var(--acc);background:var(--acc-a);color:var(--acc-d)}
+.bkd-cli b{font-size:15px;font-weight:600}
+.bkd-cli svg{width:13px;height:13px}
+.bkd-date{display:flex;align-items:center;gap:12px}
+.bkd-date .btn.sm{height:36px;padding:0 12px;font-size:14.5px;gap:8px}
+.bkd-date .btn.sm svg{width:15px;height:15px}
+.bkd-lnk{font-size:14.5px;font-weight:600;color:var(--acc-d)}
+.bkd-lnk:hover{text-decoration:underline}
+.bkd-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bkd-rules button{text-align:left;padding:10px 12px;border-radius:var(--rad-m);border:1.5px solid var(--line2);background:var(--bg)}
+.bkd-rules button:hover{border-color:var(--acc)}
+.bkd-rules button b{display:block;font-size:14.5px;font-weight:600}
+.bkd-rules button s{display:block;text-decoration:none;font-size:13px;color:var(--tx2);margin-top:3px;line-height:1.35}
+.bkd-rules button.on{border-color:var(--acc);background:var(--acc-a)}
+.bkd-rules button.on b{color:var(--acc-d)}
+.bkd-gh{display:flex;align-items:center;gap:8px;margin:14px 0 4px;font-size:15px;font-weight:600}
+.bkd-gh .cav{width:24px;height:24px;font-size:11px}
+.bkd-row{display:grid;grid-template-columns:104px 16px 104px minmax(0,1fr);align-items:center;gap:0 8px;padding:9px 6px;border-bottom:1px solid var(--line);font-size:14.5px;font-variant-numeric:tabular-nums}
+.bkd-row .d1{color:var(--tx2)}
+.bkd-row .ar{color:var(--tx3);text-align:center}
+.bkd-row .d2{font-weight:600}
+.bkd-row .t{min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bkd-row .t b{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.bkd-row .chip{font-style:normal}
+.bkd-row.conflict{background:#FFF8E6}
+.bkd-sum{font-size:14.5px;color:var(--tx2)}
+.bkd-warn{display:inline-flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;color:#8A5A00}
+.bkd-warn svg{width:17px;height:17px;flex:none}

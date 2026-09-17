@@ -112,16 +112,17 @@ const clientProgSub = c => {
   const p = program(c.prog), n = composedDays(c.prog);
   return p.title + ' · ' + (n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено');
 };
-function openClientPicker(btn, curId, onPick){
+function openClientPicker(btn, curId, onPick, opts = {}){
   document.querySelectorAll('.sug.clipick').forEach(x=>x.remove());
   const box = document.createElement('div'); box.className = 'sug clipick';
   const r = btn.getBoundingClientRect();
   box.style.left = r.left + 'px'; box.style.top = (r.bottom + window.scrollY + 6) + 'px';
   document.body.appendChild(box);
-  const list = CLIENTS.filter(c=>c.prog).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
+  /* opts.all — и клиенты без программы (им заводится контейнер дней); opts.exclude — уже выбранные. */
+  const list = CLIENTS.filter(c=>(opts.all || c.prog) && !(opts.exclude && opts.exclude.has(c.id))).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
   const draw = q => {
     const qq = norm(q||'');
-    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || norm(program(c.prog).title).includes(qq));
+    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)));
     box.querySelector('.cl-list').innerHTML = rows.length ? rows.map((c,k)=>`
       <button class="row ${c.id===curId?'cur':''} ${k===0?'on':''}" data-cli="${c.id}"><span class="cav">${esc(c.ini)}</span>
         <span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${c.id===curId?ICON.chk:''}</button>`).join('')
