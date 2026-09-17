@@ -281,6 +281,7 @@ function bkNoPm(x, cid){
   }));
   return [...out];
 }
+/* Раскладка по клиентам: из неё окно считает замены и прошлые даты для итога и предупреждения. */
 function bkPreview(){
   const g = BK.dlg, src = BK.cid, ds = [...BK.sel].sort(), move = g.mode === 'move';
   const sctx = bkCtx(src), pairs = bkPlace(ds, g.first, g.rule), moved = new Set(ds);
@@ -331,33 +332,39 @@ function bkDlgDraw(){
   BK.dlgEl.innerHTML = `<div class="md bkmd">
     <div class="mdh"><span class="dot"></span><h2>${verb} ${bkN(ds.length, 'тренировку', 'тренировки', 'тренировок')}</h2><button class="cls" data-bkd="close">✕</button></div>
     <div class="mdb bkd">
-      <div class="bkd-l">
-        <div class="lab">Откуда</div>
-        <div class="bkd-src">${av(src)}<span><b>${bkEsc(src.n)}</b><s>${bkRange(ds)}</s></span></div>
-        <div class="lab">${move ? 'Кому' : 'Кому — можно нескольким'}</div>
-        <div class="bkd-to">${move
-          ? `<button class="bkd-cli" data-bkd="setcli">${av(tgt)}<b>${bkEsc(tgt.n)}</b>${BK_I.chev}</button>`
-          : g.targets.map(id => { const c = client(id); return `<span class="bkd-chip">${av(c)}<b>${bkEsc(c.n)}</b><button data-bkd="rm" data-cid="${id}" aria-label="Убрать">${BK_I.x}</button></span>` }).join('')
-            + `<button class="bkd-add" data-bkd="addcli">${BK_I.plus}Добавить клиента</button>`}</div>
-        <div class="lab">С какой даты</div>
-        <div class="bkd-date">
-          <button class="btn gh sm jumpb" data-bkd="date">${BK_I.cal}<span>${bkDW(g.first)}</span>${BK_I.chev}</button>
-          <button class="bkd-lnk" data-bkd="pick">Выбрать в календаре</button>
+      <section class="bkd-step">
+        <span class="bkd-num">1</span>
+        <div class="bkd-body">
+          <div class="bkd-t">Откуда и кому</div>
+          <div class="bkd-kv"><span class="k">Откуда</span>
+            <div class="bkd-src">${av(src)}<b>${bkEsc(src.n)}</b><s>${bkRange(ds)}</s></div></div>
+          <div class="bkd-kv"><span class="k">Кому</span>
+            <div class="bkd-to">${move
+              ? `<button class="bkd-cli" data-bkd="setcli">${av(tgt)}<b>${bkEsc(tgt.n)}</b>${BK_I.chev}</button>`
+              : g.targets.map(id => { const c = client(id); return `<span class="bkd-chip">${av(c)}<b>${bkEsc(c.n)}</b><button data-bkd="rm" data-cid="${id}" aria-label="Убрать">${BK_I.x}</button></span>` }).join('')
+                + `<button class="bkd-add" data-bkd="addcli">${BK_I.plus}Добавить клиента</button>`}</div></div>
         </div>
-        <div class="lab">Как раскладывать</div>
-        <div class="bkd-rules">${BK_RULES.map(([k, t, s]) => `<button class="${g.rule === k ? 'on' : ''}" data-bkd-rule="${k}"><b>${t}</b><s>${s}</s></button>`).join('')}</div>
-      </div>
-      <div class="bkd-r">
-        <div class="lab">Что получится</div>
-        ${prev.map(grp => `${g.targets.length > 1 ? `<div class="bkd-gh">${av(client(grp.cid))}${bkEsc(client(grp.cid).n)}</div>` : ''}
-          ${grp.rows.map(r => `<div class="bkd-row${r.conflict ? ' conflict' : ''}">
-            <span class="d1">${bkDW(r.s)}</span><span class="ar">→</span><span class="d2">${bkDW(r.dst)}</span>
-            <span class="t"><b>${bkEsc(bkTitle(r.x))}</b>${r.conflict ? `<i class="chip warn">заменит «${bkEsc(r.occ)}»</i>` : ''}${r.past ? '<i class="chip ghost">прошедшая дата</i>' : ''}${r.noPm.length ? `<i class="chip rm">нет 1ПМ: ${bkEsc(r.noPm.join(', '))}</i>` : ''}</span>
-          </div>`).join('')}`).join('')}
-      </div>
+      </section>
+      <section class="bkd-step">
+        <span class="bkd-num">2</span>
+        <div class="bkd-body">
+          <div class="bkd-t">С какой даты</div>
+          <div class="bkd-date">
+            <button class="btn gh sm jumpb" data-bkd="date">${BK_I.cal}<span>${bkDW(g.first)}</span>${BK_I.chev}</button>
+            <button class="bkd-lnk" data-bkd="pick">Выбрать в календаре</button>
+          </div>
+        </div>
+      </section>
+      <section class="bkd-step">
+        <span class="bkd-num">3</span>
+        <div class="bkd-body">
+          <div class="bkd-t">Как раскладывать</div>
+          <div class="bkd-rules">${BK_RULES.map(([k, t, d]) => `<button class="${g.rule === k ? 'on' : ''}" data-bkd-rule="${k}"><b>${t}</b><s>${d}</s></button>`).join('')}</div>
+        </div>
+      </section>
     </div>
     <div class="mdf">${g.confirm && conf
-      ? `<span class="bkd-warn">${BK_I.warn}${bkN(conf, 'день уже занят', 'дня уже заняты', 'дней уже заняты')}: тренировки на них будут заменены</span><span class="sp"></span>
+      ? `<span class="bkd-warn">${BK_I.warn}Заняты ${bkN(conf, 'день', 'дня', 'дней')} — тренировки на них заменятся</span><span class="sp"></span>
          <button class="btn gh" data-bkd="back">Назад</button><button class="btn rm" data-bkd="apply">Заменить и ${move ? 'переместить' : 'копировать'}</button>`
       : `<span class="bkd-sum">Встанут черновиками: ${total}${conf ? ` · замен: ${conf}` : ''}${past ? ` · в прошлом: ${past}` : ''}</span><span class="sp"></span>
          <button class="btn gh" data-bkd="close">Отмена</button><button class="btn" data-bkd="apply" ${g.targets.length ? '' : 'disabled'}>${verb}</button>`}
