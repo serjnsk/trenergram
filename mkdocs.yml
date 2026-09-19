@@ -42,6 +42,7 @@ nav:
   - Конкуренты: 07-competitors.md
   - Открытые вопросы: 08-open-questions.md
   - Прототип ↗: https://serjnsk.github.io/trenergram/prototype/
+  - Бренд и дизайн-система ↗: https://serjnsk.github.io/trenergram/prototype/design.html
 
 markdown_extensions:
   - tables

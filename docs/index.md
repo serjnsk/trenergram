@@ -22,5 +22,6 @@
 Кликабельный прототип полного объёма MVP — дашборд, клиенты, календарь, конструктор тренировок, база упражнений, шаблоны, бренд:
 
 [**Открыть прототип →**](https://serjnsk.github.io/trenergram/prototype/){ .md-button }
+[Бренд и дизайн-система →](https://serjnsk.github.io/trenergram/prototype/design.html)
 
 Прототип живёт в ветке `prototypes` этого же репозитория и публикуется тем же workflow.
