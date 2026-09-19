@@ -40,7 +40,6 @@ nav:
   - 05 — Решения и открытые вопросы: 05-decisions.md
   - 06 — Технологический стек: 06-tech-stack.md
   - 07 — Оффлайн-режим: 07-offline-mode.md
-  - 08 — Работа с сущностями: 08-entity-flows.md
   - Прототип ↗: https://serjnsk.github.io/trenergram/prototype/
 
 markdown_extensions:
