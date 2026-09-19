@@ -33,15 +33,14 @@ extra_css:
 
 nav:
   - Главная: index.md
-  - 01 — Обзор продукта: 01-product-overview.md
-  - 02 — Функциональные требования: 02-functional-requirements.md
-  - 03 — MVP: 03-mvp.md
-  - 04 — Этап 2. Монетизация и масштаб: 04-stage-2.md
-  - 05 — Этап 3. Рост и экосистема: 05-stage-3.md
-  - 06 — Конкуренты: 06-competitors.md
-  - 07 — Технологический стек: 07-tech-stack.md
-  - 08 — Оффлайн-режим: 08-offline-mode.md
-  - 09 — Открытые вопросы: 09-open-questions.md
+  - Обзор продукта: 01-product-overview.md
+  - Функциональные требования: 02-functional-requirements.md
+  - Технологический стек: 03-tech-stack.md
+  - MVP: 04-mvp.md
+  - Этап 2. Монетизация и масштаб: 05-stage-2.md
+  - Этап 3. Рост и экосистема: 06-stage-3.md
+  - Конкуренты: 07-competitors.md
+  - Открытые вопросы: 08-open-questions.md
   - Прототип ↗: https://serjnsk.github.io/trenergram/prototype/
 
 markdown_extensions:
