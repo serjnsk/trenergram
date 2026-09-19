@@ -37,9 +37,9 @@ nav:
   - 02 — Функциональные требования: 02-functional-requirements.md
   - 03 — MVP и роадмап: 03-mvp-and-roadmap.md
   - 04 — Конкуренты: 04-competitors.md
-  - 05 — Решения и открытые вопросы: 05-decisions.md
-  - 06 — Технологический стек: 06-tech-stack.md
-  - 07 — Оффлайн-режим: 07-offline-mode.md
+  - 05 — Технологический стек: 05-tech-stack.md
+  - 06 — Оффлайн-режим: 06-offline-mode.md
+  - 07 — Открытые вопросы: 07-open-questions.md
   - Прототип ↗: https://serjnsk.github.io/trenergram/prototype/
 
 markdown_extensions:
