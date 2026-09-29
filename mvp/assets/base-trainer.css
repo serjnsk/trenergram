@@ -430,6 +430,17 @@ button{cursor:pointer}
 .tbx::placeholder{color:var(--tx4)}
 .tbody .aib{position:absolute;top:6px;right:0}
 .aibusy .tbx,.aibusy.line .txt{opacity:.45}
+/* Панель листа — только пока в блоке печатают, как подсказка клавиш под
+   строкой упражнения: кнопка «Список» и клавиши списка. Кнопка горит, когда
+   курсор стоит в пункте. */
+.tbar{display:none;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-size:13.5px;color:var(--tx3)}
+.tblk:focus-within .tbar{display:flex}
+.aibusy .tbar{display:none !important}
+.tfmt{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:var(--rad-s);border:1px solid var(--line2);background:var(--bg);color:var(--tx2);font-size:13.5px;font-weight:600;flex:none;transition:.12s}
+.tfmt:hover{border-color:var(--acc);color:var(--acc-d)}
+.tfmt.on{background:var(--acc-a);border-color:var(--acc);color:var(--acc-d)}
+.tfmt svg{width:15px;height:15px}
+.tkeys{display:flex;flex-wrap:wrap;gap:4px 14px}
 
 /* Кнопка AI — единственный путь из текста в структуру. Образ — по референсу
    заказчика (dribbble.com/shots/25854034): белая таблетка в радужном кольце,
@@ -1326,8 +1337,8 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .line .sp{flex:1}
 .app .line.act{background:var(--acc-a) !important;box-shadow:inset 3px 0 0 var(--acc) !important}
 .keyhint{display:flex;align-items:center;flex-wrap:wrap;gap:4px 16px;padding:6px 6px 9px 30px;font-size:13.5px;color:var(--tx3)}
-.keyhint kbd,.sugkeys kbd{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--tx2);background:var(--s1);border-radius:5px;padding:1px 6px;margin-right:5px}
-.keyhint kbd + kbd,.sugkeys kbd + kbd{margin-left:-2px}
+.keyhint kbd,.sugkeys kbd,.tkeys kbd{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--tx2);background:var(--s1);border-radius:5px;padding:1px 6px;margin-right:5px}
+.keyhint kbd + kbd,.sugkeys kbd + kbd,.tkeys kbd + kbd{margin-left:-2px}
 .keyhint .r{margin-left:auto}
 .sug .sugkeys{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 10px 4px;margin-top:4px;border-top:1px solid var(--line);font-size:13px;color:var(--tx3)}
 /* подсказки в пустых полях — только у строки, которую правят или над которой мышь */

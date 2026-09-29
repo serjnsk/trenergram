@@ -481,6 +481,12 @@ const mkBlock = (kind,title,note,fmt,items) => ({id:nid('b'), kind, title, note:
 const textBlock = (text = '', title = '') => ({id:nid('b'), kind:null, title, note:'', fmt:null, text, items:[]});
 const isTextBlock = b => !!b && typeof b.text === 'string';
 const textLines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
+/* Пункт маркированного списка в блоке текстом — строка с маркером и пробелом:
+   «• » ставит кнопка «Список», «- », «– », «— » и «* » так пишут в заметках.
+   Список хранится текстом, как и всё в блоке: разметки нет. */
+const LIST_RE = /^[•\-–—*][ \t]+/;
+/* Первая строка текста без маркера и двоеточия — подпись блока без названия. */
+const firstTextLine = t => (textLines(t)[0] || '').replace(LIST_RE, '').replace(/:$/, '');
 const itemHas = y => !!y && !y.ss && !!(y.exId || String(y.raw || '').trim());
 const blockHas = b => !!b && (isTextBlock(b) ? textLines(b.text).length > 0 : (b.items || []).some(itemHas));
 const dayHas = x => !!x && (x.blocks || []).some(blockHas);
@@ -489,7 +495,7 @@ const dayHas = x => !!x && (x.blocks || []).some(blockHas);
 const blockCount = b => isTextBlock(b) ? textLines(b.text).length : (b.items || []).filter(itemHas).length;
 const dayCount = x => (x.blocks || []).reduce((a, b) => a + blockCount(b), 0);
 /* Подпись блока в списках: название, тип, у блока текстом — первая строка. */
-const blockName = b => b.title || blockTypeLabel(b) || (isTextBlock(b) ? (textLines(b.text)[0] || '').replace(/:$/, '') : '');
+const blockName = b => b.title || blockTypeLabel(b) || (isTextBlock(b) ? firstTextLine(b.text) : '');
 /* Строка текстом в шаблоне блока: [TXT_TAG, текст, '', '', '', sub]. */
 const TXT_TAG = '@txt';
 /* Конец группы: индекс первой строки после участников суперсета с заголовком в k. */

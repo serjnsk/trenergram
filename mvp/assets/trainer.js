@@ -172,6 +172,7 @@ const ICON = {
  /* Текст — строки абзаца: ввод текстом сам по себе не ИИ, знак ИИ стоит
     только на кнопке, которая действительно зовёт модель. */
  text:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 3.5h11M2.5 6.5h11M2.5 9.5h11M2.5 12.5h6.5"/></svg>',
+ ul:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 4h7M6.5 8h7M6.5 12h7"/><circle cx="3" cy="4" r="1.1" fill="currentColor" stroke="none"/><circle cx="3" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>',
  /* Отдельная папка для кнопок: у навигационной ICON.tpl другой viewBox
     и не задана толщина обводки — рядом со «Сохранить» и «Копией» она
     выглядела заметно тоньше. Здесь всё совпадает: 16 и 1.5. */
@@ -376,14 +377,16 @@ function ssHTML(h, mem){
 /* Блок текстом устроен как любой блок — та же шапка, тип, заметка, закладка,
    перетаскивание, — но вместо строк упражнений в нём лист: пишут как в
    заметках, Enter — новая строка. Сохраняется как написано; в углу листа —
-   кнопка AI, которая предлагает разобрать текст на упражнения. */
+   кнопка AI, которая предлагает разобрать текст на упражнения. Пока в листе
+   печатают, под ним панель: маркированный список и подсказка клавиш. */
 const TEXT_PH = `Пишите как в заметках — блок сохранится текстом, клиент увидит его как есть.
 Разобрать на упражнения — кнопка AI.
 
 AMRAP 12:
-трастеры 10 × 40 кг
-подтягивания 8
-гребля 250 м`;
+• трастеры 10 × 40 кг
+• подтягивания 8
+• гребля 250 м`;
+const LIST_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘⇧8' : 'Ctrl+Shift+8';
 function blockHTML(b){
   const txt = isTextBlock(b);
   return `<div class="blk ${txt ? 'tblk' : ''} ${PENDING && PENDING.ids.has(b.id) ? 'pending' : ''}" data-blk="${b.id}">
@@ -403,6 +406,10 @@ function blockHTML(b){
     ${txt ? `<div class="tbody">
         <textarea class="tbx" data-f="text" rows="3" spellcheck="false" placeholder="${esc(TEXT_PH)}">${esc(b.text)}</textarea>
         ${aiBtn('aiblk', b.id, 'Разобрать текст на упражнения — ИИ предложит, вы проверите', false, !b.text.trim())}
+        <div class="tbar">
+          <button class="tfmt" data-fmt="ul" tabindex="-1" title="Маркированный список · ${LIST_KEY}">${ICON.ul}<span>Список</span></button>
+          <span class="tkeys"><span>${KB('Enter')}новый пункт</span><span>${KB('Enter')}${KB('Enter')}конец списка</span><span>${KB(LIST_KEY)}список</span></span>
+        </div>
       </div>` : `${itemsHTML(b)}
     <div class="addrow">
       <button class="addl" data-add="${b.id}">${ICON.plus} Добавить упражнение</button>
@@ -985,7 +992,17 @@ function textToBlocks(text){
     cur.items.push(it);
     cur.src.push(L);
   }
-  return blocks.filter(b => b.items.length);
+  /* Заголовок, под которым ничего не оказалось («заминка по самочувствию» в
+     конце текста), — просто строка. Её не выбрасываем: она остаётся строкой
+     текстом в предыдущем блоке, а если его нет — отдельным блоком. */
+  const out = [];
+  for(const b of blocks){
+    if(b.items.length){ out.push(b); continue }
+    if(!b.title) continue;
+    const it = rawItem(b.src[0] || b.title), prev = out[out.length - 1];
+    if(prev) prev.items.push(it); else out.push({title:'', items:[it], src:b.src});
+  }
+  return out;
 }
 
 /* ЗДЕСЬ будет модель. На вход — строки, которые правила не разобрали,
@@ -1075,6 +1092,67 @@ function addTextBlock(text, after){
   if(k >= 0) d.blocks.splice(k + 1, 0, tb); else d.blocks.push(tb);
   render();
   return tb;
+}
+
+/* ═══════════ БЛОК ТЕКСТОМ: МАРКИРОВАННЫЙ СПИСОК ═══════════
+   Простейшее форматирование листа — маркированный список. Пункт — строка с
+   маркером и пробелом (LIST_RE в data.js): «• » ставит кнопка, «- » и «* »
+   узнаются, как их пишут в заметках. Разметки нет — список хранится текстом,
+   и клиент, ИИ, оффлайн видят те же строки.
+   Кнопка «Список» и Ctrl/⌘+Shift+8 ставят «• » строкам под курсором или в
+   выделении, а если пунктами были все — снимают. Enter в пункте начинает
+   следующий с тем же маркером, Enter в пустом пункте заканчивает список,
+   Backspace сразу за маркером снимает его. Правки идут через execCommand —
+   их откатывает обычный Ctrl/⌘+Z. */
+const BUL = '• ';
+/* Строки, которых касаются курсор или выделение: [начало, конец) в value. */
+function selLines(ta){
+  const v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+  const a = v.lastIndexOf('\n', s - 1) + 1;
+  let b = v.indexOf('\n', e > s && v[e - 1] === '\n' ? e - 1 : e); if(b < 0) b = v.length;
+  return [a, b];
+}
+function taReplace(ta, a, b, text){
+  ta.focus(); ta.setSelectionRange(a, b);
+  if(document.execCommand(text ? 'insertText' : 'delete', false, text)) return;
+  ta.setRangeText(text, a, b, 'end');                          /* запасной путь, без отката */
+  ta.dispatchEvent(new Event('input', {bubbles:true}));
+}
+/* Кнопка «Список» горит, когда курсор стоит в пункте. */
+function listState(ta){
+  const btn = ta && ta.closest('.tbody') && ta.closest('.tbody').querySelector('[data-fmt="ul"]'); if(!btn) return;
+  const v = ta.value, a = v.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+  btn.classList.toggle('on', LIST_RE.test(v.slice(a)));
+}
+function toggleList(ta){
+  if(!ta || ta.readOnly) return;
+  const s = ta.selectionStart, e = ta.selectionEnd, [a, b] = selLines(ta);
+  const lines = ta.value.slice(a, b).split('\n'), filled = lines.filter(l => l.trim());
+  const off = filled.length ? filled.every(l => LIST_RE.test(l)) : LIST_RE.test(lines[0]);
+  /* Пустые строки внутри выделения остаются пустыми — они разделяют блоки. */
+  const out = lines.map(l => off ? l.replace(LIST_RE, '')
+    : LIST_RE.test(l) || (!l.trim() && lines.length > 1) ? l : BUL + l.trimStart()).join('\n');
+  taReplace(ta, a, b, out);
+  if(s === e && lines.length === 1){ const p = Math.max(a, s + out.length - lines[0].length); ta.setSelectionRange(p, p) }
+  else ta.setSelectionRange(a, a + out.length);
+  listState(ta);
+}
+/* Клавиши внутри листа; true — нажатие обработано. */
+function listKey(ta, e){
+  if(ta.readOnly || e.isComposing) return false;
+  if((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Digit8'){ e.preventDefault(); toggleList(ta); return true }
+  if(e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || ta.selectionStart !== ta.selectionEnd) return false;
+  const v = ta.value, s = ta.selectionStart, a = v.lastIndexOf('\n', s - 1) + 1, m = v.slice(a).match(LIST_RE);
+  if(!m || s < a + m[0].length) return false;
+  let b = v.indexOf('\n', a); if(b < 0) b = v.length;
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    if(v.slice(a + m[0].length, b).trim()) taReplace(ta, s, s, '\n' + m[0][0] + ' ');
+    else taReplace(ta, a, b, '');                               /* пустой пункт — конец списка */
+    listState(ta); return true;
+  }
+  if(e.key === 'Backspace' && s === a + m[0].length){ e.preventDefault(); taReplace(ta, a, s, ''); listState(ta); return true }
+  return false;
 }
 /* Убрать тренировку — не диалог «вы уверены?», а отмена. Подтверждения
    прокликивают не читая; возврат работает даже когда ошибся всерьёз.
@@ -1739,7 +1817,7 @@ const FOLDER_OF = b => TYPE_FOLDER[b.kind] || (fmtPart(b.title) ? 'Компле�
 function blockToTpl(b, folder){
   const t = {
     id: nid('t'), lvl:'блок', folder: folder || FOLDER_OF(b), used: 0, kind: b.kind || null,
-    title: b.title || blockTypeLabel(b) || (isTextBlock(b) ? (textLines(b.text)[0] || '').replace(/:$/, '') : '') || 'Блок без названия', fmt: b.fmt ? {...b.fmt} : null,
+    title: b.title || blockTypeLabel(b) || (isTextBlock(b) ? firstTextLine(b.text) : '') || 'Блок без названия', fmt: b.fmt ? {...b.fmt} : null,
     /* Текст — такое же содержимое, как упражнения: блок текстом ложится в
        базу как написан, строки текстом — строками. Пустые строки не идут;
        суперсет, в котором осталось меньше двух записей, распускается — на
@@ -2010,6 +2088,7 @@ document.addEventListener('click', e=>{
   /* Кнопка AI — в углу блока текстом и строки текстом (CON-5). Пока ИИ
      разбирает, повторное нажатие ничего не делает. */
   const aib = e.target.closest('[data-aiblk]'); if(aib){ if(!aib.classList.contains('busy')) aiBlock(aib.dataset.aiblk); return }
+  const fmt = e.target.closest('[data-fmt="ul"]'); if(fmt){ toggleList(fmt.closest('.tbody').querySelector('.tbx')); return }
   const ail = e.target.closest('[data-ailine]'); if(ail){ if(!ail.classList.contains('busy')) aiLine(ail.dataset.ailine); return }
   if(e.target.closest('#pd-yes')){ acceptPending(); return }
   if(e.target.closest('#pd-no')){  cancelPending(); return }
@@ -2094,6 +2173,14 @@ document.addEventListener('click', e=>{
     if(wasSetup && !(document.activeElement && document.activeElement.closest('#doc'))) render();
   }
 });
+
+/* Лист блока текстом: клавиши списка и подсветка кнопки «Список» по курсору.
+   Нажатие на панель не уводит курсор из листа — иначе панель, видимая только
+   пока в блоке печатают, исчезала бы раньше, чем сработает кнопка. */
+document.addEventListener('keydown', e => { const ta = e.target.closest && e.target.closest('#doc .tbx'); if(ta) listKey(ta, e) });
+document.addEventListener('mousedown', e => { if(e.target.closest && e.target.closest('#doc .tbar')) e.preventDefault() });
+['keyup', 'click', 'focusin'].forEach(t => document.addEventListener(t, e => { const ta = e.target.closest && e.target.closest('#doc .tbx'); if(ta) listState(ta) }));
+document.addEventListener('selectionchange', () => { const a = document.activeElement; if(a && a.matches && a.matches('#doc .tbx')) listState(a) });
 
 /* Многострочная вставка в строку упражнения ложится блоком текстом под этот
    блок — как вставили, без разбора (CON-5); разобрать можно кнопкой AI в его
