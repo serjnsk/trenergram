@@ -85,7 +85,7 @@ function monthHTML(y, m, ctx){
     const bl = x.blocks.filter(blockHas).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
-    const blocks = view === 'detail' ? blocksDetail(x, G ? null : c.id) : blocksList(x);
+    const blocks = view === 'detail' ? blocksDetail(x, G ? null : c.id, c.id) : blocksList(x);
     const mark = dayMark(st, p.id + ':' + i);
     /* Метка группы: у группы — у скольких участников, у клиента — из какой группы и не изменена ли. */
     const tag = st === 'rest' ? '' : G ? grpStatTag(G, date) : grpTag(x);

@@ -278,7 +278,7 @@ function bkDefaultFirst(ds){ return addDays(ds[0], 7 * Math.ceil((daysBetween(ds
 function bkNoPm(x, cid){
   if(!x || isGrp(cid)) return [];              /* у группы своих максимумов нет — считается у каждого участника */
   const pm = pmOf(cid), out = new Set();
-  (x.blocks||[]).forEach(b => (b.items||[]).forEach(it => {
+  (x.blocks||[]).forEach(b => (b.items||[]).flatMap(it => it.chain ? it.parts : [it]).forEach(it => {
     if(it.pct == null || !it.exId) return;
     const e = byId(it.exId), k = pmKey(e);
     if(k && !pm[k]) out.add(PMNAMES[k] || (e && e.ru) || k);

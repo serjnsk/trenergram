@@ -345,9 +345,12 @@ function tplKind(t){
 function tplLine([ex, scheme, val, unit, txt, sub]){
   if(ex === SS_TAG) return ssItem(scheme, val);          /* [SS_TAG, круги, отдых] */
   if(ex === TXT_TAG){ const r = rawItem(scheme || ''); if(sub) r.sub = true; return r }   /* [TXT_TAG, текст] */
+  if(ex === CH_TAG){ const c = chainItem((scheme || []).map(tplLine)); if(sub) c.sub = true; return c }   /* [CH_TAG, [части]] */
   const i = mkItem(ex, scheme||'');
-  if(unit==='%') i.pct = parseFloat(val);
-  else if(val!=null && val!==''){ i.unit = unit || i.unit; i.val = String(val) }
+  /* Диапазон в шаблоне — строкой «70–80». */
+  const [lo, hi] = String(val ?? '').split(/[–—-]/);
+  if(unit==='%'){ i.pct = parseFloat(lo); if(hi) i.pct2 = parseFloat(hi) }
+  else if(val!=null && val!==''){ i.unit = unit || i.unit; i.val = hi ? lo : String(val); if(hi) i.val2 = hi }
   if(txt) i.txt = txt;
   if(sub) i.sub = true;
   return i;
@@ -487,7 +490,17 @@ const textLines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boo
 const LIST_RE = /^[•\-–—*][ \t]+/;
 /* Первая строка текста без маркера и двоеточия — подпись блока без названия. */
 const firstTextLine = t => (textLines(t)[0] || '').replace(LIST_RE, '').replace(/:$/, '');
-const itemHas = y => !!y && !y.ss && !!(y.exId || String(y.raw || '').trim());
+/* ─── СВЯЗКА (CON-23) ───
+   Несколько упражнений подряд одной строкой: «Взятие на грудь (1) +
+   Фронтальный присед (1) + Толчок (2)». По сути суперсет на один круг, но в
+   блоке это одна запись: parts — упражнения со своими схемой и нагрузкой, той
+   же формы, что строка блока. Связка таскается, копируется и сохраняется
+   целиком, как одна строка. */
+const CH_TAG = '@ch';
+const chainItem = (parts = []) => ({id:nid('i'), chain:true, parts, exId:null, raw:null, scheme:'', pct:null, unit:'', val:'', txt:''});
+const partHas = p => !!p && !!(p.exId || String(p.raw || '').trim());
+const partName = p => p.exId ? (byId(p.exId) || {}).ru || '' : String(p.raw || '').trim();
+const itemHas = y => !!y && !y.ss && (y.chain ? (y.parts || []).some(partHas) : !!(y.exId || String(y.raw || '').trim()));
 const blockHas = b => !!b && (isTextBlock(b) ? textLines(b.text).length > 0 : (b.items || []).some(itemHas));
 const dayHas = x => !!x && (x.blocks || []).some(blockHas);
 /* Счёт записей для полосы нагрузки и сводок: упражнение, строка текстом,
@@ -695,10 +708,20 @@ function buildDay(pid, i){
    меняется, и опубликованные дни не становятся черновиками сами собой. */
 const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note || String(b.text||'').trim()).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
   ...(isTextBlock(b) ? {tx:b.text} : {}),
-  i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''} : ({e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||'', ...(it.sub ? {g:1} : {})}))}))});
+  i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''}
+    : it.chain ? {ch:(it.parts||[]).map(serItem), ...(it.sub ? {g:1} : {})}
+    : {...serItem(it), ...(it.sub ? {g:1} : {})})}))});
+/* Строка в слепке. Верхняя граница диапазона (p2, v2) пишется, только если
+   задана: слепки прежних дней не меняются, опубликованное не становится
+   изменённым само собой. Та же форма — у части связки (ch). */
+function serItem(it){ return {e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||'',
+  ...(it.pct2 != null ? {p2:it.pct2} : {}), ...(it.val2 ? {v2:it.val2} : {})} }
+function resItem(it){ return {id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||'',
+  ...(it.p2 != null ? {pct2:it.p2} : {}), ...(it.v2 ? {val2:it.v2} : {})} }
 const restoreBlocks = rec => (rec.b||[]).map(b=>normFmt({id:nid('b'), kind:b.k||null, title:b.t||'', note:b.n||'', fmt:b.f||null,
   ...(typeof b.tx === 'string' ? {text:b.tx} : {}),
-  items:(b.i||[]).map(it=> it.ss ? ssItem(it.n, it.z) : ({id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||'', ...(it.g ? {sub:true} : {})}))}));
+  items:(b.i||[]).map(it=> it.ss ? ssItem(it.n, it.z)
+    : Object.assign(it.ch ? chainItem(it.ch.map(resItem)) : resItem(it), it.g ? {sub:true} : {}))}));
 const savedDay = (pid,i) => ((STATE.days||{})[pid]||{})[i] || null;
 /* Черновики могут лежать за концом заготовок — план дотягиваем до них. */
 function planLength(pid){
@@ -752,6 +775,18 @@ function workKg(item, pm){
   return Math.round(max * item.pct / 100 / 2.5) * 2.5;
 }
 const fmtNum = v => String(v).replace('.', ',');
+/* ─── ДИАПАЗОН НАГРУЗКИ (CON-24) ───
+   Нагрузка бывает не числом, а «от–до»: «70–80 %», «60–70 кг». Верхняя
+   граница — pct2 или val2; пусто — нагрузка одним числом. Рабочий вес
+   считается для обеих границ. */
+const RNG = '–';
+const loadText = it => it.pct != null ? fmtNum(it.pct) + (it.pct2 != null ? RNG + fmtNum(it.pct2) : '') + '\u00a0%'
+  : it.val ? fmtNum(it.val) + (it.val2 ? RNG + fmtNum(it.val2) : '') + (it.unit ? '\u00a0' + it.unit : '') : '';
+function kgText(item, pm){
+  const lo = workKg(item, pm); if(lo == null) return null;
+  const hi = item.pct2 != null ? workKg({...item, pct:item.pct2}, pm) : null;
+  return fmtNum(lo) + (hi != null && hi !== lo ? RNG + fmtNum(hi) : '');
+}
 
 /* Формат комплекса (EMOM 12, AMRAP 15) — часть содержания тренировки */
 /* Формат живёт в НАЗВАНИИ блока, а не в отдельном поле: по TMR-1 тренер
@@ -946,13 +981,26 @@ function covered(text, e){
   return qt.every(q => ws.some(w => w === q || sharedPrefix(q, w) >= 4));
 }
 const NOL = '(?![а-яёa-z])';
+/* Число или диапазон «от–до» перед единицей (CON-24): «60–70 кг», «400-500 м». */
+const RG = '(?:\\s*[-–—]\\s*(\\d+(?:[.,]\\d+)?))?';
 const UNITS = [
-  ['кг',  new RegExp('(\\d+(?:[.,]\\d+)?)\\s*(?:кг|kg)'+NOL,'i')],
-  ['сек', new RegExp('(\\d+)\\s*(?:сек|sec)'+NOL,'i')],
-  ['кал', new RegExp('(\\d+)\\s*(?:кал|cal)'+NOL,'i')],
-  ['повт',new RegExp('(\\d+)\\s*(?:повт\\w*|reps?|раз)'+NOL,'i')],
-  ['м',   new RegExp('(\\d+)\\s*(?:метр\\w*|м|m)'+NOL,'i')],
+  ['кг',  new RegExp('(\\d+(?:[.,]\\d+)?)'+RG+'\\s*(?:кг|kg)'+NOL,'i')],
+  ['сек', new RegExp('(\\d+)'+RG+'\\s*(?:сек|sec)'+NOL,'i')],
+  ['кал', new RegExp('(\\d+)'+RG+'\\s*(?:кал|cal)'+NOL,'i')],
+  ['повт',new RegExp('(\\d+)'+RG+'\\s*(?:повт\\w*|reps?|раз)'+NOL,'i')],
+  ['м',   new RegExp('(\\d+)'+RG+'\\s*(?:метр\\w*|м|m)'+NOL,'i')],
 ];
+const RE_PCT = /@?\s*(\d{1,3}(?:[.,]\d)?)(?:\s*[-–—]\s*(\d{1,3}(?:[.,]\d)?))?\s*%/;
+/* «Взятие на грудь (1) + фронтальный присед 1 + толчок 2» — связка (CON-23):
+   две и больше частей через « + », и каждая уверенно узнаётся. Скобки вокруг
+   параметров — как пишут в тетради. Не узнана хоть одна — это не связка. */
+function parseChain(L){
+  const parts = String(L || '').split(/\s\+\s/).map(t => t.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if(parts.length < 2) return null;
+  const out = [];
+  for(const t of parts){ const r = parseText(t)[0]; if(!r || r.type !== 'ok' || r.item.chain) return null; out.push(r.item) }
+  return chainItem(out);
+}
 const RE_SCHEME = /\d+\s*[x×хХ]\s*\d+|\d+(?:\s*-\s*\d+)+/;
 const RE_SETS   = /\d+\s*[x×хХ]/;
 function parseText(txt){
@@ -961,11 +1009,12 @@ function parseText(txt){
     const L = line.trim(); if(!L) continue;
     const f = parseFmt(L);
     if(f && !RE_SCHEME.test(L)){ out.push({type:'fmt',src:L,fmt:L,f}); continue }
-    let rest=L, unit=null, val='';
-    for(const [u,re] of UNITS){ const m=rest.match(re); if(m){ unit=u; val=m[1].replace(',','.'); rest=rest.replace(m[0],' '); break } }
-    let pct=null;
-    const mp = rest.match(/@?\s*(\d{1,3}(?:[.,]\d)?)\s*%/);
-    if(mp){ pct=parseFloat(mp[1].replace(',','.')); rest=rest.replace(mp[0],' ') }
+    const ch = parseChain(L); if(ch){ out.push({type:'ok',src:L,item:ch}); continue }
+    let rest=L, unit=null, val='', val2='';
+    for(const [u,re] of UNITS){ const m=rest.match(re); if(m){ unit=u; val=m[1].replace(',','.'); val2=(m[2]||'').replace(',','.'); rest=rest.replace(m[0],' '); break } }
+    let pct=null, pct2=null;
+    const mp = rest.match(RE_PCT);
+    if(mp){ pct=parseFloat(mp[1].replace(',','.')); if(mp[2]) pct2=parseFloat(mp[2].replace(',','.')); rest=rest.replace(mp[0],' ') }
     let scheme='';
     const ms = rest.match(RE_SCHEME) || rest.match(RE_SETS);
     if(ms){ scheme = ms[0].replace(/\s/g,'').replace(/[xхХ]/,'×'); rest = rest.replace(ms[0],' ') }
@@ -973,14 +1022,14 @@ function parseText(txt){
     const e = matchEx(rest);
     if(!e || !covered(rest, e)){ out.push({type:'raw',src:L}); continue }
     const item = mkItem(e.id, scheme);
-    item.pct = pct;
-    if(unit){ item.unit=unit; item.val=val }
+    item.pct = pct; if(pct2 != null) item.pct2 = pct2;
+    if(unit){ item.unit=unit; item.val=val; if(val2) item.val2=val2 }
     /* После схемы, процента и единицы в строке остались цифры — значит запись
        сложнее, чем «подходы × повторы + нагрузка» («60×5, 70×5, 80×3×3»).
        Не теряем её молча: упражнение узнано, всё после названия — текстом. */
     if(/\d/.test(rest)){
       const mp2 = L.match(/^([^\d@%(]+?)\s+(?=[\d@%(])(.+)$/);
-      if(mp2){ item.txt = mp2[2].trim(); item.scheme=''; item.pct=null; item.val=''; item.unit = e.u[0]||''; }
+      if(mp2){ item.txt = mp2[2].trim(); item.scheme=''; item.pct=null; item.val=''; delete item.pct2; delete item.val2; item.unit = e.u[0]||''; }
     }
     out.push({type:'ok',src:L,item,ex:e});
   }
@@ -997,7 +1046,7 @@ function scheduleFor(cid, from, to){
     const rec = savedDay(c.prog, i);
     let d = plan[i];
     /* Сохранённый день перекрывает заготовку; пустой черновик — не тренировка. */
-    if(rec && rec.c){ const cc = JSON.parse(rec.c); d = cc.b.some(b=>b.i.some(it=>it.e)) ? {t: cc.t||'Тренировка', b: cc.b.map(b=>[b.k]), draft: rec.draft, g: rec.g} : null; }
+    if(rec && rec.c){ const cc = JSON.parse(rec.c); d = contentHas(rec.c) ? {t: cc.t||'Тренировка', b: cc.b.map(b=>[b.k]), draft: rec.draft, g: rec.g} : null; }
     if(!d) continue;                            /* день отдыха */
     const date = dayDate(c.prog, i);
     if(date < from || date > to) continue;   /* был return из forEach — в цикле он обрывал функцию */
@@ -1225,6 +1274,9 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
     if(Array.isArray(o)){ o.forEach(walk); return }
     for(const k of Object.keys(o)){ const v = o[k]; if(KEYS.has(k) && typeof v === 'string') o[k] = shiftDate(v); else if(v && typeof v === 'object') walk(v) } };
   [PROFILE_DEF, CLIENTS, PROGRAMS, LOG].forEach(walk);
+  /* Переписка к тренировке привязана к дате дня — сдвигаем и её ключи. */
+  Object.keys(TALK.workout).forEach(k => { const [cid, d] = k.split('@'), nk = cid + '@' + shiftDate(d);
+    if(nk !== k){ TALK.workout[nk] = TALK.workout[k]; delete TALK.workout[k] } });
 })();
 /* Демо статуса «соревнование»: у Артёма (p1) в воскресенье текущей недели.
    Статус — поле дня (comp), хранится вместе с днём и публикуется как правка. */
@@ -1316,7 +1368,17 @@ const STATE = (function(){
   try{ const raw = localStorage.getItem('trenergram.state'); if(raw) s = Object.assign({}, def, JSON.parse(raw)) }catch(_){}
   return s;
 })();
-function saveState(){ try{ localStorage.setItem('trenergram.state', JSON.stringify(STATE)) }catch(_){} }
+/* Сообщения тренера к тренировкам (COM-4) — в STATE.wmsg: без этого написанное в
+   конструкторе пропадало при переходе на календарь, где его показывает
+   подробный вид (CAL-3). Пишутся вместе с остальным состоянием. */
+const wmsgOf = () => Object.fromEntries(Object.entries(TALK.workout)
+  .map(([k, arr]) => [k, ((arr || []).find(m => m.who === 'trainer') || {}).text || '']).filter(([, t]) => t));
+function saveState(){ STATE.wmsg = wmsgOf(); try{ localStorage.setItem('trenergram.state', JSON.stringify(STATE)) }catch(_){} }
+(function restoreWmsg(){
+  if(!STATE.wmsg) return;
+  Object.values(TALK.workout).forEach(arr => { const i = arr.findIndex(m => m.who === 'trainer'); if(i >= 0) arr.splice(i, 1) });
+  Object.entries(STATE.wmsg).forEach(([k, text]) => (TALK.workout[k] ||= []).unshift({who:'trainer', text, at:''}));
+})();
 /* Упражнения, которые тренер добавил в свою базу (из конструктора или со страницы
    базы). Лежат в STATE: без этого после перезагрузки строки дня ссылались бы
    на исчезнувшее упражнение и показывались пустыми. */
@@ -1365,7 +1427,7 @@ function saveGroups(){
    днём группы и по ней же копируется. */
 const EMPTY_DAY = serializeDay({title:'', blocks:[]});
 const contentHas = c => { if(!c) return false;
-  try{ const r = JSON.parse(c); return !!r.c || (r.b || []).some(b => String(b.tx || '').trim() || (b.i || []).some(it => !it.ss && (it.e || String(it.r || '').trim()))) }
+  try{ const r = JSON.parse(c); return !!r.c || (r.b || []).some(b => String(b.tx || '').trim() || (b.i || []).some(it => !it.ss && (it.e || String(it.r || '').trim() || (it.ch || []).some(p => p.e || String(p.r || '').trim())))) }
   catch(_){ return false } };
 /* День контейнера на дату: содержимое, группа-источник, запись в STATE (если есть). */
 function dayAt(pid, date){
@@ -1522,6 +1584,8 @@ function groupDelete(G){
    Отдых — любой день без упражнений; соревнование — отдельный флаг дня (comp),
    ставится в шапке конструктора. Одни и те же иконки в календаре, полосе недель
    конструктора и карточке клиента. */
+/* Сообщение тренера к тренировке — в подробном виде календаря и полосы дней. */
+const CHATICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 7.6a5.2 5.2 0 0 1-7.4 4.7L2.5 13.2l1-3.6A5.2 5.2 0 1 1 13.5 7.6z"/></svg>';
 const DAYICON = {
   /* Отдых — фигура в позе лотоса и батарейка с молнией («заряжается»), по эскизу тренеров. */
   rest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="4.4" r="2.1"/><path d="M10 6.9v6.1"/><path d="M7 9.6c1-1.2 5-1.2 6 0"/><path d="M7 9.6 4.2 13.4l1.6 1.8"/><path d="M13 9.6l2.8 3.8-1.6 1.8"/><path d="M3 16.6c2.2-2.4 4.6-3.6 7-3.6s4.8 1.2 7 3.6"/><path d="M3 16.6c1.8 1.9 4.4 2.8 7 2.8s5.2-.9 7-2.8"/><rect x="18" y="2.6" width="3.8" height="6" rx=".9"/><path d="M19.4 1.7h1"/><path d="M20.2 4.2l-.9 1.6h1.4l-.9 1.6"/></svg>',
@@ -1597,8 +1661,9 @@ function ensureDay(cid, date){
     changed = true;
     shift = daysBetween(date, p.start);
     PLAN[c.prog] = Array(shift).fill(null).concat(PLAN[c.prog] || []);
-    const bag = (STATE.days||{})[c.prog];
-    if(bag){ const nb = {}; Object.keys(bag).forEach(k=>{ nb[+k+shift] = bag[k] }); STATE.days[c.prog] = nb; }
+    /* Сдвигаются и сохранённые дни, и несохранённые правки конструктора (CON-20). */
+    ['days', 'unsaved'].forEach(key => { const bag = (STATE[key]||{})[c.prog];
+      if(bag){ const nb = {}; Object.keys(bag).forEach(k=>{ nb[+k+shift] = bag[k] }); STATE[key][c.prog] = nb; } });
     p.start = date; p.days += shift;
     ((STATE.pstart ||= {})[c.prog] = {start:p.start, shift:((STATE.pstart||{})[c.prog]||{}).shift + shift || shift});
   }
@@ -1622,13 +1687,28 @@ function ensureDay(cid, date){
    Третий вид календаря и полосы недель: видна иерархия «блок → упражнения»,
    у упражнения — подходы×повторы, процент от ПМ и рабочий вес (или объём). */
 /* Неразрывные пробелы внутри «40 %» и «500 м»: перенос допустим только между частями схемы. */
-const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + '\u00a0%' : (it.val ? fmtNum(it.val) + (it.unit ? '\u00a0' + it.unit : '') : '')].filter(Boolean).join(' · ');
-function blocksDetail(x, cid){
+const itemLabel = it => it.txt ? it.txt : [it.scheme, loadText(it)].filter(Boolean).join(' · ');
+/* Связка одной строкой: «Взятие на грудь (1 · 70 % · 84 кг) + Толчок (2)». */
+function chainHTML1(it, pm){
+  return (it.parts || []).filter(partHas).map(p => {
+    const l = itemLabel(p), kg = pm && p.exId ? kgText(p, pm) : null;
+    const prm = [esc(l), kg ? `<u>${kg}\u00a0кг</u>` : ''].filter(Boolean).join(' · ');
+    return esc(partName(p)) + (prm ? ` <em>(${prm})</em>` : '');
+  }).join(' + ');
+}
+const chainText = it => (it.parts || []).filter(partHas).map(p => partName(p) + (itemLabel(p) ? ' (' + itemLabel(p) + ')' : '')).join(' + ');
+/* Сообщение тренера ко всей тренировке (COM-4): чей день — клиента или группы. */
+const dayMsg = (sid, date) => !sid ? '' : ((TALK.workout[talkKey(sid, date)] || []).find(m => m.who === 'trainer') || {}).text || '';
+/* sid — чей день (клиент или группа): по нему находится сообщение тренера к
+   тренировке, оно стоит первым, над блоками, — так его читает и клиент. */
+function blocksDetail(x, cid, sid = cid){
   const pm = cid ? pmOf(cid) : null;
   const has = itemHas;
   const bs = (x.blocks||[]).filter(blockHas); if(!bs.length) return '';
-  const row = it => { const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
-    return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)}\u00a0кг</u>` : ''}</em></div>` };
+  const msg = dayMsg(sid, x.date);
+  const row = it => { if(it.chain) return `<div class="bxi bxch"><span>${chainHTML1(it, pm)}</span></div>`;
+    const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? kgText(it, pm) : null;
+    return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${kg}\u00a0кг</u>` : ''}</em></div>` };
   /* Суперсет — подгруппой: подпись «Суперсет · 3 круга» и его упражнения.
      Блок текстом — строками как написан, без схемы и весов. */
   const body = b => { if(isTextBlock(b)) return textLines(b.text).map(l => `<div class="bxi bxt"><span>${esc(l)}</span></div>`).join('');
@@ -1641,7 +1721,7 @@ function blocksDetail(x, cid){
       k++;
     }
     return h };
-  return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
+  return `<div class="bxs">${msg ? `<div class="bxmsg" title="${esc(msg)}">${CHATICON}<span>${esc(msg)}</span></div>` : ''}${bs.map((b,i)=>`<div class="bx">
     <div class="bxh"><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || (isTextBlock(b) ? 'Блок текстом' : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
     ${body(b)}
   </div>`).join('')}</div>`;

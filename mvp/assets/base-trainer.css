@@ -151,7 +151,9 @@ button{cursor:pointer}
 .day .ld{display:none}
 
 /* документ дня */
-.doc{background:var(--bg);border-radius:var(--rad-l);padding:0 16px 18px;overflow:hidden;border:1px solid var(--line)}
+/* overflow:clip, а не hidden: обрезает так же, но не делает .doc полосой
+   прокрутки — иначе панель сохранения внизу не прилипала бы к экрану. */
+.doc{background:var(--bg);border-radius:var(--rad-l);padding:0 16px 18px;overflow:clip;border:1px solid var(--line)}
 /* Шапка дня одной строкой: название, счёт, действия иконками — теми же,
    что у блоков. Одинаковые действия должны выглядеть одинаково на всех
    уровнях, иначе тренеру приходится запоминать два языка. */
@@ -658,7 +660,23 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 /* ─── черновик и публикация ─── */
 .day .dr{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--warn);background:#FBF1DE;border-radius:4px;padding:1px 5px;width:fit-content}
-.pubbar{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+/* Панель сохранения (CON-20) прилипает к низу экрана: сохранить можно в любой
+   момент, не прокручивая длинный день до конца. Слева — статус, справа —
+   «Сохранить»; между ними — что ещё не сохранено. */
+.pubbar{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin:14px -16px -18px;padding:12px 16px;border-top:1px solid var(--line);
+  position:sticky;bottom:0;z-index:15;background:var(--bg);box-shadow:0 -8px 18px -12px rgba(20,20,20,.18)}
+body.bk-on .pubbar{bottom:76px}
+.pubseg{display:inline-flex;border:1px solid var(--line2);border-radius:var(--rad-m);overflow:hidden;flex:none}
+.pubseg button{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;font-size:14px;font-weight:600;color:var(--tx2);background:var(--bg);border-right:1px solid var(--line2)}
+.pubseg button:last-child{border-right:0}
+.pubseg button svg{width:16px;height:16px}
+.pubseg button:hover:not(:disabled):not(.on){background:var(--s2);color:var(--ink)}
+.pubseg button.on[data-status="draft"]{background:#FBF1DE;color:var(--warn)}
+.pubseg button.on[data-status="pub"]{background:#E4F4EA;color:var(--ok)}
+.pubseg button:disabled{color:var(--tx4);cursor:default}
+.pbnote{flex:1;min-width:0;font-size:14px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbnote.warn{color:var(--warn);font-weight:500}
+.pbnote.warn::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:8px;vertical-align:1px}
 .pubbar s{text-decoration:none;flex:1;font-size:14px;color:var(--tx3);line-height:1.45}
 .pubbar .btn{height:40px;padding:0 20px;font-size:15.5px}
 
@@ -976,6 +994,7 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 .days .day .d{display:flex;align-items:center;gap:6px;height:36px;flex:none;margin:0;padding:0 40px 0 12px;background:var(--s2);border-bottom:1px solid var(--line);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink)}
 .days .day .d s{text-decoration:none;color:var(--tx3);font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
 .days .day .d .tdot{display:none}
+.day .d .udot{width:7px;height:7px;border-radius:50%;background:var(--warn);display:inline-block;flex:none}
 .days .day .dmark{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--tx3);background:var(--s1)}
 .days .day .dmark svg{width:18px;height:18px;stroke-width:2.2}
 .days .day .dmark.pub{background:#E4F4EA;color:var(--ok)}
@@ -1049,7 +1068,8 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 .tip{position:fixed;z-index:1000;max-width:340px;padding:7px 11px;border-radius:var(--rad-m);background:#1F1F1F;color:#fff;font-size:14px;font-weight:500;line-height:1.35;box-shadow:0 6px 20px rgba(0,0,0,.18);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .1s,transform .1s}
 .tip.on{opacity:1;transform:none}
 /* статус тренировки слева от названия — индикатор, не кнопка */
-.doch .dst{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 8px;border-radius:20px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;flex:none;cursor:default}
+.doch .dst{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 8px;border-radius:20px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;flex:none;cursor:pointer;transition:box-shadow .12s}
+.doch .dst:hover{box-shadow:0 0 0 1.5px currentColor}
 .doch .dst svg{width:16px;height:16px;stroke-width:2.2}
 .doch .dst.pub{background:#E4F4EA;color:var(--ok)}
 .doch .dst.draft{background:#FBF1DE;color:var(--warn)}
@@ -1100,6 +1120,8 @@ body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left
 
 /* ─── название страницы в шапке приложения: один шрифт везде ─── */
 .topbar .ptitle{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0;white-space:nowrap;display:flex;align-items:center;gap:9px}
+.topbar .ptitle .ptd{font-weight:500;color:var(--tx3);letter-spacing:-.01em}
+.topbar .ptitle .ptd:not(:empty)::before{content:"·";margin-right:9px;color:var(--tx4)}
 .topbar .ptitle .cnt{font-size:13.5px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:20px;padding:2px 8px;letter-spacing:0}
 .days.hide{display:none}
 
@@ -1409,3 +1431,49 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .gc-all{display:flex;gap:14px;margin-bottom:4px}
 .gc-all button{font-size:13.5px;font-weight:500;color:var(--acc-d);background:none;text-decoration:underline;text-underline-offset:2px}
 .gcm .sub{margin-top:8px}
+
+/* ═══════════ СВЯЗКА В СТРОКЕ (CON-23) ═══════════
+   Упражнения подряд через «+», у каждого — свои поля. Строка переносится,
+   если не помещается. Поле «упражнение» в конце — только пока строку правят
+   или навели на неё, у новой связки — всегда. */
+.line.chain{flex-wrap:wrap;row-gap:6px;align-items:center}
+.line.chain .chl{flex:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc-d);background:var(--acc-a);border-radius:var(--rad-s);padding:3px 7px}
+.line.chain .cps{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.line.chain .cp{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.line.chain .cpn{font-weight:600;letter-spacing:-.01em;font-size:15px}
+.line.chain .cp.raw .cpn{font-weight:400;color:var(--tx2)}
+.line.chain .cplus{color:var(--tx3);font-weight:600;font-size:15px}
+.line.chain .cpx{width:20px;height:20px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);opacity:0;transition:opacity .12s}
+.line.chain .cpx svg{width:11px;height:11px}
+.line.chain .cp:hover .cpx{opacity:1}
+.line.chain .cpx:hover{background:var(--s1);color:var(--rm)}
+/* Вне правки — одной строкой: параметры текстом в скобках, полей нет. Поле
+   «упражнение» остаётся в строке (по нему в связку попадают Tab и стрелки),
+   но без места и невидимо, пока курсор не в связке. */
+.line.chain .cpt{color:var(--acc-d);font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums;cursor:text}
+.line.chain:focus-within .cpt{display:none}
+.line.chain:not(:focus-within) .cp .pf,.line.chain:not(:focus-within) .cp .kg,.line.chain:not(:focus-within) .cp .rng,.line.chain:not(:focus-within) .cp .pmf{display:none !important}
+.line.chain .cpn{cursor:text}
+.line.chain:not(:focus-within) .cpx{display:none}
+.line.chain .caddw{display:inline-flex;align-items:center;gap:8px}
+.line.chain:not(:focus-within):not(.empty) .caddw{width:0;overflow:hidden;opacity:0}
+.line.chain .cadd{min-width:12ch;padding:2px 0;font-size:15px;outline:0}
+.line.chain .cadd:empty::before{content:attr(data-ph);color:var(--tx4)}
+.line.chain .kg{font-size:13px}
+/* Строка связки короче, когда пустые поля не занимают места: пустая нагрузка
+   и крестик видны у упражнения, в котором курсор или на которое навели. */
+.line.chain .cp:not(:focus-within) .pf.ld.empty{display:none}
+.line.chain .cpx{width:18px;height:18px}
+/* ═══════════ ДИАПАЗОН НАГРУЗКИ (CON-24) ═══════════
+   «от–до» — дополнительная функция: кнопка видна только у строки, которую
+   правят (в связке — у упражнения с курсором). Набрать «70-80» можно и без
+   неё; у заданного диапазона кнопка горит и снимает его. */
+.rng{display:none;align-items:center;height:26px;padding:0 8px;border-radius:var(--rad-s);font-size:12.5px;font-weight:600;color:var(--tx3);background:var(--s1);white-space:nowrap;flex:none}
+.line.act:not(.chain) .rng,.line.chain .cp:focus-within .rng{display:inline-flex}
+.rng:hover,.rng.on{color:var(--acc-d);background:var(--acc-a)}
+/* ═══════════ ПОДРОБНЫЙ ВИД: СООБЩЕНИЕ К ТРЕНИРОВКЕ И СВЯЗКА ═══════════ */
+.days .day .bxmsg{display:flex;gap:6px;align-items:flex-start;padding:7px 9px;border-radius:var(--rad-m);background:var(--acc-a);color:var(--tx1);font-size:14px;line-height:1.4}
+/* Длинное сообщение не вытесняет тренировку: четыре строки, целиком — в подсказке. */
+.days .day .bxmsg span{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.days .day .bxmsg svg{width:14px;height:14px;flex:none;margin-top:2px;color:var(--acc-d)}
+.days .day .bxch em{font-style:normal;color:var(--acc-d);font-weight:600}

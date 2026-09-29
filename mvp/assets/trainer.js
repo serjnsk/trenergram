@@ -65,10 +65,15 @@ const blockOf = (title, items, note, kind, fmt) => normFmt({
   id: nid('b'), kind: kind === undefined ? typeOfTitle(title) : (kind || null), title: title || '',
   note: note || '', fmt: fmt || null, items: items || [],
 });
+/* Копия строки: у связки копируются и её упражнения — иначе правка одной копии
+   молча меняла бы другую. dupItem — с новыми id (вставка), snapItem — с теми
+   же (возврат из уведомления). */
+const snapItem = i => i.chain ? {...i, parts: i.parts.map(p => ({...p}))} : {...i};
+const dupItem = i => i.chain ? {...i, id:nid('i'), parts: i.parts.map(p => ({...p, id:nid('i')}))} : {...i, id:nid('i')};
 /* Копия блока любого вида: у блока текстом переносится текст, у остальных — строки. */
 const copyBlock = b => isTextBlock(b)
   ? {...textBlock(b.text, b.title), note: b.note || '', kind: b.kind || null, fmt: b.fmt ? {...b.fmt} : null}
-  : blockOf(b.title, b.items.map(i => ({...i, id:nid('i')})), b.note, b.kind, b.fmt ? {...b.fmt} : null);
+  : blockOf(b.title, b.items.map(dupItem), b.note, b.kind, b.fmt ? {...b.fmt} : null);
 
 /* «Отдых» и «—» приходят из модели как заглушки пустого дня, а не как
    названия тренировок. Если день наполнили, они не должны остаться в поле. */
@@ -93,11 +98,19 @@ const PCACHE = {};
    название (fmtIntoTitle): раньше это делалось только для стартовой
    программы, и после смены клиента чужие блоки приходили без формата. */
 const planOf = pid => PCACHE[pid] ||= (b => {
-  b.forEach(d=>{
+  const bag = (STATE.unsaved || {})[pid] || {};
+  b.forEach((d, i)=>{
     d.blocks.forEach(normFmt);
     /* fmtIntoTitle меняет названия блоков после снятия слепка — без обновления
        любой день с форматом («For time», EMOM) считался бы черновиком. */
     if(!d.draft) d.pub = serializeDay(d);
+    d.saved = serializeDay(d);                                  /* что лежит в календаре (CON-20) */
+    if(!contentHas(d.saved)) d.draft = true;                    /* новая тренировка — черновик */
+    /* Несохранённые правки ложатся обратно, только если день под ними не
+       изменился (массовая операция, раздача группы): иначе они устарели. */
+    const u = bag[i];
+    if(u && u.base === d.saved){ const r = JSON.parse(u.c); d.title = r.t; d.blocks = restoreBlocks(r); d.comp = !!r.c }
+    else if(u) delete bag[i];
   });
   return b })(buildPlan(pid));
 const plan = () => planOf(S.pid);
@@ -196,7 +209,7 @@ function renderTop(){
      Крошки, выбор клиента и «Назначить» переехали в рабочую зону — они
      относятся к тренировке, а не к приложению. */
   $('#topbar').innerHTML = `
-    <h1 class="ptitle">Создать тренировку</h1>
+    <h1 class="ptitle">Создать тренировку<span class="ptd" id="ptd"></span></h1>
     <span class="sp"></span>
     ${topButton()}`;
   bindTopButton();
@@ -288,12 +301,13 @@ function renderStrip(){
         if(!c.inProg || !c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" data-date="${c.date}" title="Составить этот день">${head}${restCell()}</button>`;
         const x = d[c.i];
         const n  = dayCount(x);
+        const unsaved = isDirty(x) ? '<i class="udot" title="Есть несохранённые изменения"></i>' : '';
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
         const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
-        const blocks = laneView()==='detail' ? blocksDetail(x, G_() ? null : S.cid) : blocksList(x);
+        const blocks = laneView()==='detail' ? blocksDetail(x, G_() ? null : S.cid, S.cid) : blocksList(x);
         const tag = st === 'rest' ? '' : G_() ? grpStatTag(G_(), c.date) : grpTag(x);
         /* Галочка массового выбора — только у дней с тренировкой или соревнованием. */
-        const hs = st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(c.date)), sc = st === 'rest' ? '' : bulkCls(c.date);
+        const hs = (st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(c.date))).replace('</span>', unsaved + '</span>'), sc = st === 'rest' ? '' : bulkCls(c.date);
         if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i?'on':''}${cls}${sc}" data-day="${c.i}" data-date="${c.date}">
           ${hs}${dayMark(st, S.pid + ':' + c.i)}
           ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}
@@ -313,7 +327,46 @@ function renderStrip(){
 /* Расшифровка формата словами — пригодится, когда вернётся таймер.
    Пока не вызывается ниоткуда: подтверждать разбор мы перестали. */
 const tmSub = f => fmtDesc(f);
+/* Нагрузка в поле: число или диапазон «70–80» (CON-24). */
+const ldVal = it => it.pct != null ? fmtN(it.pct) + (it.pct2 != null ? RNG + fmtN(it.pct2) : '') : fmtN(it.val || '') + (it.val2 ? RNG + fmtN(it.val2) : '');
+const hasRange = it => it.pct2 != null || !!it.val2;
+const fw = (v, min, pad) => `calc(${Math.max(String(v).length, min)}ch + ${pad}px)`;
+/* Поля схемы и нагрузки — общие у строки и у упражнения внутри связки. */
+function prmHTML(it, schPh){
+  const L = loadInfo(it), kg = kgText(it, PM());
+  const sch = it.txt || it.scheme || '', ld = ldVal(it);
+  return `<input class="pf sch" data-pf="sch" data-for="${it.id}" value="${esc(sch)}" placeholder="${schPh}" autocomplete="off" spellcheck="false" style="width:${fw(sch, schPh.length > 3 ? 4 : 3, 20)}">
+      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
+      <button class="rng ${hasRange(it) ? 'on' : ''}" data-rng="${it.id}" tabindex="-1" title="${hasRange(it) ? 'Убрать диапазон — оставить одно число' : 'Диапазон «от–до»: 70–80 % или 60–70 кг. Можно и набрать через дефис'}">от–до</button>` : ''}
+      <span class="kg">${kg != null ? '→ ' + kg + ' кг' : G_() && it.pct != null ? 'от 1ПМ каждого' : ''}</span>
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}`;
+}
+/* ─── СВЯЗКА В СТРОКЕ (CON-23) ───
+   Одна строка: «Взятие на грудь (1 · 70 %) + Фронтальный присед (1) + …».
+   Пока связку не правят, параметры стоят текстом в скобках; нажатие на
+   упражнение или курсор в строке открывают поля схемы и нагрузки — те же,
+   что у обычной строки. В конце — поле «упражнение» с подсказками из базы:
+   Tab берёт первое, Enter без выбора добавляет текстом, Enter в пустом поле —
+   к следующей строке. Крестик у упражнения убирает его из связки. */
+function partPrmHTML(p){
+  const l = itemLabel(p), kg = p.exId ? kgText(p, PM()) : null;
+  const prm = [esc(l), kg ? kg + '\u00a0кг' : ''].filter(Boolean).join(' · ');
+  return prm ? `<span class="cpt">(${prm})</span>` : '';
+}
+function chainLineHTML(it){
+  const ps = it.parts || [];
+  const parts = ps.map((p, k) => `${k ? '<span class="cplus">+</span>' : ''}<span class="cp${p.exId ? '' : ' raw'}" data-part="${p.id}">
+      <span class="cpn">${esc(partName(p))}</span>${p.exId ? partPrmHTML(p) + prmHTML(p, 'повт') : ''}
+      <button class="cpx" data-delpart="${p.id}" tabindex="-1" title="Убрать из связки">${ICON.x}</button></span>`).join('');
+  return `<div class="line chain${ps.length ? '' : ' empty'}" data-item="${it.id}">
+    <span class="gr" title="Перетащить связку">${ICON.grip}</span>
+    <span class="chl">Связка</span>
+    <span class="cps">${parts}<span class="caddw">${ps.length ? '<span class="cplus">+</span>' : ''}<span class="cadd" contenteditable data-edit="${it.id}" spellcheck="false" data-ph="${ps.length ? 'упражнение' : 'первое упражнение связки'}"></span></span></span>
+    <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить связку">${ICON.x}</button>
+  </div>`;
+}
 function lineHTML(it){
+  if(it.chain) return chainLineHTML(it);
   const ex = it.exId ? byId(it.exId) : null;
   /* Строка текстом — обычное сохранённое состояние, а не ошибка: тренер так
      написал, так её и увидит клиент (CON-5). Сама строка не разбирается
@@ -329,24 +382,18 @@ function lineHTML(it){
   /* Схема и нагрузка — поля сразу за названием, без отдельной панели: их
      видно и в них печатают сразу. Колонка полей выровнена внутри блока по
      самому длинному названию (alignNames). */
-  const L = loadInfo(it), kg = workKg(it, PM());
-  const sch = it.txt || it.scheme || '', ld = it.pct != null ? fmtN(it.pct) : fmtN(it.val || '');
-  const w = (v, min, pad) => `calc(${Math.max(String(v).length, min)}ch + ${pad}px)`;
   return `<div class="line ${it.txt ? 'txtmode' : ''}" data-item="${it.id}">
     <span class="gr">${ICON.grip}</span>
     <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"><span class="nm">${esc(ex.ru)}</span></span>
     <span class="prm">
-      <input class="pf sch" data-pf="sch" data-for="${it.id}" value="${esc(sch)}" placeholder="${it.sub ? 'повт' : '3×10'}" autocomplete="off" spellcheck="false" style="width:${w(sch, 4, 20)}">
-      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${w(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>` : ''}
-      <span class="kg">${kg != null ? '→ ' + fmtN(kg) + ' кг' : G_() && it.pct != null ? 'от 1ПМ каждого' : ''}</span>
-      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${w('', 3, 4)}"><u>кг</u></span></span>` : ''}
+      ${prmHTML(it, it.sub ? 'повт' : '3×10')}
     </span>
     <span class="sp"></span>
     <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить упражнение">${ICON.x}</button>
   </div>`;
 }
 /* Подпись чипа: «5×3 · 80 %», «500 м», «3×12 · RPE 8». */
-const itemLoad = it => it.pct ? fmtN(it.pct)+' %' : (it.val ? fmtN(it.val)+(it.unit ? ' '+it.unit : '') : '');
+const itemLoad = it => loadText(it).replace(/\u00a0/g, ' ');
 const itemChip = it => it.txt ? it.txt : [it.scheme, itemLoad(it)].filter(Boolean).join(' · ');
 /* Строки блока: обычные упражнения и суперсеты (заголовок + участники подряд). */
 function itemsHTML(b){
@@ -371,7 +418,7 @@ function ssHTML(h, mem){
       <button class="x" data-delss="${h.id}" title="Удалить суперсет вместе с упражнениями">${ICON.x}</button>
     </div>
     ${mem.map(lineHTML).join('')}
-    <button class="addl in" data-addin="${h.id}">${ICON.plus} Упражнение в суперсет</button>
+    <button class="addl in" data-addin="${h.id}">${ICON.plus} упражнение</button>
   </div>`;
 }
 /* Блок текстом устроен как любой блок — та же шапка, тип, заметка, закладка,
@@ -412,8 +459,9 @@ function blockHTML(b){
         </div>
       </div>` : `${itemsHTML(b)}
     <div class="addrow">
-      <button class="addl" data-add="${b.id}">${ICON.plus} Добавить упражнение</button>
-      <button class="addl" data-addss="${b.id}">${ICON.plus} Добавить суперсет</button>
+      <button class="addl" data-add="${b.id}">${ICON.plus} упражнение</button>
+      <button class="addl" data-addss="${b.id}">${ICON.plus} суперсет</button>
+      <button class="addl" data-addch="${b.id}" title="Несколько упражнений подряд одной строкой">${ICON.plus} связка</button>
     </div>`}
   </div>`;
 }
@@ -465,10 +513,7 @@ function renderDoc(){
       <button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
       <button class="addb" id="add-blk-text">${ICON.text} Добавить блок текстом</button>
     </div>
-    <div class="pubbar">
-      <button class="btn gh" id="saveDraft" ${isDraft(d) || n ? '' : 'disabled'} title="${!isDraft(d) && n ? 'Снять с публикации — клиент перестанет видеть тренировку' : ''}">Сохранить как черновик</button>
-      <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
-    </div>`;
+    ${pubbarHTML(d, n)}`;
 }
 
 /* ═══════════ ГРУППА В КОНСТРУКТОРЕ (GRP-2 … GRP-4) ═══════════
@@ -610,7 +655,7 @@ const csrcItemAt = ref => { const x = csrcDay(); if(!x) return null; const [bi, 
 function csrcCopyItems(ref){
   const x = csrcDay(); if(!x) return null;
   const [bi, k] = String(ref).split(':').map(Number), b = x.blocks[bi]; if(!b || !b.items[k]) return null;
-  return b.items[k].ss ? b.items.slice(k, ssEnd(b.items, k)).map(y => ({...y, id:nid('i')})) : [{...b.items[k], id:nid('i'), sub:false}];
+  return b.items[k].ss ? b.items.slice(k, ssEnd(b.items, k)).map(dupItem) : [{...dupItem(b.items[k]), sub:false}];
 }
 const csrcCopyBlock = bi => { const x = csrcDay(), b = x && x.blocks[+bi]; return b ? copyBlocks([b])[0] : null };
 /* Пустая заготовка блока (появляется на каждом пустом дне) не должна оставаться над вставленным. */
@@ -623,7 +668,7 @@ function csrcCopyWorkout(){
   toast(had ? 'Тренировка дня заменена копией' : 'Тренировка скопирована', 'Отменить', () => { d.title = snap.title; d.blocks = snap.blocks; render() });
 }
 const csrcItemHTML = (it, bi, k, sub) => { const e = it.exId ? byId(it.exId) : null, chip = it.exId ? itemChip(it) : '';
-  return `<div class="csi ${sub ? 'sub' : ''}" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(e ? e.ru : it.raw || '')}</span>${chip ? `<em>${esc(chip)}</em>` : ''}<button class="add" data-ciadd="${bi}:${k}" title="Добавить в тренировку">${ICON.plus}</button></div>` };
+  return `<div class="csi ${sub ? 'sub' : ''}" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(it.chain ? chainText(it) : e ? e.ru : it.raw || '')}</span>${chip ? `<em>${esc(chip)}</em>` : ''}<button class="add" data-ciadd="${bi}:${k}" title="Добавить в тренировку">${ICON.plus}</button></div>` };
 function csrcBlockHTML(b, bi){
   const rows = []; let k = 0;
   /* Блок текстом берут только целиком: его строки — текст, а не отдельные записи. */
@@ -693,6 +738,7 @@ function renderSrc(){
           ? isTextBlock(t) ? textLines(t.text).map(l => `<span>${esc(l)}</span>`).join('')
           : t.items.map(i=>{ if(i[0] === SS_TAG) return `<span class="ssl">${esc(ssLabel({rounds:+i[1]||3, rest:i[2]||''}))}</span>`;
               if(i[0] === TXT_TAG) return `<span class="${i[5]?'sub':''}">${esc(i[1]||'')}</span>`;
+              if(i[0] === CH_TAG) return `<span class="${i[5]?'sub':''}">${esc(chainText(tplLine(i)))}</span>`;
               const e=byId(i[0]) || {ru:i[0]};   /* неизвестный id — показываем как есть, не роняем панель */
               const v = i[4] ? ` · ${i[4]}` : i[2] ? ` · ${i[2]}${i[3]==='%'?' %':' '+(i[3]||'')}` : '';
               return `<span class="${i[5]?'sub':''}">${esc(e.ru)}${i[1]?' — '+esc(i[1]):''}${esc(v)}</span>` }).join('')
@@ -703,44 +749,84 @@ function renderSrc(){
       : 'Шаблон тренировки занимает день целиком (TPL-3).';
   }
 }
-const isDraft = x => x.draft || serializeDay(x) !== x.pub;
-/* Автосохранение: всё, что расходится со слепком публикации, уходит в STATE
-   при каждой перерисовке и при уходе со страницы. Дни без правок не пишем. */
-/* Запись — через putDay: день группы при каждом сохранении расходится по
-   участникам, у дня участника остаётся метка группы. */
+/* ═══════════ СОХРАНЕНИЕ, ЧЕРНОВИК И ПУБЛИКАЦИЯ (CON-20) ═══════════
+   Правки пишутся сразу и не теряются (STATE.unsaved), но в календарь и
+   клиенту уходят только по «Сохранить». Статус дня — «Черновик» (клиент не
+   видит) или «Опубликована» (видит последнюю сохранённую версию); сама правка
+   статус не меняет — прежде опубликованная тренировка от первой же правки
+   становилась черновиком. Переключатель статуса срабатывает сразу и заодно
+   сохраняет правки этого дня. x.saved — слепок, который лежит в календаре. */
+const isDraft = x => !!x.draft;
+const isDirty = x => !!x && serializeDay(x) !== x.saved;
+const dirtyIdx = () => plan().map((x, i) => isDirty(x) ? i : -1).filter(i => i >= 0);
+/* Несохранённые правки — в STATE.unsaved вместе со слепком, поверх которого
+   они сделаны (base): изменится день под ними — они не лягут обратно. */
 function persist(){
-  plan().forEach((x,i)=>{
-    const dirty = serializeDay(x) !== x.pub;
-    if(dirty || x.draft){ x.draft = true; putDay(S.pid, i, {c: serializeDay(x), pub: x.pub, draft: true}); }
-  });
+  const bag = ((STATE.unsaved ||= {})[S.pid] ||= {});
+  plan().forEach((x, i) => { const c = serializeDay(x); if(c !== x.saved) bag[i] = {c, base: x.saved}; else delete bag[i] });
   saveState();
+}
+/* Записать дни в календарь. status — новый статус по номеру дня. Запись —
+   через putDay: день группы расходится по участникам, у дня участника
+   остаётся метка группы; опубликованный день группы сначала проходит окно
+   занятых дней участников. done(true | false). */
+function commitDays(idxs, status = {}, done){
+  const rows = [...new Set(idxs)].map(i => ({i, x: plan()[i]})).filter(r => r.x);
+  if(!rows.length){ if(done) done(false); return }
+  const was = rows.map(r => r.x.draft);
+  rows.forEach(r => { if(status[r.i]) r.x.draft = status[r.i] === 'draft' });
+  const write = replace => {
+    rows.forEach(({i, x}) => {
+      const c = serializeDay(x);
+      if(x.draft) putDay(S.pid, i, {c, pub: x.pub, draft: true});
+      else { x.pub = c; putDay(S.pid, i, {c, draft: false}, true, replace) }
+      x.saved = c;
+    });
+    persist(); render(); if(done) done(true);
+  };
+  const pubs = rows.filter(r => !r.x.draft);
+  if(!pubs.length) return write(null);
+  withGroupConflicts(S.pid, pubs.map(r => r.x.date), write, () => { rows.forEach((r, k) => r.x.draft = was[k]); render(); if(done) done(false) });
+}
+const seeVerb = () => G_() ? 'видят' : 'видит';
+/* Итог публикации: у группы — у скольких участников тренировка встала. */
+function pubMsg(on){
+  const G = G_(), st = on && G && groupDayStat(G, day().date);
+  if(!st) return pubToggleMsg(on, S.pid);
+  const n = G.members.length;
+  return 'Опубликовано для группы «' + G.n + '» — ' + (!st.none.length ? 'тренировка у всех ' + n + ' ' + plural(n, 'участника', 'участников', 'участников')
+    : 'тренировка у ' + st.got.length + ' из ' + n + ', ' + st.none.length + ' ' + plural(st.none.length, 'пропущен', 'пропущены', 'пропущены'));
+}
+/* «Сохранить» (Ctrl/⌘+S) — все изменённые дни, каждый со своим статусом. */
+function saveAll(){
+  const idx = dirtyIdx(); if(!idx.length) return;
+  const d = day(), one = idx.length === 1 && idx[0] === S.i;
+  commitDays(idx, {}, ok => { if(!ok) return toast('Не сохранено — публикация отменена');
+    toast(!one ? 'Сохранено дней: ' + idx.length
+      : d.draft ? 'Сохранено черновиком — ' + aud() + ' не ' + seeVerb()
+      : G_() ? pubMsg(true) : 'Сохранено — ' + aud() + ' ' + seeVerb() + ' новую версию') });
+}
+/* Переключатель «Черновик / Опубликована» — внизу и у названия дня. */
+function setStatus(st){
+  const d = day(); if(!d || ((st === 'draft') === !!d.draft && !isDirty(d))) return;
+  commitDays([S.i], {[S.i]: st}, ok => { if(ok) toast(pubMsg(st === 'pub')) });
 }
 /* Глазик в полосе недель: опубликовать черновик или скрыть опубликованное.
    Работает по живому плану конструктора, а не по слепку в STATE. */
 /* Публикация дня группы сначала проходит окно занятых дней участников (withGroupConflicts). */
+/* Правки этого дня сохраняются вместе со статусом. */
 function setPubIdx(i, on){
-  const x = plan()[i]; if(!x) return;
-  if(!on){ x.draft = true; putDay(S.pid, i, {c: serializeDay(x), pub: x.pub, draft: true}); saveState(); render(); toast(pubToggleMsg(false, S.pid)); return }
-  const c = serializeDay(x);
-  withGroupConflicts(S.pid, [x.date], replace => { x.pub = c; x.draft = false; putDay(S.pid, i, {c, draft: false}, true, replace); saveState(); render(); toast(pubToggleMsg(true, S.pid)) });
-}
-function publishDay(){
-  const x = day(), c = serializeDay(x);
-  withGroupConflicts(S.pid, [x.date], replace => {
-    x.pub = c; x.draft = false;
-    putDay(S.pid, S.i, {c, draft: false}, true, replace);
-    saveState(); render();
-    const G = G_(), st = G && groupDayStat(G, x.date);
-    toast(!G ? 'Тренировка добавлена в календарь — клиент её видит'
-      : !st || !st.none.length ? 'Опубликовано для группы «' + G.n + '» — тренировка у всех ' + G.members.length + ' ' + plural(G.members.length, 'участника', 'участников', 'участников')
-      : 'Опубликовано для группы «' + G.n + '» — тренировка у ' + st.got.length + ' из ' + G.members.length + ', ' + st.none.length + ' ' + plural(st.none.length, 'пропущен', 'пропущены', 'пропущены'));
-  }, () => toast('Публикация отменена — тренировка осталась черновиком'));
+  if(!plan()[i]) return;
+  commitDays([i], {[i]: on ? 'pub' : 'draft'}, ok => { if(ok) toast(pubToggleMsg(on, S.pid)) });
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
 /* Лист блока текстом растёт по содержимому, без собственной прокрутки. */
 const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); }
+/* «Пятница, 19 сентября» — дата открытого дня в заголовке страницы; год — если не текущий. */
+const fullDate = date => { const t = D(date), y = t.getFullYear(); return DOW[dowMon(date)] + ', ' + t.getDate() + ' ' + MONTHS[t.getMonth()] + (y !== new Date().getFullYear() ? ' ' + y : '') };
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
+  const pt = $('#ptd'); if(pt && cur) pt.textContent = fullDate(cur.date) }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -838,17 +924,17 @@ function wizardApply(){
     extendPlan(r.i);
     const d = plan()[r.i];
     const src = r.it.kind==='tpl' ? tplToWorkout(tplById(r.it.id)) : planOf(r.it.pid)[r.it.i];
-    d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks); d.draft = true;
+    d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks);
   });
-  const n = pl.rows.length, done = pub => { persist(); saveState(); render();
-    history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}`);
-    toast('Создано ' + n + ' ' + plural(n,'тренировка','тренировки','тренировок') + (pub ? ' — в календаре' : ' — черновиками')) };
-  if(!WZ.publish) return done(false);
+  /* Созданное сразу ложится в календарь — опубликованным или черновиком. */
+  const n = pl.rows.length, write = (pub, replace) => pl.rows.forEach(r => { const d = plan()[r.i], c = serializeDay(d);
+      d.draft = !pub; if(pub){ d.pub = c; putDay(S.pid, r.i, {c, draft:false}, true, replace) } else putDay(S.pid, r.i, {c, pub: d.pub, draft:true}); d.saved = c }),
+    done = pub => { persist(); render();
+      history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}`);
+      toast('Создано ' + n + ' ' + plural(n,'тренировка','тренировки','тренировок') + (pub ? ' — в календаре' : ' — черновиками')) };
+  if(!WZ.publish){ write(false); return done(false) }
   /* Публикация набора в группу — через окно занятых дней участников, как у одного дня. */
-  withGroupConflicts(S.pid, pl.rows.map(r => r.date), replace => {
-    pl.rows.forEach(r => { const d = plan()[r.i]; d.pub = serializeDay(d); d.draft = false; putDay(S.pid, r.i, {c:d.pub, draft:false}, true, replace) });
-    done(true);
-  }, () => done(false));
+  withGroupConflicts(S.pid, pl.rows.map(r => r.date), replace => { write(true, replace); done(true) }, () => { write(false); done(false) });
 }
 function wireWizard(ov, draw){
   ov.querySelector('#wz-x').onclick = () => ov.remove();
@@ -1051,7 +1137,7 @@ async function aiLine(id){
   await aiWait(600);
   /* Пока ИИ думал, строку могли удалить или перетащить в другой блок. */
   const {b, i} = findItem(id); if(!i || i.exId) return;
-  const snap = b.items.map(x => ({...x}));
+  const snap = b.items.map(snapItem);
   const undo = () => { b.items = snap; render(); flash(id) };
   /* «3 круга: гребля 500 м, планка 60 сек» — суперсет одной строкой. Внутри
      суперсета вложенный не собираем. */
@@ -1068,7 +1154,10 @@ async function aiLine(id){
   /* Список открываем после того, как клик по уведомлению отработает целиком, —
      иначе общий обработчик кликов тут же закроет его как «клик мимо». */
   if(!p){ render(); toast('ИИ не узнал упражнение — строка осталась текстом', 'Выбрать из базы', () => setTimeout(() => pickFor(id))); return }
-  Object.assign(i, {exId:p.exId, raw:'', scheme:p.scheme||'', pct:p.pct??null, unit:p.unit||'', val:p.val||'', txt:p.txt||''});
+  /* «Взятие на грудь (1) + толчок (2)» — связка одной строкой (CON-23). */
+  if(p.chain){ if(i.sub) p.sub = true; b.items.splice(b.items.indexOf(i), 1, p); render(); flash(p.id);
+    toast('ИИ собрал связку · ' + p.parts.length + ' ' + plural(p.parts.length, 'упражнение', 'упражнения', 'упражнений'), 'Вернуть текст', undo); return }
+  i.exId = p.exId; i.raw = ''; setPrm(i, p);
   render(); flash(id);
   toast('ИИ разобрал строку: ' + byId(p.exId).ru, 'Вернуть текст', undo);
 }
@@ -1327,21 +1416,22 @@ function openNewEx(id, text){
   </div>`;
   document.body.appendChild(ov);
   const inp = ov.querySelector('#nx-ru'); inp.focus(); inp.select();
-  const keep = () => { ov.remove(); if(text.trim()) keepText(id, text) };
+  const keep = () => { ov.remove(); if(!text.trim()) return; const {i: h} = findItem(id); if(h && h.chain) chainAdd(id, null, text); else keepText(id, text) };
   const save = () => {
     const ru = inp.value.trim(); if(!ru){ inp.focus(); toast('Укажите название упражнения'); return }
     const ex = EX.find(x => norm(x.ru) === norm(ru)) || addOwnEx({ru, g: ov.querySelector('#nx-g').value, eq: ov.querySelector('#nx-eq').value,
       u: [...ov.querySelectorAll('[data-nxu].on')].map(b => b.dataset.nxu)});
     ov.remove();
     const {i} = findItem(id);
+    /* Из поля связки новое упражнение сразу встаёт в связку. */
+    if(i && i.chain){ chainAdd(id, ex.id, ex.ru + text.trim().slice(exNameOf(text).length)); renderSrc(); toast('«' + ex.ru + '» — в вашей базе упражнений'); return }
     if(i){
       /* Имя в строке заменяем на сохранённое — тогда разбор узнаёт упражнение
          наверняка, даже если название в окне поправили. */
       const tail = text.trim().slice(exNameOf(text).length);
       const p = parseLine(ex.ru + tail);
-      Object.assign(i, p && p.exId === ex.id
-        ? {exId: ex.id, scheme: p.scheme||'', pct: p.pct??null, unit: p.unit||'', val: p.val||'', txt: p.txt||'', raw: ''}
-        : {exId: ex.id, scheme: '', pct: null, unit: ex.u[0]||'', val: '', txt: tail.trim(), raw: ''});
+      i.exId = ex.id; i.raw = '';
+      setPrm(i, p && p.exId === ex.id ? p : {unit: ex.u[0] || '', txt: tail.trim()});
     }
     render(); renderSrc(); focusLineField(id, 'sch');
     toast('«' + ex.ru + '» — в вашей базе упражнений');
@@ -1356,17 +1446,28 @@ function openNewEx(id, text){
     if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); keep() }
   });
 }
+/* Упражнение внутри связки находится по своему id: {b, i: часть, chain: связка}.
+   Части ищут только поля схемы и нагрузки — строки ищутся по своим id. */
 const findItem = id => {
-  for(const b of day().blocks){ const i = b.items.find(x=>x.id===id); if(i) return {b,i} }
+  for(const b of day().blocks) for(const i of b.items){
+    if(i.id === id) return {b, i};
+    if(i.chain){ const p = (i.parts || []).find(x => x.id === id); if(p) return {b, i: p, chain: i} }
+  }
   return {};
 };
+/* Схема и нагрузка из разбора — в строку или в упражнение связки, с диапазоном. */
+function setPrm(i, p){
+  Object.assign(i, {scheme: p.scheme || '', pct: p.pct ?? null, unit: p.unit || '', val: p.val || '', txt: p.txt || ''});
+  if(p.pct2 != null) i.pct2 = p.pct2; else delete i.pct2;
+  if(p.val2) i.val2 = p.val2; else delete i.val2;
+}
 /* Всё, что набрано и не выбрано из базы, сохраняется как написано (CON-5).
    Строку программа не разбирает — это делает кнопка AI, когда попросят.
    Если руками переписали название упражнения из базы, строка уходит в текст
    целиком, вместе со схемой и нагрузкой: связь с базой не подменяется похожим
    упражнением, а набранное не теряется. Это единственный неочевидный переход,
    поэтому о нём — уведомление с возвратом. */
-const paramsText = it => it.txt || [it.scheme, it.pct != null ? fmtN(it.pct) + '%' : it.val ? fmtN(it.val) + (it.unit ? ' ' + it.unit : '') : ''].filter(Boolean).join(' ');
+const paramsText = it => it.txt || [it.scheme, it.pct != null || it.val ? ldVal(it) + (it.pct != null ? '%' : it.unit ? ' ' + it.unit : '') : ''].filter(Boolean).join(' ');
 const sameText = (i, text) => norm(String(text || '')) === norm(i.exId ? (byId(i.exId) || {}).ru || '' : i.raw || '');
 function keepText(id, text){
   const {i} = findItem(id); if(!i) return;
@@ -1405,35 +1506,41 @@ function loadInfo(it){
 function parseParamsText(v){
   const src = String(v || '').trim();
   if(!src) return {scheme:'', pct:null, unit:'', val:''};
-  let rest = ' ' + src.replace(/\*/g, '×') + ' ', pct = null, unit = '', val = '';
-  const mp = rest.match(/@?\s*(\d{1,3}(?:[.,]\d)?)\s*%/);
-  if(mp){ pct = parseFloat(mp[1].replace(',', '.')); rest = rest.replace(mp[0], ' ') }
-  const mm = rest.match(/(\d+(?:[.,]\d+)?)\s*мин[а-яё]*\.?/i);
-  if(mm){ unit = 'мин'; val = mm[1].replace(',', '.'); rest = rest.replace(mm[0], ' ') }
-  else for(const [u, re] of UNITS){ const m = rest.match(re); if(m){ unit = u; val = m[1].replace(',', '.'); rest = rest.replace(m[0], ' '); break } }
+  let rest = ' ' + src.replace(/\*/g, '×') + ' ', pct = null, pct2 = null, unit = '', val = '', val2 = '';
+  const mp = rest.match(RE_PCT);
+  if(mp){ pct = parseFloat(mp[1].replace(',', '.')); if(mp[2]) pct2 = parseFloat(mp[2].replace(',', '.')); rest = rest.replace(mp[0], ' ') }
+  const mm = rest.match(/(\d+(?:[.,]\d+)?)(?:\s*[-–—]\s*(\d+(?:[.,]\d+)?))?\s*мин[а-яё]*\.?/i);
+  if(mm){ unit = 'мин'; val = mm[1].replace(',', '.'); val2 = (mm[2] || '').replace(',', '.'); rest = rest.replace(mm[0], ' ') }
+  else for(const [u, re] of UNITS){ const m = rest.match(re); if(m){ unit = u; val = m[1].replace(',', '.'); val2 = (m[2] || '').replace(',', '.'); rest = rest.replace(m[0], ' '); break } }
   let scheme = '';
   const ms = rest.match(RE_SCHEME) || rest.match(RE_SETS);
   if(ms){ scheme = ms[0].replace(/\s/g, '').replace(/[xхХ]/g, '×'); rest = rest.replace(ms[0], ' ') }
   else { const lead = rest.match(/^\s*(\d+)\s*$/) || rest.match(/^\s*(\d+)\s+(?=\S)/); if(lead){ scheme = lead[1]; rest = rest.replace(lead[0], ' ') } }
-  if(unit === 'повт' && !scheme){ scheme = val; unit = ''; val = '' }
+  if(unit === 'повт' && !scheme){ scheme = val2 ? val + '-' + val2 : val; unit = ''; val = ''; val2 = '' }
   rest = rest.replace(/(^|\s)(по|на|с|@|x|×)(?=\s|$)/gi, ' ');
   if(/[^\s,;·]/.test(rest)) return {txt: src};
-  return {scheme, pct, unit, val};
+  return {scheme, pct, unit, val, ...(pct2 != null ? {pct2} : {}), ...(val2 ? {val2} : {})};
 }
 function applyScheme(i, v){
   const r = parseParamsText(v);
-  if(r.txt != null){ Object.assign(i, {txt:r.txt, scheme:'', pct:null, unit:'', val:''}); return }
+  if(r.txt != null){ Object.assign(i, {txt:r.txt, scheme:'', pct:null, unit:'', val:''}); delete i.pct2; delete i.val2; return }
   i.txt = ''; i.scheme = r.scheme;
-  if(r.pct != null){ i.pct = r.pct; i.unit = ''; i.val = ''; UNITSEL[i.id] = '%' }
-  else if(r.val){ i.pct = null; i.unit = r.unit; i.val = r.val; UNITSEL[i.id] = r.unit }
+  if(r.pct != null){ setPrm(i, {...r, txt:''}); i.unit = ''; UNITSEL[i.id] = '%' }
+  else if(r.val){ setPrm(i, {...r, txt:''}); UNITSEL[i.id] = r.unit }
 }
 /* Порядок важен: «ка» — калории, а одиночное «к» — килограммы; «ми» — минуты, «м» — метры. */
 const LOAD_SUFFIX = [[/^(%|проц)/i,'%'], [/^(кал|ка|cal)/i,'кал'], [/^(кг|kg|к|k)\.?$/i,'кг'], [/^(мин|ми|min)/i,'мин'],
                      [/^(м|m|метр)/i,'м'], [/^(сек|с|sec|s)/i,'сек'], [/^(повт|раз|rep)/i,'повт']];
+/* Диапазон (CON-24): «70-80», «70–80%», «60..70 кг»; хвост «70–», пока верхнюю
+   границу ещё набирают, — просто число. Границы наоборот переставляются. */
 function parseLoad(raw){
-  const s = String(raw || '').trim();
+  const s = String(raw || '').trim().replace(/\s*(?:[-–—]|\.\.)\s*$/, '');
   if(!s) return {empty:true};
   const mt = s.match(/^(\d+):(\d{2})$/); if(mt) return {num: +mt[1] * 60 + +mt[2], unit:'сек'};
+  const mr = s.replace(/,/g, '.').match(/^(\d+(?:\.\d+)?)\s*(?:[-–—]|\.\.)\s*(\d+(?:\.\d+)?)\s*(.*)$/);
+  if(mr){ const a = +mr[1], b = +mr[2], suf = mr[3].trim(), hit = suf ? LOAD_SUFFIX.find(([re]) => re.test(suf)) : null;
+    if(suf && !hit) return {text:s};
+    return a === b ? {num:a, unit: hit ? hit[1] : null} : {num: Math.min(a, b), num2: Math.max(a, b), unit: hit ? hit[1] : null} }
   const m = s.replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
   if(!m) return {text:s};
   const suf = m[2].trim();
@@ -1443,22 +1550,28 @@ function parseLoad(raw){
 }
 function applyLoad(i, raw, force){
   const r = parseLoad(raw);
+  delete i.pct2; delete i.val2;
   if(r.empty){ i.pct = null; i.val = ''; i.unit = ''; return }
   if(r.text != null){ i.pct = null; i.val = r.text; i.unit = ''; return }
   const u = r.unit || force || loadInfo(i).cur;
   if(r.unit) UNITSEL[i.id] = r.unit;
-  if(u === '%'){ i.pct = r.num; i.unit = ''; i.val = '' } else { i.pct = null; i.unit = u; i.val = String(r.num) }
+  if(u === '%'){ i.pct = r.num; i.unit = ''; i.val = ''; if(r.num2 != null) i.pct2 = r.num2 }
+  else { i.pct = null; i.unit = u; i.val = String(r.num); if(r.num2 != null) i.val2 = String(r.num2) }
 }
 const autoWidth = f => { const sch = f.dataset.pf === 'sch';
   f.style.width = `calc(${Math.max(f.value.length, (f.placeholder || '').length, sch ? 4 : 3)}ch + ${sch ? 20 : 4}px)` };
 /* Вес, единица, поле 1ПМ и «текстовый» режим — на месте, без перерисовки:
    перерисовка сбила бы курсор. Поле 1ПМ, в котором сейчас печатают, не прячем. */
 function syncLoads(){
-  $$('#doc .line[data-item]').forEach(l => {
-    const {i} = findItem(l.dataset.item); if(!i || !i.exId) return;
-    const L = loadInfo(i), kg = workKg(i, PM());
+  $$('#doc .line[data-item]:not(.chain), #doc .cp[data-part]').forEach(l => {
+    const {i} = findItem(l.dataset.item || l.dataset.part); if(!i || !i.exId) return;
+    const L = loadInfo(i), kg = kgText(i, PM());
     l.classList.toggle('txtmode', !!i.txt);
-    const k = l.querySelector('.prm .kg'); if(k) k.textContent = kg != null ? '→ ' + fmtN(kg) + ' кг' : G_() && i.pct != null ? 'от 1ПМ каждого' : '';
+    const k = l.querySelector('.kg'); if(k) k.textContent = kg != null ? '→ ' + kg + ' кг' : G_() && i.pct != null ? 'от 1ПМ каждого' : '';
+    const rg = l.querySelector('[data-rng]'); if(rg) rg.classList.toggle('on', hasRange(i));
+    /* У упражнения связки — и параметры текстом, которые видны вне правки. */
+    if(l.dataset.part){ const pt = l.querySelector('.cpt'), html = partPrmHTML(i);
+      if(pt) pt.outerHTML = html; else if(html) l.querySelector('.cpn').insertAdjacentHTML('afterend', html) }
     const u = l.querySelector('[data-pfu]'); if(u){ u.textContent = L.cur; u.parentElement.classList.toggle('empty', !u.parentElement.querySelector('input').value.trim()) }
     const pm = l.querySelector('.pmf');
     if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key] && !G_()));
@@ -1467,31 +1580,47 @@ function syncLoads(){
 /* Поле покинули — привести запись к виду: «5x3» → 5×3, суффикс единицы уходит в подпись. */
 function normField(pf){
   const {i} = findItem(pf.dataset.for); if(!i) return;
-  const kind = pf.dataset.pf, line = pf.closest('.line');
+  const kind = pf.dataset.pf, host = pf.closest('.cp') || pf.closest('.line');
   if(kind === 'sch'){
     applyScheme(i, pf.value);
     pf.value = i.txt || i.scheme || '';
-    const ld = line && line.querySelector('[data-pf="ld"]');
-    if(ld){ ld.value = i.pct != null ? fmtN(i.pct) : fmtN(i.val || ''); autoWidth(ld) }
+    const ld = host && host.querySelector('[data-pf="ld"]');
+    if(ld){ ld.value = ldVal(i); autoWidth(ld) }
   }
-  if(kind === 'ld'){ applyLoad(i, pf.value); pf.value = i.pct != null ? fmtN(i.pct) : fmtN(i.val || '') }
+  if(kind === 'ld'){ applyLoad(i, pf.value); pf.value = ldVal(i) }
   if(kind === 'pm'){ const v = PM()[loadInfo(i).key]; pf.value = v ? fmtN(v) : '' }
   autoWidth(pf); syncLoads();
 }
 /* Статус дня и кнопки публикации — без перерисовки документа. */
 /* Кто видит тренировку: клиент или участники группы. */
 const aud = dat => G_() ? (dat ? 'группе' : 'участники') : (dat ? 'клиенту' : 'клиент');
-const docStatusHTML = (d, n) => n || isDraft(d) ? (isDraft(d)
-  ? `<span class="dst draft" title="Черновик — ${aud()} не ${G_() ? 'видят' : 'видит'}. Опубликуйте кнопкой внизу">${DAYICON.draft}Черновик</span>`
-  : `<span class="dst pub" title="Опубликована — ${aud()} ${G_() ? 'видят' : 'видит'}">${DAYICON.pub}Опубликована</span>`) : '';
+/* Статус у названия дня — тот же переключатель, что внизу (CON-20): нажатие
+   сразу меняет статус и сохраняет правки дня. */
+const docStatusHTML = (d, n) => n || contentHas(d.saved) ? (isDraft(d)
+  ? `<button class="dst draft" data-status="pub" title="Черновик — ${aud()} не ${seeVerb()}. Нажмите, чтобы опубликовать">${DAYICON.draft}Черновик</button>`
+  : `<button class="dst pub" data-status="draft" title="Опубликована — ${aud()} ${seeVerb()}. Нажмите, чтобы перевести в черновик">${DAYICON.pub}Опубликована</button>`) : '';
+const SAVE_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘S' : 'Ctrl+S';
+/* Панель сохранения прилипает к низу экрана: переключатель статуса, что не
+   сохранено и «Сохранить». Пустой день опубликовать нечего. */
+function pubbarHTML(d, n){
+  const nd = dirtyIdx().length, cur = isDirty(d), can = n > 0 || contentHas(d.saved), dr = isDraft(d);
+  const note = cur ? 'Есть несохранённые изменения' : nd ? 'Не сохранено: ' + nd + ' ' + plural(nd, 'день', 'дня', 'дней') : can ? 'Всё сохранено' : '';
+  return `<div class="pubbar">
+    <span class="pubseg" role="group" aria-label="Статус тренировки">
+      <button data-status="draft" class="${dr ? 'on' : ''}" ${can ? '' : 'disabled'} title="${G_() ? 'Участники' : 'Клиент'} не ${seeVerb()} тренировку">${DAYICON.draft}Черновик</button>
+      <button data-status="pub" class="${dr ? '' : 'on'}" ${can ? '' : 'disabled'} title="${G_() ? 'Участники' : 'Клиент'} ${seeVerb()} сохранённую версию">${DAYICON.pub}Опубликована</button>
+    </span>
+    <span class="pbnote${nd ? ' warn' : ''}">${note}</span>
+    <button class="btn" id="saveAll" ${nd ? '' : 'disabled'} title="Сохранить изменения · ${SAVE_KEY}">${ICON.chk} Сохранить</button>
+  </div>`;
+}
+/* Статус и панель — на месте, без перерисовки документа: она сбила бы курсор. */
 function refreshChrome(){
   const d = day(); if(!d) return;
-  const n = dayCount(d), dr = isDraft(d), html = docStatusHTML(d, n);
+  const n = dayCount(d), html = docStatusHTML(d, n);
   const old = $('#doc .doch .dst');
   if(old) old.outerHTML = html; else if(html){ const gr = $('#doc .doch > .gr'); if(gr) gr.insertAdjacentHTML('afterend', html) }
-  const sd = $('#saveDraft'), pb = $('#publish');
-  if(sd) sd.disabled = !(dr || n);
-  if(pb) pb.disabled = !(dr && n);
+  const pb = $('#doc .pubbar'); if(pb) pb.outerHTML = pubbarHTML(d, n);
 }
 const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads(); refreshGrp() };
 
@@ -1500,7 +1629,7 @@ const lineEl = id => $(`#doc .line[data-item="${id}"]`);
 const lineEls = () => $$('#doc .line[data-item]:not(.ssh)');
 const fieldIn = (line, kind) => !line ? null : kind === 'e' ? line.querySelector('[data-edit]') : line.querySelector(`[data-pf="${kind}"]`);
 const shown = el => !!el && el.getClientRects().length > 0;
-const lineFields = line => ['e','sch','ld','pm'].map(k => fieldIn(line, k)).filter(shown);
+const lineFields = line => $$('[data-edit], [data-pf]', line).filter(shown);
 const caretEnd = el => { const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r) };
 function focusField(el){
   if(!el) return false;
@@ -1540,9 +1669,28 @@ function focusSnap(){
 function focusRestore(f){
   if(!f) return;
   if(f.k === 'text'){ const ta = $(`#doc [data-blk="${f.id}"] .tbx`); if(ta){ ta.focus({preventScroll:true}); try{ ta.setSelectionRange(f.s, f.e) }catch(_){} } return }
-  const el = fieldIn(lineEl(f.id), f.k); if(!shown(el)) return;
+  const el = f.k === 'e' ? fieldIn(lineEl(f.id), 'e') : $(`#doc [data-pf="${f.k}"][data-for="${f.id}"]`); if(!shown(el)) return;
   el.focus({preventScroll:true});
   if(f.k === 'e') setCaret(el, f.off); else { try{ el.setSelectionRange(f.s, f.e) }catch(_){} }
+}
+/* Поле упражнения внутри связки — по id упражнения. */
+const focusPart = (pid, kind) => { const f = $(`#doc [data-pf="${kind}"][data-for="${pid}"]`); return shown(f) && focusField(f) };
+/* ─── связка: добавить, закончить ─── */
+function chainAdd(id, exId, text, mode){
+  const {i: c} = findItem(id); if(!c || !c.chain) return;
+  const t = String(text || '').trim();
+  if(!exId){ if(!t) return; c.parts.push(rawItem(t)); render(); if(mode !== 'quiet') focusLineField(id, 'e'); return }
+  const tail = t.slice(exNameOf(t).length).trim(), r = parseParamsText(tail), p = mkItem(exId);
+  setPrm(p, r.txt != null ? {txt: r.txt} : r);
+  c.parts.push(p); render();
+  /* У упражнения связки почти всегда есть повторы — курсор сразу в схему. */
+  focusPart(p.id, 'sch');
+}
+function chainDone(id, mode){
+  const {b, i: c} = findItem(id); if(!c) return;
+  if(!c.parts.length){ dropEmptyLine(id); return }
+  if(mode === 'enter') newLineAfter(id);
+  else { const to = neighborId(lineEl(id), 'e', 1); if(to) focusLineField(to, 'e'); else { closeSug(); document.activeElement.blur() } }
 }
 /* Новая строка сразу под текущей — в том же блоке и том же суперсете. Если
    под ней уже пустая строка, переходим в неё, а не плодим пустые. */
@@ -1580,13 +1728,16 @@ function commitIfChanged(id, text){
 function pickExercise(id, exId, text, mode){
   closeSug();
   const {i} = findItem(id); if(!i) return;
+  if(i.chain){ chainAdd(id, exId, text, mode); return }
   const cur = parseLine(text);
   let prm;
-  if(cur && cur.exId === exId) prm = {scheme: cur.scheme || '', pct: cur.pct ?? null, unit: cur.unit || '', val: cur.val || '', txt: cur.txt || ''};
+  if(cur && cur.exId === exId) prm = cur;
   else { const tail = String(text || '').trim().slice(exNameOf(text).length).trim(), r = parseParamsText(tail);
-    prm = r.txt != null ? {txt: r.txt, scheme:'', pct:null, unit:'', val:''} : {scheme: r.scheme, pct: r.pct, unit: r.unit, val: r.val, txt:''} }
-  const empty = !prm.scheme && prm.pct == null && !prm.val && !prm.txt;
-  Object.assign(i, {exId, raw:''}, empty && i.exId ? {} : prm);
+    prm = r.txt != null ? {txt: r.txt} : r }
+  /* Переименование без параметров старые схему и нагрузку не трогает. */
+  const keep = !prm.scheme && prm.pct == null && !prm.val && !prm.txt && !!i.exId;
+  i.exId = exId; i.raw = '';
+  if(!keep) setPrm(i, prm);
   render();
   const hasP = !!(i.scheme || i.pct != null || i.val || i.txt);
   if(mode === 'enter' && hasP) newLineAfter(id); else focusLineField(id, 'sch');
@@ -1624,7 +1775,8 @@ const KB = k => `<kbd>${k}</kbd>`;
 const KEYHINT = {
   e:   `<span>${KB('Tab')}из базы</span><span>${KB('↑')}${KB('↓')}подсказка / строка</span><span>${KB('Enter')}следующая строка</span><span>${KB('Esc')}готово</span><span class="r">сохранится как написано</span>`,
   sch: `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">5x3 · 21-15-9 · 8 — или текстом</span>`,
-  ld:  `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">80% · 100к · 500м · 60с · 20кал</span>`,
+  ld:  `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">80% · 70-80% · 100к · 500м · 60с</span>`,
+  ch:  `<span>${KB('Tab')}из базы</span><span>${KB('↑')}${KB('↓')}подсказка</span><span>${KB('Enter')}добавить в связку</span><span>${KB('Enter')}в пустом — дальше</span><span class="r">упражнения подряд одной строкой</span>`,
   pm:  `<span>${KB('Tab')}дальше</span><span>${KB('Enter')}следующее</span><span>${KB('Esc')}готово</span><span class="r">1ПМ клиента — от него считаются проценты</span>`,
 };
 document.addEventListener('focusin', e => {
@@ -1636,7 +1788,7 @@ document.addEventListener('focusin', e => {
   if(f.dataset.pf === 'ld'){ const {i} = findItem(f.dataset.for); if(i && !UNITSEL[i.id]) UNITSEL[i.id] = loadInfo(i).cur }
   line.classList.add('act');
   if(!h){ h = document.createElement('div'); h.id = 'keyhint'; h.className = 'keyhint' }
-  h.innerHTML = KEYHINT[f.dataset.pf || 'e'];
+  h.innerHTML = KEYHINT[f.dataset.pf || (line.classList.contains('chain') ? 'ch' : 'e')];
   if(line.nextElementSibling !== h) line.after(h);
 });
 document.addEventListener('focusout', e => {
@@ -1668,6 +1820,15 @@ document.addEventListener('keydown', e => {
       if(e.key === 'Tab' && !e.shiftKey){ const r = k >= 0 ? rows[k] : SUG.querySelector('[data-pick]'); if(r){ e.preventDefault(); activateSugRow(r, 'tab'); return } }
     }
     const text = ed.textContent;
+    const {i: host} = findItem(id);
+    if(host && host.chain){
+      if(e.key === 'Enter'){ e.preventDefault(); closeSug(); if(text.trim()) chainAdd(id, null, text); else chainDone(id, 'enter'); return }
+      if(e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); closeSug(); if(text.trim()) chainAdd(id, null, text); else chainDone(id, 'tab'); return }
+      if(e.key === 'Tab' && e.shiftKey){ e.preventDefault(); closeSug(); const fs = lineFields(line), k = fs.indexOf(ed); if(k > 0) focusField(fs[k - 1]); return }
+      if(e.key === 'Escape'){ e.preventDefault(); closeSug(); ed.blur(); return }
+      if(down || up){ e.preventDefault(); closeSug(); const to = neighborId(line, 'e', down ? 1 : -1); if(to) focusLineField(to, 'e'); return }
+      return;
+    }
     if(e.key === 'Enter'){ e.preventDefault(); if(!text.trim()){ dropEmptyLine(id); return } commitName(id, text, 'enter'); return }
     if(e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); if(text.trim()) commitName(id, text, 'tab'); return }
     if(e.key === 'Tab' && e.shiftKey){ e.preventDefault(); commitIfChanged(id, text);
@@ -1684,7 +1845,7 @@ document.addEventListener('keydown', e => {
     else if(!e.shiftKey){ const to = neighborId(line, 'e', 1); if(to) focusLineField(to, 'e') }
     commitSoft(); return;
   }
-  if(e.key === 'Enter'){ e.preventDefault(); normField(pf); newLineAfter(id); return }
+  if(e.key === 'Enter'){ e.preventDefault(); normField(pf); if(line.classList.contains('chain')){ commitSoft(); focusLineField(id, 'e'); return } newLineAfter(id); return }
   if(e.key === 'Escape'){ e.preventDefault(); normField(pf); pf.blur(); render(); return }
   if(down || up){ e.preventDefault(); normField(pf); const to = neighborId(line, kind, down ? 1 : -1); if(to) focusLineField(to, kind); commitSoft(); return }
 });
@@ -1804,6 +1965,12 @@ const FOLDER_OF = b => TYPE_FOLDER[b.kind] || (fmtPart(b.title) ? 'Компле�
   : (b.items||[]).some(i => i.pct != null || i.unit === 'кг') ? 'Силовые блоки'
   : /заминк|растяж|заверш/i.test(b.title) ? 'Заминки' : 'Разминки');
 
+/* Строка в шаблоне массивом [ex, scheme, val, unit, txt, sub]; диапазон —
+   строкой «70–80», связка — [CH_TAG, [части]]. */
+const tplArr = i => i.chain ? [CH_TAG, i.parts.filter(partHas).map(tplArr), '', '', '', i.sub?1:0]
+  : !i.exId ? [TXT_TAG, String(i.raw).trim(), '', '', '', i.sub?1:0]
+  : i.pct != null ? [i.exId, i.scheme||'', i.pct2 != null ? i.pct + RNG + i.pct2 : i.pct, '%', i.txt||'', i.sub?1:0]
+  : [i.exId, i.scheme||'', i.val2 ? i.val + RNG + i.val2 : i.val||'', i.unit||'', i.txt||'', i.sub?1:0];
 function blockToTpl(b, folder){
   const t = {
     id: nid('t'), lvl:'блок', folder: folder || FOLDER_OF(b), used: 0, kind: b.kind || null,
@@ -1813,11 +1980,7 @@ function blockToTpl(b, folder){
        суперсет, в котором осталось меньше двух записей, распускается — на
        копиях, не на живом дне. */
     ...(isTextBlock(b) ? {text: b.text} : {}),
-    items: normSS({items: b.items.filter(i=>itemHas(i) || i.ss).map(i=>({...i}))}).items.map(i =>
-      i.ss ? [SS_TAG, i.rounds, i.rest||'']
-      : !i.exId ? [TXT_TAG, String(i.raw).trim(), '', '', '', i.sub?1:0]
-      : i.pct != null ? [i.exId, i.scheme||'', i.pct, '%', i.txt||'', i.sub?1:0]
-                      : [i.exId, i.scheme||'', i.val||'', i.unit||'', i.txt||'', i.sub?1:0]),
+    items: normSS({items: b.items.filter(i=>itemHas(i) || i.ss).map(i=>({...i}))}).items.map(i => i.ss ? [SS_TAG, i.rounds, i.rest||''] : tplArr(i)),
   };
   TPL.unshift(t);
   return t.id;
@@ -1914,9 +2077,9 @@ function extendPlan(upto){
     const i = plan().length;
     PLAN[S.pid].push(null);
     const x = buildDay(S.pid, i);
-    /* Слепок публикации ставим сразу: buildDay его не знает, а день без pub
-       считался бы изменённым и помечался черновиком до первого ввода. */
-    x.pub = serializeDay(x); x.draft = false;
+    /* Слепок ставим сразу: buildDay его не знает, а день без него считался бы
+       изменённым до первого ввода. Новый день — черновик, не опубликован. */
+    x.saved = serializeDay(x); x.pub = ''; x.draft = true;
     plan().push(x);
   }
 }
@@ -2020,10 +2183,10 @@ document.addEventListener('click', e=>{
       const inp = $(`[data-blk="${b.id}"] .bnote input`); if(inp) inp.focus(); }
     return;
   }
-  if(e.target.closest('#publish')){ publishDay(); return }
-  if(e.target.closest('#saveDraft')){ const dd = day();
-    if(!isDraft(dd)){ setPubIdx(S.i, false); return }          /* опубликованная → в черновик, клиент её больше не видит */
-    persist(); render(); toast('Черновик сохранён — клиент его не видит'); return }
+  /* Правка в поле, из которого ушли нажатием, дописывается в модель чуть позже
+     (focusout) — сохраняем после неё. */
+  if(e.target.closest('#saveAll')){ setTimeout(saveAll, 150); return }
+  const stb = e.target.closest('[data-status]'); if(stb){ setStatus(stb.dataset.status); return }
   if(e.target.closest('#fromTpl')){ pickTemplate(); return }
   if(e.target.closest('#copyFrom')){ pickExisting(); return }
 
@@ -2044,6 +2207,24 @@ document.addEventListener('click', e=>{
     return;
   }
   /* Суперсет: новый — заголовок и две пустые строки; внутрь — строка в конец группы. */
+  /* Связка (CON-23): новая строка сразу с курсором в поле первого упражнения. */
+  const addch = e.target.closest('[data-addch]');
+  if(addch){ const b = day().blocks.find(x => x.id === addch.dataset.addch); if(!b) return;
+    const c = chainItem([]); b.items.push(c); render(); focusLineField(c.id, 'e'); return }
+  const chl = e.target.closest('#doc .line.chain');
+  if(chl && !e.target.closest('input, [contenteditable], button, .gr')){
+    const cp = e.target.closest('[data-part]'), {i: p} = cp ? findItem(cp.dataset.part) : {};
+    if(!(p && p.exId && focusPart(p.id, 'sch'))) focusLineField(chl.dataset.item, 'e');
+    return }
+  const dpart = e.target.closest('[data-delpart]');
+  if(dpart){ const {i: p, chain} = findItem(dpart.dataset.delpart); if(!chain) return;
+    chain.parts = chain.parts.filter(x => x !== p); render(); if(!chain.parts.length) focusLineField(chain.id, 'e'); return }
+  /* «от–до» (CON-24): диапазон — дополнительная функция: к числу добавляется
+     «–» и курсор встаёт за ним; у диапазона — остаётся одно число. */
+  const rng = e.target.closest('[data-rng]');
+  if(rng){ const {i} = findItem(rng.dataset.rng), inp = $(`#doc [data-pf="ld"][data-for="${rng.dataset.rng}"]`); if(!i || !inp) return;
+    if(hasRange(i)){ delete i.pct2; delete i.val2; inp.value = ldVal(i); autoWidth(inp); commitSoft(); focusField(inp); return }
+    inp.value = inp.value.trim().replace(/\s*[-–—]\s*$/, '') + RNG; autoWidth(inp); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); return }
   const addss = e.target.closest('[data-addss]');
   if(addss){
     const b = day().blocks.find(x=>x.id===addss.dataset.addss);
@@ -2088,7 +2269,7 @@ document.addEventListener('click', e=>{
      иконкой, открыл — пиши, заполненное держит поле видимым, удаляется крестиком. */
   if(e.target.closest('#msg-tog')){ const dd = day(); S.msgOpen = (!trainerMsg(dd.date) && S.msgOpen===dd.date) ? null : dd.date; render(); const i = $('#w-msg'); if(i) i.focus(); return }
   if(e.target.closest('#comp-tog')){ const dd = day(); dd.comp = !dd.comp; render(); toast(dd.comp ? 'День отмечен как соревнование' : 'Статус соревнования снят'); return }
-  if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); grpMsgPush(); S.msgOpen = null; render(); return }
+  if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); grpMsgPush(); saveState(); S.msgOpen = null; render(); return }
   if(e.target.closest('#clr-wo')){ askClear(); return }
   const sb = e.target.closest('[data-savblk]');
   if(sb){ openFolder(sb); return }
@@ -2164,11 +2345,20 @@ document.addEventListener('click', e=>{
   }
 });
 
+/* Ctrl/⌘+S — «Сохранить» (CON-20), где бы ни стоял курсор: поле сначала
+   отпускаем, чтобы набранное в нём успело попасть в модель. */
+document.addEventListener('keydown', e => {
+  if(!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.code !== 'KeyS') return;
+  e.preventDefault();
+  const a = document.activeElement; if(a && a.closest && a.closest('#doc') && a.blur) a.blur();
+  setTimeout(saveAll, 150);
+});
 /* Лист блока текстом: клавиши списка и подсветка кнопки «Список» по курсору.
    Нажатие на панель не уводит курсор из листа — иначе панель, видимая только
    пока в блоке печатают, исчезала бы раньше, чем сработает кнопка. */
 document.addEventListener('keydown', e => { const ta = e.target.closest && e.target.closest('#doc .tbx'); if(ta) listKey(ta, e) });
-document.addEventListener('mousedown', e => { if(e.target.closest && e.target.closest('#doc .tbar')) e.preventDefault() });
+/* То же у «от–до»: кнопка видна, пока курсор в строке, — фокус не уводим. */
+document.addEventListener('mousedown', e => { if(e.target.closest && e.target.closest('#doc .tbar, #doc [data-rng]')) e.preventDefault() });
 ['keyup', 'click', 'focusin'].forEach(t => document.addEventListener(t, e => { const ta = e.target.closest && e.target.closest('#doc .tbx'); if(ta) listState(ta) }));
 document.addEventListener('selectionchange', () => { const a = document.activeElement; if(a && a.matches && a.matches('#doc .tbx')) listState(a) });
 
@@ -2207,7 +2397,7 @@ document.addEventListener('input', e=>{
     const {i} = findItem(pfi.dataset.for); if(!i) return;
     if(pfi.dataset.pf === 'ld') applyLoad(i, pfi.value);
     if(pfi.dataset.pf === 'pm'){ const k = loadInfo(i).key, v = parseFloat(pfi.value.replace(',', '.')); if(v > 0) PM()[k] = v; else delete PM()[k]; saveState() }
-    autoWidth(pfi); syncLoads();
+    autoWidth(pfi); syncLoads(); refreshChrome();
     return;
   }
   /* Круги и отдых суперсета — в модель на каждый символ, без перерисовки документа. */
@@ -2218,7 +2408,7 @@ document.addEventListener('input', e=>{
       const n = parseInt(sf.value.replace(/\D/g, ''), 10);
       if(n > 0){ h.rounds = Math.min(n, 99); const lb = document.querySelector(`[data-ss-rl="${h.id}"]`); if(lb) lb.textContent = plural(h.rounds, 'круг', 'круга', 'кругов') }
     } else h.rest = sf.value.trim();
-    renderStrip();
+    renderStrip(); refreshChrome();
     return;
   }
   const f = e.target.closest('[data-f]');
@@ -2226,6 +2416,7 @@ document.addEventListener('input', e=>{
     const b = day().blocks.find(x=>x.id === f.closest('[data-blk]').dataset.blk);
     b[f.dataset.f] = f.value;
     if(f.dataset.f === 'title') renderStrip();
+    if(f.dataset.f !== 'text') refreshChrome();                /* «Сохранить» загорается сразу */
     /* Текст блока — в модель на каждый символ. Лист растёт по тексту, кнопка AI
        бледнеет, пока разбирать нечего; полоса дней и публикация — сразу: день
        с одним текстом уже тренировка. */
@@ -2235,8 +2426,8 @@ document.addEventListener('input', e=>{
     if(f.dataset.f === 'note'){ const ic = document.querySelector(`[data-notetog="${b.id}"]`); if(ic){ ic.classList.toggle('on', !!f.value.trim()); ic.dataset.tip = f.value.trim() ? 'Заметка к блоку' : 'Добавить заметку к блоку'; ic.removeAttribute('title') } }
     return;
   }
-  if(e.target.id === 'd-title'){ day().title = e.target.value; renderStrip(); return }
-  if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value); grpMsgPush();
+  if(e.target.id === 'd-title'){ day().title = e.target.value; renderStrip(); refreshChrome(); return }
+  if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value); grpMsgPush(); saveState();
     const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
     return }
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
@@ -2290,6 +2481,9 @@ document.addEventListener('focusout', e=>{
     if(!ed.isConnected) return;                       /* строку уже перерисовали — разбор прошёл */
     const id = ed.dataset.edit, {b, i} = findItem(id), a = document.activeElement;
     if(a && a.closest && a.closest(`.line[data-item="${id}"]`)) return;   /* ушли в поле той же строки */
+    /* Связка: набранное в поле «упражнение» остаётся в ней текстом, пустая
+       связка без упражнений не остаётся. */
+    if(i && i.chain){ const t = ed.textContent.trim(); if(t) chainAdd(id, null, t, 'quiet'); else if(!i.parts.length){ b.items = b.items.filter(x => x !== i); render() } return }
     /* Пустая строка, из которой ушли, не остаётся в тренировке. */
     if(i && !i.exId && !i.raw && !ed.textContent.trim()){ b.items = b.items.filter(x => x !== i); render(); return }
     if(!SUG || SUG.dataset.forItem !== id) commitIfChanged(id, ed.textContent);
@@ -2519,7 +2713,7 @@ function dropOnDay(idx){
 let PICK = new Set();
 /* Какой максимум показать справа: тот, от которого считается эта тренировка. */
 function mainPm(d){
-  const ids = d.blocks.flatMap(b=>b.items).filter(i=>i.exId && i.pct!=null).map(i=>pmKey(byId(i.exId)));
+  const ids = d.blocks.flatMap(b=>b.items).flatMap(i => i.chain ? i.parts : [i]).filter(i=>i.exId && i.pct!=null).map(i=>pmKey(byId(i.exId)));
   return ids.find(Boolean) || 'dead';
 }
 function clientRow(c, key, needsPm){
