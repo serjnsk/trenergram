@@ -806,7 +806,7 @@ function saveAll(){
       : d.draft ? 'Сохранено черновиком — ' + aud() + ' не ' + seeVerb()
       : G_() ? pubMsg(true) : 'Сохранено — ' + aud() + ' ' + seeVerb() + ' новую версию') });
 }
-/* Переключатель «Черновик / Опубликована» — внизу и у названия дня. */
+/* Переключатель «Опубликовать» внизу и статус у названия дня. */
 function setStatus(st){
   const d = day(); if(!d || ((st === 'draft') === !!d.draft && !isDirty(d))) return;
   commitDays([S.i], {[S.i]: st}, ok => { if(ok) toast(pubMsg(st === 'pub')) });
@@ -1600,18 +1600,17 @@ const docStatusHTML = (d, n) => n || contentHas(d.saved) ? (isDraft(d)
   ? `<button class="dst draft" data-status="pub" title="Черновик — ${aud()} не ${seeVerb()}. Нажмите, чтобы опубликовать">${DAYICON.draft}Черновик</button>`
   : `<button class="dst pub" data-status="draft" title="Опубликована — ${aud()} ${seeVerb()}. Нажмите, чтобы перевести в черновик">${DAYICON.pub}Опубликована</button>`) : '';
 const SAVE_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘S' : 'Ctrl+S';
-/* Панель сохранения прилипает к низу экрана: переключатель статуса, что не
-   сохранено и «Сохранить». Пустой день опубликовать нечего. */
+/* Панель сохранения прилипает к низу экрана; в ней только переключатель
+   «Опубликовать» и «Сохранить», оба справа. Что не сохранено, видно по
+   активной кнопке и точкам в полосе дней. Пустой день опубликовать нечего. */
 function pubbarHTML(d, n){
-  const nd = dirtyIdx().length, cur = isDirty(d), can = n > 0 || contentHas(d.saved), dr = isDraft(d);
-  const note = cur ? 'Есть несохранённые изменения' : nd ? 'Не сохранено: ' + nd + ' ' + plural(nd, 'день', 'дня', 'дней') : can ? 'Всё сохранено' : '';
+  const nd = dirtyIdx().length, can = n > 0 || contentHas(d.saved), on = !isDraft(d);
+  const tip = !can ? 'Пустой день опубликовать нечего'
+    : on ? 'Опубликована — ' + aud() + ' ' + seeVerb() + ' сохранённую версию. Выключите, чтобы скрыть'
+    : 'Черновик — ' + aud() + ' не ' + seeVerb() + '. Включите, чтобы опубликовать';
   return `<div class="pubbar">
-    <span class="pubseg" role="group" aria-label="Статус тренировки">
-      <button data-status="draft" class="${dr ? 'on' : ''}" ${can ? '' : 'disabled'} title="${G_() ? 'Участники' : 'Клиент'} не ${seeVerb()} тренировку">${DAYICON.draft}Черновик</button>
-      <button data-status="pub" class="${dr ? '' : 'on'}" ${can ? '' : 'disabled'} title="${G_() ? 'Участники' : 'Клиент'} ${seeVerb()} сохранённую версию">${DAYICON.pub}Опубликована</button>
-    </span>
-    <span class="pbnote${nd ? ' warn' : ''}">${note}</span>
-    <button class="btn" id="saveAll" ${nd ? '' : 'disabled'} title="Сохранить изменения · ${SAVE_KEY}">${ICON.chk} Сохранить</button>
+    <button class="pubsw${on ? ' on' : ''}" role="switch" aria-checked="${on}" data-status="${on ? 'draft' : 'pub'}" ${can ? '' : 'disabled'} title="${tip}">Опубликовать<i></i></button>
+    <button class="btn" id="saveAll" ${nd ? '' : 'disabled'} title="${nd > 1 ? 'Не сохранено: ' + nd + ' ' + plural(nd, 'день', 'дня', 'дней') : 'Сохранить изменения'} · ${SAVE_KEY}">${ICON.chk} Сохранить</button>
   </div>`;
 }
 /* Статус и панель — на месте, без перерисовки документа: она сбила бы курсор. */
@@ -2186,7 +2185,11 @@ document.addEventListener('click', e=>{
   /* Правка в поле, из которого ушли нажатием, дописывается в модель чуть позже
      (focusout) — сохраняем после неё. */
   if(e.target.closest('#saveAll')){ setTimeout(saveAll, 150); return }
-  const stb = e.target.closest('[data-status]'); if(stb){ setStatus(stb.dataset.status); return }
+  /* Статус сохраняет и правки дня — тоже после focusout. Переключатель
+     успевает сдвинуться, пока день не перерисован. */
+  const stb = e.target.closest('[data-status]');
+  if(stb){ if(stb.matches('.pubsw')){ stb.classList.toggle('on'); stb.setAttribute('aria-checked', stb.classList.contains('on')) }
+    setTimeout(() => setStatus(stb.dataset.status), 160); return }
   if(e.target.closest('#fromTpl')){ pickTemplate(); return }
   if(e.target.closest('#copyFrom')){ pickExisting(); return }
 
