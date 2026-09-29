@@ -472,48 +472,40 @@ function renderDoc(){
 }
 
 /* ═══════════ ГРУППА В КОНСТРУКТОРЕ (GRP-2 … GRP-4) ═══════════
-   Тренировки меняет только тренер. День группы показывает, кому уходит
-   тренировка: участники чипами — как в группе, изменена для клиента, у клиента
-   другая тренировка. Чип открывает день этого человека. День клиента, пришедший
-   из группы, несёт полосу-пояснение: правка здесь меняет тренировку только у
-   него, и правки группы сюда перестают приходить. Вернуть день к версии группы —
-   одной кнопкой. */
+   Тренировки меняет только тренер. День группы показывает участников чипами —
+   чип открывает день этого человека; у кого тренировки группы на этот день
+   нет (пропущен при публикации, вступил позже), чип приглушён. День клиента,
+   пришедший из группы, несёт полосу-пояснение: правка здесь — только для него,
+   следующая правка этого дня в группе её заменит. День с другой тренировкой —
+   кнопка «Заменить тренировкой группы». */
 const shortName = c => { const [f, l] = c.n.split(' '); return f + (l ? ' ' + l[0] + '.' : '') };
 function grpPanelHTML(d){
   const G = G_(); if(!G) return '';
   const n = G.members.length, st = groupDayStat(G, d.date);
   const head = (b, t) => `<div class="gp-h"><span class="gp-i">${GRPICON}</span><span class="gp-t"><b>${b}</b><s>${t}</s></span></div>`;
   if(!n) return `<div class="gpanel">${head('В группе пока никого', 'Добавьте участников на странице «Группы» — тренировка появится у каждого')}</div>`;
-  const LBL = {own:'изменена', busy:'другая тренировка', none:'не получил'};
   const chip = (cid, k, note) => { const c = client(cid);
-    return `<button class="gpm ${k}" data-gpm="${cid}" title="${esc(note)} — открыть день ${esc(gen(c.n))}"><span class="cav">${esc(c.ini)}</span><span class="nm">${esc(shortName(c))}</span>${LBL[k] ? `<i>${LBL[k]}</i>` : ''}</button>` };
-  if(!st) return `<div class="gpanel">${head(n + ' ' + plural(n, 'участник', 'участника', 'участников'), 'Составьте тренировку — она сразу встанет в календарь каждому')}
-    <div class="gp-list">${G.members.map(cid => chip(cid, 'same', 'Участник группы')).join('')}</div></div>`;
-  const got = st.same.length + st.own.length;
-  const sum = [st.same.length ? st.same.length + ' как в группе' : '',
-    st.own.length ? st.own.length + ' с изменениями' : '',
-    st.busy.length ? st.busy.length + ' с другой тренировкой' : '',
-    st.none.length ? st.none.length + ' не ' + plural(st.none.length, 'получил', 'получили', 'получили') : ''].filter(Boolean).join(' · ');
-  return `<div class="gpanel">
-    ${head(`Стоит у ${got} из ${n} ${plural(n, 'участника', 'участников', 'участников')}`, sum + (st.own.length ? '. Правка группы дойдёт до всех, кроме изменённых' : st.busy.length ? '. Правка группы дойдёт до всех, у кого нет другой тренировки' : '. Правка группы дойдёт до всех'))}
-    <div class="gp-list">${[...st.own.map(c => chip(c, 'own', 'Изменена для клиента — правки группы сюда не приходят')),
-      ...st.busy.map(c => chip(c, 'busy', 'В этот день у клиента другая тренировка — группа её не заменила')),
-      ...st.same.map(c => chip(c, 'same', 'Как в группе')),
-      ...st.none.map(c => chip(c, 'none', 'Тренировка не приходила — вступил позже'))].join('')}</div>
+    return `<button class="gpm ${k}" data-gpm="${cid}" title="${esc(note)} — открыть день ${esc(gen(c.n))}"><span class="cav">${esc(c.ini)}</span><span class="nm">${esc(shortName(c))}</span></button>` };
+  const title = n + ' ' + plural(n, 'участник', 'участника', 'участников');
+  if(!st) return `<div class="gpanel">${head(title, 'Составьте тренировку — она встанет в календарь каждому')}
+    <div class="gp-list">${G.members.map(cid => chip(cid, '', 'Участник группы')).join('')}</div></div>`;
+  const sub = st.none.length
+    ? `Стоит у ${st.got.length} из ${n}; у остальных на этот день своя тренировка или они вступили позже. Правка здесь меняет тренировку у всех, у кого она стоит`
+    : 'Стоит у всех. Правка здесь меняет тренировку у всех участников — и там, где вы правили её отдельно';
+  return `<div class="gpanel">${head(title, sub)}
+    <div class="gp-list">${[...st.got.map(c => chip(c, '', 'Тренировка группы стоит')), ...st.none.map(c => chip(c, 'none', 'Тренировки группы на этот день нет'))].join('')}</div>
   </div>`;
 }
 function grpRibbonHTML(d){
   const c = client(S.cid); if(!c || !d) return '';
-  const nm = esc(gen(c.n)), l = dayLink(d);
+  const nm = esc(gen(c.n)), G = groupOf(c.id), dg = dayGroup(d);
   const open = G => `<button class="lnk" data-opengrp="${G.id}">Открыть в группе</button>`;
-  if(l) return l.same
-    ? `<div class="gribbon"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>Тренировка группы «${esc(l.G.n)}»</b><s>Правка здесь — только для ${nm}: у группы ничего не поменяется, а её правки на этот день сюда перестанут приходить</s></span>${open(l.G)}</div>`
-    : `<div class="gribbon own"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>Изменена для ${nm} · группа «${esc(l.G.n)}»</b><s>Правки группы на этот день сюда не приходят</s></span><button class="btn gh sm" data-relink="${l.G.id}">Вернуть как в группе</button>${open(l.G)}</div>`;
+  if(dg) return `<div class="gribbon"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>Тренировка группы «${esc(dg.n)}»</b><s>Правка здесь — только для ${nm}; следующая правка этого дня в группе заменит её</s></span>${open(dg)}</div>`;
   /* Группа в этот день тренируется, а у клиента своё — или тренировка к нему не приходила. */
-  const G = groupsOf(c.id).find(g => { const gd = dayAt(g.prog, d.date); return gd && contentHas(gd.c) });
   if(!G) return '';
+  const gd = dayAt(G.prog, d.date); if(!gd || !contentHas(gd.c)) return '';
   const has = dayHas(d);
-  return `<div class="gribbon busy"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>${has ? 'Другая тренировка — не как в группе «' + esc(G.n) + '»' : 'У группы «' + esc(G.n) + '» в этот день тренировка'}</b><s>${has ? 'Группа занятый день не заменяет' : 'Сюда она не приходила — клиент вступил в группу позже'}</s></span><button class="btn gh sm" data-relink="${G.id}">${has ? 'Заменить тренировкой группы' : 'Поставить тренировку группы'}</button>${open(G)}</div>`;
+  return `<div class="gribbon busy"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>${has ? 'Другая тренировка — не как в группе «' + esc(G.n) + '»' : 'У группы «' + esc(G.n) + '» в этот день тренировка'}</b><s>${has ? 'Группа занятый день сама не заменяет' : 'Сюда она не приходила — клиент вступил в группу позже'}</s></span><button class="btn gh sm" data-apply="${G.id}">${has ? 'Заменить тренировкой группы' : 'Поставить тренировку группы'}</button>${open(G)}</div>`;
 }
 /* Полоса и панель обновляются на месте — без перерисовки документа, которая
    сбила бы фокус в поле. */
@@ -522,31 +514,23 @@ function refreshGrp(){
   const box = $('#doc .gpanel, #doc .gribbon'), html = G_() ? grpPanelHTML(d) : grpRibbonHTML(d);
   if(box) box.outerHTML = html; else if(html){ const h = $('#doc .doch'); if(h) h.insertAdjacentHTML('afterend', html) }
 }
-/* Первая правка дня, пришедшего из группы, отвязывает его. Говорим об этом
-   один раз — в момент перехода — и сразу даём вернуть. */
-function checkLink(){
-  if(G_()){ S.link = null; return }
-  const d = day(), l = dayLink(d), was = S.link;
-  S.link = l ? {date:d.date, g:l.G.id, same:l.same} : null;
-  if(was && l && was.date === d.date && was.g === l.G.id && was.same && !l.same)
-    toast('Изменено только у ' + gen(client(S.cid).n) + ' — у остальных в группе «' + l.G.n + '» всё как было', 'Вернуть как в группе', () => relinkDay(l.G.id));
-}
-/* Вернуть день к версии группы (или заменить ею свою тренировку клиента) — с отменой. */
-function relinkDay(gid){
+/* Поставить клиенту тренировку группы на открытый день (заменив его собственную) — с отменой. */
+function applyGroupDay(gid){
   const G = grp(gid), d = day(); if(!G || !d) return;
   persist();
-  const pid = S.pid, i = S.i, date = d.date, bag = ((STATE.days ||= {})[pid] ||= {}), had = bag[i] ? {...bag[i]} : null;
-  groupRelink(S.cid, date, G);
-  saveState(); delete PCACHE[S.pid]; bindClient(S.cid, date); S.link = null; render();
-  toast('Тренировка снова как в группе «' + G.n + '»', 'Отменить', () => {
+  const pid = S.pid, i = S.i, date = d.date, bag = ((STATE.days ||= {})[pid] ||= {}), had = bag[i] ? {...bag[i]} : null, wasSkip = isSkipped(G, S.cid, date);
+  groupApply(S.cid, date, G);
+  saveState(); delete PCACHE[S.pid]; bindClient(S.cid, date); render();
+  toast('Стоит тренировка группы «' + G.n + '»', 'Отменить', () => {
     const b = ((STATE.days ||= {})[pid] ||= {}); if(had) b[i] = had; else delete b[i];
-    saveState(); delete PCACHE[pid]; bindClient(S.cid, date); S.link = null; render() });
+    setSkip(G, S.cid, date, wasSkip);
+    saveState(); delete PCACHE[pid]; bindClient(S.cid, date); render() });
 }
 /* Сообщение группе к дню (COM-4) — каждому, у кого день как в группе. */
 function grpMsgPush(){
   const G = G_(); if(!G) return;
   const date = day().date, st = groupDayStat(G, date), text = trainerMsg(date);
-  (st ? st.same : []).forEach(cid => {
+  (st ? st.got : []).forEach(cid => {
     const arr = (TALK.workout[talkKey(cid, date)] ||= []), k = arr.findIndex(m => m.who === 'trainer');
     if(text){ if(k >= 0) arr[k].text = text; else arr.unshift({who:'trainer', text, at:'сейчас'}) } else if(k >= 0) arr.splice(k, 1);
   });
@@ -560,7 +544,6 @@ function switchWho(id, date){
   const follow = CSRC.cid === S.cid;
   if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('Не получилось открыть календарь');
   if(follow) csrcReset(id);
-  S.link = null;
   history.replaceState(null, '', `constructor.html?${subjQ(S.cid)}&date=${plan()[S.i].date}`);
   render();
 }
@@ -734,27 +717,30 @@ function persist(){
 }
 /* Глазик в полосе недель: опубликовать черновик или скрыть опубликованное.
    Работает по живому плану конструктора, а не по слепку в STATE. */
+/* Публикация дня группы сначала проходит окно занятых дней участников (withGroupConflicts). */
 function setPubIdx(i, on){
   const x = plan()[i]; if(!x) return;
-  if(on){ x.pub = serializeDay(x); x.draft = false; putDay(S.pid, i, {c: x.pub, draft: false}) }
-  else { x.draft = true; putDay(S.pid, i, {c: serializeDay(x), pub: x.pub, draft: true}) }
-  saveState(); render(); toast(pubToggleMsg(on, S.pid));
+  if(!on){ x.draft = true; putDay(S.pid, i, {c: serializeDay(x), pub: x.pub, draft: true}); saveState(); render(); toast(pubToggleMsg(false, S.pid)); return }
+  const c = serializeDay(x);
+  withGroupConflicts(S.pid, [x.date], replace => { x.pub = c; x.draft = false; putDay(S.pid, i, {c, draft: false}, true, replace); saveState(); render(); toast(pubToggleMsg(true, S.pid)) });
 }
 function publishDay(){
-  const x = day();
-  x.pub = serializeDay(x); x.draft = false;
-  putDay(S.pid, S.i, {c: x.pub, draft: false});
-  saveState(); render();
-  const G = G_(), st = G && groupDayStat(G, x.date);
-  toast(!G ? 'Тренировка добавлена в календарь — клиент её видит'
-    : !st ? 'Опубликовано для группы' : 'Опубликовано для группы «' + G.n + '» — видят ' + (st.same.length + st.own.length) + ' из ' + G.members.length
-      + (st.own.length ? ' · у ' + st.own.length + ' тренировка поправлена под клиента, правка группы её не трогает' : ''));
+  const x = day(), c = serializeDay(x);
+  withGroupConflicts(S.pid, [x.date], replace => {
+    x.pub = c; x.draft = false;
+    putDay(S.pid, S.i, {c, draft: false}, true, replace);
+    saveState(); render();
+    const G = G_(), st = G && groupDayStat(G, x.date);
+    toast(!G ? 'Тренировка добавлена в календарь — клиент её видит'
+      : !st || !st.none.length ? 'Опубликовано для группы «' + G.n + '» — тренировка у всех ' + G.members.length + ' ' + plural(G.members.length, 'участника', 'участников', 'участников')
+      : 'Опубликовано для группы «' + G.n + '» — тренировка у ' + st.got.length + ' из ' + G.members.length + ', ' + st.none.length + ' ' + plural(st.none.length, 'пропущен', 'пропущены', 'пропущены'));
+  }, () => toast('Публикация отменена — тренировка осталась черновиком'));
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
 /* Лист блока текстом растёт по содержимому, без собственной прокрутки. */
 const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); checkLink(); }
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -852,13 +838,17 @@ function wizardApply(){
     extendPlan(r.i);
     const d = plan()[r.i];
     const src = r.it.kind==='tpl' ? tplToWorkout(tplById(r.it.id)) : planOf(r.it.pid)[r.it.i];
-    d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks);
-    if(WZ.publish){ d.pub = serializeDay(d); d.draft = false; putDay(S.pid, r.i, {c:d.pub, draft:false}); }
-    else d.draft = true;
+    d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks); d.draft = true;
   });
-  persist(); saveState(); render();
-  history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}`);
-  toast('Создано ' + pl.rows.length + ' ' + plural(pl.rows.length,'тренировка','тренировки','тренировок') + (WZ.publish?' — в календаре':' — черновиками'));
+  const n = pl.rows.length, done = pub => { persist(); saveState(); render();
+    history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}`);
+    toast('Создано ' + n + ' ' + plural(n,'тренировка','тренировки','тренировок') + (pub ? ' — в календаре' : ' — черновиками')) };
+  if(!WZ.publish) return done(false);
+  /* Публикация набора в группу — через окно занятых дней участников, как у одного дня. */
+  withGroupConflicts(S.pid, pl.rows.map(r => r.date), replace => {
+    pl.rows.forEach(r => { const d = plan()[r.i]; d.pub = serializeDay(d); d.draft = false; putDay(S.pid, r.i, {c:d.pub, draft:false}, true, replace) });
+    done(true);
+  }, () => done(false));
 }
 function wireWizard(ov, draw){
   ov.querySelector('#wz-x').onclick = () => ov.remove();
@@ -1503,7 +1493,7 @@ function refreshChrome(){
   if(sd) sd.disabled = !(dr || n);
   if(pb) pb.disabled = !(dr && n);
 }
-const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads(); refreshGrp(); checkLink() };
+const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads(); refreshGrp() };
 
 /* ─── фокус и переходы по строкам ─── */
 const lineEl = id => $(`#doc .line[data-item="${id}"]`);
@@ -2013,7 +2003,7 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
   /* Группа: чип участника открывает его день, полоса у клиента — день группы или возврат к нему. */
   const gpm = e.target.closest('[data-gpm]'); if(gpm){ switchWho(gpm.dataset.gpm, day().date); return }
-  const rl = e.target.closest('[data-relink]'); if(rl){ relinkDay(rl.dataset.relink); return }
+  const ap = e.target.closest('[data-apply]'); if(ap){ applyGroupDay(ap.dataset.apply); return }
   const og = e.target.closest('[data-opengrp]'); if(og){ switchWho(og.dataset.opengrp, day().date); return }
   if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; render(); return }
   if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; render(); return }

@@ -1362,14 +1362,13 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .gtag svg{width:13px;height:13px;flex:none}
 .gtag b{font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .gtag s{text-decoration:none;font-weight:500;flex:none}
-.gtag.own{background:var(--acc-a);color:var(--acc-d)}
 .gtag.busy{background:#FBF1DE;color:var(--warn)}
 .gtag .sh{display:none}
 .gtag b.sh{align-items:center;gap:2px}
 .gtag .sh svg{width:12px;height:12px}
 /* Узкая клетка (полоса конструктора, лента карточки клиента): числа и значки вместо слов.
    Контейнер — сама строка меток, поэтому порог — её ширина, а не ширина сетки. */
-@container (max-width: 140px){
+@container (max-width: 110px){
   .gtag .lg{display:none}
   .gtag .sh{display:inline-flex}
 }
@@ -1387,12 +1386,26 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .gpm .cav{width:22px;height:22px;font-size:10.5px;background:var(--tx4)}
 .gpm i{font-style:normal;font-size:12.5px;font-weight:600}
 .gpm:hover{background:var(--bg);border-color:var(--line2)}
-.gpm.own{background:var(--acc-a);color:var(--acc-d)} .gpm.own .cav{background:var(--acc)} .gpm.own:hover{border-color:var(--acc)}
-.gpm.busy{background:#FBF1DE;color:var(--warn)} .gpm.busy .cav{background:var(--warn)}
-.gpm.none{color:var(--tx3)}
-.gribbon.own{background:var(--acc-a);border-color:#FFD9C4}
-.gribbon.own .gr-i{background:var(--bg);color:var(--acc-d)}
+.gpm.none{color:var(--tx3);background:none;border-color:var(--line)} .gpm.none .cav{background:var(--line2)}
 .gribbon.busy{background:#FFF8E6;border-color:#F0DCA8}
 .gribbon.busy .gr-i{background:var(--bg);color:var(--warn)}
 .gribbon .btn{height:32px;flex:none}
 .gribbon .lnk{font-size:14px;font-weight:500;color:var(--acc-d);text-decoration:underline;text-underline-offset:2px;flex:none;white-space:nowrap;background:none}
+
+/* Строка списка выбора, которую выбрать нельзя (клиент уже в другой группе). */
+.clipick .row.dis{opacity:.5;cursor:default}
+.clipick .row.dis:hover{background:none}
+/* Окно занятых дней при публикации группы: по строке на участника и дату. */
+.md.ask.gcm{max-width:560px}
+.gc-list{display:flex;flex-direction:column;margin:12px 0 10px;border-top:1px solid var(--line)}
+.gc-r{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.gc-r .cav{width:28px;height:28px;font-size:12px}
+.gc-t{flex:1;min-width:0}
+.gc-t b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-t s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg{display:inline-flex;flex:none;background:var(--s1);border-radius:var(--rad-m);padding:2px}
+.seg button{height:26px;padding:0 10px;border-radius:6px;font-size:13px;font-weight:600;color:var(--tx3);background:none}
+.seg button.on{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.gc-all{display:flex;gap:14px;margin-bottom:4px}
+.gc-all button{font-size:13.5px;font-weight:500;color:var(--acc-d);background:none;text-decoration:underline;text-underline-offset:2px}
+.gcm .sub{margin-top:8px}

@@ -180,7 +180,9 @@ function switchClient(id){ bulkReset(); const keep = topMonth(); C.cid = id; STA
 document.addEventListener('click', e=>{
   const pb = e.target.closest('[data-pub]');
   if(pb){ e.preventDefault(); e.stopPropagation(); const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft');
-    if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on, pid)); render(true) } return }
+    /* Публикация дня группы — через окно занятых дней участников. */
+    const go = replace => { if(setPublished(pid, +i, on, replace)){ toast(pubToggleMsg(on, pid)); render(true) } };
+    if(on && grpByProg(pid)) withGroupConflicts(pid, [dayDate(pid, +i)], go); else go(null); return }
   const vt = e.target.closest('[data-view]'); if(vt){ const keep = topMonth(); STATE.laneView = vt.dataset.view; saveState(); render(keep); return }
   if(e.target.closest('#mToday')){ C.jump = TODAY; jumpTo(TODAY); return }
   if(e.target.closest('#mMonth')){ scrollToMonth(TODAY.slice(0,7)+'-01', true); return }

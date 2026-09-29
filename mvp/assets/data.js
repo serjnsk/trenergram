@@ -1024,7 +1024,7 @@ const hhmm = t => +t.slice(0,2)*60 + +t.slice(3,5);
    отрицательный запас значит, что клиенты уже без тренировок. */
 /* Участник группы, у которого в личном контейнере только тренировки группы, в
    очереди не стоит: писать нужно группе, и она стоит в очереди одной строкой. */
-const groupDriven = p => !!p.personal && groupsOf(p.clients[0]).length > 0;
+const groupDriven = p => !!p.personal && !!groupOf(p.clients[0]);
 function composeQueue(){
   return PROGRAMS.filter(p=>!groupDriven(p)).map(p=>{
     const composed = composedDays(p.id);
@@ -1236,21 +1236,24 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
     ['complex','«Fran» · 21-15-9','Два зачётных выхода, отдых 10 мин',null,[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]};
 })();
 /* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP) ═══════════
-   Группа — набор клиентов, которых тренер ведёт одной программой. У неё свой
-   календарь: контейнер дней в PROGRAMS (kind 'group'), такой же, как у клиента,
-   поэтому календарь и конструктор открывают группу теми же средствами.
-   Тренировка группы стоит в календаре каждого участника копией, которая помнит
-   группу (поле g дня). Копия связана с группой, пока совпадает с днём группы:
-   правка и публикация в группе доходят до всех связанных участников (GRP-3).
-   Тренировки меняет только тренер. Его правка в календаре клиента меняет
-   только этот день — он перестаёт совпадать с группой, и её правки сюда
-   больше не приходят (GRP-4). Так копия и связь описываются одним правилом,
-   без отдельного флага «отвязан». */
+   Группа — набор клиентов, которых тренер ведёт одной программой; клиент
+   состоит не больше чем в одной группе. У группы свой календарь: контейнер
+   дней в PROGRAMS (kind 'group'), такой же, как у клиента, поэтому календарь
+   и конструктор открывают группу теми же средствами.
+   Тренировка группы стоит в календаре каждого участника копией, которая
+   помнит группу (поле g дня) — это «день группы» у клиента. Любая правка и
+   публикация в группе заменяет содержимое всех дней группы у участников,
+   включая те, что тренер правил отдельно (GRP-4). Тренировки меняет только
+   тренер: в календаре группы — для всех, в календаре клиента — для одного,
+   до следующей правки в группе. День, где у клиента стоит другая тренировка,
+   группа сама не трогает: при публикации тренер решает в одном окне по всем
+   таким участникам — заменить или пропустить (GRP-3); пропуск помнится в
+   STATE.gskip, пока тренер не поставит тренировку группы этому клиенту сам. */
 const GRPS = [];
 const grp = id => GRPS.find(g => g.id === id);
 const grpByProg = pid => GRPS.find(g => g.prog === pid);
 const isGrp = id => !!grp(id);
-const groupsOf = cid => GRPS.filter(g => g.members.includes(cid));
+const groupOf = cid => GRPS.find(g => g.members.includes(cid)) || null;
 /* Кто открыт в календаре и конструкторе — клиент или группа: у обоих есть имя,
    инициалы и контейнер дней prog. */
 const who = id => client(id) || grp(id);
@@ -1379,40 +1382,55 @@ function memberDay(cid, date){
   m.has = contentHas(m.c);
   return m;
 }
-/* Связь дня клиента с группой — для меток в календаре и конструкторе:
-   same — как в группе (правки группы приходят), иначе тренер поправил день
-   в календаре клиента и правки группы сюда не приходят. */
-function dayLink(x){
+/* Группа, из которой пришёл день клиента, — для меток в календаре и конструкторе. */
+function dayGroup(x){
   if(!x || !x.g) return null;
-  const G = grp(x.g); if(!G) return null;           /* группу удалили — тренировка осталась у клиента индивидуальной */
-  const gd = dayAt(G.prog, x.date);
-  return {G, same: !!gd && serializeDay(x) === gd.c};
+  return grp(x.g) || null;                          /* группу удалили — тренировка осталась у клиента индивидуальной */
 }
 
 /* Единственная точка записи дня. Держит два правила: метка группы у дня
-   участника переживает любую перезапись (видно, откуда тренировка и что тренер
-   её поправил для этого клиента), а запись в день группы расходится по участникам. */
-function putDay(pid, i, rec, keepG = true){
+   участника переживает любую перезапись (день остаётся днём группы), а запись
+   в день группы расходится по участникам. replace — кому из участников можно
+   заменить другую тренировку на этот день (решение из окна занятых дней). */
+function putDay(pid, i, rec, keepG = true, replace = null){
   const bag = ((STATE.days ||= {})[pid] ||= {}), old = bag[i];
   if(keepG && rec.g === undefined){ const g = old ? old.g : ((PLAN[pid] || [])[i] || {}).g; if(g) rec.g = g }
-  const G = grpByProg(pid);
-  const prev = !G ? null : old && old.c ? old.c : (PLAN[pid] || [])[i] ? serializeDay(buildDay(pid, i)) : EMPTY_DAY;
   bag[i] = rec;
-  if(G) groupPush(G, dayDate(pid, i), prev, rec);
+  const G = grpByProg(pid);
+  if(G) groupPush(G, dayDate(pid, i), rec, replace);
 }
-/* Раздача дня группы (GRP-3). Связанным участникам — день совпадал с прежней
-   версией группы — новая версия и статус группы: черновик скрыт от всех,
-   публикация видна всем. Свободному дню — копия, если человек был в группе
-   на эту дату. Поправленные тренером под клиента дни и дни с другой
-   тренировкой клиента не трогаем. */
-function groupPush(G, date, prev, rec){
+/* Раздача дня группы (GRP-3, GRP-4). Дни группы у участников получают новую
+   версию и статус группы всегда — и те, что тренер правил отдельно: черновик
+   скрыт от всех, публикация видна всем. Свободный день получает копию, если
+   человек был в группе на эту дату. День с другой тренировкой заменяется
+   только по решению тренера в окне занятых дней (replace). */
+function groupPush(G, date, rec, replace){
   const has = contentHas(rec.c);
   G.members.forEach(cid => {
     const m = memberDay(cid, date);
-    const linked = m.g === G.id && m.c === prev;
-    const free = has && !m.has && m.g !== G.id && date >= (G.joined[cid] || TODAY);
-    if(linked || free) memberPut(cid, date, rec, G.id);
+    if(m.g === G.id){ memberPut(cid, date, rec, G.id); return }
+    if(!has) return;
+    if(m.has){ if(replace && replace.has(skipKey(cid, date))) memberPut(cid, date, rec, G.id); return }
+    if(date >= (G.joined[cid] || TODAY)) memberPut(cid, date, rec, G.id);
   });
+}
+/* Пропущенные при публикации: у участника на этот день своя тренировка, и
+   группа её не трогает, пока тренер не поставит тренировку группы сам. */
+const skipKey = (cid, date) => cid + '@' + date;
+const isSkipped = (G, cid, date) => !!((STATE.gskip || {})[G.id] || {})[skipKey(cid, date)];
+function setSkip(G, cid, date, on){
+  const bag = ((STATE.gskip ||= {})[G.id] ||= {});
+  if(on) bag[skipKey(cid, date)] = 1; else delete bag[skipKey(cid, date)];
+}
+/* Занятые дни: участники, у которых на эти даты стоит другая тренировка. */
+const dayTitleOf = c => { try{ const t = JSON.parse(c).t; return t && t !== 'Отдых' && t !== '—' ? t : 'Без названия' }catch(_){ return 'Без названия' } };
+function groupConflicts(G, dates){
+  const out = [];
+  dates.forEach(date => G.members.forEach(cid => {
+    const m = memberDay(cid, date);
+    if(m.g !== G.id && m.has && !isSkipped(G, cid, date)) out.push({key:skipKey(cid, date), cid, date, title:dayTitleOf(m.c)});
+  }));
+  return out;
 }
 function memberPut(cid, date, rec, gid){
   const r = ensureDay(cid, date); if(!r) return;
@@ -1425,19 +1443,18 @@ function memberPut(cid, date, rec, gid){
   if(gm){ const arr = (TALK.workout[talkKey(cid, date)] ||= []), k = arr.findIndex(m => m.who === 'trainer'); if(k >= 0) arr[k] = {...gm}; else arr.unshift({...gm}) }
   if(typeof PCACHE !== 'undefined') delete PCACHE[r.pid];     /* план участника в конструкторе перечитается */
 }
-/* Вернуть день участника к версии группы — или заменить группой его собственную тренировку. */
-function groupRelink(cid, date, G){
+/* Поставить участнику тренировку группы на этот день — заменив его собственную. */
+function groupApply(cid, date, G){
   const gd = dayAt(G.prog, date); if(!gd) return;
+  setSkip(G, cid, date, false);
   memberPut(cid, date, gd.rec ? {...gd.rec} : {c:gd.c, draft:false}, G.id);
 }
-/* Кто в группе как получил тренировку дня: как в группе, изменена тренером
-   для клиента, у клиента другая тренировка, не получил (вступил позже). */
+/* У кого из участников тренировка группы на этот день стоит, а у кого нет
+   (пропущен при публикации или вступил позже). */
 function groupDayStat(G, date){
   const gd = dayAt(G.prog, date); if(!gd || !contentHas(gd.c)) return null;
-  const out = {same:[], own:[], busy:[], none:[]};
-  G.members.forEach(cid => { const m = memberDay(cid, date);
-    if(m.g === G.id) (m.c === gd.c ? out.same : out.own).push(cid);
-    else (m.has ? out.busy : out.none).push(cid) });
+  const out = {got:[], none:[]};
+  G.members.forEach(cid => { const m = memberDay(cid, date); (m.g === G.id && m.has ? out.got : out.none).push(cid) });
   return out;
 }
 
@@ -1459,7 +1476,7 @@ function groupDays(G, from){
   return out;
 }
 function groupAdd(G, cid){
-  if(G.members.includes(cid) || !client(cid)) return 0;
+  if(groupOf(cid) || !client(cid)) return 0;        /* уже в группе — сначала убрать оттуда */
   G.members.push(cid); G.joined[cid] = TODAY;
   let n = 0;
   groupDays(G, TODAY).forEach(({date, gd}) => { const m = memberDay(cid, date);
@@ -1477,6 +1494,7 @@ function groupRemove(G, cid){
     else { const r = {...(m.rec || {c:m.c, draft:false})}; delete r.g; putDay(c.prog, i, r, false) }
   }
   G.members.splice(k, 1); delete G.joined[cid];
+  const sk = (STATE.gskip || {})[G.id]; if(sk) Object.keys(sk).forEach(key => { if(key.startsWith(cid + '@')) delete sk[key] });
   return n;
 }
 function groupCreate({n, time, about}){
@@ -1497,7 +1515,7 @@ function groupDelete(G){
   const k = GRPS.indexOf(G); if(k < 0) return;
   GRPS.splice(k, 1);
   const pi = PROGRAMS.findIndex(p => p.id === G.prog); if(pi >= 0) PROGRAMS.splice(pi, 1);
-  delete PLAN[G.prog]; if(STATE.days) delete STATE.days[G.prog];
+  delete PLAN[G.prog]; if(STATE.days) delete STATE.days[G.prog]; if(STATE.gskip) delete STATE.gskip[G.id];
 }
 
 /* ═══════════ СТАТУСЫ ДНЯ (CAL-1) — общие для всех страниц, поэтому в data.js: отдых · черновик · опубликована · соревнование ═══════════
@@ -1520,10 +1538,10 @@ const dayMark = (st, key) => st==='rest' ? ''
   : `<i class="dmark ${st}" role="button" tabindex="0" data-pub="${key}" title="${DAYST[st]} · нажмите, чтобы ${st==='draft'?'опубликовать':'скрыть от клиента'}">${DAYICON[st]}</i>`;
 /* Не <button>: клетки дня в конструкторе сами кнопки, вложенная кнопка ломает разметку. */
 /* Публикация/скрытие дня со страниц без живого плана (календарь, карточка клиента). */
-function setPublished(pid, i, on){
+function setPublished(pid, i, on, replace = null){
   const x = buildPlan(pid)[i]; if(!x) return false;
   const c = serializeDay(x);
-  putDay(pid, i, on ? {c, draft:false} : {c, pub: x.pub, draft:true});
+  putDay(pid, i, on ? {c, draft:false} : {c, pub: x.pub, draft:true}, true, replace);
   saveState(); return true;
 }
 /* У группы тренировку видят участники: публикация и скрытие расходятся по всем связанным. */
@@ -1544,22 +1562,18 @@ const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>Соревн
    сколько участников её получили, у скольких она поправлена и у кого в этот
    день другая тренировка. */
 const GRPICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.2" r="2.2"/><path d="M1.8 13.2c0-2.4 1.9-4.2 4.2-4.2s4.2 1.8 4.2 4.2"/><path d="M10.6 3.3a2.1 2.1 0 0 1 0 4M12.2 9.4c1.2.5 2 1.8 2 3.4"/></svg>';
-/* В узкой клетке (полоса конструктора) подписи сокращаются до значков и чисел —
+/* В узкой клетке (полоса конструктора) подпись сокращается до чисел —
    см. @container в base-trainer.css; полный текст остаётся в подсказке. */
-const GRPPEN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M10.5 2.8l2.7 2.7-7.6 7.6-3.3.6.6-3.3z"/></svg>';
 function grpTag(x){
-  const l = dayLink(x); if(!l) return '';
-  return `<span class="gtags"><span class="gtag${l.same ? '' : ' own'}" title="${l.same
-    ? 'Тренировка группы «' + l.G.n + '» — правки группы приходят сюда'
-    : 'Тренер изменил её для клиента — правки группы «' + l.G.n + '» сюда не приходят'}">${GRPICON}<b>${esc(l.G.n)}</b>${l.same ? '' : `<s class="lg">· изменена</s><s class="sh">${GRPPEN}</s>`}</span></span>`;
+  const G = dayGroup(x); if(!G) return '';
+  return `<span class="gtags"><span class="gtag" title="Тренировка группы «${esc(G.n)}»">${GRPICON}<b>${esc(G.n)}</b></span></span>`;
 }
+/* У группы метка появляется, только если тренировка стоит не у всех:
+   кого-то пропустили при публикации или он вступил позже. */
 function grpStatTag(G, date){
-  const s = groupDayStat(G, date); if(!s) return '';
-  const got = s.same.length + s.own.length, all = got === G.members.length;
-  return `<span class="gtags"><span class="gtag" title="Тренировка стоит в календаре у ${got} из ${G.members.length} участников">${GRPICON}<b class="lg">${all ? 'у всех ' + got : 'у ' + got + ' из ' + G.members.length}</b><b class="sh">${got}</b></span>`
-    + (s.own.length ? `<span class="gtag own" title="Тренер изменил её для ${s.own.length} ${plural3(s.own.length, 'клиента', 'клиентов', 'клиентов')} — правки группы к ним не приходят"><b class="lg">изменена у ${s.own.length}</b><b class="sh">${GRPPEN}${s.own.length}</b></span>` : '')
-    + (s.busy.length ? `<span class="gtag busy" title="В этот день у ${s.busy.length} ${plural3(s.busy.length, 'клиента', 'клиентов', 'клиентов')} другая тренировка — группа её не заменила"><b class="lg">занято у ${s.busy.length}</b><b class="sh">≠${s.busy.length}</b></span>` : '')
-    + '</span>';
+  const s = groupDayStat(G, date); if(!s || !s.none.length) return '';
+  const got = s.got.length, n = G.members.length;
+  return `<span class="gtags"><span class="gtag busy" title="Тренировка стоит у ${got} из ${n} участников: у остальных на этот день своя тренировка или они вступили позже">${GRPICON}<b class="lg">${got ? 'у ' + got + ' из ' + n : 'ни у кого'}</b><b class="sh">${got}/${n}</b></span></span>`;
 }
 
 /* ═══════════ КАЛЕНДАРЬ БЕЗ «СРОКА ПРОГРАММЫ» (CAL-1) ═══════════

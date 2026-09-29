@@ -36,7 +36,8 @@
 <script>
 /* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP-1, GRP-5) ═══════════
    Список групп тренера и карточка выбранной справа: состав, время занятия,
-   докуда составлено, у кого тренировки изменены под клиента. Сами тренировки
+   ближайшая тренировка, докуда составлено. Клиент состоит не больше чем в
+   одной группе — занятые другими группами показаны, но не выбираются. Сами тренировки
    группы составляются в конструкторе и видны в календаре группы — туда ведут
    кнопки карточки. Тренировки меняет только тренер: и для всей группы, и для
    одного участника — в его календаре. */
@@ -48,14 +49,8 @@ const runwayChip = G => { const r = runway(G);
   if(r < 0) return '<span class="chip rm">кончилась</span>';
   if(r === 0) return '<span class="chip warn">сегодня</span>';
   return `<span class="chip ${r<=7?'warn':'ghost'}">${r} ${plural(r,'день','дня','дней')}</span>` };
-/* Будущие дни группы, где у участника тренировка изменена для него или стоит другая. */
-function memberState(G, cid){
-  let own = 0, busy = 0;
-  groupDays(G, TODAY).forEach(({date, gd}) => { const m = memberDay(cid, date);
-    if(m.g === G.id){ if(m.c !== gd.c) own++ } else if(m.has) busy++ });
-  return {own, busy};
-}
-const changed = G => G.members.filter(cid => memberState(G, cid).own > 0);
+/* Будущие дни группы, где у участника её тренировки нет: пропущен при публикации или вступил позже. */
+const missing = (G, cid) => groupDays(G, TODAY).filter(({date}) => memberDay(cid, date).g !== G.id).length;
 const nextDay = G => { const d = groupDays(G, TODAY)[0]; if(!d) return null; const x = JSON.parse(d.gd.c); return {date:d.date, title:x.t || 'Тренировка'} };
 const whenLbl = d => d === TODAY ? 'сегодня' : d === addDays(TODAY, 1) ? 'завтра' : RU[dowMon(d)] + ' ' + dm(d);
 const stackHTML = G => `<div class="gstack"><span class="stack">${G.members.slice(0, 5).map(cid => { const c = client(cid); return `<span class="av s" title="${esc(c.n)}">${esc(c.ini)}</span>` }).join('')}</span><s>${G.members.length ? G.members.length + ' ' + plural(G.members.length,'участник','участника','участников') : 'никого'}</s></div>`;
@@ -69,8 +64,6 @@ function render(){
     {k:'t', n:'Время', w:'90px', sort:byStr('time'), cell:G => G.time ? esc(G.time) : '<span style="color:var(--tx3)">—</span>'},
     {k:'next', n:'Ближайшая', w:'230px', cell:G => { const x = nextDay(G); return x ? `<div class="cellname"><div style="min-width:0"><div class="n" style="font-weight:500">${esc(x.title)}</div><div class="s">${whenLbl(x.date)}</div></div></div>` : '<span style="color:var(--tx3)">—</span>' }},
     {k:'run', n:'Составлено на', w:'150px', sort:byNum(G => runway(G) ?? -999), cell:runwayChip},
-    {k:'own', n:'Изменено под клиента', w:'170px', sort:byNum(G => changed(G).length), cell:G => { const n = changed(G).length;
-      return n ? `<span class="chip acc" title="У стольких участников будущие тренировки группы изменены тренером — правки группы к ним не приходят">у ${n} ${plural(n,'клиента','клиентов','клиентов')}</span>` : '<span style="color:var(--tx3)">—</span>' }},
   ];
   $('#page').innerHTML = paneHead('Группы', GRPS.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Группа или участник…" value="${esc(V.q)}"></label>
@@ -91,9 +84,8 @@ function renderRail(){
   const G = grp(V.sel);
   if(!G){ railSet({title:'Группа', body:'<div class="rprev"><div class="hint">Выберите группу — здесь появится её карточка.</div></div>', foot:''}); return }
   const last = lastDay(G), nx = nextDay(G);
-  const rows = G.members.map(cid => { const c = client(cid), st = memberState(G, cid);
-    const sub = st.own ? `<s class="own">${st.own} ${plural(st.own,'тренировка изменена','тренировки изменены','тренировок изменено')} под клиента</s>`
-      : st.busy ? `<s>${st.busy} ${plural(st.busy,'день','дня','дней')} с другой тренировкой</s>` : `<s>как в группе</s>`;
+  const rows = G.members.map(cid => { const c = client(cid), miss = missing(G, cid);
+    const sub = `<s>в группе с ${humanDate(G.joined[cid] || TODAY)}${miss ? ` · пропущено ${miss} ${plural(miss,'день','дня','дней')}` : ''}</s>`;
     return `<div class="gm-r"><span class="av s">${esc(c.ini)}</span><a class="gm-n" href="calendar.html?client=${cid}" title="Календарь клиента — здесь тренер правит тренировку только для него"><b>${esc(c.n)}</b>${sub}</a>
       <button class="x" data-rm="${cid}" title="Убрать из группы">${ICON.x}</button></div>` }).join('');
   railSet({title:'Группа', body:`
@@ -109,13 +101,14 @@ function renderRail(){
       </div>
       <div class="rhead">Участники · ${G.members.length}</div>
       <div class="gmem">${rows || '<div class="hint">В группе пока никого.</div>'}</div>
-      <div class="acts"><button class="btn gh sm" id="gAdd">${ICON.plus} Добавить участника</button><button class="btn gh sm" id="gEdit">Изменить группу</button></div>
-      <button class="lnk-rm" id="gDel">Удалить группу</button>
-    </div>`, foot:'Тренировка группы встаёт в календарь каждому участнику. Правка в календаре клиента меняет её только у него — остальных не касается.'});
+      <div class="acts"><button class="btn gh sm" id="gAdd">${ICON.plus} Добавить участника</button></div>
+      <div class="rhead">Группа</div>
+      <div class="acts" style="margin-top:4px"><button class="btn gh sm" id="gEdit">Изменить группу</button><button class="btn gh sm" id="gDel" style="color:var(--rm)">${ICON.x} Удалить группу</button></div>
+    </div>`, foot:'Тренировка группы встаёт в календарь каждому участнику. Правка в календаре группы меняет её у всех; правка в календаре клиента — только у него, до следующей правки в группе.'});
   $('#gAdd').onclick = e => openClientPicker(e.currentTarget, null, cid => {
     const c = client(cid), n = groupAdd(G, cid); saveGroups(); render();
     toast(c.n + ' в группе «' + G.n + '»' + (n ? ' — встало ' + n + ' ' + plural(n,'тренировка','тренировки','тренировок') + ' группы' : ''));
-  }, {all:true, groups:false, exclude:new Set(G.members)});
+  }, {all:true, groups:false, exclude:new Set(G.members), disabled:id => { const g = groupOf(id); return g && g !== G ? 'в группе «' + g.n + '» — сначала уберите оттуда' : null }});
   $('#gEdit').onclick = () => openEdit(G);
   $('#gDel').onclick = () => confirmDelete(G);
   $$('[data-rm]').forEach(b => b.onclick = () => confirmRemove(G, b.dataset.rm));
@@ -138,9 +131,12 @@ function openEdit(G){
     foot:`<span class="gsum" id="gSum"></span><span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="gSave">${G ? 'Сохранить' : 'Создать группу'}</button>`});
   const was = new Set(G ? G.members : []);
   const draw = () => {
-    const rows = CLIENTS.filter(c => !q || norm(c.n).includes(norm(q))).sort((a, b) => (pick.has(b.id) - pick.has(a.id)) || a.n.localeCompare(b.n, 'ru'));
-    $('#gPick').innerHTML = rows.map(c => `<button class="cl ${pick.has(c.id) ? 'on' : ''}" data-cl="${c.id}"><span class="box">${ICON.chk}</span><span class="av">${esc(c.ini)}</span>
-      <span class="who"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span></button>`).join('') || '<div class="hint">Никого не нашли</div>';
+    const other = c => { const g = groupOf(c.id); return g && g !== G ? g : null };   /* клиент состоит только в одной группе */
+    const rows = CLIENTS.filter(c => !q || norm(c.n).includes(norm(q))).sort((a, b) => (pick.has(b.id) - pick.has(a.id)) || (!!other(a) - !!other(b)) || a.n.localeCompare(b.n, 'ru'));
+    $('#gPick').innerHTML = rows.map(c => { const o = other(c);
+      if(o) return `<div class="cl dis"><span class="box"></span><span class="av">${esc(c.ini)}</span><span class="who"><b>${esc(c.n)}</b><s>в группе «${esc(o.n)}» — сначала уберите оттуда</s></span></div>`;
+      return `<button class="cl ${pick.has(c.id) ? 'on' : ''}" data-cl="${c.id}"><span class="box">${ICON.chk}</span><span class="av">${esc(c.ini)}</span>
+      <span class="who"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span></button>` }).join('') || '<div class="hint">Никого не нашли</div>';
     $('#gCnt').textContent = pick.size;
     const add = [...pick].filter(id => !was.has(id)).length, rm = [...was].filter(id => !pick.has(id)).length;
     $('#gSum').textContent = !G ? (pick.size ? 'Тренировки группы встанут каждому с сегодняшнего дня' : 'Участников можно добавить и потом')

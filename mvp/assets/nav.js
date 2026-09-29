@@ -115,7 +115,7 @@ const clientProgSub = c => {
   const tail = pid => { const n = composedDays(pid); return n ? 'составлено до ' + dm(dayDate(pid, n-1)) : 'ничего не составлено' };
   if(isGrp(c.id)){ const last = lastWorkoutDay(c.prog);
     return c.members.length + ' ' + plural3(c.members.length, 'участник', 'участника', 'участников') + ' · ' + (last ? 'составлено до ' + dm(last) : 'ничего не составлено') }
-  const gs = groupsOf(c.id).map(g => g.n), gl = gs.length ? (gs.length > 1 ? 'группы ' : 'группа ') + gs.join(', ') : '';
+  const g = groupOf(c.id), gl = g ? 'группа ' + g.n : '';
   if(!c.prog) return gl || 'программа не назначена';
   const p = program(c.prog);
   return [p.personal && gl ? '' : p.title, gl].filter(Boolean).join(' · ') + ' · ' + tail(c.prog);
@@ -138,9 +138,12 @@ function openClientPicker(btn, curId, onPick, opts = {}){
   const draw = q => {
     const qq = norm(q||'');
     const gr = groups.filter(g=>!qq || norm(g.n).includes(qq));
-    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)) || groupsOf(c.id).some(g=>norm(g.n).includes(qq)));
+    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)) || (groupOf(c.id) && norm(groupOf(c.id).n).includes(qq)));
     let k = 0;
-    const row = c => `<button class="row ${c.id===curId?'cur':''} ${k++===0?'on':''}" data-cli="${c.id}">${whoBtnHTML(c)}${c.id===curId?ICON.chk:''}</button>`;
+    /* opts.disabled(id) → почему выбрать нельзя (клиент уже в другой группе): строка видна, но не кликается. */
+    const row = c => { const why = opts.disabled ? opts.disabled(c.id) : null;
+      if(why) return `<div class="row dis"><span class="cav${isGrp(c.id) ? ' grp' : ''}">${esc(c.ini)}</span><span class="cl-t"><b>${esc(c.n)}</b><s>${esc(why)}</s></span></div>`;
+      return `<button class="row ${c.id===curId?'cur':''} ${k++===0?'on':''}" data-cli="${c.id}">${whoBtnHTML(c)}${c.id===curId?ICON.chk:''}</button>` };
     box.querySelector('.cl-list').innerHTML = gr.length || rows.length
       ? (gr.length ? `<div class="cl-cap">Группы</div>${gr.map(row).join('')}` + (rows.length ? '<div class="cl-cap">Клиенты</div>' : '') : '') + rows.map(row).join('')
       : '<div class="cap">Никого не нашли</div>';
@@ -164,6 +167,55 @@ function openClientPicker(btn, curId, onPick, opts = {}){
   });
   box.addEventListener('click', e => { e.stopPropagation(); const row = e.target.closest('[data-cli]'); if(row) pick(row.dataset.cli) });
   return box;
+}
+
+/* ═══════════ ЗАНЯТЫЕ ДНИ ПРИ ПУБЛИКАЦИИ ГРУППЫ (GRP-3) ═══════════
+   Перед публикацией дня группы смотрим, у кого из участников на эту дату
+   стоит другая тренировка. Если такие есть — одно окно на всех: по каждому
+   «заменить» или «пропустить», по умолчанию заменить. proceed получает набор
+   ключей «клиент@дата», кому заменять; пропуски запоминаются (STATE.gskip).
+   Отмена — публикации нет. Без занятых дней proceed зовётся сразу. */
+function withGroupConflicts(pid, dates, proceed, cancel){
+  const G = grpByProg(pid);
+  const rows = G ? groupConflicts(G, dates) : [];
+  if(!rows.length) return proceed(null);
+  openGroupConflicts(G, rows, choice => {
+    const replace = new Set();
+    rows.forEach(r => { const rep = choice.get(r.key) !== 'skip'; setSkip(G, r.cid, r.date, !rep); if(rep) replace.add(r.key) });
+    proceed(replace);
+  }, cancel);
+}
+function openGroupConflicts(G, rows, onOk, onCancel){
+  const ov = document.createElement('div'); ov.className = 'ov on gconf';
+  const choice = new Map(rows.map(r => [r.key, 'replace']));
+  const n = rows.length, people = new Set(rows.map(r => r.cid)).size;
+  const draw = () => {
+    ov.innerHTML = `<div class="md ask gcm">
+      <div class="mdh"><span class="dot"></span><h2>${people === 1 ? 'У участника уже есть тренировка' : 'У ' + people + ' участников уже есть тренировки'}</h2><button class="cls" data-x>✕</button></div>
+      <div class="mdb">
+        <p class="lead">Тренировка группы «${esc(G.n)}» встанет всем участникам. ${n === 1 ? 'На этот день у него стоит другая — заменить её или пропустить?' : 'На эти дни у них стоят другие — по каждому решите: заменить или пропустить.'}</p>
+        <div class="gc-list">${rows.map(r => { const c = client(r.cid), v = choice.get(r.key); return `<div class="gc-r">
+          <span class="cav">${esc(c.ini)}</span>
+          <span class="gc-t"><b>${esc(c.n)}</b><s>${RU[dowMon(r.date)]} ${dm(r.date)} · ${esc(r.title)}</s></span>
+          <span class="seg"><button class="${v === 'replace' ? 'on' : ''}" data-gc="${r.key}" data-v="replace">Заменить</button><button class="${v === 'skip' ? 'on' : ''}" data-gc="${r.key}" data-v="skip">Пропустить</button></span>
+        </div>` }).join('')}</div>
+        ${n > 1 ? `<div class="gc-all"><button data-gcall="replace">Заменить у всех</button><button data-gcall="skip">Пропустить всех</button></div>` : ''}
+        <p class="sub">Пропущенный сохранит свою тренировку; поставить ему тренировку группы можно потом из его календаря.</p>
+      </div>
+      <div class="mdf"><span class="sp"></span><button class="btn gh" data-x>Отмена</button><button class="btn" data-ok>Опубликовать</button></div>
+    </div>`;
+  };
+  const close = () => { ov.remove(); document.removeEventListener('keydown', key, true) };
+  const key = e => { if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(); if(onCancel) onCancel() } };
+  document.addEventListener('keydown', key, true);
+  ov.addEventListener('click', e => {
+    const b = e.target.closest('[data-gc]'); if(b){ choice.set(b.dataset.gc, b.dataset.v); draw(); return }
+    const all = e.target.closest('[data-gcall]'); if(all){ rows.forEach(r => choice.set(r.key, all.dataset.gcall)); draw(); return }
+    if(e.target === ov || e.target.closest('[data-x]')){ close(); if(onCancel) onCancel(); return }
+    if(e.target.closest('[data-ok]')){ close(); onOk(choice) }
+  });
+  draw();
+  document.body.appendChild(ov);
 }
 
 /* Правая панель сворачивается в колонку; состояние — в localStorage. */

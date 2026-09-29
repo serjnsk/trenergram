@@ -58,11 +58,11 @@ const payCell = c => { const d = c.paidUntil, st = payState(c), r = d ? daysBetw
 
 /* Группы клиента — чипами-ссылками. Личный контейнер участника («Тренировки»)
    не называем: его тренировки и есть тренировки группы. */
-const grpChips = c => { const gs = groupsOf(c.id); return gs.length ? `<span class="gchips">${gs.map(g=>`<a class="gchip" href="groups.html?id=${g.id}" title="Группа «${esc(g.n)}» — открыть">${GRPICON}${esc(g.n)}</a>`).join('')}</span>` : '' };
-const progLabel = c => { const p = program(c.prog), gs = groupsOf(c.id); return [p && !(p.personal && gs.length) ? p.title : '', ...gs.map(g=>g.n)].filter(Boolean).join(' · ') };
+const grpChips = c => { const g = groupOf(c.id); return g ? `<span class="gchips"><a class="gchip" href="groups.html?id=${g.id}" title="Группа «${esc(g.n)}» — открыть">${GRPICON}${esc(g.n)}</a></span>` : '' };
+const progLabel = c => { const p = program(c.prog), g = groupOf(c.id); return [p && !(p.personal && g) ? p.title : '', g ? g.n : ''].filter(Boolean).join(' · ') };
 function match(c){
   if(V.f==='noprog' && c.prog) return false;
-  if(V.f==='grp' && !groupsOf(c.id).length) return false;
+  if(V.f==='grp' && !groupOf(c.id)) return false;
   if(V.f==='attn' && !needsAttention(c)) return false;
   if(V.q && norm(c.n).indexOf(norm(V.q))<0) return false;
   return true;
@@ -100,7 +100,7 @@ function render(){
                 <div class="s">${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</div>
               </div>
             </div></td>
-            <td>${pr && !(pr.personal && groupsOf(c.id).length) ? `<div>${esc(pr.title)}</div>` : ''}${grpChips(c)}${!pr && !groupsOf(c.id).length ? `<span style="color:var(--tx3)">без программы</span>` : ''}</td>
+            <td>${pr && !(pr.personal && groupOf(c.id)) ? `<div>${esc(pr.title)}</div>` : ''}${grpChips(c)}${!pr && !groupOf(c.id) ? `<span style="color:var(--tx3)">без программы</span>` : ''}</td>
             <td>${runwayChip(c)}</td>
             <td>${payCell(c)}</td>
             <td>${c.plan?`<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:64px"><i style="width:${Math.round(c.done/c.plan*100)}%"></i></div><span style="font-size:13.5px;color:var(--tx3)">${c.done}/${c.plan}</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>
@@ -130,7 +130,7 @@ function renderRail(){
       <div class="rhead">Программа</div>
       ${p ? `<div class="kv"><s>Название</s><b>${esc(progLabel(c))}</b><s>Начало</s><b>${dm(p.start)}</b><s>Составлено</s><b>${n ? 'до ' + dm(dayDate(c.prog, n-1)) : 'нет'} ${runwayChip(c)}</b></div>`
           : '<div class="hint">Программа не назначена — клиент видит пустой календарь.</div>'}
-      ${groupsOf(c.id).length ? `<div class="rhead">Группы</div><div style="padding:0 8px">${grpChips(c)}</div>` : ''}
+      ${groupOf(c.id) ? `<div class="rhead">Группа</div><div style="padding:0 8px">${grpChips(c)}</div>` : ''}
       <div class="rhead">Активность</div>
       <div class="kv"><s>Последняя</s><b>${c.last ? ago(c.last) : 'не заходил'}</b><s>Серия</s><b>${c.streak||0} ${plural(c.streak||0,'день','дня','дней')}</b><s>Без ответа</s><b>${u ? `<span class="chip acc">${u}</span>` : '—'}</b></div>
       <div class="rhead">Максимумы</div>

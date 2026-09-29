@@ -146,9 +146,8 @@ const BK_EMPTY = () => serializeDay({title:'', blocks:[], comp:false});
 /* День пишется в хранилище клиента; ensureDay заводит контейнер дней, если
    у клиента нет программы, и сдвигает старт, если дата раньше него. */
 /* Запись идёт через putDay: день группы расходится по участникам, а у дня
-   участника остаётся метка группы — удалённая или заменённая тренером у одного
-   человека тренировка группы считается изменённой для него и правками группы
-   не затирается. */
+   участника остаётся метка группы — он остаётся днём группы, и следующая
+   правка в группе снова его заполнит. */
 function bkWrite(cid, date, c, draft){
   const r = ensureDay(cid, date); if(!r) return;
   const cur = buildPlan(r.pid)[r.i];
@@ -168,7 +167,7 @@ function bkPutMsg(cid, date, m){
 }
 function bkSnap(){
   return {
-    state: JSON.stringify({days: STATE.days || {}, pstart: STATE.pstart || {}, calprog: STATE.calprog || {}}),
+    state: JSON.stringify({days: STATE.days || {}, pstart: STATE.pstart || {}, calprog: STATE.calprog || {}, gskip: STATE.gskip || {}}),
     plan: Object.fromEntries(Object.entries(PLAN).map(([k, v]) => [k, (v || []).slice()])),
     progs: PROGRAMS.map(p => ({id:p.id, start:p.start, days:p.days})),
     ids: new Set(PROGRAMS.map(p => p.id)),
@@ -179,7 +178,7 @@ function bkSnap(){
 }
 function bkRestore(s){
   const st = JSON.parse(s.state);
-  STATE.days = st.days; STATE.pstart = st.pstart; STATE.calprog = st.calprog;
+  STATE.days = st.days; STATE.pstart = st.pstart; STATE.calprog = st.calprog; STATE.gskip = st.gskip || {};
   Object.keys(PLAN).forEach(k => { if(!(k in s.plan)) delete PLAN[k] });
   Object.entries(s.plan).forEach(([k, v]) => { PLAN[k] = v.slice() });
   for(let i = PROGRAMS.length - 1; i >= 0; i--) if(!s.ids.has(PROGRAMS[i].id)) PROGRAMS.splice(i, 1);
@@ -254,13 +253,15 @@ function bkStatus(pub){
   const ctx = bkCtx(cid);
   const todo = ds.map(d => ({d, x: bkDay(ctx, d)})).filter(o => bkHas(o.x) && (pub ? o.x.draft : !o.x.draft));
   if(!todo.length) return bkToast(pub ? 'Все выбранные уже опубликованы' : 'Все выбранные уже в черновиках');
-  bkRun(() => {
+  const run = replace => bkRun(() => {
     todo.forEach(({d, x}) => {
       const i = daysBetween(ctx.p.start, d), c = serializeDay(x);
-      putDay(ctx.pid, i, pub ? {c, draft:false} : {c, pub: x.pub || '', draft:true});
+      putDay(ctx.pid, i, pub ? {c, draft:false} : {c, pub: x.pub || '', draft:true}, true, replace);
     });
     return (pub ? 'Опубликовано: ' : 'В черновик: ') + bkN(todo.length, 'тренировка', 'тренировки', 'тренировок');
   });
+  /* Публикация в календаре группы — через окно занятых дней участников. */
+  if(pub) withGroupConflicts(ctx.pid, todo.map(o => o.d), run); else run(null);
 }
 
 /* ─── копировать и переместить ─── */
