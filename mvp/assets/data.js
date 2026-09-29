@@ -147,7 +147,7 @@ const ALIAS = {
  ghd:['ghd','гхд'], plank:['планка','plank'],
  rom:['суставная разминка','разминка суставов','мобилити','joint rom'],
  couch:['кауч','couch','couch stretch','растяжка','растяжка бедра'],
- pvc:['pvc','выкруты','мобилити плеч','pass through'],
+ pvc:['pvc','выкруты','выкруты с палкой','мобилити плеч','pass through'],
  sled:['сани','толкание саней','sled','sled push'],
  ropec:['канат','лазание по канату','rope climb'],
  copen:['раскрытие грудного','t-spine','грудной отдел'],
@@ -344,6 +344,7 @@ function tplKind(t){
 /* Разворачивание шаблона в рабочие сущности — уровень определяет результат */
 function tplLine([ex, scheme, val, unit, txt, sub]){
   if(ex === SS_TAG) return ssItem(scheme, val);          /* [SS_TAG, круги, отдых] */
+  if(ex === TXT_TAG){ const r = rawItem(scheme || ''); if(sub) r.sub = true; return r }   /* [TXT_TAG, текст] */
   const i = mkItem(ex, scheme||'');
   if(unit==='%') i.pct = parseFloat(val);
   else if(val!=null && val!==''){ i.unit = unit || i.unit; i.val = String(val) }
@@ -355,7 +356,7 @@ function tplLine([ex, scheme, val, unit, txt, sub]){
    параметров в тренировке молча меняла бы шаблон в базе. */
 const fmtCopy = f => !f ? null : typeof f === 'string' ? f : {...f};
 const tplToBlock = t => normFmt({id:nid('b'), kind:t.kind||null, title:t.title.replace(/\s·.*$/,''),
-                          note:'', fmt:fmtCopy(t.fmt), items:(t.items||[]).map(tplLine)});
+                          note:'', fmt:fmtCopy(t.fmt), ...(isTextBlock(t) ? {text:t.text} : {}), items:(t.items||[]).map(tplLine)});
 function tplToWorkout(t){
   return {title:t.title, blocks:(t.blocks||[]).map(id=>tplToBlock(tplById(id))).filter(Boolean)};
 }
@@ -369,9 +370,9 @@ function tplToSeq(t){
 }
 /* сколько дней с тренировками и упражнений внутри — для карточек библиотеки */
 function tplStats(t){
-  if(t.lvl==='блок') return {n:(t.items||[]).filter(x=>x[0]!==SS_TAG).length};
+  if(t.lvl==='блок') return {n:isTextBlock(t) ? textLines(t.text).length : (t.items||[]).filter(x=>x[0]!==SS_TAG).length};
   if(t.lvl==='тренировка'){ const w=tplToWorkout(t);
-    return {n:w.blocks.reduce((a,b)=>a+b.items.filter(i=>!i.ss).length,0), blocks:w.blocks.length} }
+    return {n:w.blocks.reduce((a,b)=>a+blockCount(b),0), blocks:w.blocks.length} }
   if(t.lvl==='программа'){ const q=tplToSeq(t);
     return {days:t.days, cycle:q.length, workouts:q.filter(Boolean).length} }
   return {n:0};
@@ -469,6 +470,28 @@ const rawItem = txt => ({id:nid('i'), exId:null, raw:txt, scheme:'', pct:null, u
 const mkBlock = (kind,title,note,fmt,items) => ({id:nid('b'), kind, title, note:note||'', fmt:fmt||null,
   items:(items||[]).map(a => a[0] === SS_TAG ? ssItem(a[1], a[2])
     : Object.assign(mkItem(a[0],a[1]||'',a[2]??null,a[3]||null,a[4]||'',a[5]||''), a[6] ? {sub:true} : {}))});
+
+/* ─── ТЕКСТ — ПОЛНОПРАВНОЕ СОДЕРЖИМОЕ (CON-5) ───
+   Набранный текст хранится как написан и сам ни во что не превращается:
+   строка текстом — запись с raw, блок текстом — блок с полем text. В одном
+   блоке текст и строки упражнений не смешиваются: у блока текстом items пуст.
+   В структуру текст переводит только кнопка AI, по просьбе тренера. День, где
+   один текст, — такая же тренировка: публикуется, клиент видит текст как есть.
+   Поэтому «есть ли в дне тренировка» проверяется здесь, а не по exId. */
+const textBlock = (text = '', title = '') => ({id:nid('b'), kind:null, title, note:'', fmt:null, text, items:[]});
+const isTextBlock = b => !!b && typeof b.text === 'string';
+const textLines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
+const itemHas = y => !!y && !y.ss && !!(y.exId || String(y.raw || '').trim());
+const blockHas = b => !!b && (isTextBlock(b) ? textLines(b.text).length > 0 : (b.items || []).some(itemHas));
+const dayHas = x => !!x && (x.blocks || []).some(blockHas);
+/* Счёт записей для полосы нагрузки и сводок: упражнение, строка текстом,
+   строка текстового блока. */
+const blockCount = b => isTextBlock(b) ? textLines(b.text).length : (b.items || []).filter(itemHas).length;
+const dayCount = x => (x.blocks || []).reduce((a, b) => a + blockCount(b), 0);
+/* Подпись блока в списках: название, тип, у блока текстом — первая строка. */
+const blockName = b => b.title || blockTypeLabel(b) || (isTextBlock(b) ? (textLines(b.text)[0] || '').replace(/:$/, '') : '');
+/* Строка текстом в шаблоне блока: [TXT_TAG, текст, '', '', '', sub]. */
+const TXT_TAG = '@txt';
 /* Конец группы: индекс первой строки после участников суперсета с заголовком в k. */
 const ssEnd = (items, k) => { let j = k + 1; while(j < items.length && items[j].sub && !items[j].ss) j++; return j };
 /* Порядок в блоке: заголовок без двух участников распускается, sub без заголовка сверху снимается. */
@@ -661,9 +684,13 @@ function buildDay(pid, i){
 /* Пустые блоки без названия и заметки в слепок не входят: конструктор заводит
    такой блок на каждом открытом пустом дне, и без этого правила любой клик
    по дню помечал бы его черновиком. */
-const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
+/* Текст блока (tx) пишется только у блока текстом: у остальных слепок не
+   меняется, и опубликованные дни не становятся черновиками сами собой. */
+const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note || String(b.text||'').trim()).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
+  ...(isTextBlock(b) ? {tx:b.text} : {}),
   i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''} : ({e:it.exId||null, r:it.raw||null, s:it.scheme||'', p:it.pct??null, u:it.unit||'', v:it.val||'', x:it.txt||'', ...(it.sub ? {g:1} : {})}))}))});
 const restoreBlocks = rec => (rec.b||[]).map(b=>normFmt({id:nid('b'), kind:b.k||null, title:b.t||'', note:b.n||'', fmt:b.f||null,
+  ...(typeof b.tx === 'string' ? {text:b.tx} : {}),
   items:(b.i||[]).map(it=> it.ss ? ssItem(it.n, it.z) : ({id:nid('i'), exId:it.e||null, raw:it.r||null, scheme:it.s||'', pct:it.p??null, unit:it.u||'', val:it.v||'', txt:it.x||'', ...(it.g ? {sub:true} : {})}))}));
 const savedDay = (pid,i) => ((STATE.days||{})[pid]||{})[i] || null;
 /* Черновики могут лежать за концом заготовок — план дотягиваем до них. */
@@ -871,7 +898,10 @@ function normFmt(b){
   return b;
 }
 
-/* ═══════ Текст → структура (CON-5, OQ-10) ═══════ */
+/* ═══════ Текст → структура (CON-5, OQ-10) ═══════
+   Работает только по кнопке AI и при выборе из подсказки: набранный текст
+   сам по себе не разбирается. В продукте это первый проход перед моделью —
+   правила узнают обычную нотацию, модель берёт остальное. */
 const norm = s => s.toLowerCase().replace(/[ёë]/g,'е').replace(/[^a-zа-я0-9 ]/gi,' ').replace(/\s+/g,' ').trim();
 const CAND = EX.map(e=>({e, c:[e.ru, e.en, ...(ALIAS[e.id]||[])].map(norm).filter(Boolean)}));
 function sharedPrefix(a,b){ const L=Math.min(a.length,b.length); let i=0; while(i<L && a[i]===b[i]) i++; return i>=Math.ceil(L*.6)?i:0 }
@@ -894,6 +924,19 @@ function matchEx(text){
     if(s>score){ score=s; best=e }
   }
   return score>=6 ? best : null;
+}
+/* Уверенность разбора (CON-5). Строку отдаём упражнению, только если все её
+   слова покрыты названием или синонимом из базы; опечатку прощаем, если
+   совпадает начало слова. «Выпады с блином по самочувствию» похоже на
+   «Выпады с гантелями», но блин и самочувствие названием не покрыты — такая
+   строка остаётся текстом. Лучше честный текст, чем правдоподобная подмена:
+   ради этого автоматический разбор и заменили кнопкой AI. */
+const FILLER = new Set(['по','на','с','со','в','во','и','к','до','от','за','из','для','x','х','rpe','rir','повт','раз','подх','подхода','подходов',
+  'мин','минут','минуты','сек','секунд','м','км','метров','метра','кг','кал','раунд','раунда','раундов','круг','круга','кругов']);
+function covered(text, e){
+  const qt = norm(text).split(' ').filter(w => w && !/^\d/.test(w) && !FILLER.has(w));
+  const ws = [...new Set([e.ru, e.en, ...(ALIAS[e.id]||[])].map(norm).filter(Boolean).flatMap(n => n.split(' ')))];
+  return qt.every(q => ws.some(w => w === q || sharedPrefix(q, w) >= 4));
 }
 const NOL = '(?![а-яёa-z])';
 const UNITS = [
@@ -921,7 +964,7 @@ function parseText(txt){
     if(ms){ scheme = ms[0].replace(/\s/g,'').replace(/[xхХ]/,'×'); rest = rest.replace(ms[0],' ') }
     else{ const lead = rest.match(/^\s*(\d+)\s+(?=\D)/); if(lead){ scheme=lead[1]; rest=rest.replace(lead[0],' ') } }
     const e = matchEx(rest);
-    if(!e){ out.push({type:'raw',src:L}); continue }
+    if(!e || !covered(rest, e)){ out.push({type:'raw',src:L}); continue }
     const item = mkItem(e.id, scheme);
     item.pct = pct;
     if(unit){ item.unit=unit; item.val=val }
@@ -1210,7 +1253,7 @@ const DAYICON = {
   pub:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12s4-7 9-7 9 7 9 7-4 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>',
 };
 const DAYST = {rest:'Отдых', draft:'Черновик — клиент не видит', pub:'Опубликована — клиент видит', comp:'Соревнование'};
-const dayStatus = (x, draft) => x.comp ? 'comp' : !(x.blocks||[]).some(b=>b.items.some(y=>y.exId)) ? 'rest' : draft ? 'draft' : 'pub';
+const dayStatus = (x, draft) => x.comp ? 'comp' : !dayHas(x) ? 'rest' : draft ? 'draft' : 'pub';
 /* Метка статуса. Для черновика/опубликованной — кнопка: клик переключает
    видимость для клиента (key = «программа:индекс дня»). */
 const dayMark = (st, key) => st==='rest' ? ''
@@ -1229,8 +1272,8 @@ const pubToggleMsg = on => on ? 'Тренировка опубликована �
 const restCell = () => `<span class="stcell rest" title="Отдых"><img src="assets/icons/rest.png" alt="Отдых"></span>`;
 /* Список блоков дня: номер в своей колонке, не больше max строк, остальное — «ещё N». */
 function blocksList(x, max=5){
-  const bs = (x.blocks||[]).filter(b=>b.items.some(y=>y.exId)); if(!bs.length) return '';
-  return `<span class="bl num">${bs.slice(0,max).map((b,i)=>`<i><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || 'блок')}</b></i>`).join('')}${bs.length>max ? `<span class="more">ещё ${bs.length-max}</span>` : ''}</span>`;
+  const bs = (x.blocks||[]).filter(blockHas); if(!bs.length) return '';
+  return `<span class="bl num">${bs.slice(0,max).map((b,i)=>`<i><s>${i+1}</s><b>${esc(blockName(b) || 'блок')}</b></i>`).join('')}${bs.length>max ? `<span class="more">ещё ${bs.length-max}</span>` : ''}</span>`;
 }
 const compCell = () => `<span class="stcell comp">${DAYICON.comp}<s>Соревнование</s></span>`;
 
@@ -1278,12 +1321,14 @@ function ensureDay(cid, date){
 const itemLabel = it => it.txt ? it.txt : [it.scheme, it.pct != null ? fmtNum(it.pct) + '\u00a0%' : (it.val ? fmtNum(it.val) + (it.unit ? '\u00a0' + it.unit : '') : '')].filter(Boolean).join(' · ');
 function blocksDetail(x, cid){
   const pm = cid ? pmOf(cid) : null;
-  const has = y => y.exId || y.raw;
-  const bs = (x.blocks||[]).filter(b=>b.items.some(has)); if(!bs.length) return '';
+  const has = itemHas;
+  const bs = (x.blocks||[]).filter(blockHas); if(!bs.length) return '';
   const row = it => { const e = it.exId ? byId(it.exId) : null; const kg = e && pm ? workKg(it, pm) : null;
     return `<div class="bxi"><span>${esc(e ? e.ru : (it.raw||''))}</span><em>${esc(itemLabel(it))}${kg!=null ? `${itemLabel(it)?' · ':''}<u>${fmtNum(kg)}\u00a0кг</u>` : ''}</em></div>` };
-  /* Суперсет — подгруппой: подпись «Суперсет · 3 круга» и его упражнения. */
-  const body = b => { let h = '', k = 0; const its = b.items;
+  /* Суперсет — подгруппой: подпись «Суперсет · 3 круга» и его упражнения.
+     Блок текстом — строками как написан, без схемы и весов. */
+  const body = b => { if(isTextBlock(b)) return textLines(b.text).map(l => `<div class="bxi bxt"><span>${esc(l)}</span></div>`).join('');
+    let h = '', k = 0; const its = b.items;
     while(k < its.length){
       if(its[k].ss){ const j = ssEnd(its, k), mem = its.slice(k + 1, j).filter(has);
         if(mem.length) h += `<div class="bxss"><div class="bxssh">${esc(ssLabel(its[k]))}</div>${mem.map(row).join('')}</div>`;
@@ -1293,7 +1338,7 @@ function blocksDetail(x, cid){
     }
     return h };
   return `<div class="bxs">${bs.map((b,i)=>`<div class="bx">
-    <div class="bxh"><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || 'Блок')}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
+    <div class="bxh"><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || (isTextBlock(b) ? 'Блок текстом' : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
     ${body(b)}
   </div>`).join('')}</div>`;
 }

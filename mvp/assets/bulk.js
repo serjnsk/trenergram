@@ -82,7 +82,7 @@ function bkDay(ctx, date){
   return i >= 0 ? (ctx.plan[i] || null) : null;
 }
 const bkSelectable = x => !!x && dayStatus(x, x.draft) !== 'rest';
-const bkHas = x => !!x && (!!x.comp || (x.blocks||[]).some(b => (b.items||[]).some(y => y.exId || y.raw)));
+const bkHas = x => !!x && (!!x.comp || dayHas(x));
 const bkTitle = x => !x ? '' : (x.title && !['Отдых','—'].includes(x.title) ? x.title : (x.comp ? 'Соревнование' : 'Без названия'));
 
 /* ─── выбор ─── */

@@ -32,6 +32,13 @@ body{background:var(--bg);color:var(--tx1);font:400 14px/1.55 var(--ui)}
 .d-grp{font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
   color:var(--tx3);margin:20px 0 8px}
 
+/* ── кнопка ИИ: живые классы прототипа, крупно ── */
+.d-ai{display:flex;flex-wrap:wrap;gap:14px}
+.d-ai > div{flex:1 1 200px;border:1px solid var(--line);border-radius:var(--rad-m);padding:18px 16px 12px}
+.d-ai .st{zoom:2;display:flex;justify-content:center;align-items:center;height:30px}
+.d-ai b{display:block;font-size:13.5px;font-weight:600;margin-top:14px}
+.d-ai s{display:block;font-size:13px;color:var(--tx3);text-decoration:none}
+
 /* ── токены ── */
 .d-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
 .d-sw div{border:1px solid var(--line);border-radius:var(--rad-m);overflow:hidden}
@@ -156,6 +163,10 @@ body{background:var(--bg);color:var(--tx1);font:400 14px/1.55 var(--ui)}
 <p>Четыре токена. <code>--rad-xl</code> в прототипе сейчас не используется ни разу — оставлен в теме про запас.</p>
 <div class="d-rad" id="rad"></div>
 
+<h2>Кнопка ИИ</h2>
+<p>Единственное место, где цвет выходит за палитру: радужное кольцо медленно вращается — так кнопку ИИ узнают без подписи. Звёздочки и буквы — чернилами: радужный текст на белом не читается. Кнопка стоит в углу блока текстом и строки текстом и переводит текст в структуру только по нажатию (CON-5). Образ — по <a href="https://dribbble.com/shots/25854034-AI-button">референсу</a>.</p>
+<div class="d-ai" id="ai"></div>
+
 <h2>Бренд в контексте</h2>
 <p>Название выбрано — Тренерграм. Логотип — сплошной wordmark со срезом 45°. Ниже он и производный от него знак в местах, где бренд реально живёт: заставка, иконка среди чужих иконок, пуш, витрина стора и шапка веб-версии.</p>
 <div class="d-mocks" id="mocks"></div>
@@ -215,6 +226,16 @@ document.getElementById('tp').innerHTML = PROBES.map(([name,sel,html])=>{
     <span class="spec">${c.fontWeight} ${parseFloat(c.fontSize)}px${lh} ${esc(fam)}${esc(ls)}</span></div>`;
 }).join('');
 probe.innerHTML = '';
+
+/* ── кнопка ИИ: те же классы и та же разметка, что в конструкторе ── */
+const AIMARK = '<svg class="aim" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg>';
+document.getElementById('ai').innerHTML = [
+  ['',     'AI',        'Покой',          'кольцо вращается, 4 с на оборот'],
+  ['hov',  'AI',        'Наведение',      'заливка сереет, звёздочки мерцают по очереди'],
+  ['busy', 'Разбираю…', 'ИИ разбирает',   'кольцо быстрее, мерцание без наведения'],
+  ['dim',  'AI',        'Нечего разбирать','блок текстом пустой'],
+  ['sm',   'AI',        'В строке текстом','компактная, рядом с «Выбрать упражнение»'],
+].map(([c, l, n, d]) => `<div><div class="st"><button class="aib ${c}" tabindex="-1">${AIMARK}<span>${esc(l)}</span></button></div><b>${esc(n)}</b><s>${esc(d)}</s></div>`).join('');
 
 /* ── радиусы ── */
 document.getElementById('rad').innerHTML =

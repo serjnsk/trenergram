@@ -79,8 +79,8 @@ function monthHTML(y, m, ctx){
     const href = `constructor.html?client=${C.cid}&date=${date}`;   /* любой день можно составить — границ у программы нет */
     if(!inPlan) return `<a class="day empty rest${cls}" href="${href}" data-date="${date}" title="Составить этот день">${head}${restCell()}</a>`;
     const x = plan[i];
-    const n = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
-    const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
+    const n = dayCount(x);
+    const bl = x.blocks.filter(blockHas).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
     const blocks = view === 'detail' ? blocksDetail(x, c.id) : blocksList(x);

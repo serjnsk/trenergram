@@ -16,8 +16,11 @@
    копируют целиком (CON-4). Поэтому в панели источников три
    уровня, а неделя живёт полосой сверху.
 
-   Текст вводится в самой строке: CON-1 и CON-5 — один интерфейс
-   поверх структуры, разбор идёт на лету. Кнопки «распознать» нет.
+   Текст сохраняется как написан (CON-5): строка, не выбранная из
+   базы, остаётся строкой текстом, блок текстом — текстом. Сам текст
+   не разбирается — в структуру его переводит только кнопка AI в углу
+   блока или строки, по просьбе тренера. Автоматический разбор ошибался
+   правдоподобно и молча, а новый тренер не отличит такую ошибку от успеха.
 
    ПМ здесь не редактируются: клиент вводит их у себя (PRO-4),
    тренер пишет проценты, расчёт автоматический (CON-16, CON-17).
@@ -62,6 +65,10 @@ const blockOf = (title, items, note, kind, fmt) => normFmt({
   id: nid('b'), kind: kind === undefined ? typeOfTitle(title) : (kind || null), title: title || '',
   note: note || '', fmt: fmt || null, items: items || [],
 });
+/* Копия блока любого вида: у блока текстом переносится текст, у остальных — строки. */
+const copyBlock = b => isTextBlock(b)
+  ? {...textBlock(b.text, b.title), note: b.note || '', kind: b.kind || null, fmt: b.fmt ? {...b.fmt} : null}
+  : blockOf(b.title, b.items.map(i => ({...i, id:nid('i')})), b.note, b.kind, b.fmt ? {...b.fmt} : null);
 
 /* «Отдых» и «—» приходят из модели как заглушки пустого дня, а не как
    названия тренировок. Если день наполнили, они не должны остаться в поле. */
@@ -76,7 +83,7 @@ const REST_TITLES = new Set(['Отдых','—','']);
    ?client=&date= ведёт сразу в редактор нужного дня. */
 const Q = new URLSearchParams(location.search);
 const S = { cid: Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
-            tab:'ex', q:'', compose:null, src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
+            tab:'ex', q:'', src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
             tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
 const blockSig = b => serializeDay({title:'', blocks:[b]});
 const PCACHE = {};
@@ -98,7 +105,7 @@ function shiftTo(date){
   persist();
   const r = ensureDay(S.cid, date); if(!r) return;
   delete PCACHE[S.pid];
-  S.i = r.i; S.compose = null; S.blkText = false; S.date = date;
+  S.i = r.i; S.date = date;
   extendPlan(S.i); render();
 }
 /* Привязка клиента к плану: программа берётся у клиента, день — из даты. */
@@ -112,7 +119,7 @@ function bindClient(cid, date){
   S.pid = r.pid;
   const i = r.i;
   extendPlan(i);
-  S.i = i; S.compose = null; S.blkText = false;
+  S.i = i;
   return true;
 }
 /* Если из адреса пришло что-то негодное — откатываемся на клиента по умолчанию
@@ -150,14 +157,15 @@ const ICON = {
  grip:'<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6" cy="4" r="1.1"/><circle cx="10" cy="4" r="1.1"/><circle cx="6" cy="8" r="1.1"/><circle cx="10" cy="8" r="1.1"/><circle cx="6" cy="12" r="1.1"/><circle cx="10" cy="12" r="1.1"/></svg>',
  x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>',
  chat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 7.6a5.2 5.2 0 0 1-7.4 4.7L2.5 13.2l1-3.6A5.2 5.2 0 1 1 13.5 7.6z"/></svg>',
- photo:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h1.5l1-1.5h3l1 1.5H12a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 12 13H4a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="8" cy="8.5" r="2.3"/></svg>',
  vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
  vdetail:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 5.5h6M7 8h4M7 10.5h4"/></svg>',
  vhide:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="6" width="12" height="4" rx="1.2"/></svg>',
  vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
  search:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>',
- ai:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.8 9.5 6 13.7 7.5 9.5 9 8 13.2 6.5 9 2.3 7.5 6.5 6z"/><path d="M12.8 11.4l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z"/></svg>',
+ /* Текст — строки абзаца: ввод текстом сам по себе не ИИ, знак ИИ стоит
+    только на кнопке, которая действительно зовёт модель. */
+ text:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 3.5h11M2.5 6.5h11M2.5 9.5h11M2.5 12.5h6.5"/></svg>',
  /* Отдельная папка для кнопок: у навигационной ICON.tpl другой viewBox
     и не задана толщина обводки — рядом со «Сохранить» и «Копией» она
     выглядела заметно тоньше. Здесь всё совпадает: 16 и 1.5. */
@@ -166,6 +174,13 @@ const ICON = {
  clock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.8"/><path d="M8 4.8V8l2.2 1.4"/></svg>',
  chk:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>',
 };
+/* Знак ИИ — три звёздочки; на кнопке они мерцают по очереди, поэтому это
+   отдельные фигуры (CSS: .aim, .aib). Кнопка AI — единственный путь из
+   текста в структуру (CON-5): стоит в углу блока текстом и строки текстом
+   и ничего не делает, пока её не нажали. */
+const AIMARK = '<svg class="aim" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg>';
+const aiBtn = (attr, id, title, sm, dim) =>
+  `<button class="aib${sm ? ' sm' : ''}${dim ? ' dim' : ''}" data-${attr}="${id}"${sm ? ' tabindex="-1"' : ''} title="${esc(title)}" aria-label="${esc(title)}">${AIMARK}<span>AI</span></button>`;
 /* NAV живёт в assets/nav.js — общий конфиг, см. комментарий там. */
 /* renderNav живёт в assets/nav.js — общий для обеих оболочек. */
 
@@ -203,8 +218,8 @@ function setTrainerMsg(date, text){
    недели к неделе меняется: сколько дней заполнено и чем они нагружены. */
 function planStat(){
   const d = plan();
-  const filled = d.filter(x=>x.blocks.some(b=>b.items.some(i=>i.exId))).length;
-  const n = d.reduce((a,x)=>a+x.blocks.reduce((y,b)=>y+b.items.filter(i=>i.exId).length,0),0);
+  const filled = d.filter(dayHas).length;
+  const n = d.reduce((a,x)=>a+dayCount(x),0);
   if(!filled) return 'план пустой';
   return filled + ' ' + plural(filled,'тренировка','тренировки','тренировок') +
          ' · ' + n + ' ' + plural(n,'упражнение','упражнения','упражнений');
@@ -265,8 +280,7 @@ function renderStrip(){
         const cls = today ? ' today' : '';
         if(!c.inProg || !c.inPlan) return `<button class="day empty rest${cls}" data-day="${c.i}" data-date="${c.date}" title="Составить этот день">${head}${restCell()}</button>`;
         const x = d[c.i];
-        const bl = x.blocks.filter(b=>b.items.some(y=>y.exId)).length;
-        const n  = x.blocks.reduce((a,b)=>a+b.items.filter(y=>y.exId).length, 0);
+        const n  = dayCount(x);
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
         const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
         const blocks = laneView()==='detail' ? blocksDetail(x, S.cid) : blocksList(x);
@@ -293,14 +307,15 @@ function renderStrip(){
 const tmSub = f => fmtDesc(f);
 function lineHTML(it){
   const ex = it.exId ? byId(it.exId) : null;
-  /* Нераспознанная строка — предусмотренное состояние, а не ошибка:
-     «нераспознанные строки остаются текстом и конвертируются вручную».
-     Поэтому не предупреждаем, а даём тот самый ручной путь — выбор из базы
-     одним нажатием. Текст при этом сохраняется как есть. */
+  /* Строка текстом — обычное сохранённое состояние, а не ошибка: тренер так
+     написал, так её и увидит клиент (CON-5). Сама строка не разбирается
+     никогда. Путей в структуру два, оба по просьбе тренера: кнопка AI в углу
+     строки и ручной выбор из базы. */
   if(!ex) return `<div class="line raw" data-item="${it.id}">
     <span class="gr">${ICON.grip}</span>
     <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false">${esc(it.raw||'')}</span>
-    <button class="pick" data-pickfor="${it.id}" tabindex="-1">Выбрать упражнение</button>
+    ${String(it.raw||'').trim() ? `<button class="pick" data-pickfor="${it.id}" tabindex="-1">Выбрать упражнение</button>
+    ${aiBtn('ailine', it.id, 'Разобрать строку: ИИ найдёт упражнение в базе, схему и нагрузку', true)}` : ''}
     <button class="x" data-del="${it.id}" tabindex="-1">${ICON.x}</button>
   </div>`;
   /* Схема и нагрузка — поля сразу за названием, без отдельной панели: их
@@ -351,12 +366,24 @@ function ssHTML(h, mem){
     <button class="addl in" data-addin="${h.id}">${ICON.plus} Упражнение в суперсет</button>
   </div>`;
 }
+/* Блок текстом устроен как любой блок — та же шапка, тип, заметка, закладка,
+   перетаскивание, — но вместо строк упражнений в нём лист: пишут как в
+   заметках, Enter — новая строка. Сохраняется как написано; в углу листа —
+   кнопка AI, которая предлагает разобрать текст на упражнения. */
+const TEXT_PH = `Пишите как в заметках — блок сохранится текстом, клиент увидит его как есть.
+Разобрать на упражнения — кнопка AI.
+
+AMRAP 12:
+трастеры 10 × 40 кг
+подтягивания 8
+гребля 250 м`;
 function blockHTML(b){
-  return `<div class="blk ${PENDING && PENDING.ids.has(b.id) ? 'pending' : ''}" data-blk="${b.id}">
+  const txt = isTextBlock(b);
+  return `<div class="blk ${txt ? 'tblk' : ''} ${PENDING && PENDING.ids.has(b.id) ? 'pending' : ''}" data-blk="${b.id}">
     <div class="blkh">
       <span class="gr" title="Перетащить блок">${ICON.grip}</span>
       <input class="bt" data-f="title" value="${esc(b.title)}"
-             placeholder="${b.kind ? 'Название блока (необязательно)' : 'Введите название блока'}">
+             placeholder="${b.kind || txt ? 'Название блока (необязательно)' : 'Введите название блока'}">
       <button class="ftype ${b.kind?'on':''}" data-ftype="${b.id}" title="${b.fmt ? esc(fmtDesc(b.fmt)) : b.kind ? '' : 'Разминка, силовая, комплекс…'}">${b.kind ? esc(blockTypeLabel(b)) : 'тип блока'}</button>
       <button class="x ${b.note?'on':''}" data-notetog="${b.id}" title="${b.note?'Заметка к блоку':'Добавить заметку к блоку'}">${ICON.chat}</button>
       <button class="x ${b.savedSig === blockSig(b) ? 'on':''}" data-savblk="${b.id}" title="${b.savedSig === blockSig(b) ? 'Сохранён в базу блоков' : 'Сохранить блок в базу'}">${ICON.star}</button>
@@ -366,93 +393,33 @@ function blockHTML(b){
         <input data-f="note" value="${esc(b.note||'')}" placeholder="Заметка к блоку — увидит клиент">
         <button class="x" data-notedel="${b.id}" title="Удалить заметку">${ICON.x}</button>
       </label>` : ''}
-    ${itemsHTML(b)}
+    ${txt ? `<div class="tbody">
+        <textarea class="tbx" data-f="text" rows="3" spellcheck="false" placeholder="${esc(TEXT_PH)}">${esc(b.text)}</textarea>
+        ${aiBtn('aiblk', b.id, 'Разобрать текст на упражнения — ИИ предложит, вы проверите', false, !b.text.trim())}
+      </div>` : `${itemsHTML(b)}
     <div class="addrow">
       <button class="addl" data-add="${b.id}">${ICON.plus} Добавить упражнение</button>
       <button class="addl" data-addss="${b.id}">${ICON.plus} Добавить суперсет</button>
-    </div>
+    </div>`}
   </div>`;
 }
-/* Пустой день — момент, когда тренер выбирает, КАК начать. Здесь развилка
-   уместна: распознавание текста — главное отличие продукта от тетради, и,
-   спрятанное в плейсхолдер, оно бы осталось незамеченным. Дальше развилки
-   нет: вставить текст можно в любую строку, и одна строка проходит молча. */
-function emptyDay(){
-  if(S.compose === 'text') return `
-    <textarea class="paste" id="paste" rows="8" placeholder="Вставьте текст из заметок или напечатайте.
-
-Разминка
-гребля 500 м
-мобилити плеч с PVC 2×10
-
-Присед 5×3 80%
-Суперсет 3 круга:
-- гребля 500 м
-- планка 60 сек"></textarea>
-    <div class="pastef">
-      <button class="lnk" id="pt-back">← ${day().blocks.some(b=>b.items.length) ? 'Отмена' : 'Собрать вручную'}</button>
-      <label class="lnk ptphoto" title="Фото тетради или скриншот — распознавание подключим вместе с ИИ-модулем">
-        ${ICON.photo} Из фото<input type="file" accept="image/*" id="pt-photo" hidden></label>
-      <span id="pt-photo-name" class="ptname"></span>
-      <span class="sp"></span>
-      <button class="btn" id="pt-go">${ICON.ai} Распознать</button>
-    </div>`;
-  return `
-    <div class="start">
-      <div class="ways">
-        <button class="way" id="w-hand">
-          <span class="ic">${ICON.plus}</span>
-          <b>Создайте вручную или добавьте из шаблонов</b>
-          <s>Подскажу упражнения по мере набора</s>
-        </button>
-        <button class="way ai" id="w-ai">
-          <span class="ic">${ICON.ai}</span>
-          <b>Добавьте текст — ИИ разберёт по блокам</b>
-          <s>Из заметок, таблицы или переписки</s>
-        </button>
-      </div>
-      ${S.i > 0 ? `<div class="orelse">
-        или <button class="lnk" id="w-prev">возьмите повторите предыдущую тренировку</button>
-      </div>` : ''}
-    </div>`;
-}
-
-/* Блок текстом: вставить или напечатать, по «Добавить» разбор превращает текст
-   в упражнения (сейчас правила, дальше — ИИ) и предлагает принять или отменить. */
-const blkTextHTML = () => `<div class="blk btxt">
-    <div class="btxt-h">${ICON.ai}<b>Блок текстом</b><s>разберём на упражнения — проверите и примете</s></div>
-    <textarea class="paste" id="bt-paste" rows="6" placeholder="Название блока первой строкой, ниже — упражнения.
-
-AMRAP 12:
-трастеры 10 × 40 кг
-подтягивания 8
-гребля 250 м">${esc(S.blkTextVal || '')}</textarea>
-    <div class="pastef">
-      <button class="lnk" id="bt-cancel">Отмена</button>
-      <span class="sp"></span>
-      <button class="btn" id="bt-go">${ICON.ai} Добавить</button>
-    </div>
-  </div>`;
 function renderDoc(){
   const d = day(), dt = new Date(d.date + 'T00:00:00');
   /* Пустой день открывается как ручной ввод: сразу пустой блок со строкой
      упражнения, без карточек-подсказок — они дублировали кнопки под названием. */
-  if(!d.blocks.length && S.compose !== 'text') d.blocks.push(mkBlock(null,'','',null,[]));
-  const n   = d.blocks.reduce((a,b)=>a+b.items.filter(x=>x.exId).length,0);
-  const raw = d.blocks.reduce((a,b)=>a+b.items.filter(x=>!x.exId && !x.ss).length,0);
-  /* Пустой — без содержимого, а не без блоков: заготовка пустого блока
-     появляется на каждом открытом дне и пустоты не отменяет. */
-  const empty = !d.blocks.some(b => b.items.length || b.title || b.note);
-  /* Полоса стоит вплотную над блоками, которыми управляет: заголовок и
-     сообщение клиенту к разбору отношения не имеют, а блоки ниже — это
-     ровно то, что она предлагает принять или отменить. */
-  /* Полоса разбора стоит над первым распознанным блоком: блок текстом
-     добавляется в конец дня, и полоса сверху оказалась бы далеко от него. */
-  const pendAt = PENDING ? d.blocks.findIndex(b => PENDING.ids.has(b.id)) : -1;
-  const propose = PENDING ? `<div class="propose">
-      <span class="t"><b>${ICON.ai} Распознано ИИ</b><s>${pendingStat()}</s></span>
-      <button class="lnk" id="pd-src">Показать исходник</button>
-      <button class="btn gh" id="pd-no">Отменить</button>
+  if(!d.blocks.length) d.blocks.push(mkBlock(null,'','',null,[]));
+  /* Считается всё содержимое, и текст тоже: день из одного блока текстом —
+     тренировка, её публикуют. */
+  const n = dayCount(d);
+  /* Полоса разбора стоит над первым блоком, который собрал ИИ: блок текстом
+     бывает и в конце дня, и полоса сверху оказалась бы далеко от него.
+     Предложение принадлежит своему дню — на соседних днях полосы нет. */
+  const pendAt = PENDING && PENDING.date === d.date ? d.blocks.findIndex(b => PENDING.ids.has(b.id)) : -1;
+  if(PENDING && PENDING.date === d.date && pendAt < 0) PENDING = null;     /* блоки предложения удалили руками */
+  const propose = pendAt >= 0 ? `<div class="propose">
+      <span class="t"><b>${AIMARK} Разобрано ИИ — проверьте</b><s>${pendingStat()}</s></span>
+      <button class="lnk" id="pd-src">Исходный текст</button>
+      <button class="btn gh" id="pd-no">Вернуть текст</button>
       <button class="btn" id="pd-yes">Принять</button>
     </div>` : '';
   $('#doc').innerHTML = `
@@ -470,26 +437,23 @@ function renderDoc(){
       ['hand', ICON.pen,  'Вручную'],
       ['tpl',  ICON.tpl,  'Скопировать из шаблона'],
       ['cal',  ICON.cal,  'Скопировать из календаря'],
-      ['text', ICON.ai,   'Скопировать текстом/фото'],
-    ].map(([k, ic, n]) => `<button class="way4 ${(S.compose === 'text' ? 'text' : 'hand') === k ? 'on' : ''}" data-way="${k}">${ic}<span>${n}</span></button>`).join('')}</div>
+      ['text', ICON.text, 'Текстом'],
+    ].map(([k, ic, n]) => `<button class="way4" data-way="${k}">${ic}<span>${n}</span></button>`).join('')}</div>
     ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} Клиенту</span>
       <input id="w-msg" value="${esc(trainerMsg(d.date))}"
              placeholder="Сообщение ко всей тренировке — клиент увидит его первым">
       <kbd class="ent">↵ Enter</kbd>
       <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
     </label>` : ''}
-    ${pendAt < 0 ? propose : ''}
-    ${S.compose==='text' ? emptyDay() : ''}
-    ${S.compose==='text' && empty ? '' : d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b)).join('')}
-    ${S.blkText && !(S.compose==='text' && empty) ? blkTextHTML() : ''}
-    ${S.compose==='text' && empty ? '' : `<div class="addbrow">
+    ${d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b)).join('')}
+    <div class="addbrow">
       <button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
-      <button class="addb ${S.blkText ? 'on' : ''}" id="add-blk-text">${ICON.ai} Добавить блок текстом</button>
-    </div>`}
-    ${S.compose==='text' && empty ? '' : `<div class="pubbar">
-        <button class="btn gh" id="saveDraft" ${isDraft(d) || n ? '' : 'disabled'} title="${!isDraft(d) && n ? 'Снять с публикации — клиент перестанет видеть тренировку' : ''}">Сохранить как черновик</button>
-        <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
-      </div>`}`;
+      <button class="addb" id="add-blk-text">${ICON.text} Добавить блок текстом</button>
+    </div>
+    <div class="pubbar">
+      <button class="btn gh" id="saveDraft" ${isDraft(d) || n ? '' : 'disabled'} title="${!isDraft(d) && n ? 'Снять с публикации — клиент перестанет видеть тренировку' : ''}">Сохранить как черновик</button>
+      <button class="btn" id="publish" ${isDraft(d) && n ? '' : 'disabled'}>${ICON.chk} Опубликовать тренировку</button>
+    </div>`;
 }
 
 /* ═══════════ ПРАВАЯ ПАНЕЛЬ: ОТКУДА БРАТЬ МАТЕРИАЛ ═══════════
@@ -500,7 +464,7 @@ function renderDoc(){
    упражнение — кнопкой или перетаскиванием. Это та же «Скопировать из
    календаря», только без модалки: дни можно листать и смотреть, не вставляя. */
 const CSRC = {cid:null, date:null, month:null};
-const csrcHas = x => !!x && x.blocks.some(b => b.items.some(it => it.exId || it.raw));
+const csrcHas = dayHas;
 const csrcPlan = cid => { const c = client(cid); return c && c.prog && program(c.prog) ? planOf(c.prog) : [] };
 const csrcDay = () => CSRC.date ? (csrcPlan(CSRC.cid).find(x => x.date === CSRC.date) || null) : null;
 /* По умолчанию — последняя тренировка до открытого дня: чаще всего её и повторяют. */
@@ -554,11 +518,11 @@ function csrcCopyItems(ref){
 }
 const csrcCopyBlock = bi => { const x = csrcDay(), b = x && x.blocks[+bi]; return b ? copyBlocks([b])[0] : null };
 /* Пустая заготовка блока (появляется на каждом пустом дне) не должна оставаться над вставленным. */
-const dropEmptyBlocks = d => { d.blocks = d.blocks.filter(b => b.items.length || b.title || b.note) };
+const dropEmptyBlocks = d => { d.blocks = d.blocks.filter(b => b.items.length || b.title || b.note || blockHas(b)) };
 function csrcCopyWorkout(){
   const x = csrcDay(); if(!x) return;
-  const d = day(), snap = {title: d.title, blocks: d.blocks}, had = d.blocks.some(b => b.items.length);
-  d.title = x.title; d.blocks = copyBlocks(x.blocks); S.compose = null; S.blkText = false;
+  const d = day(), snap = {title: d.title, blocks: d.blocks}, had = dayHas(d);
+  d.title = x.title; d.blocks = copyBlocks(x.blocks);
   render();
   toast(had ? 'Тренировка дня заменена копией' : 'Тренировка скопирована', 'Отменить', () => { d.title = snap.title; d.blocks = snap.blocks; render() });
 }
@@ -566,6 +530,8 @@ const csrcItemHTML = (it, bi, k, sub) => { const e = it.exId ? byId(it.exId) : n
   return `<div class="csi ${sub ? 'sub' : ''}" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(e ? e.ru : it.raw || '')}</span>${chip ? `<em>${esc(chip)}</em>` : ''}<button class="add" data-ciadd="${bi}:${k}" title="Добавить в тренировку">${ICON.plus}</button></div>` };
 function csrcBlockHTML(b, bi){
   const rows = []; let k = 0;
+  /* Блок текстом берут только целиком: его строки — текст, а не отдельные записи. */
+  if(isTextBlock(b)) textLines(b.text).forEach(l => rows.push(`<div class="csi txl"><span class="nm">${esc(l)}</span></div>`));
   while(k < b.items.length){
     const it = b.items[k];
     if(it.ss){ const j = ssEnd(b.items, k);
@@ -576,7 +542,7 @@ function csrcBlockHTML(b, bi){
     k++;
   }
   return `<div class="csb" draggable="true" data-cblk="${bi}">
-    <div class="csb-h"><span class="gr">${ICON.grip}</span><span class="tt"><b>${esc(b.title || blockTypeLabel(b) || 'Блок')}</b>${typeNote(b) && b.title ? `<s class="ty">${esc(typeNote(b))}</s>` : ''}</span><button class="add" data-cbadd="${bi}" title="Добавить блок в тренировку">${ICON.plus}</button></div>
+    <div class="csb-h"><span class="gr">${ICON.grip}</span><span class="tt"><b>${esc(b.title || blockTypeLabel(b) || (isTextBlock(b) ? 'Блок текстом' : 'Блок'))}</b>${typeNote(b) && b.title ? `<s class="ty">${esc(typeNote(b))}</s>` : ''}</span><button class="add" data-cbadd="${bi}" title="Добавить блок в тренировку">${ICON.plus}</button></div>
     ${rows.join('')}
   </div>`;
 }
@@ -588,12 +554,12 @@ function renderCalSrc(){
     return;
   }
   const cur = day(), cd = D(cur.date), xd = D(x.date), same = CSRC.cid === S.cid && x.date === cur.date;
-  const nb = x.blocks.filter(b => b.items.some(it => it.exId || it.raw)).length;
+  const nb = x.blocks.filter(blockHas).length;
   box.innerHTML = `<div class="csrc">
     <div class="csrc-h"><b>${esc(x.title && !REST_TITLES.has(x.title) ? x.title : 'Тренировка')}</b>
       <s>${RU[dowMon(x.date)]}, ${xd.getDate()} ${MON[xd.getMonth()]} · ${nb} ${plural(nb, 'блок', 'блока', 'блоков')}</s></div>
     <button class="btn sm csrc-copy" id="cs-copy" ${same ? 'disabled title="Этот день открыт в конструкторе"' : ''}>${ICON.copy} Скопировать в ${RU[dowMon(cur.date)]}, ${cd.getDate()} ${MON[cd.getMonth()]}</button>
-    ${x.blocks.map((b, bi) => b.items.some(it => it.exId || it.raw) ? csrcBlockHTML(b, bi) : '').join('')}
+    ${x.blocks.map((b, bi) => blockHas(b) ? csrcBlockHTML(b, bi) : '').join('')}
   </div>`;
 }
 
@@ -628,7 +594,9 @@ function renderSrc(){
           </div>
         ${lvl==='блок' && typeNote(t) && t.title ? `<div class="ty">${esc(typeNote(t))}</div>` : ''}
         <div class="ls">${lvl==='блок'
-          ? t.items.map(i=>{ if(i[0] === SS_TAG) return `<span class="ssl">${esc(ssLabel({rounds:+i[1]||3, rest:i[2]||''}))}</span>`;
+          ? isTextBlock(t) ? textLines(t.text).map(l => `<span>${esc(l)}</span>`).join('')
+          : t.items.map(i=>{ if(i[0] === SS_TAG) return `<span class="ssl">${esc(ssLabel({rounds:+i[1]||3, rest:i[2]||''}))}</span>`;
+              if(i[0] === TXT_TAG) return `<span class="${i[5]?'sub':''}">${esc(i[1]||'')}</span>`;
               const e=byId(i[0]) || {ru:i[0]};   /* неизвестный id — показываем как есть, не роняем панель */
               const v = i[4] ? ` · ${i[4]}` : i[2] ? ` · ${i[2]}${i[3]==='%'?' %':' '+(i[3]||'')}` : '';
               return `<span class="${i[5]?'sub':''}">${esc(e.ru)}${i[1]?' — '+esc(i[1]):''}${esc(v)}</span>` }).join('')
@@ -668,7 +636,9 @@ function publishDay(){
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); }
+/* Лист блока текстом растёт по содержимому, без собственной прокрутки. */
+const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -752,7 +722,7 @@ function wizardPlan(){
     if(i >= p.days) p.days = i + 1;   /* программа открыта вперёд */
     const date = dayDate(c.prog, i);
     const existing = (planOf(c.prog)[i]||{});
-    rows.push({it, i, date, w:RU[dowMon(date)], title: it.kind==='tpl' ? tplById(it.id).title : it.title, busy: !!(existing.blocks||[]).some(b=>b.items.some(x=>x.exId))});
+    rows.push({it, i, date, w:RU[dowMon(date)], title: it.kind==='tpl' ? tplById(it.id).title : it.title, busy: dayHas(existing)});
   });
   if(!rows.length) return {error:'Набор не влезает в программу'};
   return {rows, pid:c.prog};
@@ -840,32 +810,34 @@ function openPick(title, body, onPick, after){
   if(after) after(ov);
 }
 
-/* ─── разбор текста на лету (CON-1 + CON-5) ─── */
+/* ─── разбор одной строки (CON-5) ─── */
 /* parseText разбирает МНОГО строк и возвращает массив записей вида
    {type:'ok', item, ex} | {type:'raw'} | {type:'fmt'}. Здесь строка всегда
    одна, поэтому берём первую запись и отдаём готовый item — иначе легко
-   обратиться к массиву как к объекту, и разбор молча перестанет работать. */
+   обратиться к массиву как к объекту, и разбор молча перестанет работать.
+   Зовут его кнопка AI и выбор из подсказки; набранный текст сам не разбирается. */
 function parseLine(text){
   const r = parseText(String(text||'').trim())[0];
   return r && r.type === 'ok' ? r.item : null;
 }
 
-/* ═══════════ ТЕКСТ → СТРУКТУРА (CON-5) ═══════════
-   Набор одной строки и вставка двадцати — одна и та же операция, разного
-   объёма. Поэтому отдельного режима «вставить текст» нет: одна поверхность
-   принимает и то и другое, а порог простой — есть перевод строки, значит
-   есть что показать на подтверждение.
+/* ═══════════ ТЕКСТ → СТРУКТУРА ПО КНОПКЕ AI (CON-5) ═══════════
+   Раньше текст разбирался сам — при уходе из строки, по Enter, при вставке.
+   На сложной записи (комплексы с хитрой логикой, опечатки в названиях) это
+   давало правдоподобные ошибки, которые новый тренер принимает за успех и
+   отправляет клиенту. Теперь текст по умолчанию сохраняется как написан, а в
+   структуру его переводит только кнопка AI — когда тренер сам попросит.
 
-   Подтверждение здесь не вежливость, а требование корректности. Регулярка
-   ошибается предсказуемо: не узнала — оставила текстом, видно сразу. Модель
-   ошибается правдоподобно: подставит похожее упражнение или не туда разобьёт
-   блоки, и выглядеть это будет как успех. Молча применять такое к программе
-   тренера нельзя — готовое не перечитывают.
+   Разобранный блок — предложение, а не готовое. Подтверждение здесь не
+   вежливость, а требование корректности: регулярка ошибается предсказуемо —
+   не узнала, оставила текстом; модель ошибается правдоподобно — подставит
+   похожее упражнение или не туда разобьёт блоки. Поэтому собранные ИИ блоки
+   стоят под полосой «проверьте» до «Принять», а «Вернуть текст» кладёт блок
+   текстом на место как был. Строку проверить проще — она меняется на месте,
+   возврат — в уведомлении.
 
-   Распознавание двухэтапное. Регулярки отрабатывают мгновенно и покрывают
-   обычную нотацию. Модель подключается только к остатку — группировке и
-   разговорным строкам, — чтобы тренер видел, как большая часть разбирается
-   сразу, а не ждал пустой экран. */
+   Разбор двухэтапный: правила мгновенно узнают обычную нотацию, модель
+   подключается к остатку — группировке и разговорным строкам. */
 
 /* Строка-заголовок: короткая, без чисел, не упражнение. «Разминка»,
    «Силовая часть», «Комплекс:». Границей блока служит и пустая строка. */
@@ -905,25 +877,93 @@ function textToBlocks(text){
   return blocks.filter(b => b.items.length);
 }
 
-/* ЗДЕСЬ будет модель. На вход — строки, которые регулярки не разобрали,
+/* ЗДЕСЬ будет модель. На вход — строки, которые правила не разобрали,
    и предварительная разбивка на блоки; на выход — уточнённая структура.
    Пока возвращаем как есть: поток и подтверждение от этого не зависят. */
 async function aiRefine(blocks /*, source */){ return blocks }
+/* Пауза вместо запроса к модели: кнопка успевает показать, что работает. */
+const aiWait = ms => new Promise(r => setTimeout(r, ms));
 
-let PENDING = null;   /* {ids:Set, snapshot, source} — предложение до принятия */
+let PENDING = null;   /* {date, ids:Set, block, source} — предложение ИИ до «Принять» */
 
-async function applyText(text){
-  const parsed = textToBlocks(text);
-  if(!parsed.length) return;
-  const d = day();
-  if(REST_TITLES.has(d.title)) d.title = '';
-  const snapshot = {title: d.title, blocks: d.blocks.slice()};
-  const refined = await aiRefine(parsed, text);
-  const made = refined.map(b => blockOf(b.title, b.items));
-  d.blocks = d.blocks.filter(b => b.items.length || b.title || b.note).concat(made);
-  PENDING = {ids: new Set(made.map(b=>b.id)), snapshot, source: text};
-  S.compose = null; S.blkText = false;
+/* Пока ИИ разбирает, текст под ним не правится: иначе разобран был бы один
+   текст, а на экране остался бы другой. */
+function aiBusy(host, btn){
+  if(host) host.classList.add('aibusy');
+  if(btn){ btn.classList.add('busy'); const l = btn.querySelector('span'); if(l) l.textContent = 'Разбираю…' }
+  const ta = host && host.querySelector('.tbx'); if(ta) ta.readOnly = true;
+  const ed = host && host.querySelector('[data-edit]'); if(ed){ ed.contentEditable = 'false'; ed.blur() }
+}
+/* Кнопка AI в углу блока текстом. */
+async function aiBlock(id){
+  const d = day(), tb = d.blocks.find(b => b.id === id);
+  if(!tb || !isTextBlock(tb)) return;
+  const text = tb.text || '';
+  if(!text.trim()){ toast('Сначала напишите текст — ИИ разберёт его на упражнения'); focusText(id); return }
+  if(PENDING) acceptPending(true);                    /* прежнее предложение считается принятым */
+  const host = $(`#doc [data-blk="${id}"]`);
+  aiBusy(host, host && host.querySelector('[data-aiblk]'));
+  await aiWait(900);
+  const k = d.blocks.indexOf(tb); if(k < 0) return;  /* блок удалили, пока ИИ думал */
+  const parsed = await aiRefine(textToBlocks(text), text);
+  if(!parsed.some(b => b.items.some(i => i.exId))){
+    render();
+    toast('ИИ не нашёл в тексте упражнений из базы — блок остался текстом');
+    return;
+  }
+  const made = parsed.map(b => blockOf(b.title, b.items));
+  /* Название, тип и заметка, которые тренер задал блоку текстом, переходят
+     к первому собранному блоку, если своих в тексте не нашлось. */
+  const f = made[0];
+  if(tb.title && !f.title) f.title = tb.title;
+  if(tb.kind && !f.kind){ f.kind = tb.kind; if(tb.fmt && !f.fmt) f.fmt = {...tb.fmt} }
+  if(tb.note) f.note = tb.note;
+  d.blocks.splice(k, 1, ...made);
+  PENDING = {date: d.date, ids: new Set(made.map(b => b.id)), block: tb, source: text};
   render();
+}
+/* Кнопка AI в строке текстом: строка меняется на месте, возврат — в уведомлении. */
+async function aiLine(id){
+  const was = findItem(id); if(!was.i || was.i.exId) return;
+  /* Нажали, не выйдя из строки: берём то, что в ней сейчас написано. */
+  const ed = fieldIn(lineEl(id), 'e'); if(ed && ed.textContent.trim()) was.i.raw = ed.textContent.trim();
+  const text = String(was.i.raw || '').trim(); if(!text) return;
+  const btn = $(`#doc [data-ailine="${id}"]`);
+  aiBusy(btn && btn.closest('.line'), btn);
+  await aiWait(600);
+  /* Пока ИИ думал, строку могли удалить или перетащить в другой блок. */
+  const {b, i} = findItem(id); if(!i || i.exId) return;
+  const snap = b.items.map(x => ({...x}));
+  const undo = () => { b.items = snap; render(); flash(id) };
+  /* «3 круга: гребля 500 м, планка 60 сек» — суперсет одной строкой. Внутри
+     суперсета вложенный не собираем. */
+  const ss = !i.sub && parseSSHead(text);
+  if(ss && ss.list.length >= 2){
+    const h = ssItem(ss.rounds, ss.rest), mem = ss.list.map(t => { const it = parseLine(t) || rawItem(t); it.sub = true; return it });
+    b.items.splice(b.items.indexOf(i), 1, h, ...mem);
+    render(); flash(h.id);
+    const ok = mem.filter(x => x.exId).length;
+    toast('ИИ собрал суперсет · ' + ok + ' из ' + mem.length + ' ' + plural(mem.length, 'упражнения', 'упражнений', 'упражнений') + ' из базы', 'Вернуть текст', undo);
+    return;
+  }
+  const p = parseLine(text);
+  /* Список открываем после того, как клик по уведомлению отработает целиком, —
+     иначе общий обработчик кликов тут же закроет его как «клик мимо». */
+  if(!p){ render(); toast('ИИ не узнал упражнение — строка осталась текстом', 'Выбрать из базы', () => setTimeout(() => pickFor(id))); return }
+  Object.assign(i, {exId:p.exId, raw:'', scheme:p.scheme||'', pct:p.pct??null, unit:p.unit||'', val:p.val||'', txt:p.txt||''});
+  render(); flash(id);
+  toast('ИИ разобрал строку: ' + byId(p.exId).ru, 'Вернуть текст', undo);
+}
+const focusText = id => { const t = $(`#doc [data-blk="${id}"] .tbx`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:'center', behavior:'smooth'}) } };
+/* Новый блок текстом встаёт после блока after или в конец дня. В пустом дне
+   он заменяет заготовку ручного ввода — она нужна, только чтобы было куда печатать. */
+function addTextBlock(text, after){
+  const d = day(), tb = textBlock(text || '');
+  if(!dayHas(d) && !d.blocks.some(b => b.title || b.note)) d.blocks = [];
+  const k = after ? d.blocks.indexOf(after) : -1;
+  if(k >= 0) d.blocks.splice(k + 1, 0, tb); else d.blocks.push(tb);
+  render();
+  return tb;
 }
 /* Убрать тренировку — не диалог «вы уверены?», а отмена. Подтверждения
    прокликивают не читая; возврат работает даже когда ошибся всерьёз.
@@ -936,7 +976,7 @@ function askClear(){
   const d = day();
   if(!d.blocks.length) return;
   const dt = new Date(d.date + 'T00:00:00');
-  const n = d.blocks.reduce((a,b)=>a+b.items.filter(i=>i.exId).length, 0);
+  const n = dayCount(d);
   const ov = document.createElement('div');
   ov.className = 'ov on';
   ov.innerHTML = `<div class="md ask">
@@ -964,7 +1004,7 @@ function clearDay(){
   if(!d.blocks.length) return;
   const snap = {title: d.title, blocks: d.blocks};
   d.title = ''; d.blocks = [];
-  PENDING = null; S.compose = null; S.blkText = false;
+  PENDING = null;
   render();
   toast('День очищен', 'Вернуть', ()=>{
     const cur = day();
@@ -973,42 +1013,43 @@ function clearDay(){
   });
 }
 
-function acceptPending(){
+function acceptPending(silent){
   if(!PENDING) return;
   const n = PENDING.ids.size;
-  PENDING = null; render();
+  PENDING = null;
+  if(silent) return;
+  render();
   toast('Принято · ' + n + ' ' + plural(n,'блок','блока','блоков'));
 }
+/* «Вернуть текст» — блок текстом встаёт на место собранных как был: скорее
+   всего тренер хочет поправить текст или оставить его текстом. */
 function cancelPending(){
   if(!PENDING) return;
-  const d = day();
-  d.title = PENDING.snapshot.title; d.blocks = PENDING.snapshot.blocks;
-  /* Отменил — возвращаем текст, а не пустой экран: скорее всего он хочет
-     поправить исходник и попробовать снова, а не начинать заново. */
-  const src = PENDING.source;
+  const d = day(), at = d.blocks.findIndex(b => PENDING.ids.has(b.id)), tb = PENDING.block;
+  d.blocks = d.blocks.filter(b => !PENDING.ids.has(b.id));
+  d.blocks.splice(at < 0 ? d.blocks.length : at, 0, tb);
   PENDING = null;
-  if(!d.blocks.length){ S.compose = 'text'; render(); const t = $('#paste'); if(t) t.value = src }
-  else render();
+  render(); flash(tb.id);
 }
 function showSource(){
   if(!PENDING) return;
   const box = document.createElement('div');
   box.className = 'ov on srcov';
   box.innerHTML = `<div class="md"><div class="mdh"><span class="dot"></span>
-      <h2>Что вы вставили</h2><button class="cls">✕</button></div>
+      <h2>Исходный текст</h2><button class="cls">✕</button></div>
     <div class="mdb"><pre class="src">${esc(PENDING.source)}</pre></div></div>`;
   box.addEventListener('click', e=>{
     if(e.target === box || e.target.closest('.cls')) box.remove();
   });
   document.body.appendChild(box);
 }
-/* Сводка по предложению: сколько разобралось и сколько осталось текстом. */
+/* Сводка по предложению: сколько узнано в базе и сколько осталось текстом. */
 function pendingStat(){
   const bs = day().blocks.filter(b=>PENDING.ids.has(b.id));
   const items = bs.flatMap(b=>b.items).filter(i=>!i.ss);
-  const raw = items.filter(i=>!i.exId).length;
+  const raw = items.filter(i=>!i.exId).length, ok = items.length - raw;
   return bs.length + ' ' + plural(bs.length,'блок','блока','блоков') + ' · ' +
-    items.length + ' ' + plural(items.length,'упражнение','упражнения','упражнений') +
+    ok + ' ' + plural(ok,'упражнение','упражнения','упражнений') + ' из базы' +
     (raw ? ' · ' + raw + ' ' + plural(raw,'строка осталась','строки остались','строк остались') + ' текстом' : '');
 }
 
@@ -1028,15 +1069,16 @@ function exCands(text){
   }
   return out.sort((a, b) => b[0] - a[0]).map(x => x[1]);
 }
-function showSug(el, text){
+/* Подсказки из базы — выбор, а не разбор (CON-5). Заранее не подсвечено
+   ничего: Enter, которым просто заканчивают строку, оставляет её как
+   написано. Упражнение берут явно — Tab (первое), стрелками или кликом.
+   Раньше Enter брал подсвеченный «разобранный» вариант, и похожее
+   упражнение молча подменяло то, что тренер написал. */
+function showSug(el, text, pre){
   closeSug();
   const t = (text||'').trim(); if(!t) return;
-  let p = parseLine(t);
-  const all = exCands(t);
-  /* Разбор ищет похожее и по одному слову («жим ган» → «Z-жим»). Если есть
-     упражнения, где совпали все набранные слова, слабый разбор им уступает. */
-  if(p && all.length && !all.some(e => e.id === p.exId)) p = null;
-  const cands = all.filter(e => !p || e.id !== p.exId).slice(0, 5);
+  const cands = exCands(t).slice(0, 5), name = exNameOf(t);
+  if(!cands.length && !name) return;
   const box = document.createElement('div');
   box.className = 'sug exsug';
   /* Под строкой может стоять подсказка клавиш — список открываем под ней. */
@@ -1044,32 +1086,37 @@ function showSug(el, text){
   const r = el.getBoundingClientRect(), rb = (hint || el).getBoundingClientRect();
   box.style.left = r.left + 'px';
   box.style.top  = (rb.bottom + window.scrollY + 4) + 'px';
-  const name = exNameOf(t);
   box.innerHTML =
-    (p
-      ? `<div class="cap">Разобрано</div>
-         <button class="row" data-pick="${p.exId}"><b>${esc(byId(p.exId).ru)}</b>
-           <s>${esc([p.scheme, p.pct?fmtN(p.pct)+' %':(p.val?p.val+' '+p.unit:'')].filter(Boolean).join(' '))}</s></button>`
-      : '') +
     (cands.length ? '<div class="cap">Из базы</div>' + cands.map(e=>
       `<button class="row" data-pick="${e.id}"><b>${esc(e.ru)}</b><s>${esc(e.g)}</s></button>`).join('') : '') +
-    /* Не узнали — два честных пути: завести упражнение в своей базе или
-       оставить строку текстом (разбор такого текста ИИ — следующий шаг). */
-    (!p && name ? `<div class="cap">${cands.length ? 'Нет нужного?' : 'В базе такого нет'}</div>
-         <button class="row newex" data-newex><b>${ICON.plus} Добавить «${esc(name)}» в базу</b><s>будет подсказываться при наборе</s></button>
-         <button class="row keep" data-keeptext><b>Оставить текстом</b><s></s></button>` : '') +
-    `<div class="sugkeys"><span>${KB('↑')}${KB('↓')}выбрать</span><span>${KB('Enter')}или ${KB('Tab')}вставить</span><span>${KB('Esc')}закрыть</span></div>`;
+    /* Нужного нет — завести упражнение в своей базе. Строка без выбора
+       остаётся текстом: её можно разобрать кнопкой AI или оставить как есть. */
+    (name ? `<div class="cap">${cands.length ? 'Нет нужного?' : 'В базе такого нет'}</div>
+         <button class="row newex" data-newex><b>${ICON.plus} Добавить «${esc(name)}» в базу</b><s>будет подсказываться при наборе</s></button>` : '') +
+    `<div class="sugkeys">${cands.length ? `<span>${KB('Tab')}первое из базы</span>` : ''}<span>${KB('↑')}${KB('↓')}выбрать</span><span>${KB('Enter')}<i class="sk-ent"></i></span><span>${KB('Esc')}закрыть</span></div>`;
   document.body.appendChild(box);
   SUG = box;
-  /* По умолчанию подсвечен разобранный вариант или лучший кандидат; если
-     узнать нечего — «Оставить текстом», чтобы Enter не подменил набранное. */
-  const rows = [...box.querySelectorAll('.row')];
-  const def = p || cands.length ? rows[0] : box.querySelector('[data-keeptext]');
-  if(def) def.classList.add('on');
   box.addEventListener('mousedown', ev => ev.preventDefault());      /* курсор остаётся в строке */
-  box.addEventListener('mousemove', ev => { const rw = ev.target.closest('.row'); if(rw && !rw.classList.contains('on')){ rows.forEach(x => x.classList.remove('on')); rw.classList.add('on') } });
   box.dataset.forItem = el.dataset.edit || el.dataset.pickfor || '';
   box.dataset.text = text;
+  /* «Выбрать упражнение» у строки текстом — явная просьба выбрать: там первое
+     из базы подсвечено сразу, и Enter его берёт. */
+  sugMark(pre && cands.length ? 0 : -1);
+}
+/* Подсветка строки подсказки с клавиатуры; -1 — ничего не выбрано: Enter
+   оставит набранное текстом, Tab возьмёт первое упражнение из базы. Метка
+   клавиши стоит на той строке, которую она возьмёт. Наведение мышью
+   выбор не трогает — иначе Enter брал бы строку, над которой просто
+   оказался курсор. */
+function sugMark(k){
+  if(!SUG) return;
+  const rows = [...SUG.querySelectorAll('.row')];
+  rows.forEach((r, j) => r.classList.toggle('on', j === k));
+  SUG.querySelectorAll('.rk').forEach(x => x.remove());
+  const tgt = k >= 0 ? rows[k] : SUG.querySelector('[data-pick]');
+  if(tgt) tgt.insertAdjacentHTML('beforeend', `<kbd class="rk">${k >= 0 ? 'Enter' : 'Tab'}</kbd>`);
+  const ent = SUG.querySelector('.sk-ent'); if(ent) ent.textContent = k >= 0 ? 'выбрать' : 'оставить текстом';
+  if(k >= 0) rows[k].scrollIntoView({block:'nearest'});
 }
 /* Название из набранной строки — всё до первой цифры, схемы или процента:
    «подъём гантелей 3×5» → «Подъём гантелей». */
@@ -1101,7 +1148,7 @@ function openNewEx(id, text){
   </div>`;
   document.body.appendChild(ov);
   const inp = ov.querySelector('#nx-ru'); inp.focus(); inp.select();
-  const keep = () => { ov.remove(); if(text.trim()) commitLine(id, text) };
+  const keep = () => { ov.remove(); if(text.trim()) keepText(id, text) };
   const save = () => {
     const ru = inp.value.trim(); if(!ru){ inp.focus(); toast('Укажите название упражнения'); return }
     const ex = EX.find(x => norm(x.ru) === norm(ru)) || addOwnEx({ru, g: ov.querySelector('#nx-g').value, eq: ov.querySelector('#nx-eq').value,
@@ -1134,22 +1181,23 @@ const findItem = id => {
   for(const b of day().blocks){ const i = b.items.find(x=>x.id===id); if(i) return {b,i} }
   return {};
 };
-function commitLine(id, text){
-  const {b, i} = findItem(id); if(!i) return;
-  /* «3 круга: гребля 500 м, планка 60 сек» в одной строке — сразу суперсет. Внутри суперсета вложенный не создаём. */
-  const ss = !i.sub && parseSSHead(text);
-  if(ss && ss.list.length >= 2){
-    const mem = ss.list.map(t => { const it = parseLine(t) || rawItem(t); it.sub = true; return it });
-    b.items.splice(b.items.indexOf(i), 1, ssItem(ss.rounds, ss.rest), ...mem);
-    render(); return;
-  }
-  const p = parseLine(text);
-  /* В тексте теперь только название, поэтому «Присед» без цифр — это
-     переименование, а не сброс схемы: параметры берём из текста, если они
-     там есть, иначе оставляем прежние. */
-  const hasParams = p && (p.scheme || p.pct != null || p.val || p.txt);
-  if(p) Object.assign(i, {exId:p.exId, raw:'', ...(hasParams ? {scheme:p.scheme||'', pct:p.pct??null, unit:p.unit||'', val:p.val||'', txt:p.txt||''} : {})});
-  else { i.exId = null; i.raw = (text||'').trim() }
+/* Всё, что набрано и не выбрано из базы, сохраняется как написано (CON-5).
+   Строку программа не разбирает — это делает кнопка AI, когда попросят.
+   Если руками переписали название упражнения из базы, строка уходит в текст
+   целиком, вместе со схемой и нагрузкой: связь с базой не подменяется похожим
+   упражнением, а набранное не теряется. Это единственный неочевидный переход,
+   поэтому о нём — уведомление с возвратом. */
+const paramsText = it => it.txt || [it.scheme, it.pct != null ? fmtN(it.pct) + '%' : it.val ? fmtN(it.val) + (it.unit ? ' ' + it.unit : '') : ''].filter(Boolean).join(' ');
+const sameText = (i, text) => norm(String(text || '')) === norm(i.exId ? (byId(i.exId) || {}).ru || '' : i.raw || '');
+function keepText(id, text){
+  const {i} = findItem(id); if(!i) return;
+  const t = String(text || '').trim();
+  if(sameText(i, t)) return;
+  if(i.exId){
+    const was = {...i};
+    Object.assign(i, {exId:null, raw:[t, paramsText(i)].filter(Boolean).join(' '), scheme:'', pct:null, unit:'', val:'', txt:''});
+    toast('Название не из базы — строка сохранена текстом', 'Вернуть', () => { Object.assign(i, was); render() });
+  } else i.raw = t;
   render();
 }
 
@@ -1256,7 +1304,7 @@ const docStatusHTML = (d, n) => n || isDraft(d) ? (isDraft(d)
   : `<span class="dst pub" title="Опубликована — клиент видит">${DAYICON.pub}Опубликована</span>`) : '';
 function refreshChrome(){
   const d = day(); if(!d) return;
-  const n = d.blocks.reduce((a, b) => a + b.items.filter(x => x.exId).length, 0), dr = isDraft(d), html = docStatusHTML(d, n);
+  const n = dayCount(d), dr = isDraft(d), html = docStatusHTML(d, n);
   const old = $('#doc .doch .dst');
   if(old) old.outerHTML = html; else if(html){ const gr = $('#doc .doch > .gr'); if(gr) gr.insertAdjacentHTML('afterend', html) }
   const sd = $('#saveDraft'), pb = $('#publish');
@@ -1302,12 +1350,14 @@ function setCaret(el, off){
 }
 function focusSnap(){
   const a = document.activeElement; if(!a || !a.closest) return null;
+  const ta = a.closest('#doc .tbx'); if(ta) return {k:'text', id: ta.closest('[data-blk]').dataset.blk, s: ta.selectionStart, e: ta.selectionEnd};
   const ed = a.closest('#doc [data-edit]'); if(ed) return {k:'e', id: ed.dataset.edit, off: caretOffset(ed)};
   const pf = a.closest('#doc [data-pf]'); if(pf) return {k: pf.dataset.pf, id: pf.dataset.for, s: pf.selectionStart, e: pf.selectionEnd};
   return null;
 }
 function focusRestore(f){
   if(!f) return;
+  if(f.k === 'text'){ const ta = $(`#doc [data-blk="${f.id}"] .tbx`); if(ta){ ta.focus({preventScroll:true}); try{ ta.setSelectionRange(f.s, f.e) }catch(_){} } return }
   const el = fieldIn(lineEl(f.id), f.k); if(!shown(el)) return;
   el.focus({preventScroll:true});
   if(f.k === 'e') setCaret(el, f.off); else { try{ el.setSelectionRange(f.s, f.e) }catch(_){} }
@@ -1328,20 +1378,20 @@ function dropEmptyLine(id){
   closeSug(); if(document.activeElement) document.activeElement.blur();
   render();
 }
-/* Название зафиксировано: упражнение узнано — дальше «Схема» (или следующая
-   строка, если параметры уже набраны одной строкой); не узнано — строка текстом. */
+/* Строку закончили без выбора из базы: упражнение из базы (название не
+   трогали) — дальше «Схема» или следующая строка; остальное сохраняется
+   текстом как написано, и курсор идёт дальше. */
 function commitName(id, text, mode){
   closeSug();
-  commitLine(id, text);
-  const {i} = findItem(id); if(!i) return;           /* строка стала суперсетом */
+  keepText(id, text);
+  const {i} = findItem(id); if(!i) return;
   const hasP = !!(i.scheme || i.pct != null || i.val || i.txt);
   if(!i.exId){ if(mode === 'enter') newLineAfter(id); else { const to = neighborId(lineEl(id), 'e', 1); if(to) focusLineField(to, 'e') } return }
   if(mode === 'enter' && hasP) newLineAfter(id); else focusLineField(id, 'sch');
 }
 function commitIfChanged(id, text){
   const {i} = findItem(id); if(!i) return;
-  const now = i.exId ? (byId(i.exId) || {}).ru || '' : (i.raw || '');
-  if(String(text).trim() !== now.trim()){ closeSug(); commitLine(id, text) }
+  if(!sameText(i, text)){ closeSug(); keepText(id, text) }
 }
 /* Выбор из подсказки. Параметры, набранные после названия («жим ган 3x10»),
    переезжают в поля; переименование без параметров старые не трогает. */
@@ -1363,12 +1413,16 @@ function activateSugRow(row, mode){
   const id = SUG.dataset.forItem, text = SUG.dataset.text || '';
   if(row.dataset.pick){ pickExercise(id, row.dataset.pick, text, mode); return }
   closeSug();
-  if(row.hasAttribute('data-newex')){ openNewEx(id, text); return }
-  if(row.hasAttribute('data-keeptext')){
-    commitLine(id, text);
-    if(mode === 'enter') newLineAfter(id);
-    else if(mode === 'tab'){ const to = neighborId(lineEl(id), 'e', 1); if(to) focusLineField(to, 'e') }
-  }
+  if(row.hasAttribute('data-newex')) openNewEx(id, text);
+}
+/* «Выбрать упражнение» у строки текстом: курсор в строку и подсказки из базы
+   по её тексту, первое подсвечено — выбор тут явная просьба. */
+function pickFor(id){
+  const {i} = findItem(id); if(!i) return;
+  const ed = fieldIn(lineEl(id), 'e'); if(!ed) return;
+  focusField(ed);
+  showSug(ed, i.raw || '', true);
+  if(!SUG) toast('В базе нет похожих упражнений — добавьте своё или оставьте строку текстом');
 }
 /* Названия блока — одной колонкой по самому длинному: поля стоят близко к
    названию и ровно друг под другом. Замер — на время снимаем ширину. */
@@ -1386,7 +1440,7 @@ function alignNames(){
 /* Подсказка клавиш — всегда под строкой, в которой идёт ввод. */
 const KB = k => `<kbd>${k}</kbd>`;
 const KEYHINT = {
-  e:   `<span>${KB('Enter')}выбрать</span><span>${KB('↑')}${KB('↓')}подсказка / строка</span><span>${KB('Esc')}готово</span><span class="r">можно одной строкой: присед 5x3 80%</span>`,
+  e:   `<span>${KB('Tab')}из базы</span><span>${KB('↑')}${KB('↓')}подсказка / строка</span><span>${KB('Enter')}следующая строка</span><span>${KB('Esc')}готово</span><span class="r">сохранится как написано</span>`,
   sch: `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">5x3 · 21-15-9 · 8 — или текстом</span>`,
   ld:  `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">80% · 100к · 500м · 60с · 20кал</span>`,
   pm:  `<span>${KB('Tab')}дальше</span><span>${KB('Enter')}следующее</span><span>${KB('Esc')}готово</span><span class="r">1ПМ клиента — от него считаются проценты</span>`,
@@ -1424,10 +1478,12 @@ document.addEventListener('keydown', e => {
   if(ed){
     if(SUG && SUG.dataset.forItem === id){
       const rows = [...SUG.querySelectorAll('.row')]; let k = rows.findIndex(r => r.classList.contains('on'));
-      if((down || up) && rows.length){ e.preventDefault(); if(k >= 0) rows[k].classList.remove('on');
-        k = (k + (down ? 1 : -1) + rows.length) % rows.length; rows[k].classList.add('on'); rows[k].scrollIntoView({block:'nearest'}); return }
+      /* Стрелки ходят по подсказкам и возвращаются к набранному тексту (-1). */
+      if((down || up) && rows.length){ e.preventDefault(); k += down ? 1 : -1; if(k < -1) k = rows.length - 1; if(k >= rows.length) k = -1; sugMark(k); return }
       if(e.key === 'Escape'){ e.preventDefault(); closeSug(); return }
-      if((e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) && k >= 0){ e.preventDefault(); activateSugRow(rows[k], e.key === 'Tab' ? 'tab' : 'enter'); return }
+      if(e.key === 'Enter' && k >= 0){ e.preventDefault(); activateSugRow(rows[k], 'enter'); return }
+      /* Tab — взять из базы: подсвеченное, а если ничего не подсвечено — первое. */
+      if(e.key === 'Tab' && !e.shiftKey){ const r = k >= 0 ? rows[k] : SUG.querySelector('[data-pick]'); if(r){ e.preventDefault(); activateSugRow(r, 'tab'); return } }
     }
     const text = ed.textContent;
     if(e.key === 'Enter'){ e.preventDefault(); if(!text.trim()){ dropEmptyLine(id); return } commitName(id, text, 'enter'); return }
@@ -1529,11 +1585,16 @@ function openFtype(btn){
 }
 
 /* ─── вставка из панели источников ─── */
-const lastBlock = () => {
-  const d = day();
-  if(!d.blocks.length) d.blocks.push(mkBlock(null,'Новый блок','',null,[]));
-  return d.blocks[d.blocks.length-1];
+/* Последний блок со строками. Блок текстом упражнений не принимает — если
+   день кончается им, под ним заводится новый блок. */
+const structBlock = d => {
+  const last = d.blocks[d.blocks.length-1];
+  if(last && !isTextBlock(last)) return last;
+  const nb = mkBlock(null, last ? '' : 'Новый блок', '', null, []);
+  d.blocks.push(nb);
+  return nb;
 };
+const lastBlock = () => structBlock(day());
 /* Из панели упражнение падает в последний блок дня. Куда именно — не
    очевидно, поэтому подсвечиваем добавленное и подкручиваем к нему:
    лучше показать результат, чем объяснять его тостом. */
@@ -1558,17 +1619,21 @@ function addEx(exId){
    поэтому сохранение дня кладёт в библиотеку и блоки — заодно они становятся
    доступны поодиночке, чего TPL-1 и хочет. */
 const FOLDER_OF = b => TYPE_FOLDER[b.kind] || (fmtPart(b.title) ? 'Комплексы'
-  : b.items.some(i => i.pct != null || i.unit === 'кг') ? 'Силовые блоки'
+  : (b.items||[]).some(i => i.pct != null || i.unit === 'кг') ? 'Силовые блоки'
   : /заминк|растяж|заверш/i.test(b.title) ? 'Заминки' : 'Разминки');
 
 function blockToTpl(b, folder){
   const t = {
     id: nid('t'), lvl:'блок', folder: folder || FOLDER_OF(b), used: 0, kind: b.kind || null,
-    title: b.title || blockTypeLabel(b) || 'Блок без названия', fmt: b.fmt ? {...b.fmt} : null,
-    /* Строки текстом в шаблон не идут; если из-за этого в суперсете осталось
-       меньше двух упражнений, он распускается — на копиях, не на живом дне. */
-    items: normSS({items: b.items.filter(i=>i.exId || i.ss).map(i=>({...i}))}).items.map(i =>
+    title: b.title || blockTypeLabel(b) || (isTextBlock(b) ? (textLines(b.text)[0] || '').replace(/:$/, '') : '') || 'Блок без названия', fmt: b.fmt ? {...b.fmt} : null,
+    /* Текст — такое же содержимое, как упражнения: блок текстом ложится в
+       базу как написан, строки текстом — строками. Пустые строки не идут;
+       суперсет, в котором осталось меньше двух записей, распускается — на
+       копиях, не на живом дне. */
+    ...(isTextBlock(b) ? {text: b.text} : {}),
+    items: normSS({items: b.items.filter(i=>itemHas(i) || i.ss).map(i=>({...i}))}).items.map(i =>
       i.ss ? [SS_TAG, i.rounds, i.rest||'']
+      : !i.exId ? [TXT_TAG, String(i.raw).trim(), '', '', '', i.sub?1:0]
       : i.pct != null ? [i.exId, i.scheme||'', i.pct, '%', i.txt||'', i.sub?1:0]
                       : [i.exId, i.scheme||'', i.val||'', i.unit||'', i.txt||'', i.sub?1:0]),
   };
@@ -1577,14 +1642,14 @@ function blockToTpl(b, folder){
 }
 function saveBlock(id, folder){
   const b = day().blocks.find(x=>x.id===id);
-  if(!b || !b.items.some(i=>i.exId)) return toast('В пустом блоке нечего сохранять');
+  if(!blockHas(b)) return toast('В пустом блоке нечего сохранять');
   blockToTpl(b, folder); b.savedSig = blockSig(b);
   toast('Блок «' + (b.title||'без названия') + '» — в папке «' + folder + '»');
   renderSrc();
 }
 function saveWorkout(){
   const d = day();
-  const blocks = d.blocks.filter(b=>b.items.some(i=>i.exId));
+  const blocks = d.blocks.filter(blockHas);
   if(!blocks.length) return toast('В этом дне нечего сохранять');
   const ids = blocks.map(b => blockToTpl(b));
   TPL.unshift({id:nid('t'), lvl:'тренировка', used:0,
@@ -1637,7 +1702,8 @@ function toast(text, actionLabel, onAction){
 function addTplRaw(t){
   const d = day();
   if(t.lvl === 'блок'){
-    d.blocks.push(blockOf(t.title, t.items.map(tplLine), '', t.kind, fmtCopy(t.fmt)));
+    d.blocks.push(isTextBlock(t) ? {...textBlock(t.text, t.title), kind: t.kind || null, fmt: fmtCopy(t.fmt)}
+                                 : blockOf(t.title, t.items.map(tplLine), '', t.kind, fmtCopy(t.fmt)));
   } else {
     const w = tplToWorkout(t);
     d.title = w.title || d.title; d.blocks = w.blocks;
@@ -1650,8 +1716,7 @@ const addTpl = t => {
 };
 /* CON-4 — «копирование предыдущей недели как основа новой»: неделя целиком,
    а не открытый день. Копия глубокая, иначе правки поедут в обе недели. */
-const copyBlocks = bs => bs.map(b =>
-  blockOf(b.title, b.items.map(i => ({...i, id:nid('i')})), b.note, b.kind, b.fmt ? {...b.fmt} : null));
+const copyBlocks = bs => bs.map(copyBlock);
 
 /* Продлеваем план до индекса включительно, дописывая пустые дни.
    Именно дописываем, а не пересобираем через buildPlan: пересборка создаёт
@@ -1677,7 +1742,7 @@ function extendPlan(upto){
    расти — решётки, которую можно «открыть на неделю вперёд», больше нет. */
 function addDay(){
   extendPlan(plan().length);
-  S.i = plan().length - 1; S.compose = null; S.blkText = false; render();
+  S.i = plan().length - 1; render();
   toast('День ' + (S.i+1) + ' добавлен');
 }
 
@@ -1686,14 +1751,14 @@ function addDay(){
 function repeatPrev(){
   const d = plan();
   let j = -1;
-  for(let k=S.i-1; k>=0; k--){ if(d[k].blocks.some(b=>b.items.some(i=>i.exId))){ j=k; break } }
+  for(let k=S.i-1; k>=0; k--){ if(dayHas(d[k])){ j=k; break } }
   if(j < 0) return toast('Раньше в плане нет ни одной тренировки');
   const src = d[j], cur = d[S.i];
   cur.title  = src.title;
   cur.rest   = false;
   cur.blocks = copyBlocks(src.blocks);
-  S.compose = null; S.blkText = false; render();
-  const n = cur.blocks.reduce((a,b)=>a+b.items.filter(i=>i.exId).length,0);
+  render();
+  const n = dayCount(cur);
   toast('День ' + (j+1) + ' повторён · ' + n + ' ' + plural(n,'упражнение','упражнения','упражнений'));
 }
 
@@ -1746,15 +1811,15 @@ document.addEventListener('click', e=>{
     const i = +d.dataset.day;
     if(i < 0){ shiftTo(addDays(program(S.pid).start, i)); return }
     extendPlan(i);
-    S.i = i; S.compose = null; S.blkText = false; closeSug(); render(); return;
+    S.i = i; closeSug(); render(); return;
   }
   /* Стрелки листают неделями: лента — это неделя, день внутри неё выбирают
      кликом. Встаём на тот же день недели, если он в сроке программы. */
   const vt = e.target.closest('[data-view]'); if(vt){ const v = vt.dataset.view; if(v==='hidden') STATE.laneHidden = true; else { STATE.laneHidden = false; STATE.laneView = v } saveState(); renderStrip(); return }
   if(e.target.closest('#wkToday')){ bindClient(S.cid, TODAY); render(); return }
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
-  if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; S.compose = null; S.blkText = false; render(); return }
-  if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; S.compose = null; S.blkText = false; render(); return }
+  if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; render(); return }
+  if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; render(); return }
   const nd = e.target.closest('[data-notedel]');
   if(nd){ e.preventDefault(); const b = day().blocks.find(x=>x.id===nd.dataset.notedel);
           if(b){ b.note = ''; b.noteOpen = false; render() } return }
@@ -1823,16 +1888,10 @@ document.addEventListener('click', e=>{
     toast('Суперсет удалён', 'Отменить', () => { b.items.splice(k, 0, ...removed); render() });
     return;
   }
-  if(e.target.closest('#w-hand')){
-    day().blocks.push(blockOf('', []));
-    S.compose = null; S.blkText = false; render();
-    const t = $('.blk .bt'); if(t) t.focus();
-    return;
-  }
-  if(e.target.closest('#w-ai')){ S.compose = 'text'; render(); const p = $('#paste'); if(p) p.focus(); return }
-  if(e.target.closest('#pt-back')){ S.compose = null; S.blkText = false; render(); return }
-  if(e.target.closest('#pt-go')){ applyText($('#paste').value); return }
-  if(e.target.closest('#w-prev')){ copyPrev(); return }
+  /* Кнопка AI — в углу блока текстом и строки текстом (CON-5). Пока ИИ
+     разбирает, повторное нажатие ничего не делает. */
+  const aib = e.target.closest('[data-aiblk]'); if(aib){ if(!aib.classList.contains('busy')) aiBlock(aib.dataset.aiblk); return }
+  const ail = e.target.closest('[data-ailine]'); if(ail){ if(!ail.classList.contains('busy')) aiLine(ail.dataset.ailine); return }
   if(e.target.closest('#pd-yes')){ acceptPending(); return }
   if(e.target.closest('#pd-no')){  cancelPending(); return }
   if(e.target.closest('#pd-src')){ showSource();   return }
@@ -1859,27 +1918,20 @@ document.addEventListener('click', e=>{
   if(cba){ const nb = csrcCopyBlock(cba.dataset.cbadd); if(!nb) return; const d = day(); dropEmptyBlocks(d); d.blocks.push(nb); render(); flash(nb.id); return }
   const cia = e.target.closest('[data-ciadd]');
   if(cia){ const its = csrcCopyItems(cia.dataset.ciadd); if(!its) return; lastBlock().items.push(...its); render(); flash(its[0].id); return }
+  /* Способы начать день: «Вручную» — строка упражнения с курсором в последнем
+     блоке, «Текстом» — блок текстом. Развилки-режима больше нет: оба пути
+     сразу дают, куда печатать. */
   const way = e.target.closest('[data-way]');
   if(way){
     const k = way.dataset.way;
-    if(k === 'hand'){ if(S.compose){ S.compose = null; S.blkText = false; render() } return }
+    if(k === 'hand'){ const b = lastBlock(); let it = b.items.find(x => !x.ss && !x.exId && !String(x.raw || '').trim());
+      if(!it){ it = rawItem(''); b.items.push(it) } render(); focusLineField(it.id, 'e'); return }
     if(k === 'tpl'){ pickTemplate(); return }
     if(k === 'cal'){ pickExisting(); return }
-    S.compose = 'text'; render(); const p = $('#paste'); if(p) p.focus(); return;
+    focusText(addTextBlock('').id); return;
   }
-  if(e.target.closest('#add-blk-text')){
-    S.blkText = true; render();
-    const t = $('#bt-paste'); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:'center', behavior:'smooth'}) }
-    return;
-  }
-  if(e.target.closest('#bt-cancel')){ S.blkText = false; S.blkTextVal = ''; render(); return }
-  if(e.target.closest('#bt-go')){
-    const v = ($('#bt-paste') || {}).value || '';
-    if(!v.trim()){ toast('Вставьте или напечатайте текст блока'); return }
-    S.blkText = false; S.blkTextVal = ''; applyText(v); return;
-  }
+  if(e.target.closest('#add-blk-text')){ focusText(addTextBlock('').id); return }
   if(e.target.closest('[data-newex]') && SUG){ const id = SUG.dataset.forItem, text = SUG.dataset.text || ''; closeSug(); openNewEx(id, text); return }
-  const kt = e.target.closest('[data-keeptext]'); if(kt && SUG){ activateSugRow(kt, 'click'); return }
   const pfu = e.target.closest('[data-pfu]');
   if(pfu){ const {i} = findItem(pfu.dataset.pfu); if(!i) return; const L = loadInfo(i), inp = pfu.parentElement.querySelector('input');
     if(L.units.length > 1){ const nu = L.units[(L.units.indexOf(L.cur) + 1) % L.units.length]; UNITSEL[i.id] = nu; applyLoad(i, inp.value, nu); syncLoads(); commitSoft() }
@@ -1901,10 +1953,7 @@ document.addEventListener('click', e=>{
   if(dl){ const {b} = findItem(dl.dataset.del); b.items = b.items.filter(x=>x.id!==dl.dataset.del); render(); return }
   const ft = e.target.closest('[data-ftype]'); if(ft){ openFtype(ft); return }
   const pf = e.target.closest('[data-pickfor]');
-  if(pf){ const {i} = findItem(pf.dataset.pickfor); const ed = fieldIn(lineEl(pf.dataset.pickfor), 'e');
-          if(ed) focusField(ed);
-          showSug(ed || pf, i.raw || '');
-          return; }
+  if(pf){ pickFor(pf.dataset.pickfor); return }
 
   const pick = e.target.closest('[data-pick]');
   if(pick && SUG){ pickExercise(SUG.dataset.forItem, pick.dataset.pick, SUG.dataset.text || '', 'click'); return }
@@ -1927,22 +1976,23 @@ document.addEventListener('click', e=>{
   }
 });
 
-/* Вставка многострочного текста — куда бы её ни сделали. Одна строка
-   проходит обычным путём, без подтверждения: там нечего проверять. */
+/* Многострочная вставка в строку упражнения ложится блоком текстом под этот
+   блок — как вставили, без разбора (CON-5); разобрать можно кнопкой AI в его
+   углу. Одна строка вставляется в строку обычным текстом, в блок текстом
+   вставка идёт как в любое поле. */
 document.addEventListener('paste', e=>{
   const t = (e.clipboardData || window.clipboardData).getData('text') || '';
   if(!/\n/.test(t.trim())) return;
-  const into = e.target.closest('#paste, [data-edit]');
-  if(!into) return;
+  const ed = e.target.closest('#doc [data-edit]');
+  if(!ed) return;
   e.preventDefault();
   closeSug();
-  applyText(t);
-});
-/* В пустом дне то же поле работает и на набор: Ctrl/⌘+Enter разбирает. */
-document.addEventListener('keydown', e=>{
-  if(e.target.id === 'paste' && e.key === 'Enter' && (e.metaKey || e.ctrlKey)){
-    e.preventDefault(); applyText(e.target.value);
-  }
+  const {b, i} = findItem(ed.dataset.edit); if(!b) return;
+  /* Строка, в которую вставляли: пустая уходит, набранное в ней остаётся текстом. */
+  if(i && !i.exId){ const typed = ed.textContent.trim(); if(typed) i.raw = typed; else b.items = b.items.filter(x => x !== i) }
+  const tb = addTextBlock(t.replace(/\r/g, '').trim(), b);
+  flash(tb.id);
+  toast('Вставлено блоком текстом, как есть. Разобрать на упражнения — кнопкой AI');
 });
 
 document.addEventListener('input', e=>{
@@ -1980,6 +2030,10 @@ document.addEventListener('input', e=>{
     const b = day().blocks.find(x=>x.id === f.closest('[data-blk]').dataset.blk);
     b[f.dataset.f] = f.value;
     if(f.dataset.f === 'title') renderStrip();
+    /* Текст блока — в модель на каждый символ. Лист растёт по тексту, кнопка AI
+       бледнеет, пока разбирать нечего; полоса дней и публикация — сразу: день
+       с одним текстом уже тренировка. */
+    if(f.dataset.f === 'text'){ fitText(f); const ai = f.parentElement.querySelector('[data-aiblk]'); if(ai) ai.classList.toggle('dim', !f.value.trim()); renderStrip(); refreshChrome() }
     /* Иконка заметки заливается сразу, как появился текст, без перерисовки —
        перерисовка сбила бы курсор в поле. */
     if(f.dataset.f === 'note'){ const ic = document.querySelector(`[data-notetog="${b.id}"]`); if(ic){ ic.classList.toggle('on', !!f.value.trim()); ic.dataset.tip = f.value.trim() ? 'Заметка к блоку' : 'Добавить заметку к блоку'; ic.removeAttribute('title') } }
@@ -1990,7 +2044,6 @@ document.addEventListener('input', e=>{
     const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
     return }
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
-  if(e.target.id === 'bt-paste'){ S.blkTextVal = e.target.value; return }
 });
 document.addEventListener('change', e=>{
   /* Поле кругов не остаётся пустым; «90» в отдыхе — это секунды. */
@@ -2013,11 +2066,7 @@ document.addEventListener('change', e=>{
     }
     return;
   }
-  if(e.target.id === 'pt-photo'){
-    const f = e.target.files && e.target.files[0];
-    if(f){ $('#pt-photo-name').textContent = f.name; toast('Фото прикреплено. Распознавание с фото появится вместе с ИИ-модулем — пока разбираем текст') }
-    return;
-  }
+  if(e.target.closest('.tbx')){ commitSoft(); return }      /* блок текстом дописали — сохранить */
 });
 document.addEventListener('keydown', e=>{
   if(e.defaultPrevented) return;
@@ -2036,7 +2085,7 @@ document.addEventListener('keydown', e=>{
      change уже подхватывает набранный формат («AMRAP 15») как тип. */
   if(e.key === 'Enter' && (e.target.closest('[data-f="title"]') || e.target.closest('[data-ssf]') || e.target.id === 'd-title')){
     e.preventDefault(); e.target.dispatchEvent(new Event('change', {bubbles:true})); e.target.blur(); return }
-  if(e.key === 'Escape'){ closeSug(); $('#ov').classList.remove('on'); const w = $('#wz'); if(w) w.remove() }
+  if(e.key === 'Escape'){ closeSug(); $('#ov').classList.remove('on'); const w = $('#wz'); if(w) w.remove(); if(e.target.closest && e.target.closest('.tbx')) e.target.blur() }
 });
 document.addEventListener('focusout', e=>{
   const ed = e.target.closest('[data-edit]');
@@ -2131,7 +2180,7 @@ document.addEventListener('dragover', e=>{
     if(DRAG.t === 'block' || DRAG.t === 'cblk'){
       const r = blk.getBoundingClientRect();
       blk.classList.add(e.clientY < r.top + r.height/2 ? 'dropbefore' : 'dropafter');
-    } else blk.classList.add('over');
+    } else if(!blk.classList.contains('tblk')) blk.classList.add('over');   /* блок текстом упражнений не принимает */
   }
 });
 document.addEventListener('drop', e=>{
@@ -2151,11 +2200,15 @@ document.addEventListener('dragend', clearDrag);
 /* Упражнение из календаря встаёт туда, куда его отпустили, по тем же правилам,
    что и перенос строки внутри дня (до, после, в суперсет): копию кладём в блок
    и дальше двигаем её как обычную строку. */
+/* Блок текстом упражнений не принимает: всё, что в нём, — текст. Строку
+   бросили на него — говорим, как быть, и ничего не двигаем. */
+const textDropNo = () => { clearDrag(); toast('В блок текстом упражнение не положить — разберите его кнопкой AI или перетащите в другой блок') };
 function dropCalItem(e){
   const its = e.target.closest('#doc') && csrcCopyItems(DRAG.v);
   if(!its){ clearDrag(); return }
   const blkEl = e.target.closest('.blk');
   const to = (blkEl && day().blocks.find(x => x.id === blkEl.dataset.blk)) || lastBlock();
+  if(isTextBlock(to)){ textDropNo(); return }
   to.items.push(...its);
   if(blkEl && (e.target.closest('.line') || e.target.closest('.ssg'))){ DRAG = {t:'line', v: its[0].id}; dropLine(e) }
   else { clearDrag(); render() }
@@ -2176,6 +2229,7 @@ function dropFromRail(e){
   let it = null;
   if(DRAG.t === 'ex'){
     const b = blk ? day().blocks.find(x=>x.id===blk.dataset.blk) : lastBlock();
+    if(isTextBlock(b)){ textDropNo(); return }
     it = mkItem(DRAG.v, '', null, null, ''); b.items.push(it);
   } else addTplRaw(tplById(DRAG.v));
   clearDrag(); render();
@@ -2190,6 +2244,7 @@ function dropLine(e){
   const onLine = e.target.closest('.line'), onBlk = e.target.closest('.blk');
   if(!onBlk || !item){ clearDrag(); return }
   const to = day().blocks.find(x=>x.id===onBlk.dataset.blk);
+  if(isTextBlock(to)){ textDropNo(); return }
   const k0 = from.items.indexOf(item);
   const moving = from.items.splice(k0, item.ss ? ssEnd(from.items, k0) - k0 : 1);
   if(onLine && moving.some(x => x.id === onLine.dataset.item)){ from.items.splice(k0, 0, ...moving); clearDrag(); return }
@@ -2235,7 +2290,7 @@ function dropOnDay(idx){
   if(DRAG.t === 'workout'){
     /* Если на целевом дне уже есть тренировка — меняем дни местами, а не
        затираем её молча. Статус соревнования переезжает вместе с днём. */
-    const had = dst.blocks.some(b=>b.items.some(i=>i.exId));
+    const had = dayHas(dst);
     const t = {title:dst.title, blocks:dst.blocks, comp:dst.comp};
     dst.title = src.title; dst.blocks = src.blocks; dst.comp = src.comp;
     src.title = had ? t.title : ''; src.blocks = had ? t.blocks : []; src.comp = had ? t.comp : false;
@@ -2249,10 +2304,9 @@ function dropOnDay(idx){
   }
   else if(DRAG.t === 'line'){
     const {b:from, i:item} = findItem(DRAG.v);
-    if(!dst.blocks.length) dst.blocks.push(mkBlock(null,'Новый блок','',null,[]));
     const k0 = from.items.indexOf(item), moving = from.items.splice(k0, item.ss ? ssEnd(from.items, k0) - k0 : 1);
     if(!item.ss) item.sub = false;
-    dst.blocks[dst.blocks.length-1].items.push(...moving);
+    structBlock(dst).items.push(...moving);
     src.blocks.forEach(normSS); dst.blocks.forEach(normSS);
   }
   else if(DRAG.t === 'tpl'){ S.i = idx; addTplRaw(tplById(DRAG.v)) }

@@ -185,9 +185,13 @@ const libSort = (a,b) =>
   : (b.used||0)-(a.used||0);
 
 function libLines(t){
-  if(t.lvl==='блок')
+  if(t.lvl==='блок'){
+    /* Блок текстом лежит в базе как написан — строками, без разбора. */
+    if(isTextBlock(t)) return textLines(t.text).map(l=>`<span>${esc(l)}</span>`).join('');
     return (t.items||[]).map(x=> x[0] === SS_TAG ? `<span class="ssl">${esc(ssLabel({rounds:+x[1]||3, rest:x[2]||''}))}</span>`
+      : x[0] === TXT_TAG ? `<span class="${x[5]?'sub':''}">${esc(x[1]||'')}</span>`
       : `<span class="${x[5]?'sub':''}">${esc((byId(x[0])||{}).ru || x[0])}${x[1]?' · '+esc(x[1]):''}</span>`).join('');
+  }
   if(t.lvl==='тренировка')
     return (t.blocks||[]).map(id=>`<span>${esc((tplById(id)||{}).title || id)}</span>`).join('');
   if(t.lvl==='программа'){
