@@ -453,3 +453,35 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .rrel .it b{font-weight:600;flex:1;min-width:0}
 .rrel .it .chip{height:18px;font-size:13px;padding:0 6px;flex:none}
 .rrel .it .tt{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px}
+
+/* ─── Группы клиентов (GRP) ─── */
+.cellname .cav{width:34px;height:34px;font-size:12px}
+.gstack{display:flex;align-items:center;gap:8px}
+.gstack .stack{display:flex}
+.gstack .stack .av{margin-left:-6px;box-shadow:0 0 0 2px var(--bg)}
+.gstack .stack .av:first-child{margin-left:0}
+.gstack s{text-decoration:none;font-size:13.5px;color:var(--tx3);white-space:nowrap}
+.avrow .av.grp{border-radius:16px;background:var(--ink);color:#fff;font-size:19px}
+.gabout{font-size:14px;color:var(--tx2);line-height:1.45}
+.gmem{display:flex;flex-direction:column}
+.gm-r{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.gm-r:last-child{border-bottom:0}
+.gm-n{flex:1;min-width:0;color:inherit;text-decoration:none}
+.gm-n b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-n s{display:block;text-decoration:none;font-size:13px;color:var(--tx3)}
+.gm-n s.own{color:var(--acc-d)}
+.gm-n:hover b{color:var(--acc-d)}
+.gm-r .x{width:26px;height:26px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none;background:none}
+.gm-r .x:hover{background:var(--rm-a);color:var(--rm)}
+.gm-r .x svg{width:13px;height:13px}
+.gsearch{margin-top:2px}
+.gpick{max-height:320px;overflow:auto;margin-top:8px;padding-right:2px}
+.gsum{font-size:13.5px;color:var(--tx3);max-width:62%}
+.gask .lead{font-size:16px;line-height:1.5;color:var(--tx1);margin-bottom:6px}
+.gask .lead b{font-weight:600}
+.gask .sub{font-size:14.5px;color:var(--tx3);line-height:1.5}
+/* Группы в карточке и списке клиента */
+.gchips{display:inline-flex;flex-wrap:wrap;gap:4px}
+.gchip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+.gchip svg{width:13px;height:13px}
+a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}

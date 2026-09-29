@@ -1334,3 +1334,54 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .line:not(.act):not(:hover) input.pf::placeholder,.line:not(.act):not(:hover) .pf input::placeholder{color:transparent}
 .line .pf.ld.empty u{opacity:.45}
 .keyhint{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+
+/* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP) ═══════════ */
+/* Аватар группы — скруглённый квадрат цвета текста: в списках не путается с клиентом. */
+.cav.grp{border-radius:7px;background:var(--ink);font-size:10.5px;letter-spacing:.02em}
+.wkh .cliSel .cav.grp{font-size:11px}
+.clipick .cl-cap{padding:8px 10px 4px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+.clipick .cl-cap:first-child{padding-top:2px}
+
+/* Метки в клетке дня: у клиента — из какой группы и не изменена ли для него,
+   у группы — у скольких участников тренировка и у скольких она поправлена. */
+.gtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-width:0;container-type:inline-size}
+.days .day .gtags{margin:6px 12px 0}
+.days.compact .day .t + .gtags{margin:-4px 12px 10px}
+.gtag{display:inline-flex;align-items:center;gap:4px;height:20px;max-width:100%;padding:0 7px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden}
+.gtag svg{width:13px;height:13px;flex:none}
+.gtag b{font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.gtag s{text-decoration:none;font-weight:500;flex:none}
+.gtag.own{background:var(--acc-a);color:var(--acc-d)}
+.gtag.busy{background:#FBF1DE;color:var(--warn)}
+.gtag .sh{display:none}
+.gtag b.sh{align-items:center;gap:2px}
+.gtag .sh svg{width:12px;height:12px}
+/* Узкая клетка (полоса конструктора, лента карточки клиента): числа и значки вместо слов.
+   Контейнер — сама строка меток, поэтому порог — её ширина, а не ширина сетки. */
+@container (max-width: 140px){
+  .gtag .lg{display:none}
+  .gtag .sh{display:inline-flex}
+}
+
+/* Панель участников в дне группы и полоса в дне клиента, пришедшем из группы. */
+.gpanel,.gribbon{margin:0 0 12px;border:1px solid var(--line);border-radius:var(--rad-l);padding:10px 12px;background:var(--bg)}
+.gp-h,.gribbon{display:flex;align-items:center;gap:10px}
+.gp-i,.gr-i{width:30px;height:30px;border-radius:7px;background:var(--s1);color:var(--tx2);display:grid;place-items:center;flex:none}
+.gp-i svg,.gr-i svg{width:17px;height:17px}
+.gp-t,.gr-t{flex:1;min-width:0}
+.gp-t b,.gr-t b{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.gp-t s,.gr-t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx3);margin-top:1px}
+.gp-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.gpm{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 4px;border-radius:15px;background:var(--s1);border:1.5px solid transparent;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap}
+.gpm .cav{width:22px;height:22px;font-size:10.5px;background:var(--tx4)}
+.gpm i{font-style:normal;font-size:12.5px;font-weight:600}
+.gpm:hover{background:var(--bg);border-color:var(--line2)}
+.gpm.own{background:var(--acc-a);color:var(--acc-d)} .gpm.own .cav{background:var(--acc)} .gpm.own:hover{border-color:var(--acc)}
+.gpm.busy{background:#FBF1DE;color:var(--warn)} .gpm.busy .cav{background:var(--warn)}
+.gpm.none{color:var(--tx3)}
+.gribbon.own{background:var(--acc-a);border-color:#FFD9C4}
+.gribbon.own .gr-i{background:var(--bg);color:var(--acc-d)}
+.gribbon.busy{background:#FFF8E6;border-color:#F0DCA8}
+.gribbon.busy .gr-i{background:var(--bg);color:var(--warn)}
+.gribbon .btn{height:32px;flex:none}
+.gribbon .lnk{font-size:14px;font-weight:500;color:var(--acc-d);text-decoration:underline;text-underline-offset:2px;flex:none;white-space:nowrap;background:none}

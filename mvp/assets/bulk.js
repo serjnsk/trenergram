@@ -72,8 +72,9 @@ function bkPaint(){
 }
 
 /* ─── чтение дней ─── */
+/* Календарь бывает и у группы (GRP-2): who() отдаёт клиента или группу, у обоих есть контейнер дней. */
 function bkCtx(cid){
-  const c = client(cid); if(!c || !c.prog) return null;
+  const c = who(cid); if(!c || !c.prog) return null;
   const p = program(c.prog); return p ? {pid:c.prog, p, plan:buildPlan(c.prog)} : null;
 }
 function bkDay(ctx, date){
@@ -144,11 +145,14 @@ function bkBarClick(e){
 const BK_EMPTY = () => serializeDay({title:'', blocks:[], comp:false});
 /* День пишется в хранилище клиента; ensureDay заводит контейнер дней, если
    у клиента нет программы, и сдвигает старт, если дата раньше него. */
+/* Запись идёт через putDay: день группы расходится по участникам, а у дня
+   участника остаётся метка группы — удалённая или заменённая тренером у одного
+   человека тренировка группы считается изменённой для него и правками группы
+   не затирается. */
 function bkWrite(cid, date, c, draft){
   const r = ensureDay(cid, date); if(!r) return;
   const cur = buildPlan(r.pid)[r.i];
-  const bag = ((STATE.days ||= {})[r.pid] ||= {});
-  bag[r.i] = draft ? {c, pub: cur ? (cur.pub || '') : '', draft:true} : {c, draft:false};
+  putDay(r.pid, r.i, draft ? {c, pub: cur ? (cur.pub || '') : '', draft:true} : {c, draft:false});
 }
 /* Сообщение тренера к дню привязано к дате: при переносе забираем и кладём заново. */
 function bkTakeMsg(cid, date){
@@ -234,7 +238,7 @@ function bkDelete(){
   const pub = ds.filter(d => { const x = bkDay(ctx, d); return bkHas(x) && !x.draft }).length;
   bkConfirm({
     title: 'Удалить ' + bkN(ds.length, 'тренировку', 'тренировки', 'тренировок') + '?',
-    lead: `${bkEsc(client(cid).n)} · ${bkRange(ds)}`,
+    lead: `${bkEsc(who(cid).n)} · ${bkRange(ds)}`,
     sub: pub ? `Опубликовано из них: ${pub}. Клиент перестанет их видеть.` : 'Все выбранные — черновики, клиент их не видит.',
     ok: 'Удалить',
   }, () => bkRun(() => {
@@ -251,10 +255,9 @@ function bkStatus(pub){
   const todo = ds.map(d => ({d, x: bkDay(ctx, d)})).filter(o => bkHas(o.x) && (pub ? o.x.draft : !o.x.draft));
   if(!todo.length) return bkToast(pub ? 'Все выбранные уже опубликованы' : 'Все выбранные уже в черновиках');
   bkRun(() => {
-    const bag = ((STATE.days ||= {})[ctx.pid] ||= {});
     todo.forEach(({d, x}) => {
       const i = daysBetween(ctx.p.start, d), c = serializeDay(x);
-      bag[i] = pub ? {c, draft:false} : {c, pub: x.pub || '', draft:true};
+      putDay(ctx.pid, i, pub ? {c, draft:false} : {c, pub: x.pub || '', draft:true});
     });
     return (pub ? 'Опубликовано: ' : 'В черновик: ') + bkN(todo.length, 'тренировка', 'тренировки', 'тренировок');
   });
@@ -272,7 +275,7 @@ function bkPlace(ds, first, rule){
 function bkDefaultFirst(ds){ return addDays(ds[0], 7 * Math.ceil((daysBetween(ds[0], ds[ds.length - 1]) + 1) / 7)) }
 /* У другого клиента проценты считаются от его максимумов — предупреждаем, если их нет. */
 function bkNoPm(x, cid){
-  if(!x) return [];
+  if(!x || isGrp(cid)) return [];              /* у группы своих максимумов нет — считается у каждого участника */
   const pm = pmOf(cid), out = new Set();
   (x.blocks||[]).forEach(b => (b.items||[]).forEach(it => {
     if(it.pct == null || !it.exId) return;
@@ -322,13 +325,13 @@ const BK_RULES = [
 ];
 function bkDlgDraw(){
   const g = BK.dlg, ds = [...BK.sel].sort(), move = g.mode === 'move';
-  const src = client(BK.cid), prev = bkPreview();
+  const src = who(BK.cid), prev = bkPreview();
   const total = prev.reduce((a, x) => a + x.rows.length, 0);
   const conf  = prev.reduce((a, x) => a + x.rows.filter(r => r.conflict).length, 0);
   const past  = prev.reduce((a, x) => a + x.rows.filter(r => r.past).length, 0);
-  const av = c => `<span class="cav">${bkEsc(c.ini)}</span>`;
+  const av = c => `<span class="cav${isGrp(c.id) ? ' grp' : ''}">${bkEsc(c.ini)}</span>`;
   const verb = move ? 'Переместить' : 'Копировать';
-  const tgt = move ? client(g.targets[0]) : null;
+  const tgt = move ? who(g.targets[0]) : null;
   BK.dlgEl.innerHTML = `<div class="md bkmd">
     <div class="mdh"><span class="dot"></span><h2>${verb} ${bkN(ds.length, 'тренировку', 'тренировки', 'тренировок')}</h2><button class="cls" data-bkd="close">✕</button></div>
     <div class="mdb bkd">
@@ -341,8 +344,8 @@ function bkDlgDraw(){
           <div class="bkd-kv"><span class="k">Кому</span>
             <div class="bkd-to">${move
               ? `<button class="bkd-cli" data-bkd="setcli">${av(tgt)}<b>${bkEsc(tgt.n)}</b>${BK_I.chev}</button>`
-              : g.targets.map(id => { const c = client(id); return `<span class="bkd-chip">${av(c)}<b>${bkEsc(c.n)}</b><button data-bkd="rm" data-cid="${id}" aria-label="Убрать">${BK_I.x}</button></span>` }).join('')
-                + `<button class="bkd-add" data-bkd="addcli">${BK_I.plus}Добавить клиента</button>`}</div></div>
+              : g.targets.map(id => { const c = who(id); return `<span class="bkd-chip">${av(c)}<b>${bkEsc(c.n)}</b><button data-bkd="rm" data-cid="${id}" aria-label="Убрать">${BK_I.x}</button></span>` }).join('')
+                + `<button class="bkd-add" data-bkd="addcli">${BK_I.plus}Добавить клиента или группу</button>`}</div></div>
         </div>
       </section>
       <section class="bkd-step">
@@ -399,7 +402,7 @@ function bkApply(){
     if(move){ const empty = BK_EMPTY(); pay.forEach(p => { if(p.same) return; p.msg = bkTakeMsg(src, p.s); bkWrite(src, p.s, empty, false) }) }
     g.targets.forEach(cid => pay.forEach(p => { bkWrite(cid, p.dst, p.c, true); if(move && !p.same) bkPutMsg(cid, p.dst, p.msg) }));
     BK.sel.clear(); BK.anchor = null;
-    const who = g.targets.length > 1 ? ' · ' + bkN(g.targets.length, 'клиенту', 'клиентам', 'клиентам') : (g.targets[0] !== src ? ' · ' + client(g.targets[0]).n : '');
+    const who = g.targets.length > 1 ? ' · ' + bkN(g.targets.length, 'клиенту', 'клиентам', 'клиентам') : (g.targets[0] !== src ? ' · ' + who(g.targets[0]).n : '');
     return (move ? 'Перемещено: ' : 'Скопировано: ') + bkN(pay.length, 'тренировка', 'тренировки', 'тренировок') + who + ' · черновики';
   });
 }

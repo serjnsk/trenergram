@@ -82,7 +82,9 @@ const REST_TITLES = new Set(['Отдых','—','']);
    открывается пустой конструктор с выбором даты и клиента (режим new);
    ?client=&date= ведёт сразу в редактор нужного дня. */
 const Q = new URLSearchParams(location.search);
-const S = { cid: Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
+/* Открыть можно и группу (?group=): у неё свой контейнер дней, и конструктор
+   работает с ним так же, как с календарём клиента (GRP-2). */
+const S = { cid: Q.get('group') || Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
             tab:'ex', q:'', src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
             tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
 const blockSig = b => serializeDay({title:'', blocks:[b]});
@@ -110,7 +112,7 @@ function shiftTo(date){
 }
 /* Привязка клиента к плану: программа берётся у клиента, день — из даты. */
 function bindClient(cid, date){
-  const c = client(cid); if(!c) return false;
+  const c = who(cid); if(!c) return false;
   S.cid = cid; S.date = date || S.date;
   /* Границ у программы нет: день раньше старта сдвигает старт, отсутствие
      программы создаёт личный контейнер (ensureDay). */
@@ -132,7 +134,10 @@ if(!Q.get('date')){
   extendPlan(n); S.i = n; S.date = plan()[n].date;
 }
 const day  = () => plan()[S.i];
-const PM   = () => pmOf(S.cid);
+/* Группа открыта — своих максимумов у неё нет: проценты считаются каждому
+   участнику от его 1ПМ, в строке килограммов не показываем. */
+const G_   = () => isGrp(S.cid) ? grp(S.cid) : null;
+const PM   = () => G_() ? {} : pmOf(S.cid);
 
 /* LOGO живёт в assets/nav.js — общий для обеих оболочек. */
 
@@ -143,6 +148,7 @@ const ICON = {
  ungroup:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="1.5" y="3" width="5" height="10" rx="1.2"/><rect x="9.5" y="3" width="5" height="10" rx="1.2"/></svg>',
  dash:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.6"/><rect x="11" y="2.5" width="6.5" height="4" rx="1.6"/><rect x="11" y="8.5" width="6.5" height="9" rx="1.6"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.6"/></svg>',
  users:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><circle cx="8" cy="6.5" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M14 4.2a3 3 0 0 1 0 5.6M15.5 12.6c1.6.7 2.8 2.3 2.8 4.4"/></svg>',
+ grp:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6.2" r="2.6"/><path d="M5 16.5c0-2.9 2.2-5 5-5s5 2.1 5 5"/><circle cx="4.2" cy="8.2" r="1.9"/><path d="M1.5 15.5c0-1.9 1-3.3 2.6-3.8"/><circle cx="15.8" cy="8.2" r="1.9"/><path d="M18.5 15.5c0-1.9-1-3.3-2.6-3.8"/></svg>',
  cal:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="4" width="15" height="13.5" rx="2"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3"/></svg>',
  prog:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="15" height="15" rx="2.5"/><path d="M6 7h8M6 10h8M6 13h4.5"/></svg>',
  build:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><path d="M3 4.5h6M3 10h14M3 15.5h9"/><circle cx="13.5" cy="4.5" r="2"/><circle cx="15" cy="15.5" r="2"/></svg>',
@@ -255,7 +261,7 @@ function renderStrip(){
   });
   $('#wk').innerHTML = `
     <div class="wkh one">
-      <button class="cliSel" id="cli" title="Сменить клиента"><span class="cav">${esc(client(S.cid).ini)}</span><span class="cl-t"><b>${esc(client(S.cid).n)}</b><s>${esc(clientProgSub(client(S.cid)))}</s></span>${ICON.chev}</button>
+      <button class="cliSel" id="cli" title="Сменить клиента или группу">${whoBtnHTML(who(S.cid))}${ICON.chev}</button>
       <div class="dates">${STATE.laneHidden ? '' : `
         <span class="wkn">
           <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
@@ -283,17 +289,18 @@ function renderStrip(){
         const n  = dayCount(x);
         const title = REST_TITLES.has(x.title) ? 'Без названия' : x.title;
         const st = dayStatus(x, isDraft(x)), tt = st==='comp' ? (REST_TITLES.has(x.title) ? 'Соревнование' : x.title) : title;
-        const blocks = laneView()==='detail' ? blocksDetail(x, S.cid) : blocksList(x);
+        const blocks = laneView()==='detail' ? blocksDetail(x, G_() ? null : S.cid) : blocksList(x);
+        const tag = st === 'rest' ? '' : G_() ? grpStatTag(G_(), c.date) : grpTag(x);
         /* Галочка массового выбора — только у дней с тренировкой или соревнованием. */
         const hs = st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(c.date)), sc = st === 'rest' ? '' : bulkCls(c.date);
         if(laneView()==='compact') return `<button class="day cmp ${st} ${c.i===S.i?'on':''}${cls}${sc}" data-day="${c.i}" data-date="${c.date}">
           ${hs}${dayMark(st, S.pid + ':' + c.i)}
-          ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
+          ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}
         </button>`;
         return `<button class="day ${st} ${c.i===S.i?'on':''}${cls}${sc}"
                         data-day="${c.i}" data-date="${c.date}" style="--load:${n||0}">
           ${hs}${dayMark(st, S.pid + ':' + c.i)}
-          ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}
+          ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}
           ${blocks || (st==='comp' ? compCell() : '')}
           <span class="ld"><i style="flex:${n}"></i><u style="flex:${Math.max(1,10-n)}"></u><s>${n||''}</s></span>
         </button>`;
@@ -330,8 +337,8 @@ function lineHTML(it){
     <span class="prm">
       <input class="pf sch" data-pf="sch" data-for="${it.id}" value="${esc(sch)}" placeholder="${it.sub ? 'повт' : '3×10'}" autocomplete="off" spellcheck="false" style="width:${w(sch, 4, 20)}">
       ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${w(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>` : ''}
-      <span class="kg">${kg != null ? '→ ' + fmtN(kg) + ' кг' : ''}</span>
-      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${w('', 3, 4)}"><u>кг</u></span></span>` : ''}
+      <span class="kg">${kg != null ? '→ ' + fmtN(kg) + ' кг' : G_() && it.pct != null ? 'от 1ПМ каждого' : ''}</span>
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${w('', 3, 4)}"><u>кг</u></span></span>` : ''}
     </span>
     <span class="sp"></span>
     <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить упражнение">${ICON.x}</button>
@@ -429,19 +436,20 @@ function renderDoc(){
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
       <button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
-      <button class="x ${trainerMsg(d.date)?'on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение клиенту':'Добавить сообщение клиенту'}">${ICON.chat}</button>
+      <button class="x ${trainerMsg(d.date)?'on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение '+aud(1):'Добавить сообщение '+aud(1)}">${ICON.chat}</button>
       <button class="x ${S.tplSaved[d.date] === serializeDay(d) ? 'on':''}" id="sav-wo" title="${S.tplSaved[d.date] === serializeDay(d) ? 'Сохранена в базу тренировок' : 'Сохранить тренировку в базу'}">${ICON.star}</button>
       <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
     </div>
+    ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
     <div class="ways4" role="group" aria-label="Как создать тренировку">${[
       ['hand', ICON.pen,  'Вручную'],
       ['tpl',  ICON.tpl,  'Скопировать из шаблона'],
       ['cal',  ICON.cal,  'Скопировать из календаря'],
       ['text', ICON.text, 'Текстом'],
     ].map(([k, ic, n]) => `<button class="way4" data-way="${k}">${ic}<span>${n}</span></button>`).join('')}</div>
-    ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} Клиенту</span>
+    ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} ${G_() ? 'Группе' : 'Клиенту'}</span>
       <input id="w-msg" value="${esc(trainerMsg(d.date))}"
-             placeholder="Сообщение ко всей тренировке — клиент увидит его первым">
+             placeholder="${G_() ? 'Сообщение ко всей тренировке — каждый участник увидит его первым' : 'Сообщение ко всей тренировке — клиент увидит его первым'}">
       <kbd class="ent">↵ Enter</kbd>
       <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
     </label>` : ''}
@@ -456,6 +464,104 @@ function renderDoc(){
     </div>`;
 }
 
+/* ═══════════ ГРУППА В КОНСТРУКТОРЕ (GRP-2 … GRP-4) ═══════════
+   Тренировки меняет только тренер. День группы показывает, кому уходит
+   тренировка: участники чипами — как в группе, изменена для клиента, у клиента
+   другая тренировка. Чип открывает день этого человека. День клиента, пришедший
+   из группы, несёт полосу-пояснение: правка здесь меняет тренировку только у
+   него, и правки группы сюда перестают приходить. Вернуть день к версии группы —
+   одной кнопкой. */
+const shortName = c => { const [f, l] = c.n.split(' '); return f + (l ? ' ' + l[0] + '.' : '') };
+function grpPanelHTML(d){
+  const G = G_(); if(!G) return '';
+  const n = G.members.length, st = groupDayStat(G, d.date);
+  const head = (b, t) => `<div class="gp-h"><span class="gp-i">${GRPICON}</span><span class="gp-t"><b>${b}</b><s>${t}</s></span></div>`;
+  if(!n) return `<div class="gpanel">${head('В группе пока никого', 'Добавьте участников на странице «Группы» — тренировка появится у каждого')}</div>`;
+  const LBL = {own:'изменена', busy:'другая тренировка', none:'не получил'};
+  const chip = (cid, k, note) => { const c = client(cid);
+    return `<button class="gpm ${k}" data-gpm="${cid}" title="${esc(note)} — открыть день ${esc(gen(c.n))}"><span class="cav">${esc(c.ini)}</span><span class="nm">${esc(shortName(c))}</span>${LBL[k] ? `<i>${LBL[k]}</i>` : ''}</button>` };
+  if(!st) return `<div class="gpanel">${head(n + ' ' + plural(n, 'участник', 'участника', 'участников'), 'Составьте тренировку — она сразу встанет в календарь каждому')}
+    <div class="gp-list">${G.members.map(cid => chip(cid, 'same', 'Участник группы')).join('')}</div></div>`;
+  const got = st.same.length + st.own.length;
+  const sum = [st.same.length ? st.same.length + ' как в группе' : '',
+    st.own.length ? st.own.length + ' с изменениями' : '',
+    st.busy.length ? st.busy.length + ' с другой тренировкой' : '',
+    st.none.length ? st.none.length + ' не ' + plural(st.none.length, 'получил', 'получили', 'получили') : ''].filter(Boolean).join(' · ');
+  return `<div class="gpanel">
+    ${head(`Стоит у ${got} из ${n} ${plural(n, 'участника', 'участников', 'участников')}`, sum + (st.own.length ? '. Правка группы дойдёт до всех, кроме изменённых' : st.busy.length ? '. Правка группы дойдёт до всех, у кого нет другой тренировки' : '. Правка группы дойдёт до всех'))}
+    <div class="gp-list">${[...st.own.map(c => chip(c, 'own', 'Изменена для клиента — правки группы сюда не приходят')),
+      ...st.busy.map(c => chip(c, 'busy', 'В этот день у клиента другая тренировка — группа её не заменила')),
+      ...st.same.map(c => chip(c, 'same', 'Как в группе')),
+      ...st.none.map(c => chip(c, 'none', 'Тренировка не приходила — вступил позже'))].join('')}</div>
+  </div>`;
+}
+function grpRibbonHTML(d){
+  const c = client(S.cid); if(!c || !d) return '';
+  const nm = esc(gen(c.n)), l = dayLink(d);
+  const open = G => `<button class="lnk" data-opengrp="${G.id}">Открыть в группе</button>`;
+  if(l) return l.same
+    ? `<div class="gribbon"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>Тренировка группы «${esc(l.G.n)}»</b><s>Правка здесь — только для ${nm}: у группы ничего не поменяется, а её правки на этот день сюда перестанут приходить</s></span>${open(l.G)}</div>`
+    : `<div class="gribbon own"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>Изменена для ${nm} · группа «${esc(l.G.n)}»</b><s>Правки группы на этот день сюда не приходят</s></span><button class="btn gh sm" data-relink="${l.G.id}">Вернуть как в группе</button>${open(l.G)}</div>`;
+  /* Группа в этот день тренируется, а у клиента своё — или тренировка к нему не приходила. */
+  const G = groupsOf(c.id).find(g => { const gd = dayAt(g.prog, d.date); return gd && contentHas(gd.c) });
+  if(!G) return '';
+  const has = dayHas(d);
+  return `<div class="gribbon busy"><span class="gr-i">${GRPICON}</span><span class="gr-t"><b>${has ? 'Другая тренировка — не как в группе «' + esc(G.n) + '»' : 'У группы «' + esc(G.n) + '» в этот день тренировка'}</b><s>${has ? 'Группа занятый день не заменяет' : 'Сюда она не приходила — клиент вступил в группу позже'}</s></span><button class="btn gh sm" data-relink="${G.id}">${has ? 'Заменить тренировкой группы' : 'Поставить тренировку группы'}</button>${open(G)}</div>`;
+}
+/* Полоса и панель обновляются на месте — без перерисовки документа, которая
+   сбила бы фокус в поле. */
+function refreshGrp(){
+  const d = day(); if(!d) return;
+  const box = $('#doc .gpanel, #doc .gribbon'), html = G_() ? grpPanelHTML(d) : grpRibbonHTML(d);
+  if(box) box.outerHTML = html; else if(html){ const h = $('#doc .doch'); if(h) h.insertAdjacentHTML('afterend', html) }
+}
+/* Первая правка дня, пришедшего из группы, отвязывает его. Говорим об этом
+   один раз — в момент перехода — и сразу даём вернуть. */
+function checkLink(){
+  if(G_()){ S.link = null; return }
+  const d = day(), l = dayLink(d), was = S.link;
+  S.link = l ? {date:d.date, g:l.G.id, same:l.same} : null;
+  if(was && l && was.date === d.date && was.g === l.G.id && was.same && !l.same)
+    toast('Изменено только у ' + gen(client(S.cid).n) + ' — у остальных в группе «' + l.G.n + '» всё как было', 'Вернуть как в группе', () => relinkDay(l.G.id));
+}
+/* Вернуть день к версии группы (или заменить ею свою тренировку клиента) — с отменой. */
+function relinkDay(gid){
+  const G = grp(gid), d = day(); if(!G || !d) return;
+  persist();
+  const pid = S.pid, i = S.i, date = d.date, bag = ((STATE.days ||= {})[pid] ||= {}), had = bag[i] ? {...bag[i]} : null;
+  groupRelink(S.cid, date, G);
+  saveState(); delete PCACHE[S.pid]; bindClient(S.cid, date); S.link = null; render();
+  toast('Тренировка снова как в группе «' + G.n + '»', 'Отменить', () => {
+    const b = ((STATE.days ||= {})[pid] ||= {}); if(had) b[i] = had; else delete b[i];
+    saveState(); delete PCACHE[pid]; bindClient(S.cid, date); S.link = null; render() });
+}
+/* Сообщение группе к дню (COM-4) — каждому, у кого день как в группе. */
+function grpMsgPush(){
+  const G = G_(); if(!G) return;
+  const date = day().date, st = groupDayStat(G, date), text = trainerMsg(date);
+  (st ? st.same : []).forEach(cid => {
+    const arr = (TALK.workout[talkKey(cid, date)] ||= []), k = arr.findIndex(m => m.who === 'trainer');
+    if(text){ if(k >= 0) arr[k].text = text; else arr.unshift({who:'trainer', text, at:'сейчас'}) } else if(k >= 0) arr.splice(k, 1);
+  });
+}
+
+/* ═══════════ ВЫБОР КЛИЕНТА ИЛИ ГРУППЫ ═══════════ (общий список с поиском — в nav.js)
+   Смена того, кто открыт, — на месте: правки сохраняются, день остаётся тем же. */
+function switchWho(id, date){
+  persist();
+  if(id !== S.cid) bulkReset();
+  const follow = CSRC.cid === S.cid;
+  if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('Не получилось открыть календарь');
+  if(follow) csrcReset(id);
+  S.link = null;
+  history.replaceState(null, '', `constructor.html?${subjQ(S.cid)}&date=${plan()[S.i].date}`);
+  render();
+}
+function openCliPick(btn){
+  closeSug();
+  SUG = openClientPicker(btn, S.cid, id => { SUG = null; switchWho(id, plan()[S.i].date) });
+}
+
 /* ═══════════ ПРАВАЯ ПАНЕЛЬ: ОТКУДА БРАТЬ МАТЕРИАЛ ═══════════
    Задача панели — подавать материал для быстрого копирования. Два источника:
    календарь (самый частый — уже составленные тренировки, свои или другого
@@ -465,7 +571,7 @@ function renderDoc(){
    календаря», только без модалки: дни можно листать и смотреть, не вставляя. */
 const CSRC = {cid:null, date:null, month:null};
 const csrcHas = dayHas;
-const csrcPlan = cid => { const c = client(cid); return c && c.prog && program(c.prog) ? planOf(c.prog) : [] };
+const csrcPlan = cid => { const c = who(cid); return c && c.prog && program(c.prog) ? planOf(c.prog) : [] };
 const csrcDay = () => CSRC.date ? (csrcPlan(CSRC.cid).find(x => x.date === CSRC.date) || null) : null;
 /* По умолчанию — последняя тренировка до открытого дня: чаще всего её и повторяют. */
 function csrcReset(cid){
@@ -503,10 +609,10 @@ function renderRailHead(){
       <label class="search">${ICON.search}<input id="q" placeholder="Поиск…" autocomplete="off" value="${esc(S.q)}"></label>`;
     return;
   }
-  const c = client(CSRC.cid) || client(S.cid);
+  const c = who(CSRC.cid) || who(S.cid);
   h.innerHTML = sw + `
-    <button class="csrc-cli" id="cs-cli" title="Чей календарь смотреть"><span class="cav">${esc(c.ini)}</span>
-      <span class="cl-t"><b>${esc(c.n)}</b><s>${c.id === S.cid ? 'клиент в конструкторе' : esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
+    <button class="csrc-cli" id="cs-cli" title="Чей календарь смотреть"><span class="cav${isGrp(c.id) ? ' grp' : ''}">${esc(c.ini)}</span>
+      <span class="cl-t"><b>${esc(c.n)}</b><s>${c.id === S.cid ? (isGrp(c.id) ? 'группа в конструкторе' : 'клиент в конструкторе') : esc(clientProgSub(c))}</s></span>${ICON.chev}</button>
     ${mcalHTML()}`;
 }
 const csrcItemAt = ref => { const x = csrcDay(); if(!x) return null; const [bi, k] = String(ref).split(':').map(Number); return ((x.blocks[bi] || {}).items || [])[k] || null };
@@ -610,11 +716,12 @@ function renderSrc(){
 const isDraft = x => x.draft || serializeDay(x) !== x.pub;
 /* Автосохранение: всё, что расходится со слепком публикации, уходит в STATE
    при каждой перерисовке и при уходе со страницы. Дни без правок не пишем. */
+/* Запись — через putDay: день группы при каждом сохранении расходится по
+   участникам, у дня участника остаётся метка группы. */
 function persist(){
-  const bag = (STATE.days ||= {}); const mine = (bag[S.pid] ||= {});
   plan().forEach((x,i)=>{
     const dirty = serializeDay(x) !== x.pub;
-    if(dirty || x.draft){ x.draft = true; mine[i] = {c: serializeDay(x), pub: x.pub, draft: true}; }
+    if(dirty || x.draft){ x.draft = true; putDay(S.pid, i, {c: serializeDay(x), pub: x.pub, draft: true}); }
   });
   saveState();
 }
@@ -622,23 +729,25 @@ function persist(){
    Работает по живому плану конструктора, а не по слепку в STATE. */
 function setPubIdx(i, on){
   const x = plan()[i]; if(!x) return;
-  const bag = ((STATE.days ||= {})[S.pid] ||= {});
-  if(on){ x.pub = serializeDay(x); x.draft = false; bag[i] = {c: x.pub, draft: false} }
-  else { x.draft = true; bag[i] = {c: serializeDay(x), pub: x.pub, draft: true} }
-  saveState(); render(); toast(pubToggleMsg(on));
+  if(on){ x.pub = serializeDay(x); x.draft = false; putDay(S.pid, i, {c: x.pub, draft: false}) }
+  else { x.draft = true; putDay(S.pid, i, {c: serializeDay(x), pub: x.pub, draft: true}) }
+  saveState(); render(); toast(pubToggleMsg(on, S.pid));
 }
 function publishDay(){
   const x = day();
   x.pub = serializeDay(x); x.draft = false;
-  ((STATE.days ||= {})[S.pid] ||= {})[S.i] = {c: x.pub, draft: false};
+  putDay(S.pid, S.i, {c: x.pub, draft: false});
   saveState(); render();
-  toast('Тренировка добавлена в календарь — клиент её видит');
+  const G = G_(), st = G && groupDayStat(G, x.date);
+  toast(!G ? 'Тренировка добавлена в календарь — клиент её видит'
+    : !st ? 'Опубликовано для группы' : 'Опубликовано для группы «' + G.n + '» — видят ' + (st.same.length + st.own.length) + ' из ' + G.members.length
+      + (st.own.length ? ' · у ' + st.own.length + ' тренировка поправлена под клиента, правка группы её не трогает' : ''));
 }
 addEventListener('beforeunload', persist);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist() });
 /* Лист блока текстом растёт по содержимому, без собственной прокрутки. */
 const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); }
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs); checkLink(); }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -659,8 +768,10 @@ function wizardHTML(){
   const steps = ['Что копируем','Кому и когда','Проверка'];
   const head = `<div class="wz-steps">${steps.map((n,i)=>`<span class="${WZ.step===i+1?'on':WZ.step>i+1?'done':''}"><i>${i+1}</i>${n}</span>`).join('')}</div>`;
   let body = '', foot = '';
+  /* Группы — в тех же списках, что и клиенты: набор тренировок кладут и в календарь группы. */
+  const whos = () => [...GRPS, ...CLIENTS.filter(c=>c.prog)];
   if(WZ.step===1){
-    const src = client(WZ.src);
+    const src = who(WZ.src);
     const list = WZ.tab==='tpl'
       ? TPL.filter(t=>t.lvl==='тренировка' && !t.inline).map(t=>({kind:'tpl', id:t.id, title:t.title, sub:(t.own?'своё':'общая база')+' · '+tplStats(t).blocks+' '+plural(tplStats(t).blocks,'блок','блока','блоков')}))
       : (src && src.prog ? planOf(src.prog).filter(x=>!x.rest && x.blocks.some(b=>b.items.length)).map(x=>({kind:'day', pid:src.prog, i:x.i, title:x.title, sub:x.w+' '+dm(x.date)+' · '+x.blocks.length+' '+plural(x.blocks.length,'блок','блока','блоков')})) : []);
@@ -670,7 +781,7 @@ function wizardHTML(){
         <button data-wtab="day" class="${WZ.tab==='day'?'on':''}">Из существующих</button>
       </div>
       ${WZ.tab==='day' ? `<label class="pk-src"><span>Чьи тренировки</span>
-        <select id="wz-src">${CLIENTS.filter(c=>c.prog).map(c=>`<option value="${c.id}" ${c.id===WZ.src?'selected':''}>${esc(c.n)}</option>`).join('')}</select></label>` : ''}
+        <select id="wz-src">${whos().map(c=>`<option value="${c.id}" ${c.id===WZ.src?'selected':''}>${isGrp(c.id) ? 'Группа · ' : ''}${esc(c.n)}</option>`).join('')}</select></label>` : ''}
       <div class="wz-list">${list.length ? list.map(it=>{ const on = WZ.picked.has(wzKey(it));
         return `<label class="wz-it ${on?'on':''}"><input type="checkbox" data-wzpick="${wzKey(it)}" ${on?'checked':''}>
           <span class="tick">${ICON.chk}</span><span class="t"><b>${esc(it.title)}</b><s>${esc(it.sub)}</s></span></label>`; }).join('')
@@ -682,7 +793,7 @@ function wizardHTML(){
     body = `
       <div class="wz-row">
         <label class="wz-f"><span>Кому</span>
-          <select id="wz-cid">${CLIENTS.filter(c=>c.prog).map(c=>`<option value="${c.id}" ${c.id===WZ.cid?'selected':''}>${esc(c.n)}</option>`).join('')}</select></label>
+          <select id="wz-cid">${whos().map(c=>`<option value="${c.id}" ${c.id===WZ.cid?'selected':''}>${isGrp(c.id) ? 'Группа · ' : ''}${esc(c.n)}</option>`).join('')}</select></label>
         <label class="wz-f"><span>Начиная с</span><input type="date" id="wz-start" value="${WZ.start}"></label>
       </div>
       <div class="wz-h">Промежутки между тренировками</div>
@@ -705,7 +816,7 @@ function wizardHTML(){
 }
 /* Раскладка набора по дням: индекс = старт + смещение по правилу промежутков. */
 function wizardPlan(){
-  const c = client(WZ.cid); if(!c) return {error:'Клиент не найден'};
+  const c = who(WZ.cid); if(!c) return {error:'Клиент не найден'};
   if(!c.prog) ensureDay(c.id, WZ.start || TODAY);          /* личный контейнер дней */
   const p = program(c.prog); const start = daysBetween(p.start, WZ.start);
   if(isNaN(start)) return {error:'Укажите дату начала'};
@@ -735,11 +846,11 @@ function wizardApply(){
     const d = plan()[r.i];
     const src = r.it.kind==='tpl' ? tplToWorkout(tplById(r.it.id)) : planOf(r.it.pid)[r.it.i];
     d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks);
-    if(WZ.publish){ d.pub = serializeDay(d); d.draft = false; ((STATE.days ||= {})[S.pid] ||= {})[r.i] = {c:d.pub, draft:false}; }
+    if(WZ.publish){ d.pub = serializeDay(d); d.draft = false; putDay(S.pid, r.i, {c:d.pub, draft:false}); }
     else d.draft = true;
   });
   persist(); saveState(); render();
-  history.replaceState(null,'',`constructor.html?client=${S.cid}&date=${S.date}`);
+  history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}`);
   toast('Создано ' + pl.rows.length + ' ' + plural(pl.rows.length,'тренировка','тренировки','тренировок') + (WZ.publish?' — в календаре':' — черновиками'));
 }
 function wireWizard(ov, draw){
@@ -779,17 +890,17 @@ function pickTemplate(){
 function pickExisting(){
   let srcId = S.cid;
   const draw = () => {
-    const c = client(srcId); const days = c.prog ? planOf(c.prog).filter(x=>!x.rest) : [];
+    const c = who(srcId); const days = c.prog ? planOf(c.prog).filter(x=>!x.rest) : [];
     return `
       <label class="pk-src"><span>Чья тренировка</span>
-        <select id="pk-src">${CLIENTS.filter(x=>x.prog).map(x=>`<option value="${x.id}" ${x.id===srcId?'selected':''}>${esc(x.n)}${x.id===S.cid?' — этот клиент':''}</option>`).join('')}</select>
+        <select id="pk-src">${[...GRPS, ...CLIENTS.filter(x=>x.prog)].map(x=>`<option value="${x.id}" ${x.id===srcId?'selected':''}>${isGrp(x.id) ? 'Группа · ' : ''}${esc(x.n)}${x.id===S.cid ? (isGrp(x.id) ? ' — эта группа' : ' — этот клиент') : ''}</option>`).join('')}</select>
       </label>
       ${days.length ? days.map(x=>`<button class="pk" data-src="${c.id}" data-i="${x.i}"><b>${esc(x.title)}</b>
         <s>${x.w} ${dm(x.date)} · ${x.blocks.length} ${plural(x.blocks.length,'блок','блока','блоков')}</s></button>`).join('')
       : '<p class="warn">У клиента пока нет составленных тренировок.</p>'}`;
   };
   openPick('Скопировать из календаря', draw(), el => {
-    const src = planOf(client(el.dataset.src).prog)[+el.dataset.i]; const d = day();
+    const src = planOf(who(el.dataset.src).prog)[+el.dataset.i]; const d = day();
     d.title = src.title; d.rest = false; d.blocks = copyBlocks(src.blocks); render();
     toast('Скопировано: «' + src.title + '» → день ' + (S.i+1));
   }, wire);
@@ -1214,7 +1325,8 @@ function loadInfo(it){
   const ex = byId(it.exId), key = pmKey(ex), weighted = !!key;
   const units = [...(weighted ? ['%','кг'] : []), ...((ex && ex.u) || []).filter(u => VOL_UNITS.includes(u))];
   if(it.unit && it.val && !units.includes(it.unit)) units.push(it.unit);
-  const def = weighted ? (PM()[key] ? '%' : 'кг') : (units[0] || '');
+  /* У группы по умолчанию проценты: вес у каждого участника свой, от его 1ПМ. */
+  const def = weighted ? (PM()[key] || G_() ? '%' : 'кг') : (units[0] || '');
   const textVal = it.val && !it.unit && !/^\d+(\.\d+)?$/.test(it.val);
   const cur = it.pct != null ? '%' : textVal ? '' : (it.val && it.unit) ? it.unit : (units.includes(UNITSEL[it.id]) ? UNITSEL[it.id] : def);
   return {key, weighted, units, cur, has: units.length > 0};
@@ -1278,10 +1390,10 @@ function syncLoads(){
     const {i} = findItem(l.dataset.item); if(!i || !i.exId) return;
     const L = loadInfo(i), kg = workKg(i, PM());
     l.classList.toggle('txtmode', !!i.txt);
-    const k = l.querySelector('.prm .kg'); if(k) k.textContent = kg != null ? '→ ' + fmtN(kg) + ' кг' : '';
+    const k = l.querySelector('.prm .kg'); if(k) k.textContent = kg != null ? '→ ' + fmtN(kg) + ' кг' : G_() && i.pct != null ? 'от 1ПМ каждого' : '';
     const u = l.querySelector('[data-pfu]'); if(u){ u.textContent = L.cur; u.parentElement.classList.toggle('empty', !u.parentElement.querySelector('input').value.trim()) }
     const pm = l.querySelector('.pmf');
-    if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key]));
+    if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key] && !G_()));
   });
 }
 /* Поле покинули — привести запись к виду: «5x3» → 5×3, суффикс единицы уходит в подпись. */
@@ -1299,9 +1411,11 @@ function normField(pf){
   autoWidth(pf); syncLoads();
 }
 /* Статус дня и кнопки публикации — без перерисовки документа. */
+/* Кто видит тренировку: клиент или участники группы. */
+const aud = dat => G_() ? (dat ? 'группе' : 'участники') : (dat ? 'клиенту' : 'клиент');
 const docStatusHTML = (d, n) => n || isDraft(d) ? (isDraft(d)
-  ? `<span class="dst draft" title="Черновик — клиент не видит. Опубликуйте кнопкой внизу">${DAYICON.draft}Черновик</span>`
-  : `<span class="dst pub" title="Опубликована — клиент видит">${DAYICON.pub}Опубликована</span>`) : '';
+  ? `<span class="dst draft" title="Черновик — ${aud()} не ${G_() ? 'видят' : 'видит'}. Опубликуйте кнопкой внизу">${DAYICON.draft}Черновик</span>`
+  : `<span class="dst pub" title="Опубликована — ${aud()} ${G_() ? 'видят' : 'видит'}">${DAYICON.pub}Опубликована</span>`) : '';
 function refreshChrome(){
   const d = day(); if(!d) return;
   const n = dayCount(d), dr = isDraft(d), html = docStatusHTML(d, n);
@@ -1311,7 +1425,7 @@ function refreshChrome(){
   if(sd) sd.disabled = !(dr || n);
   if(pb) pb.disabled = !(dr && n);
 }
-const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads() };
+const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads(); refreshGrp(); checkLink() };
 
 /* ─── фокус и переходы по строкам ─── */
 const lineEl = id => $(`#doc .line[data-item="${id}"]`);
@@ -1693,7 +1807,8 @@ function toast(text, actionLabel, onAction){
     onAction(); const t = TOAST; TOAST = null; if(t) t.remove();
   });
   document.body.appendChild(TOAST);
-  requestAnimationFrame(()=>TOAST.classList.add('on'));
+  /* К кадру тост могли уже заменить или убрать — держим ссылку на свой. */
+  { const t = TOAST; requestAnimationFrame(()=>{ if(t.isConnected) t.classList.add('on') }) }
   const life = actionLabel ? 6000 : 2600;   /* на отмену нужно успеть подумать */
   setTimeout(()=>{ const t = TOAST; if(!t) return; t.classList.remove('on');
                    setTimeout(()=>t.remove(), 260); TOAST = null }, life);
@@ -1818,6 +1933,10 @@ document.addEventListener('click', e=>{
   const vt = e.target.closest('[data-view]'); if(vt){ const v = vt.dataset.view; if(v==='hidden') STATE.laneHidden = true; else { STATE.laneHidden = false; STATE.laneView = v } saveState(); renderStrip(); return }
   if(e.target.closest('#wkToday')){ bindClient(S.cid, TODAY); render(); return }
   if(e.target.closest('#cli')){ if(SUG && SUG.classList.contains('clipick')) closeSug(); else openCliPick(e.target.closest('#cli')); return }
+  /* Группа: чип участника открывает его день, полоса у клиента — день группы или возврат к нему. */
+  const gpm = e.target.closest('[data-gpm]'); if(gpm){ switchWho(gpm.dataset.gpm, day().date); return }
+  const rl = e.target.closest('[data-relink]'); if(rl){ relinkDay(rl.dataset.relink); return }
+  const og = e.target.closest('[data-opengrp]'); if(og){ switchWho(og.dataset.opengrp, day().date); return }
   if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; render(); return }
   if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; render(); return }
   const nd = e.target.closest('[data-notedel]');
@@ -1900,7 +2019,7 @@ document.addEventListener('click', e=>{
      иконкой, открыл — пиши, заполненное держит поле видимым, удаляется крестиком. */
   if(e.target.closest('#msg-tog')){ const dd = day(); S.msgOpen = (!trainerMsg(dd.date) && S.msgOpen===dd.date) ? null : dd.date; render(); const i = $('#w-msg'); if(i) i.focus(); return }
   if(e.target.closest('#comp-tog')){ const dd = day(); dd.comp = !dd.comp; render(); toast(dd.comp ? 'День отмечен как соревнование' : 'Статус соревнования снят'); return }
-  if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); S.msgOpen = null; render(); return }
+  if(e.target.closest('#w-msgdel')){ e.preventDefault(); setTrainerMsg(day().date, ''); grpMsgPush(); S.msgOpen = null; render(); return }
   if(e.target.closest('#clr-wo')){ askClear(); return }
   const sb = e.target.closest('[data-savblk]');
   if(sb){ openFolder(sb); return }
@@ -2040,7 +2159,7 @@ document.addEventListener('input', e=>{
     return;
   }
   if(e.target.id === 'd-title'){ day().title = e.target.value; renderStrip(); return }
-  if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value);
+  if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value); grpMsgPush();
     const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
     return }
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }

@@ -8,6 +8,7 @@ const NAV = [
  {h:'index.html',      k:'dash',  n:'Дашборд'},
  {h:'calendar.html',   k:'cal',   n:'Календарь',              a:'Кален'},
  {h:'clients.html',    k:'users', n:'Клиенты',                a:'Клиен',  c:()=>CLIENTS.length},
+ {h:'groups.html',     k:'grp',   n:'Группы',                 a:'Группы', c:()=>GRPS.length},
  {g:'Базы шаблонов'},
  /* Четыре базы по уровням сущностей из документации: упражнение → блок →
     тренировка → программа (недели живут вкладкой внутри базы программ).
@@ -107,28 +108,44 @@ function bindTopButton(){
    Поле в фокусе сразу, список фильтруется по имени и программе, стрелки и
    Enter — выбор без мыши. У каждого — докуда составлена программа: это и
    есть ответ «кому писать следующим». Используется конструктором и календарём. */
+/* Подпись под именем: у клиента — программа и группы, у группы — сколько
+   участников; у обоих — докуда составлено. Личный контейнер участника группы
+   («Тренировки») не называем: его тренировки и есть тренировки группы. */
 const clientProgSub = c => {
-  if(!c.prog) return 'программа не назначена';
-  const p = program(c.prog), n = composedDays(c.prog);
-  return p.title + ' · ' + (n ? 'составлено до ' + dm(dayDate(c.prog, n-1)) : 'ничего не составлено');
+  const tail = pid => { const n = composedDays(pid); return n ? 'составлено до ' + dm(dayDate(pid, n-1)) : 'ничего не составлено' };
+  if(isGrp(c.id)){ const last = lastWorkoutDay(c.prog);
+    return c.members.length + ' ' + plural3(c.members.length, 'участник', 'участника', 'участников') + ' · ' + (last ? 'составлено до ' + dm(last) : 'ничего не составлено') }
+  const gs = groupsOf(c.id).map(g => g.n), gl = gs.length ? (gs.length > 1 ? 'группы ' : 'группа ') + gs.join(', ') : '';
+  if(!c.prog) return gl || 'программа не назначена';
+  const p = program(c.prog);
+  return [p.personal && gl ? '' : p.title, gl].filter(Boolean).join(' · ') + ' · ' + tail(c.prog);
 };
+/* Параметр адреса для календаря и конструктора: ?client= или ?group=. */
+const subjQ = id => (isGrp(id) ? 'group=' : 'client=') + id;
+/* Аватар и подпись в кнопке выбора клиента или группы — одна разметка на все шапки. */
+const whoBtnHTML = w => `<span class="cav${isGrp(w.id) ? ' grp' : ''}">${esc(w.ini)}</span><span class="cl-t"><b>${esc(w.n)}</b><s>${esc(clientProgSub(w))}</s></span>`;
 function openClientPicker(btn, curId, onPick, opts = {}){
   document.querySelectorAll('.sug.clipick').forEach(x=>x.remove());
   const box = document.createElement('div'); box.className = 'sug clipick';
   const r = btn.getBoundingClientRect();
   box.style.left = r.left + 'px'; box.style.top = (r.bottom + window.scrollY + 6) + 'px';
   document.body.appendChild(box);
-  /* opts.all — и клиенты без программы (им заводится контейнер дней); opts.exclude — уже выбранные. */
+  /* opts.all — и клиенты без программы (им заводится контейнер дней); opts.exclude — уже выбранные.
+     Группы — сверху отдельным списком: календарь и конструктор открывают их так же, как клиента
+     (GRP-2); opts.groups === false — только клиенты. */
   const list = CLIENTS.filter(c=>(opts.all || c.prog) && !(opts.exclude && opts.exclude.has(c.id))).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
+  const groups = opts.groups === false ? [] : GRPS.filter(g=>!(opts.exclude && opts.exclude.has(g.id))).sort((a,b)=>a.n.localeCompare(b.n,'ru'));
   const draw = q => {
     const qq = norm(q||'');
-    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)));
-    box.querySelector('.cl-list').innerHTML = rows.length ? rows.map((c,k)=>`
-      <button class="row ${c.id===curId?'cur':''} ${k===0?'on':''}" data-cli="${c.id}"><span class="cav">${esc(c.ini)}</span>
-        <span class="cl-t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>${c.id===curId?ICON.chk:''}</button>`).join('')
+    const gr = groups.filter(g=>!qq || norm(g.n).includes(qq));
+    const rows = list.filter(c=>!qq || norm(c.n).includes(qq) || (c.prog && norm(program(c.prog).title).includes(qq)) || groupsOf(c.id).some(g=>norm(g.n).includes(qq)));
+    let k = 0;
+    const row = c => `<button class="row ${c.id===curId?'cur':''} ${k++===0?'on':''}" data-cli="${c.id}">${whoBtnHTML(c)}${c.id===curId?ICON.chk:''}</button>`;
+    box.querySelector('.cl-list').innerHTML = gr.length || rows.length
+      ? (gr.length ? `<div class="cl-cap">Группы</div>${gr.map(row).join('')}` + (rows.length ? '<div class="cl-cap">Клиенты</div>' : '') : '') + rows.map(row).join('')
       : '<div class="cap">Никого не нашли</div>';
   };
-  box.innerHTML = `<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="Имя клиента или программа" autocomplete="off"></div><div class="cl-list"></div>`;
+  box.innerHTML = `<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="${groups.length ? 'Клиент, группа или программа' : 'Имя клиента или программа'}" autocomplete="off"></div><div class="cl-list"></div>`;
   draw('');
   const close = () => { box.remove(); document.removeEventListener('click', off, true) };
   const pick = id => { close(); onPick(id) };

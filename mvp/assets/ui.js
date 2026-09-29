@@ -35,6 +35,7 @@ function ago(date){
 const ICON = {
  dash:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.6"/><rect x="11" y="2.5" width="6.5" height="4" rx="1.6"/><rect x="11" y="8.5" width="6.5" height="9" rx="1.6"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.6"/></svg>',
  users:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><circle cx="8" cy="6.5" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M14 4.2a3 3 0 0 1 0 5.6M15.5 12.6c1.6.7 2.8 2.3 2.8 4.4"/></svg>',
+ grp:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6.2" r="2.6"/><path d="M5 16.5c0-2.9 2.2-5 5-5s5 2.1 5 5"/><circle cx="4.2" cy="8.2" r="1.9"/><path d="M1.5 15.5c0-1.9 1-3.3 2.6-3.8"/><circle cx="15.8" cy="8.2" r="1.9"/><path d="M18.5 15.5c0-1.9-1-3.3-2.6-3.8"/></svg>',
  cal:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="4" width="15" height="13.5" rx="2"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3"/></svg>',
  prog:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="15" height="15" rx="2.5"/><path d="M6 7h8M6 10h8M6 13h4.5"/></svg>',
  build:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"><path d="M3 4.5h6M3 10h14M3 15.5h9"/><circle cx="13.5" cy="4.5" r="2"/><circle cx="15" cy="15.5" r="2"/></svg>',
@@ -417,9 +418,12 @@ function events(cid){
   CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый максимум: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
   unread().forEach(({c,cm,key})=>ev.push({t:'q', d:cm.d, c, key, title:c.n + (cm.ex?' · '+cm.ex:''), tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
   idle().forEach(c=>ev.push({t:'miss', d:c.last, c, title:c.n, tx:`Не появлялся ${ago(c.last)} — серия прервана`, act:'Открыть профиль', href:'client.html?id='+c.id}));
-  composeQueue().filter(x=>x.runway<=7).forEach(x=>{ const c = client(x.p.clients[0]); if(!c) return;
-    const lbl = x.runway<0 ? `Программа «${x.p.title}» кончилась ${-x.runway} ${plural(-x.runway,'день','дня','дней')} назад — клиент без тренировок` : x.runway===0 ? `Сегодня последняя написанная тренировка «${x.p.title}»` : `Написанные тренировки «${x.p.title}» кончаются через ${x.runway} ${plural(x.runway,'день','дня','дней')}`;
-    ev.push({t:'prog', d: x.runway<0 ? x.lastDay : TODAY, c, title:c.n, tx:lbl, act:'Составить', href:`constructor.html?client=${c.id}&date=${addDays(x.lastDay,1)}`}) });
+  composeQueue().filter(x=>x.runway<=7).forEach(x=>{
+    /* Группа в очереди — одной строкой: писать нужно ей, а не каждому участнику. */
+    const G = grpByProg(x.p.id), c = G || client(x.p.clients[0]); if(!c) return;
+    const who = G ? `участники группы (${G.members.length}) без тренировок` : 'клиент без тренировок';
+    const lbl = x.runway<0 ? `Программа «${x.p.title}» кончилась ${-x.runway} ${plural(-x.runway,'день','дня','дней')} назад — ${who}` : x.runway===0 ? `Сегодня последняя написанная тренировка «${x.p.title}»` : `Написанные тренировки «${x.p.title}» кончаются через ${x.runway} ${plural(x.runway,'день','дня','дней')}`;
+    ev.push({t:'prog', d: x.runway<0 ? x.lastDay : TODAY, c, title: G ? 'Группа «' + G.n + '»' : c.n, tx:lbl, act:'Составить', href:`constructor.html?${subjQ(c.id)}&date=${addDays(x.lastDay,1)}`}) });
   noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
   CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
   ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});

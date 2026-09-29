@@ -63,7 +63,7 @@ function laneHTML(){
     const cls = date===TODAY ? ' today' : '';
     if(!x) return `<a class="day empty rest${cls}" href="constructor.html?client=${C.id}&date=${date}" title="Составить этот день">${head}${restCell()}</a>`;
     const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : (x.title||'Без названия');
-    return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st, C.prog + ':' + i)}${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}</a>`; }).join('')}</div>`;
+    return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st, C.prog + ':' + i)}${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>${grpTag(x)}`}</a>`; }).join('')}</div>`;
 }
 /* Замеры в динамике: график по выбранному показателю и таблица по датам. */
 function measHTML(){
@@ -135,7 +135,7 @@ function render(){
     <div class="chead">
       <div class="chead-top">
         <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
-        <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</div></div>
+        <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}${groupsOf(C.id).length ? ` · <span class="gchips">${groupsOf(C.id).map(g=>`<a class="gchip" href="groups.html?id=${g.id}" title="Группа «${esc(g.n)}»">${GRPICON}${esc(g.n)}</a>`).join('')}</span>` : ''}</div></div>
         <div class="cacts">
           ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
         </div>
@@ -154,7 +154,7 @@ function render(){
     <nav class="ctabs" id="ctabs">${SECTIONS.map(([k,n],i)=>`<a href="#${k}" class="${i===0?'on':''}" data-sec="${k}">${n}</a>`).join('')}</nav>
 
     <section class="csec" id="cal">
-      <div class="sechead"><span class="t">Календарь</span><span class="ln"></span>${P?`<span class="n">${esc(P.title)}${composedDays(C.prog)?' · составлено до '+dm(dayDate(C.prog, composedDays(C.prog)-1)):''}</span>`:''}<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a></div>
+      <div class="sechead"><span class="t">Календарь</span><span class="ln"></span>${P?`<span class="n">${esc(clientProgSub(C))}</span>`:''}<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a></div>
       <div class="card cb">${laneHTML()}</div>
     </section>
 
@@ -174,7 +174,7 @@ function render(){
     </section>`;
 
   $('#cal').onclick = e => { const pb = e.target.closest('[data-pub]'); if(!pb) return; e.preventDefault(); e.stopPropagation();
-    const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft'); if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on)); render() } };
+    const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft'); if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on, pid)); render() } };
   $$('[data-meas]').forEach(b=>b.onclick=()=>{ V.meas=b.dataset.meas; render() });
   $$('[data-pm-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input')) return; V.metric=r.dataset.pmRow; render() });
   $$('[data-pm-pick]').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.pmPick; render() });
