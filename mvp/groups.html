@@ -17,14 +17,8 @@
   <div class="main">
     <header class="topbar" id="topbar"></header>
     <div class="page">
-      <div class="cons">
+      <div class="cons one">
         <main><section class="pane" id="page"></section></main>
-        <aside class="rail" data-min="Группа">
-          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
-          <div class="railhead"><div class="railttl" id="railttl">Группа</div></div>
-          <div class="railbody" id="railbody"></div>
-          <div class="railfoot" id="railfoot"></div>
-        </aside>
       </div>
     </div>
   </div>
@@ -35,35 +29,22 @@
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP-1, GRP-5) ═══════════
-   Список групп тренера и карточка выбранной справа: состав, время занятия,
-   ближайшая тренировка, докуда составлено. Клиент состоит не больше чем в
-   одной группе — занятые другими группами показаны, но не выбираются. Сами тренировки
-   группы составляются в конструкторе и видны в календаре группы — туда ведут
-   кнопки карточки. Тренировки меняет только тренер: и для всей группы, и для
-   одного участника — в его календаре. */
-const V = {q:'', sel: new URLSearchParams(location.search).get('id')};
-const lastDay = G => lastWorkoutDay(G.prog);
-const runway = G => { const d = lastDay(G); return d ? daysBetween(TODAY, d) : null };
-const runwayChip = G => { const r = runway(G);
-  if(r === null) return '<span class="chip ghost">ничего не составлено</span>';
-  if(r < 0) return '<span class="chip rm">кончилась</span>';
-  if(r === 0) return '<span class="chip warn">сегодня</span>';
-  return `<span class="chip ${r<=7?'warn':'ghost'}">${r} ${plural(r,'день','дня','дней')}</span>` };
-/* Будущие дни группы, где у участника её тренировки нет: пропущен при публикации или вступил позже. */
-const missing = (G, cid) => groupDays(G, TODAY).filter(({date}) => memberDay(cid, date).g !== G.id).length;
-const nextDay = G => { const d = groupDays(G, TODAY)[0]; if(!d) return null; const x = JSON.parse(d.gd.c); return {date:d.date, title:x.t || 'Тренировка'} };
-const whenLbl = d => d === TODAY ? 'сегодня' : d === addDays(TODAY, 1) ? 'завтра' : RU[dowMon(d)] + ' ' + dm(d);
+   Список групп тренера: название, описание, состав. Клик по строке открывает
+   то же окно, что и создание, — название, описание, участники, — плюс
+   удаление; правой панели нет. Клиент состоит не больше чем в одной группе:
+   занятые другими группами показаны, но не выбираются. Сами тренировки группы
+   составляются в конструкторе и видны в календаре группы — туда ведёт кнопка
+   в строке. Тренировки меняет только тренер: и для всей группы, и для одного
+   участника — в его календаре. */
+const V = {q:'', open: new URLSearchParams(location.search).get('id')};
 const stackHTML = G => `<div class="gstack"><span class="stack">${G.members.slice(0, 5).map(cid => { const c = client(cid); return `<span class="av s" title="${esc(c.n)}">${esc(c.ini)}</span>` }).join('')}</span><s>${G.members.length ? G.members.length + ' ' + plural(G.members.length,'участник','участника','участников') : 'никого'}</s></div>`;
 
 function render(){
   const list = GRPS.filter(G => !V.q || norm(G.n).includes(norm(V.q)) || G.members.some(cid => norm(client(cid).n).includes(norm(V.q))));
-  if(!list.some(G => G.id === V.sel)) V.sel = list.length ? list[0].id : null;
   const cols = [
     {k:'n', n:'Группа', sort:byStr('n'), cell:G => `<div class="cellname"><span class="cav grp">${esc(G.ini)}</span><div style="min-width:0"><div class="n">${esc(G.n)}</div><div class="s">${esc(G.about || 'без описания')}</div></div></div>`},
-    {k:'m', n:'Участники', w:'220px', sort:byNum(G => G.members.length), cell:stackHTML},
-    {k:'t', n:'Время', w:'90px', sort:byStr('time'), cell:G => G.time ? esc(G.time) : '<span style="color:var(--tx3)">—</span>'},
-    {k:'next', n:'Ближайшая', w:'230px', cell:G => { const x = nextDay(G); return x ? `<div class="cellname"><div style="min-width:0"><div class="n" style="font-weight:500">${esc(x.title)}</div><div class="s">${whenLbl(x.date)}</div></div></div>` : '<span style="color:var(--tx3)">—</span>' }},
-    {k:'run', n:'Составлено на', w:'150px', sort:byNum(G => runway(G) ?? -999), cell:runwayChip},
+    {k:'m', n:'Участники', w:'260px', sort:byNum(G => G.members.length), cell:stackHTML},
+    {k:'a', n:'', w:'150px', r:true, cell:G => `<a class="btn gh sm" href="calendar.html?group=${G.id}">${ICON.cal} Календарь</a>`},
   ];
   $('#page').innerHTML = paneHead('Группы', GRPS.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Группа или участник…" value="${esc(V.q)}"></label>
@@ -72,64 +53,29 @@ function render(){
     + (list.length ? dataTable('grp', cols, list)
       : GRPS.length ? `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск</div></div>`
       : `<div class="empty"><div class="t">Групп пока нет</div><div class="d">Соберите в группу тех, кто занимается по одной программе, — тренировку напишете один раз, и она встанет в календарь каждому.</div></div>`);
-  bindTable('grp', render, id => { V.sel = id; markRow('grp', id); renderRail() });
-  $$('[data-tbl="grp"] tr[data-row]').forEach(r => r.ondblclick = () => location.href = 'calendar.html?group=' + r.dataset.row);
-  markRow('grp', V.sel);
+  bindTable('grp', render);
+  /* Клик по строке — окно группы; кнопка календаря в строке ведёт по ссылке, окно не открывает. */
+  $$('[data-tbl="grp"] tr[data-row]').forEach(tr => tr.onclick = e => { if(e.target.closest('a,button')) return; openEdit(grp(tr.dataset.row)) });
   $('#q').oninput = e => { V.q = e.target.value; render(); const q = $('#q'); q.focus(); q.setSelectionRange(V.q.length, V.q.length) };
   $('#gNew').onclick = () => openEdit(null);
-  renderRail();
 }
 
-function renderRail(){
-  const G = grp(V.sel);
-  if(!G){ railSet({title:'Группа', body:'<div class="rprev"><div class="hint">Выберите группу — здесь появится её карточка.</div></div>', foot:''}); return }
-  const last = lastDay(G), nx = nextDay(G);
-  const rows = G.members.map(cid => { const c = client(cid), miss = missing(G, cid);
-    const sub = `<s>в группе с ${humanDate(G.joined[cid] || TODAY)}${miss ? ` · пропущено ${miss} ${plural(miss,'день','дня','дней')}` : ''}</s>`;
-    return `<div class="gm-r"><span class="av s">${esc(c.ini)}</span><a class="gm-n" href="calendar.html?client=${cid}" title="Календарь клиента — здесь тренер правит тренировку только для него"><b>${esc(c.n)}</b>${sub}</a>
-      <button class="x" data-rm="${cid}" title="Убрать из группы">${ICON.x}</button></div>` }).join('');
-  railSet({title:'Группа', body:`
-    <div class="rprev">
-      <div class="avrow"><span class="av grp">${esc(G.ini)}</span><span class="av-t"><b>${esc(G.n)}</b><s>${G.members.length} ${plural(G.members.length,'участник','участника','участников')}${G.time ? ' · ' + esc(G.time) : ''}</s></span></div>
-      ${G.about ? `<div class="gabout">${esc(G.about)}</div>` : ''}
-      <div class="kv"><s>Время</s><b>${G.time ? esc(G.time) : '<span style="color:var(--tx3)">не задано</span>'}</b>
-        <s>Составлено</s><b>${last ? 'до ' + dm(last) : 'нет'} ${runwayChip(G)}</b>
-        <s>Ближайшая</s><b>${nx ? esc(nx.title) + ' · ' + whenLbl(nx.date) : '—'}</b></div>
-      <div class="acts">
-        <a class="btn sm" href="calendar.html?group=${G.id}">${ICON.cal} Календарь группы</a>
-        <a class="btn gh sm" href="constructor.html?group=${G.id}&date=${nx ? nx.date : TODAY}">В конструктор</a>
-      </div>
-      <div class="rhead">Участники · ${G.members.length}</div>
-      <div class="gmem">${rows || '<div class="hint">В группе пока никого.</div>'}</div>
-      <div class="acts"><button class="btn gh sm" id="gAdd">${ICON.plus} Добавить участника</button></div>
-      <div class="rhead">Группа</div>
-      <div class="acts" style="margin-top:4px"><button class="btn gh sm" id="gEdit">Изменить группу</button><button class="btn gh sm" id="gDel" style="color:var(--rm)">${ICON.x} Удалить группу</button></div>
-    </div>`, foot:'Тренировка группы встаёт в календарь каждому участнику. Правка в календаре группы меняет её у всех; правка в календаре клиента — только у него, до следующей правки в группе.'});
-  $('#gAdd').onclick = e => openClientPicker(e.currentTarget, null, cid => {
-    const c = client(cid), n = groupAdd(G, cid); saveGroups(); render();
-    toast(c.n + ' в группе «' + G.n + '»' + (n ? ' — встало ' + n + ' ' + plural(n,'тренировка','тренировки','тренировок') + ' группы' : ''));
-  }, {all:true, groups:false, exclude:new Set(G.members), disabled:id => { const g = groupOf(id); return g && g !== G ? 'в группе «' + g.n + '» — сначала уберите оттуда' : null }});
-  $('#gEdit').onclick = () => openEdit(G);
-  $('#gDel').onclick = () => confirmDelete(G);
-  $$('[data-rm]').forEach(b => b.onclick = () => confirmRemove(G, b.dataset.rm));
-}
-
-/* ─── Создание и правка: название, время, описание, состав одним окном ─── */
+/* ─── Одно окно на создание, правку и удаление: название, описание, состав ─── */
+const footHTML = (G, confirm) => confirm
+  ? `<span class="gsum">Удалить группу «${esc(G.n)}»? Тренировки, которые уже стоят у участников, останутся у них.</span><span class="sp"></span><button class="btn gh" id="gDelNo">Не удалять</button><button class="btn rm" id="gDelOk">Удалить</button>`
+  : `${G ? `<button class="btn gh" id="gDel" style="color:var(--rm)">${ICON.x} Удалить группу</button>` : ''}<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="gSave">${G ? 'Сохранить' : 'Создать группу'}</button>`;
 function openEdit(G){
-  const pick = new Set(G ? G.members : []);
+  const pick = new Set(G ? G.members : []), was = new Set(G ? G.members : []);
   let q = '';
-  openModal({title: G ? 'Изменить группу' : 'Новая группа', wide:true, body:`
-    <div class="cols2">
-      <div class="formfld"><span class="k">Название</span><input class="inp" id="gN" value="${esc(G ? G.n : '')}" placeholder="Например, ЛФК · утро" autocomplete="off"></div>
-      <div class="formfld"><span class="k">Время занятия · необязательно</span><input class="inp" id="gT" type="time" value="${esc(G && G.time ? G.time : '')}"></div>
-    </div>
+  openModal({title: G ? 'Группа' : 'Новая группа', wide:true, body:`
+    <div class="formfld"><span class="k">Название</span><input class="inp" id="gN" value="${esc(G ? G.n : '')}" placeholder="Например, ЛФК · утро" autocomplete="off"></div>
     <div class="formfld" style="margin-top:12px"><span class="k">Описание · необязательно</span><input class="inp" id="gA" value="${esc(G ? G.about : '')}" placeholder="Кому и зачем эта группа"></div>
     <div class="formfld" style="margin-top:16px"><span class="k">Участники · <span id="gCnt">${pick.size}</span></span>
       <label class="search gsearch">${ICON.search}<input id="gQ" placeholder="Найти клиента" autocomplete="off"></label>
       <div class="gpick" id="gPick"></div>
+      <div class="gsum" id="gSum"></div>
     </div>`,
-    foot:`<span class="gsum" id="gSum"></span><span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="gSave">${G ? 'Сохранить' : 'Создать группу'}</button>`});
-  const was = new Set(G ? G.members : []);
+    foot: footHTML(G, false)});
   const draw = () => {
     const other = c => { const g = groupOf(c.id); return g && g !== G ? g : null };   /* клиент состоит только в одной группе */
     const rows = CLIENTS.filter(c => !q || norm(c.n).includes(norm(q))).sort((a, b) => (pick.has(b.id) - pick.has(a.id)) || (!!other(a) - !!other(b)) || a.n.localeCompare(b.n, 'ru'));
@@ -140,41 +86,35 @@ function openEdit(G){
     $('#gCnt').textContent = pick.size;
     const add = [...pick].filter(id => !was.has(id)).length, rm = [...was].filter(id => !pick.has(id)).length;
     $('#gSum').textContent = !G ? (pick.size ? 'Тренировки группы встанут каждому с сегодняшнего дня' : 'Участников можно добавить и потом')
-      : add || rm ? [add ? 'добавятся ' + add : '', rm ? 'уйдут ' + rm + ' — будущие тренировки группы у них уберутся, изменённые под них останутся' : ''].filter(Boolean).join(' · ').replace(/^./, s => s.toUpperCase())
+      : add || rm ? [add ? 'добавятся ' + add + ' — тренировки группы встанут им с сегодняшнего дня' : '', rm ? 'уйдут ' + rm + ' — будущие тренировки группы у них уберутся, изменённые под них останутся' : ''].filter(Boolean).join(' · ').replace(/^./, s => s.toUpperCase())
       : '';
   };
   draw();
   $('#gN').focus();
   $('#gQ').oninput = e => { q = e.target.value; draw() };
   $('#gPick').onclick = e => { const b = e.target.closest('[data-cl]'); if(!b) return; const id = b.dataset.cl; pick.has(id) ? pick.delete(id) : pick.add(id); draw() };
-  $('#gSave').onclick = () => {
-    const n = $('#gN').value.trim(), time = $('#gT').value, about = $('#gA').value.trim();
-    if(!n){ $('#gN').focus(); toast('Назовите группу'); return }
-    const g = G || groupCreate({n, time, about});
-    if(G) groupUpdate(G, {n, time, about});
-    let got = 0;
-    [...pick].filter(id => !was.has(id)).forEach(id => { got += groupAdd(g, id) });
-    [...was].filter(id => !pick.has(id)).forEach(id => groupRemove(g, id));
-    saveGroups(); closeModal(); V.sel = g.id; render();
-    toast(G ? 'Группа «' + g.n + '» сохранена' : 'Группа «' + g.n + '» создана · ' + g.members.length + ' ' + plural(g.members.length,'участник','участника','участников'));
+  const wireFoot = () => {
+    const sv = $('#gSave'); if(sv) sv.onclick = () => {
+      const n = $('#gN').value.trim(), about = $('#gA').value.trim();
+      if(!n){ $('#gN').focus(); toast('Назовите группу'); return }
+      const g = G || groupCreate({n, about});
+      if(G) groupUpdate(G, {n, about});
+      [...pick].filter(id => !was.has(id)).forEach(id => groupAdd(g, id));
+      [...was].filter(id => !pick.has(id)).forEach(id => groupRemove(g, id));
+      saveGroups(); closeModal(); render(); initShell({page:'groups.html'});
+      toast(G ? 'Группа «' + g.n + '» сохранена' : 'Группа «' + g.n + '» создана · ' + g.members.length + ' ' + plural(g.members.length,'участник','участника','участников'));
+    };
+    /* Удаление подтверждается в том же окне: подвал меняется на вопрос. */
+    const dl = $('#gDel'); if(dl) dl.onclick = () => { $('#ov .mdf').innerHTML = footHTML(G, true); wireFoot() };
+    const no = $('#gDelNo'); if(no) no.onclick = () => { $('#ov .mdf').innerHTML = footHTML(G, false); wireFoot() };
+    const ok = $('#gDelOk'); if(ok) ok.onclick = () => { const n = G.n; groupDelete(G); saveGroups(); closeModal(); render(); initShell({page:'groups.html'}); toast('Группа «' + n + '» удалена') };
   };
-}
-function confirmRemove(G, cid){
-  const c = client(cid), fut = groupDays(G, TODAY).filter(({date, gd}) => { const m = memberDay(cid, date); return m.g === G.id && m.c === gd.c && m.has }).length;
-  openModal({title:'Убрать из группы', body:`<div class="gask"><p class="lead"><b>${esc(c.n)}</b> больше не будет получать тренировки группы «${esc(G.n)}».</p>
-    <p class="sub">${fut ? 'Из календаря уберутся ' + fut + ' ' + plural(fut,'будущая тренировка','будущие тренировки','будущих тренировок') + ' группы. ' : ''}Прошедшие и изменённые под клиента останутся у него.</p></div>`,
-    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn rm" id="gRmOk">Убрать</button>`});
-  $('#gRmOk').onclick = () => { groupRemove(G, cid); saveGroups(); closeModal(); render(); toast(c.n + ' — не в группе «' + G.n + '»') };
-}
-function confirmDelete(G){
-  openModal({title:'Удалить группу', body:`<div class="gask"><p class="lead">Группа <b>«${esc(G.n)}»</b> удалится вместе со своим календарём.</p>
-    <p class="sub">Тренировки, которые уже стоят у ${G.members.length} ${plural(G.members.length,'участника','участников','участников')}, останутся у них — дальше каждого ведёте отдельно.</p></div>`,
-    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn rm" id="gDelOk">Удалить группу</button>`});
-  $('#gDelOk').onclick = () => { const n = G.n; groupDelete(G); saveGroups(); closeModal(); V.sel = null; render(); initShell({page:'groups.html'}); toast('Группа «' + n + '» удалена') };
+  wireFoot();
 }
 render();
 initShell({page:'groups.html'});
-initRail();
+/* Ссылка с чипа группы в карточке клиента — сразу окно этой группы. */
+if(V.open && grp(V.open)) openEdit(grp(V.open));
 </script>
 </body>
 </html>

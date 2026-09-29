@@ -18,7 +18,7 @@
 | [Клиенты](https://serjnsk.github.io/trenergram/prototype/clients.html) | Рабочий список тренера — поиск, фильтры, прогресс по программе, динамика показателя |
 | [Карточка клиента](https://serjnsk.github.io/trenergram/prototype/client.html?id=c1) | Профиль спортсмена: факты, история максимума на графике, записанные результаты, персональные максимумы, антропометрия, обратная связь |
 | [Календарь](https://serjnsk.github.io/trenergram/prototype/calendar.html) | Месяц одного клиента или группы — те же карточки дней, что в конструкторе; выбор клиента и группы с поиском |
-| [Группы](https://serjnsk.github.io/trenergram/prototype/groups.html) | Группы клиентов: состав, время занятия, ближайшая тренировка, докуда составлено, у скольких участников тренировки изменены; создание группы и правка состава; переход в календарь и конструктор группы |
+| [Группы](https://serjnsk.github.io/trenergram/prototype/groups.html) | Группы клиентов: список с описанием и составом; создание, правка и удаление группы в одном окне; переход в календарь группы |
 | [Программы](https://serjnsk.github.io/trenergram/prototype/programs.html) | Карточки программ с прогрессом составления, недельная таблица |
 | **[Конструктор](https://serjnsk.github.io/trenergram/prototype/constructor.html)** | **Ядро продукта — см. разбор функций ниже** |
 | [База упражнений](https://serjnsk.github.io/trenergram/prototype/exercises.html) | Стартовая база + собственные упражнения тренера, поиск и фильтры |

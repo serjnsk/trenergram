@@ -1107,14 +1107,10 @@ function sessionsOn(date){
   const by = new Map();
   scheduleAll(date,date).forEach(e=>{
     const c = client(e.cid);
-    /* Тренировка группы — одно занятие на всех участников, во время группы, даже
-       если тренер кому-то её поправил (GRP-4): человек всё равно в том же зале. */
-    const G = e.g && grp(e.g) && grp(e.g).members.includes(c.id) ? grp(e.g) : null;
-    const time = G ? G.time : (program(c.prog)||{}).time;
-    if(!time) return;                           /* без времени — клиент тренируется сам, в таймлайне дня не занятие */
-    const key = G ? 'grp:' + G.id : c.prog + '|' + e.title;
-    if(!by.has(key)) by.set(key,{pid: G ? G.prog : c.prog, gid: G ? G.id : null, title:e.title, kind:e.kind, draft:!!e.draft,
-      time: time || '12:00', who:[]});
+    if(!(program(c.prog)||{}).time) return;     /* без времени — клиент тренируется сам, в таймлайне дня не занятие */
+    const key = c.prog + '|' + e.title;
+    if(!by.has(key)) by.set(key,{pid:c.prog, title:e.title, kind:e.kind, draft:!!e.draft,
+      time:(program(c.prog)||{}).time || '12:00', who:[]});
     by.get(key).who.push(c);
   });
   return [...by.values()].map(s=>{
@@ -1345,10 +1341,10 @@ const grpIni = n => { const w = String(n || '').trim().split(/[^а-яёa-z0-9]+/
   const plan = rep([A, null, B, null, Cd, null, null], 6);
   const ownAt = plan.map((d, i) => d === B && addDays(start, i) >= TODAY ? i : -1).filter(i => i >= 0).slice(0, 2);
   const members = ['g6','g7','g8','g10','g14','g20','g22','g24','g26','g36'].filter(client);
-  const G = {id:'grp1', n:'ЛФК', ini:'ЛФК', time:'10:00', about:'Лечебная физкультура: спина, суставы, баланс',
+  const G = {id:'grp1', n:'ЛФК', ini:'ЛФК', about:'Лечебная физкультура: спина, суставы, баланс',
              prog:'grp1', members, joined:Object.fromEntries(members.map(c => [c, start])), demo:true};
   GRPS.push(G);
-  PROGRAMS.push({id:'grp1', title:G.n, goal:G.about, days:plan.length, clients:G.members, start, kind:'group', time:G.time});
+  PROGRAMS.push({id:'grp1', title:G.n, goal:G.about, days:plan.length, clients:G.members, start, kind:'group', time:null});
   PLAN.grp1 = plan;
   members.forEach(cid => {
     const c = client(cid);
@@ -1410,15 +1406,15 @@ const pmOf = cid => (STATE.pm[cid] ||= {...(client(cid)?.pm||{})});
       PROGRAMS.push({id:s.id, title:s.n, goal:'', days:1, clients:g.members, start:s.start || TODAY, kind:'group', time:null});
       PLAN[s.id] ||= [];
     }
-    g.n = s.n; g.ini = grpIni(s.n); g.time = s.time || null; g.about = s.about || '';
+    g.n = s.n; g.ini = grpIni(s.n); g.about = s.about || '';
     g.members.splice(0, g.members.length, ...(s.members || []).filter(id => client(id)));
     g.joined = {...(s.joined || {})};
-    const p = program(g.prog); p.title = g.n; p.time = g.time; p.goal = g.about;
+    const p = program(g.prog); p.title = g.n; p.goal = g.about;
   });
 })();
 function saveGroups(){
   const prev = Object.fromEntries((STATE.grps || []).map(s => [s.id, s]));
-  STATE.grps = GRPS.map(g => ({id:g.id, n:g.n, time:g.time || null, about:g.about || '',
+  STATE.grps = GRPS.map(g => ({id:g.id, n:g.n, about:g.about || '',
     members:[...g.members], joined:{...g.joined}, start: g.demo ? null : ((prev[g.id] || {}).start || program(g.prog).start)}));
   saveState();
 }
@@ -1559,17 +1555,17 @@ function groupRemove(G, cid){
   const sk = (STATE.gskip || {})[G.id]; if(sk) Object.keys(sk).forEach(key => { if(key.startsWith(cid + '@')) delete sk[key] });
   return n;
 }
-function groupCreate({n, time, about}){
+function groupCreate({n, about}){
   const id = 'grp' + Date.now().toString(36), start = addDays(TODAY, -dowMon(TODAY));
-  const G = {id, n, ini:grpIni(n), time:time || null, about:about || '', prog:id, members:[], joined:{}, demo:false};
+  const G = {id, n, ini:grpIni(n), about:about || '', prog:id, members:[], joined:{}, demo:false};
   GRPS.push(G);
-  PROGRAMS.push({id, title:n, goal:G.about, days:1, clients:G.members, start, kind:'group', time:G.time});
+  PROGRAMS.push({id, title:n, goal:G.about, days:1, clients:G.members, start, kind:'group', time:null});
   PLAN[id] = [];
   return G;
 }
-function groupUpdate(G, {n, time, about}){
-  G.n = n; G.ini = grpIni(n); G.time = time || null; G.about = about || '';
-  const p = program(G.prog); p.title = G.n; p.time = G.time; p.goal = G.about;
+function groupUpdate(G, {n, about}){
+  G.n = n; G.ini = grpIni(n); G.about = about || '';
+  const p = program(G.prog); p.title = G.n; p.goal = G.about;
 }
 /* Удаление группы: тренировки, которые уже стоят у участников, остаются у них
    индивидуальными — метка группы у них просто перестаёт что-либо значить. */
