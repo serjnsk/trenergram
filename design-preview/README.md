@@ -32,4 +32,4 @@
 
 ## Публикация
 
-Сайт собирает общий workflow `.github/workflows/pages.yml` (одинаковый в `main`, `prototypes` и этой ветке): папка `design-preview` из этой ветки ложится в `/design-preview/` рядом с `/prototype/` и `/docs/`. Публиковать прямо из этой ветки GitHub не разрешает, поэтому после пуша сюда сайт пересобирают кнопкой Actions → pages → Run workflow; пуш в `main` или `prototypes` подхватывает свежие варианты сам.
+Ссылки начинают работать после слияния этой ветки в `main`: общий workflow `.github/workflows/pages.yml` кладёт папку `design-preview` на сайт рядом с `/prototype/` и `/docs/`. Тот же файл workflow должен лежать и в `prototypes` (отдельный маленький PR), иначе следующий push в прототип пересоберёт сайт без вариантов.
