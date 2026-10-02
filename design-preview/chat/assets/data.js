@@ -23,7 +23,7 @@ const shiftDate = d => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) 
 /* ─── Тренер и его рабочее пространство (REG-3) ─── */
 const TRAINER = {
   n:'Сергей Ковальчук', ini:'СК', workspace:'CrossFit Ладья',
-  invite:'https://trenergram.design.chat.app/j/kovalchuk',
+  invite:'https://trenergram.app/j/kovalchuk',
   first:'Сергей', last:'Ковальчук', phone:'+7 921 400-18-22', email:'kovalchuk@ladya.fit',
   city:'Санкт-Петербург', tz:'Europe/Moscow', sports:['Кроссфит','Тяжёлая атлетика'],
   about:'Тренирую кроссфит и силовые с 2016 года. Готовлю к соревнованиям и возвращаю после травм — аккуратно и по плану.',

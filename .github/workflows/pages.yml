@@ -1,6 +1,8 @@
 # Одна публикация GitHub Pages из двух параллельных веток:
 #   main        -> /docs/       документация (MkDocs Material)
 #   prototypes  -> /prototype/  рабочий прототип (статика без сборки)
+#   codex/client-design -> /design-preview/  варианты клиентского приложения
+#                          на согласование (папка design-preview)
 # Корень отдаёт заглавную страницу landing/index.html с двумя ссылками.
 #
 # Файл лежит в обеих ветках и намеренно одинаков: Actions запускает workflow
@@ -54,6 +56,24 @@ jobs:
           cp -R .prototypes/mvp _site/prototype
           cp landing/index.html _site/index.html
           touch _site/.nojekyll
+
+      # Варианты клиентского приложения берутся по явному ref, как и прототип.
+      # Публиковать прямо из этой ветки GitHub не разрешает (окружение
+      # github-pages принимает только main и prototypes), поэтому после её
+      # обновления сайт пересобирают кнопкой Actions → pages → Run workflow.
+      # Нет ветки — сайт собирается без вариантов, документация и прототип целы.
+      - name: Варианты клиентского приложения — ветка codex/client-design
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: codex/client-design
+          path: .design
+
+      - name: Разложить варианты в /design-preview/
+        run: |
+          if [ -d .design/design-preview ]; then
+            cp -R .design/design-preview _site/design-preview
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         with:

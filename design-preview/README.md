@@ -1,11 +1,11 @@
 # Клиентское приложение: варианты для согласования
 
+Страница выбора: https://serjnsk.github.io/trenergram/design-preview/
+
 | Вариант | Клиент | Тренер |
 |---|---|---|
-| Единый чат — предлагаемый | `chat/app/` | `chat/` |
-| Обсуждения | `discussions/app/` | `discussions/` |
-
-Страница выбора — `design-preview/index.html`. Онлайн-просмотр через GitHub Pages пока не настроен.
+| Единый чат — предлагаемый | [открыть](https://serjnsk.github.io/trenergram/design-preview/chat/app/) | [открыть](https://serjnsk.github.io/trenergram/design-preview/chat/) |
+| Обсуждения | [открыть](https://serjnsk.github.io/trenergram/design-preview/discussions/app/) | [открыть](https://serjnsk.github.io/trenergram/design-preview/discussions/) |
 
 ## Что изменено
 
@@ -32,4 +32,4 @@
 
 ## Публикация
 
-Для просмотра через GitHub Pages приложена настройка `pages-workflow.patch`. Её применение сохраняет существующие документацию и прототип и добавляет страницу выбора двух вариантов.
+Сайт собирает общий workflow `.github/workflows/pages.yml` (одинаковый в `main`, `prototypes` и этой ветке): папка `design-preview` из этой ветки ложится в `/design-preview/` рядом с `/prototype/` и `/docs/`. Публиковать прямо из этой ветки GitHub не разрешает, поэтому после пуша сюда сайт пересобирают кнопкой Actions → pages → Run workflow; пуш в `main` или `prototypes` подхватывает свежие варианты сам.
