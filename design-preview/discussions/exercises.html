@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>База упражнений · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="cons">
+        <main><section class="pane" id="page"></section></main>
+        <aside class="rail" data-min="Упражнение">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead"><div class="railttl" id="railttl">Упражнение</div></div>
+          <div class="railbody" id="railbody"></div>
+          <div class="railfoot" id="railfoot"></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/chat.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/nav.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/ui.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script>
+/* ═══════════ БАЗА УПРАЖНЕНИЙ (EX-1, EX-2, EX-3) ═══════════ */
+const V = { q:'', eq:'', own:false, g:'Все', sel:null };
+
+function matchEX(e){
+  if(V.g!=='Все' && e.g!==V.g) return false;
+  if(V.eq && e.eq!==V.eq) return false;
+  if(V.own && !e.own) return false;
+  if(V.q){ const n=norm(V.q); if(norm(e.ru).indexOf(n)<0 && norm(e.en).indexOf(n)<0) return false; }
+  return true;
+}
+
+/* Столбцы вместо карточек: упражнений 31 уже сейчас, а с выкупленным
+   датасетом будет больше тысячи (OQ-9) — плитками это не просматривается.
+   Показатели вынесены в отдельный столбец: по ним тренер и выбирает, чем
+   мерить упражнение (EX-3). */
+const EX_COLS = [
+  {k:'ru', n:'Упражнение', sort:byStr('ru'), cell:e=>
+    `<div class="cellname">
+       <span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:13px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
+       <div style="min-width:0">
+         <div class="n">${esc(e.ru)}</div>
+         <div class="sub">${esc(e.en)}</div>
+       </div>
+     </div>`},
+  {k:'g',  n:'Группа',     w:'120px', sort:byStr('g'),  cell:e=>esc(e.g)},
+  {k:'eq', n:'Оснащение',  w:'130px', sort:byStr('eq'), cell:e=>esc(e.eq)},
+  {k:'u',  n:'Показатели', w:'190px', sort:byNum(e=>(e.u||[]).length), cell:e=>
+    (e.u||[]).map(u=>`<span class="chip">${esc(u)}</span>`).join(' ')},
+  {k:'pm', n:'ПМ', w:'90px', sort:byNum(e=>e.pm?0:1), cell:e=>
+    e.pm ? `<span class="chip acc">${esc(PMNAMES[e.pm]||e.pm)}</span>` : '—'},
+  {k:'own',n:'Источник', w:'110px', sort:byNum(e=>e.own?0:1), cell:e=>
+    e.own ? `<span class="chip ok">своё</span>` : `<span class="chip ghost">общая</span>`},
+];
+
+function render(){
+  const list = EX.filter(matchEX);
+  if(!list.some(e=>e.id===V.sel)) V.sel = list.length ? list[0].id : null;
+  $('#page').innerHTML = paneHead('Упражнения', EX.length, `
+      <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск упражнения…" value="${esc(V.q)}"></label>
+      <select class="inp" id="g" style="width:190px">
+        ${GROUPS.map(g=>`<option value="${esc(g)}" ${V.g===g?'selected':''}>${g==='Все'?'Все группы':esc(g)}</option>`).join('')}
+      </select>
+      <select class="inp" id="eq" style="width:205px">
+        <option value="">Любое оснащение</option>
+        ${EQUIP.map(x=>`<option ${V.eq===x?'selected':''}>${esc(x)}</option>`).join('')}
+      </select>
+      <label class="chk"><input type="checkbox" id="own" ${V.own?'checked':''}> Только свои</label>
+      <span class="sp"></span>
+      <button class="btn" id="btnAdd">${ICON.plus} Добавить упражнение</button>`)
+    + (list.length ? dataTable('ex', EX_COLS, list) : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
+  bindTable('ex', render, id=>{ V.sel = id; markRow('ex', id); renderRail() });
+  markRow('ex', V.sel);
+  $('#g').onchange=e=>{ V.g=e.target.value; render() };
+  $('#eq').onchange=e=>{ V.eq=e.target.value; render() };
+  $('#own').onchange=e=>{ V.own=e.target.checked; render() };
+  $('#q').oninput=e=>{ V.q=e.target.value; render() };
+  $('#btnAdd').onclick=openAddModal;
+  const qEl=$('#q'); qEl.focus({preventScroll:true}); qEl.setSelectionRange(V.q.length,V.q.length);
+  renderRail();
+}
+/* Правая панель — карточка выбранного упражнения: только его данные, по полкам. */
+function renderRail(){
+  const e = byId(V.sel), d = edbOf(e);
+  if(!e){ railSet({title:'Упражнение', body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
+  const rel = (list, withTypes) => `<div class="rrel">${list.map(x=>`<div class="it" title="${esc(x.r.map(k=>EDB_R[k]).join(' · '))}"><b>${esc(x.n)}</b><span class="chip ${x.conf==='high'?'ok':'warn'}">${x.score}</span>${withTypes && x.t && x.t.length ? `<span class="tt">${x.t.map(t=>`<span class="chip">${esc(EDB_T[t]||t)}</span>`).join('')}</span>` : ''}</div>`).join('')}</div>`;
+  const sec = (title, html) => `<div class="rhead" style="padding-left:0">${title}</div>${html}`;
+  railSet({title:'Упражнение', body:`
+    <div class="rprev">
+      <div class="avrow"><span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:13.5px;border-radius:var(--rad-m)">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='pending'?'':initials(e)}</span>
+        <span class="av-t"><b>${esc(e.ru)}</b><s>${esc(e.en)}</s></span></div>
+      ${e.gif?`<img class="rgif" src="${e.gif}-360.gif" alt="${esc(e.ru)} — демонстрация">`:''}
+      <div class="kv">
+        <s>Группа</s><b>${esc(e.g)}</b>
+        <s>Оснащение</s><b>${esc(e.eq)}</b>
+        ${d ? `<s>Часть тела</s><b>${esc(d.bodyPart)}</b>
+        <s>Целевая мышца</s><b>${esc(d.target)}</b>
+        <s>Вспомогательные</s><b>${d.secondary.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</b>
+        <s>Сложность</s><b>${esc(d.difficulty)}</b>
+        <s>Категория</s><b>${esc(d.category)}</b>` : ''}
+        <s>Единицы</s><b>${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</b>
+        <s>От максимума</s><b>${e.pm ? `${esc(PMNAMES[e.pm]||e.pm)}` : '<span style="color:var(--tx3)">нет</span>'}</b>
+        <s>Видео</s><b>${e.gif ? '<span class="chip ok">GIF</span> 4 размера' : e.m==='ok' ? 'есть' : '<span class="chip warn">ожидает</span>'}</b>
+        <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
+        ${d ? `<s>ID в EDB</s><b>${esc(d.id)}</b>` : ''}
+      </div>
+      ${d ? sec('Описание', `<div class="rtext">${esc(d.description)}</div>`) : ''}
+      ${d ? sec('Техника', `<ol class="rsteps">${d.instructions.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`) : ''}
+      ${TECH[e.id]?sec('Акценты тренера', `<div class="rtext">${esc(TECH[e.id])}</div>`):''}
+      ${d ? sec('Классификация движения', `<div class="kv">${d.taxonomy.map(([k,v])=>`<s>${esc(k)}</s><b>${esc(v)}</b>`).join('')}</div>`) : ''}
+      ${d ? sec(`Похожие · ${d.similar.length}`, rel(d.similar)) : ''}
+      ${d ? sec(`Замены · ${d.subs.length}`, rel(d.subs, true)) : ''}
+      ${d ? sec(`Прогрессии · ${d.progr.length}`, rel(d.progr, true)) : ''}
+      ${d ? sec(`Регрессии · ${d.regr.length}`, rel(d.regr, true)) : ''}
+      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} В тренировку</a>${e.own?'<button class="btn gh sm" id="rEdit">Изменить</button>':''}</div>
+    </div>`, foot: d ? 'Демо: поля из сэмпла EDB 0025 (barbell bench press) показаны для всех упражнений. Число у связи — оценка совпадения, причины — по наведению.' : ''});
+  const ed = $('#rEdit'); if(ed) ed.onclick = () => toast('Редактирование своего упражнения — в следующей итерации');
+}
+function openAddModal(){
+  openModal({title:'Добавить упражнение', wide:false, body:`
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="formfld"><span class="k">Название (рус.)</span><input class="inp" id="nRu"></div>
+      <div class="formfld"><span class="k">Название (англ.)</span><input class="inp" id="nEn"></div>
+      <div class="cols2">
+        <div class="formfld"><span class="k">Группа</span><select class="inp" id="nG">${GROUPS.filter(g=>g!=='Все').map(g=>`<option>${esc(g)}</option>`).join('')}</select></div>
+        <div class="formfld"><span class="k">Оснащение</span><select class="inp" id="nEq">${EQUIP.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>
+      </div>
+    </div>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nSave">Добавить</button>`});
+  $('#nSave').onclick=()=>{
+    const ru=$('#nRu').value.trim(), en=$('#nEn').value.trim();
+    if(!ru) return toast('Укажите название упражнения');
+    addOwnEx({ru, en:en||ru, g:$('#nG').value, eq:$('#nEq').value, u:['кг','повт']});
+    closeModal(); toast('Упражнение добавлено в вашу базу'); render();
+  };
+}
+render();
+initShell({page:'exercises.html'});
+initRail();
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Дашборд · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap wide" style="padding-top:14px">
+        <section class="pane" id="page"></section>
+      </div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/chat.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/nav.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/ui.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script>
+/* ═══════════ ДАШБОРД — лента важных событий + статистика аккаунта ═══════════
+   Слева карточка во всю ширину с лентой в две колонки: «Требует действия»
+   (вопросы, кончающиеся программы, пропуски, новые клиенты) и «Что
+   произошло» (рекорды, записанные результаты, подписка). Справа — панель
+   «Аккаунт»: цифры с трендом к прошлой неделе и очередь составления. */
+/* Статистика аккаунта — с трендом к прошлой неделе (демо-дельты). */
+function stats(){
+  const active = CLIENTS.filter(c=>c.prog).length;
+  const done = CLIENTS.reduce((a,c)=>a+(c.done||0),0), plan = CLIENTS.reduce((a,c)=>a+(c.plan||0),0);
+  const q = composeQueue();
+  const drafts = Object.values(STATE.days||{}).flatMap(o=>Object.values(o)).filter(r=>r.draft).length;
+  return [
+    {k:'Активных клиентов', v:active, d:`из ${CLIENTS.length} в аккаунте`, tr:'+2', ic:ICON.users},
+    {k:'Выполнение за неделю', v:Math.round(done/plan*100)+' %', d:'отмеченных тренировок', tr:'+5 %', ic:ICON.chk},
+    {k:'Занятий сегодня', v:sessionsOn(TODAY).length, d:`${scheduleAll(TODAY,TODAY).length} атлетов суммарно`, tr:'', ic:ICON.cal},
+    {k:'Рекорды за неделю', v:CLIENTS.filter(c=>c.pr && daysBetween(c.pr.at,TODAY)<=7).length, d:'новых максимумов', tr:'−1', dn:true, ic:ICON.star, acc:true},
+    {k:'Ждут ответа', v:unread().length, d:'вопросов без ответа', tr:'+3', dn:true, ic:ICON.chat, acc:true},
+    {k:'Кончаются на неделе', v:q.filter(x=>x.runway>=0 && x.runway<=7).length + q.filter(x=>x.runway<0).length, d:`${q.filter(x=>x.runway<0).length} уже без тренировок`, tr:'', ic:ICON.prog, warn:true},
+  ];
+}
+const kpiHTML = (s, cls='') => `<div class="kpi ${cls}"><span class="k">${s.ic} ${esc(s.k)}</span><div class="v ${s.acc?'acc':s.warn?'warn':''}">${s.v}${s.tr?`<span class="tr ${s.dn?'dn':''}">${s.tr}</span>`:''}</div><div class="d">${esc(s.d)}</div></div>`;
+const queueHTML = n => composeQueue().slice(0,n).map(x=>{ const c=client(x.p.clients[0]); const lbl = x.runway<0?'кончилась':x.runway===0?'сегодня':`${x.runway} ${plural(x.runway,'день','дня','дней')}`;
+  return `<div class="act"><span class="n">${esc(c?c.ini:'—')}</span><span class="t">${esc(c?c.n:x.p.title)}<s>${esc(x.p.title)} · ${x.composed ? 'составлено до ' + dm(dayDate(x.p.id, x.composed-1)) : 'ничего не составлено'}</s></span><span class="chip ${x.runway<0?'rm':x.runway<=7?'warn':'ghost'}">${lbl}</span></div>`}).join('');
+const actionsHTML = () => { const ev = events(); const un = ev.filter(e=>e.t==='q'), pg = ev.filter(e=>e.t==='prog'), ms = ev.filter(e=>e.t==='miss'), nw = ev.filter(e=>e.t==='new');
+  const grp = (t, list, act) => list.length ? `<div class="rhead" style="padding-left:0">${t} · ${list.length}</div>${list.slice(0,4).map(e=>`<div class="act"><span class="n">${esc(e.c?e.c.ini:'—')}</span><span class="t">${esc(e.title)}<s>${e.tx.replace(/<[^>]+>/g,'').slice(0,60)}</s></span><a class="btn gh sm" href="${e.href}">${act}</a></div>`).join('')}` : '';
+  return grp('Ответить', un, 'Ответить') + grp('Составить', pg, 'В конструктор') + grp('Написать клиенту', ms, 'Профиль') + grp('Назначить программу', nw, 'Назначить'); };
+
+
+/* Одна лента, как в соцсети: хронология по дням, тип события — подписью и
+   цветом у каждой записи; фильтр по типу — чипами над лентой. */
+const F = { t: 'all' };
+function render(){
+  const ev = events();
+  const list = F.t==='all' ? ev : ev.filter(e=>e.t===F.t);
+  const types = [['all','Все',ev.length], ...Object.keys(TYPES).filter(t=>ev.some(e=>e.t===t)).map(t=>[t,TYPES[t],ev.filter(e=>e.t===t).length])];
+  const st = stats();
+  $('#page').innerHTML = paneHead('Дашборд', null, `<span class="ph-sub">${['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(TODAY)]}, ${humanDate(TODAY)}</span><span class="sp"></span>`)
+    + `<div class="dkpis">${st.map(s=>kpiHTML(s)).join('')}</div>
+      <div class="tabs2">${types.map(([k,n,c])=>`<button data-t="${k}" class="${F.t===k?'on':''}">${n}<s>${c}</s></button>`).join('')}</div>
+      <div class="feed1">${feedHTML(list)}</div>`;
+  $$('.tabs2 [data-t]').forEach(b=>b.onclick=()=>{ F.t=b.dataset.t; render() });
+  /* «Ответить» открывает тот же чат с клиентом с цитатой вопроса (assets/chat.js). */
+  $$('.fev.t-pr .btn').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Проценты в назначенных тренировках пересчитаны от нового максимума') });
+}
+render();
+initShell({page:'index.html', title:'Дашборд'});
+/* Клиент написал в соседней вкладке — лента и цифры обновляются. */
+addEventListener('storage', e => { if(Chat.isChatKey(e.key)) render() });
+</script>
+</body>
+</html>
