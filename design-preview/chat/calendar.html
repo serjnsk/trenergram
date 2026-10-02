@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Календарь · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="cons one">
+        <main>
+          <section class="calwrap" id="cal"></section>
+        </main>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/chat.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/nav.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/ui.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/bulk.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script>
+/* ═══════════ КАЛЕНДАРЬ — МЕСЯЦ ОДНОГО КЛИЕНТА (CAL-1) ═══════════
+   Та же логика, что у ленты конструктора, но другой паттерн: тренер заходит
+   посмотреть картину целиком — месяц одного клиента — и быстро прыгает между
+   клиентами по правой панели. Сетка «все клиенты × месяц» не масштабируется,
+   поэтому общая картина по всем — на дашборде, а здесь всегда один человек.
+   Вид ячеек (подробно / компактно) общий с лентой конструктора. */
+const Q = new URLSearchParams(location.search);
+/* Календарь открывает клиента или группу (GRP-2): у группы такой же месяц, дни
+   ведут в конструктор группы, а в клетках видно, у скольких участников тренировка. */
+const C = { cid: Q.get('group') || Q.get('client') || STATE.curClient || 'c1', q:'', from:null, to:null };
+if(!who(C.cid)) C.cid = 'c1';
+const laneView = () => STATE.laneView === 'compact' ? 'compact' : STATE.laneView === 'detail' ? 'detail' : 'full';
+(function(){ const u = new URL(location.href), v = u.searchParams.get('view'); if(v && ['compact','full','detail'].includes(v)){ STATE.laneView = v; saveState(); u.searchParams.delete('view'); history.replaceState(null, '', u.pathname + (u.search || '')) } })();
+const ymIso = (y,m,d=1) => y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+const ymOf = iso => ({y:+iso.slice(0,4), m:+iso.slice(5,7)-1});
+const ymAdd = ({y,m}, k) => { const t = y*12 + m + k; return {y:Math.floor(t/12), m:((t%12)+12)%12} };
+const ymKey = ({y,m}) => ymIso(y,m);
+Object.assign(ICON, {      /* те же иконки, что в ленте конструктора */
+  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>',
+  vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
+  vdetail:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 5.5h6M7 8h4M7 10.5h4"/></svg>',
+  vcompact:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="4" rx="1.2"/><rect x="2" y="9" width="12" height="4" rx="1.2"/></svg>',
+});
+
+/* Лента месяцев вниз, как в любом календаре: листается колесом, стрелок нет.
+   Стартовый диапазон — от месяца перед началом программы до месяца после
+   её конца (и сегодняшний месяц обязательно); дальше лента дорастает
+   в обе стороны по мере прокрутки. */
+function initRange(){
+  const c = who(C.cid), p = c.prog ? program(c.prog) : null;
+  const dates = [TODAY]; if(p){ dates.push(p.start, dayDate(c.prog, p.days-1)) }
+  dates.sort();
+  C.from = ymAdd(ymOf(dates[0]), -1); C.to = ymAdd(ymOf(dates[dates.length-1]), 1);
+}
+function monthHTML(y, m, ctx){
+  const {c, p, pid, plan, compact, view} = ctx, G = isGrp(c.id) ? c : null;
+  const first = ymIso(y, m), dim = new Date(y, m+1, 0).getDate();
+  const start = addDays(first, -dowMon(first));
+  const nCells = Math.ceil((dowMon(first) + dim) / 7) * 7;
+  const cells = Array.from({length:nCells}, (_,k)=>{
+    const date = addDays(start, k), dt = new Date(date + 'T00:00:00');
+    if(dt.getMonth() !== m) return '<span class="day void"></span>';
+    const today = date === TODAY;
+    const i = p ? daysBetween(p.start, date) : -1;
+    const inProg = !!p && i >= 0, inPlan = inProg && i < plan.length;   /* программа открыта вперёд */
+    const head = `<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${today?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
+    const cls = today ? ' today' : '';
+    const href = `constructor.html?${subjQ(C.cid)}&date=${date}`;   /* любой день можно составить — границ у программы нет */
+    if(!inPlan) return `<a class="day empty rest${cls}" href="${href}" data-date="${date}" title="Составить этот день">${head}${restCell()}</a>`;
+    const x = plan[i];
+    const n = dayCount(x);
+    const bl = x.blocks.filter(blockHas).length;
+    const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
+    const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : title;
+    const blocks = view === 'detail' ? blocksDetail(x, G ? null : c.id, c.id) : blocksList(x);
+    const mark = dayMark(st, p.id + ':' + i);
+    /* Метка группы: у группы — у скольких участников, у клиента — из какой группы и не изменена ли. */
+    const tag = st === 'rest' ? '' : G ? grpStatTag(G, date) : grpTag(x);
+    /* Галочка массового выбора — только у дней с тренировкой или соревнованием. */
+    const hs = st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(date)), sc = st === 'rest' ? '' : bulkCls(date);
+    if(compact) return `<a class="day cmp ${st}${cls}${sc}" href="${href}" data-date="${date}">${hs}${mark}
+      ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}</a>`;
+    return `<a class="day ${st}${cls}${sc}" href="${href}" data-date="${date}">${hs}${mark}
+      ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}
+      ${blocks || (st==='comp' ? compCell() : '')}</a>`;
+  });
+  return `<section class="mon" data-ym="${ymIso(y,m)}">
+    <div class="monh"><b>${MONTHS_N[m]} ${y}</b><div class="dow">${RU.map(d=>`<span>${d}</span>`).join('')}</div></div>
+    <div class="days cal ${compact?'compact':''} ${view==='detail'?'detail':''}">${cells.join('')}</div>
+  </section>`;
+}
+function ctx(){
+  const c = who(C.cid), pid = c.prog, p = pid ? program(pid) : null;
+  return {c, pid, p, plan: pid ? buildPlan(pid) : [], compact: laneView()==='compact', view: laneView()};
+}
+function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); k = ymAdd(k, 1)) out.push(k); return out }
+
+function renderCal(keepYM){
+  const x = ctx(), {c, pid, p} = x;
+  const done = pid ? composedDays(pid) : 0;
+  $('#cal').innerHTML = `
+    <div class="wkh one">
+      <button class="cliSel" id="cli" title="Сменить клиента или группу">${whoBtnHTML(c)}${ICON.chev}</button>
+      <div class="dates">
+        <button class="btn gh sm" id="mToday" title="Пролистать к сегодняшнему дню">Сегодня</button>
+        <button class="btn gh sm" id="mMonth" title="Пролистать к началу текущего месяца">Текущий месяц</button>
+        <button class="btn gh sm jumpb" id="jumpBtn" title="Перейти к дате">${ICON.cal}<span>${dm(C.jump||TODAY)}.${(C.jump||TODAY).slice(0,4)}</span>${ICON.chev}</button>
+      </div>
+      <div class="views"><span class="vtog" title="Вид">
+        <button data-view="compact" class="${x.view==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
+        <button data-view="full" class="${x.view==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
+        <button data-view="detail" class="${x.view==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
+      </span></div>
+    </div>
+    <div id="topSent"></div>
+    <div id="feed">${months().map(k=>monthHTML(k.y, k.m, x)).join('')}</div>
+    <div id="botSent"></div>`;
+  { const h = document.querySelector('.calwrap .wkh'); if(h) $('#cal').style.setProperty('--wkh', h.offsetHeight + 'px') }
+  if(keepYM) scrollToMonth(keepYM, false);
+}
+const HEAD = () => 58 + ((document.querySelector('.calwrap .wkh')||{}).offsetHeight || 62);   /* шапка приложения + липкая шапка календаря */
+/* Переход к произвольной дате: месяц дорастает при необходимости, день мигает. */
+function jumpTo(date){
+  const ym = ymOf(date);
+  if(ymKey(ym) < ymKey(C.from) || ymKey(ym) > ymKey(C.to)){
+    if(ymKey(ym) < ymKey(C.from)) C.from = ymAdd(ym, -1); else C.to = ymAdd(ym, 1);
+    renderCal(); observe();
+  }
+  /* Листаем к самому дню (под липкими шапками), а не к началу месяца. */
+  const cell = document.querySelector(`.day[data-date="${date}"]`);
+  if(cell){ window.scrollTo({top: cell.getBoundingClientRect().top + scrollY - HEAD() - 56, behavior:'smooth'});
+    cell.classList.add('flash'); setTimeout(()=>cell.classList.remove('flash'), 1600) }
+  else scrollToMonth(ymKey(ym), true);
+}
+function scrollToMonth(ym, smooth){
+  const el = document.querySelector(`.mon[data-ym="${ym}"]`); if(!el) return;
+  window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - HEAD(), behavior: smooth ? 'smooth' : 'auto'});
+}
+/* Месяц, который сейчас наверху экрана, — чтобы при смене клиента не прыгать. */
+function topMonth(){
+  const m = [...document.querySelectorAll('.mon')].find(el => el.getBoundingClientRect().bottom > HEAD() + 40);
+  return m ? m.dataset.ym : null;
+}
+/* Дорастание ленты: снизу — добавляем месяц, сверху — добавляем и компенсируем прокрутку. */
+const io = new IntersectionObserver(entries => {
+  const x = ctx();
+  for(const e of entries){
+    if(!e.isIntersecting) continue;
+    if(e.target.id === 'botSent'){ C.to = ymAdd(C.to, 1); $('#feed').insertAdjacentHTML('beforeend', monthHTML(C.to.y, C.to.m, x)); }
+    if(e.target.id === 'topSent'){ const h0 = document.documentElement.scrollHeight; C.from = ymAdd(C.from, -1);
+      $('#feed').insertAdjacentHTML('afterbegin', monthHTML(C.from.y, C.from.m, x)); window.scrollBy(0, document.documentElement.scrollHeight - h0); }
+  }
+}, {rootMargin:'400px 0px'});
+function observe(){ io.disconnect(); io.observe($('#topSent')); io.observe($('#botSent')); }
+
+/* Правая панель: клиенты по срочности — первыми те, у кого написанные
+   тренировки кончаются раньше всех; справа — через сколько дней. Поиск —
+   только по имени. Без программы — в конце. */
+function render(keepYM){ if(!C.from) initRange(); renderCal(keepYM); if(document.readyState==='complete') observe(); }
+/* Прокрутка до load сбрасывается браузером (восстановление позиции), поэтому
+   к сегодняшнему месяцу едем после загрузки, и только потом включаем
+   дорастание ленты — иначе верхний датчик срабатывает на старте. */
+history.scrollRestoration = 'manual';
+addEventListener('load', ()=> setTimeout(()=>{ scrollToMonth(TODAY.slice(0,7)+'-01', false); observe() }, 60));
+function switchClient(id){ bulkReset(); const keep = topMonth(); C.cid = id; STATE.curClient = id; saveState(); C.from = null; render(keep); }
+
+document.addEventListener('click', e=>{
+  const pb = e.target.closest('[data-pub]');
+  if(pb){ e.preventDefault(); e.stopPropagation(); const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft');
+    /* Публикация дня группы — через окно занятых дней участников. */
+    const go = replace => { if(setPublished(pid, +i, on, replace)){ toast(pubToggleMsg(on, pid)); render(true) } };
+    if(on && grpByProg(pid)) withGroupConflicts(pid, [dayDate(pid, +i)], go); else go(null); return }
+  const vt = e.target.closest('[data-view]'); if(vt){ const keep = topMonth(); STATE.laneView = vt.dataset.view; saveState(); render(keep); return }
+  if(e.target.closest('#mToday')){ C.jump = TODAY; jumpTo(TODAY); return }
+  if(e.target.closest('#mMonth')){ scrollToMonth(TODAY.slice(0,7)+'-01', true); return }
+  const jb = e.target.closest('#jumpBtn'); if(jb){ openDatePicker(jb, C.jump||TODAY, d => { C.jump = d; jb.querySelector('span').textContent = dm(d)+'.'+d.slice(0,4); jumpTo(d) }); return }
+  const cb = e.target.closest('#cli'); if(cb){ openClientPicker(cb, C.cid, switchClient); return }
+});
+/* Массовые действия: после изменения данных перерисовываем месяцы на той же прокрутке. */
+const calRefresh = () => { const y = scrollY; render(); window.scrollTo(0, y) };
+bulkInit({ cid: () => C.cid, refresh: calRefresh, beforeOp: () => {}, afterOp: calRefresh });
+render();
+initShell({page:'calendar.html', title:'Календарь'});
+</script>
+</body>
+</html>

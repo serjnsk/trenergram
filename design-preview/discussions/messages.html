@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Обсуждения · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/chat-trainer.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap wide" style="padding-top:14px;padding-bottom:14px">
+        <section id="page"></section>
+      </div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/chat.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/nav.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/ui.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script>
+/* ═══════════ ОБСУЖДЕНИЯ (версия 2) — ветки клиентов ═══════════
+   Не единый чат: у каждой тренировки и каждого упражнения клиента — своя
+   ветка. Слева все ветки всех клиентов, ждущие ответа — сверху; справа
+   выбранная ветка и ответ. Сообщение тренера к тренировке — инструкция в
+   самой тренировке: в ветке оно закреплено сверху и меняется в конструкторе.
+   Сюда ведут «Ответить» на дашборде и «Обсуждения» в карточке клиента. */
+const Q = new URLSearchParams(location.search);
+const V = {cid: Q.get('client') || null, th: Q.get('th') || null, q:'', dr:{}};
+/* Старые ссылки «Ответить» (?reply=<сообщение>) — открываем ветку этого сообщения. */
+if(V.cid && !V.th && Q.get('reply')){ const m = Chat.find(V.cid, Q.get('reply')); if(m) V.th = Chat.thOf(m) }
+/* Клиент выбран, ветка нет — первая ветка клиента (непрочитанная, если есть). */
+if(V.cid && !V.th){ const L = Chat.allThreads().filter(x => x.c.id === V.cid); if(L.length) V.th = L[0].th }
+
+const hm = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+const whenS = at => { const d = new Date(at), day = iso(d);
+  return day === TODAY ? hm(d) : daysBetween(day, TODAY) === 1 ? 'вчера' : humanDate(day) };
+const dayS = day => day === TODAY ? 'Сегодня' : daysBetween(day, TODAY) === 1 ? 'Вчера' : humanDate(day);
+/* О чём ветка — подпись для списка и шапки. */
+const thLabel = (cid, th) => { const I = Chat.thInfo(cid, th);
+  return I.kind === 'x' ? 'Упражнение «' + I.t + '»' : 'Тренировка «' + I.t + '» · ' + humanDate(I.date) };
+const vKey = (cid, th) => cid + '|' + th;
+
+function listHTML(){
+  const qq = norm(V.q || ''), all = Chat.allThreads().filter(x => !qq || norm(x.c.n).includes(qq));
+  const rows = all.map(({c, th, last, un}) => `<button class="dlg ${c.id === V.cid && th === V.th ? 'on' : ''} ${un ? 'un' : ''}" data-cid="${c.id}" data-th="${esc(th)}">
+      <span class="av m">${esc(c.ini)}</span>
+      <span class="t"><b>${esc(c.n)}</b><em>${esc(thLabel(c.id, th))}</em><s>${last.by === 't' ? 'Вы: ' : ''}${esc(last.text)}</s></span>
+      <span class="r"><time>${esc(whenS(last.at))}</time>${un ? `<i class="ub">${un}</i>` : ''}</span></button>`).join('');
+  return `<label class="search">${ICON.search}<input id="q" placeholder="Найти клиента…" value="${esc(V.q)}"></label>
+    <div class="msx-list">${rows || `<div class="mhint" style="padding:30px 16px">${qq ? 'Ничего не нашлось' : 'Обсуждений пока нет'}</div>`}</div>`;
+}
+function convHTML(){
+  const c = client(V.cid);
+  if(!c || !V.th) return `<div class="msx-empty">Выберите обсуждение слева</div>`;
+  const th = V.th, I = Chat.thInfo(c.id, th), L = Chat.thread(c.id, 't', th);
+  const ins = I.kind === 'w' ? dayMsg(c.id, I.date) : '';
+  let day = '', body = '';
+  L.forEach(m => { const d = m.at.slice(0, 10);
+    if(d !== day){ day = d; body += `<div class="mday">${esc(dayS(d))}</div>` }
+    /* комментарий, как в приложении клиента: автор и время сверху; свои — справа на тёплой подложке */
+    body += `<div class="cmt ${m.by === 't' ? 'tr' : ''}" id="m-${esc(m.id)}"><span class="who">${m.by === 't' ? 'Вы' : esc(c.n)}<i>${esc(hm(new Date(m.at)))}</i></span>${esc(m.text)}</div>` });
+  if(!L.length) body = `<div class="mhint">В этой ветке пока пусто.</div>`;
+  const open = I.kind === 'w' ? `<a class="btn gh sm" href="constructor.html?client=${c.id}&date=${I.date}">Открыть в конструкторе</a>` : `<a class="btn gh sm" href="exercises.html">База упражнений</a>`;
+  return `<div class="msx-h"><span class="av m">${esc(c.ini)}</span>
+      <span class="t"><b>${esc(c.n)}</b><s>${esc(thLabel(c.id, th))}</s></span>
+      <span class="acts">${open}<a class="btn gh sm" href="client.html?id=${c.id}">Карточка</a></span></div>
+    <div class="msx-body" id="body">${ins ? `<div class="mpin"><b>Ваше сообщение к тренировке</b>${esc(ins)}<s>Видно клиенту в тренировке; меняется в конструкторе</s></div>` : ''}${body}</div>
+    <div class="msx-comp tk">
+      <textarea id="ta" rows="3" placeholder="Ответить ${esc(c.n.split(' ')[0])}…">${esc(V.dr[vKey(c.id, th)] || '')}</textarea>
+      <div class="r3"><span class="hint">Ctrl/⌘ + Enter — отправить. Ответ придёт клиенту в обсуждение ${I.kind === 'w' ? 'этой тренировки' : 'этого упражнения'}.</span><button class="btn" id="send">Отправить клиенту</button></div>
+    </div>`;
+}
+function render(keepScroll){
+  const b0 = document.getElementById('body'), y = b0 ? b0.scrollTop : null;
+  if(V.cid && V.th) Chat.markThread(V.cid, 't', V.th);
+  $('#page').innerHTML = `<div class="msx"><div class="msx-side">${listHTML()}</div><div class="msx-main">${convHTML()}</div></div>`;
+  renderNav('messages.html');
+  const body = $('#body'); if(body) body.scrollTop = keepScroll && y != null ? y : body.scrollHeight;
+  bind();
+}
+function send(){
+  const ta = $('#ta'), v = ta.value.trim(); if(!v){ ta.focus(); return }
+  Chat.say(V.cid, 't', V.th, v); V.dr[vKey(V.cid, V.th)] = '';
+  render(); $('#ta').focus();
+}
+function bind(){
+  const q = $('#q'); q.oninput = () => { V.q = q.value; const pos = q.selectionStart; $('.msx-side').innerHTML = listHTML(); bindList(); const nq = $('#q'); nq.focus(); nq.setSelectionRange(pos, pos) };
+  bindList();
+  const ta = $('#ta'); if(!ta) return;
+  const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.max(76, Math.min(180, ta.scrollHeight)) + 'px' }; grow();
+  ta.oninput = () => { grow(); V.dr[vKey(V.cid, V.th)] = ta.value };
+  ta.onkeydown = e => { if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); send() } };
+  $('#send').onclick = send;
+}
+function bindList(){
+  $$('.dlg[data-cid]').forEach(b => b.onclick = () => { V.cid = b.dataset.cid; V.th = b.dataset.th;
+    history.replaceState(null, '', 'messages.html?client=' + V.cid + '&th=' + encodeURIComponent(V.th)); render() });
+}
+/* Клиент написал в соседней вкладке — подтягиваем, не сбивая набранный текст. */
+addEventListener('storage', e => { if(!Chat.isChatKey(e.key)) return;
+  const ta = $('#ta'), focused = document.activeElement === ta, pos = ta ? ta.selectionStart : 0;
+  const atBottom = (b => !b || b.scrollHeight - b.scrollTop - b.clientHeight < 60)($('#body'));
+  render(!atBottom); if(focused){ const nt = $('#ta'); nt.focus(); nt.setSelectionRange(pos, pos) } });
+render();
+initShell({page:'messages.html', title:'Обсуждения'});
+</script>
+</body>
+</html>

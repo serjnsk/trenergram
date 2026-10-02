@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Сообщения · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/chat-trainer.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap wide" style="padding-top:14px;padding-bottom:14px">
+        <section id="page"></section>
+      </div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/chat.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/nav.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/ui.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script>
+/* ═══════════ СООБЩЕНИЯ — единый чат тренера с каждым клиентом ═══════════
+   Один хронологический диалог на клиента. Вопрос о тренировке, блоке или
+   упражнении приходит вложением: дата, название, назначение и переход в
+   конструктор на этот день. Ответ — с цитатой конкретного сообщения.
+   Сюда же ведут «Ответить» из дашборда и «Сообщения» из карточки клиента. */
+const Q = new URLSearchParams(location.search);
+const V = {cid: Q.get('client') || null, q:'', flash: Q.get('reply') || null, open:new Set()};
+/* Без выбранного клиента диалог сам не открывается: иначе он считался бы
+   прочитанным, хотя тренер его не открывал. */
+/* «Ответить» из дашборда: цитата вопроса в черновике — если черновика ещё нет. */
+if(V.cid && Q.get('reply')){ const m = Chat.find(V.cid, Q.get('reply')), dr = Chat.draft('t', V.cid) || {};
+  if(m && !dr.rep) Chat.setDraft('t', V.cid, {...dr, rep:Chat.quoteOf(m)}) }
+
+const hm = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+const whenS = at => { const d = new Date(at), day = iso(d);
+  return day === TODAY ? hm(d) : daysBetween(day, TODAY) === 1 ? 'вчера' : humanDate(day) };
+const dayS = day => day === TODAY ? 'Сегодня' : daysBetween(day, TODAY) === 1 ? 'Вчера' : humanDate(day) + (day.slice(0,4) !== TODAY.slice(0,4) ? ' ' + day.slice(0,4) : '');
+const DOWS = ['пн','вт','ср','чт','пт','сб','вс'];
+const attDate = d => DOWS[dowMon(d)] + ', ' + humanDate(d);
+
+/* Вложение — компактная карточка: вид и дата, название, у упражнения —
+   назначение. Остальной снимок — «Подробнее» внутри карточки. Переход —
+   отдельной ссылкой: конструктор этого клиента на нужном дне, с прокруткой
+   к блоку или строке по постоянному ID. Удалённое не подменяем соседней
+   строкой: открываем день без выделения. */
+function attHTML(cid, a, mid){
+  if(!a) return '';
+  const s = a.snap || {}, r = Chat.attResolve(cid, a), note = Chat.attNote(r, a, 't'), brief = Chat.attBrief(a, 't'), rows = Chat.attRows(a, 't');
+  const open = V.open.has(mid);
+  const href = r.date ? `constructor.html?client=${encodeURIComponent(cid)}&date=${r.date}${r.focus ? '&focus=' + encodeURIComponent(r.focus) : ''}` : '';
+  const go = !href ? '' : a.k === 'day' || r.focus ? 'Открыть в конструкторе' : 'Открыть день';
+  return `<div class="att${open ? ' open' : ''}">
+    <span class="k">${esc(Chat.attKind(a))} · ${esc(attDate(a.date))}</span>
+    <b class="nm">${esc(s.name || s.day || '')}</b>${brief ? `<span class="p">${esc(brief)}</span>` : ''}
+    ${note ? `<span class="st">${esc(note)}</span>` : ''}
+    ${rows.length ? `<dl class="more">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
+    <span class="acts">${rows.length ? `<button class="mo" data-more="${esc(mid)}" aria-expanded="${open}">${open ? 'Свернуть' : 'Подробнее'}</button>` : ''}
+      ${go ? `<a class="go" href="${href}">${go} →</a>` : ''}</span></div>`;
+}
+const quoteHTML = r => r ? `<span class="qt" data-goto="${esc(r.id)}"><b>${r.by === 't' ? 'Вы' : esc(client(V.cid).n)}</b><span>${esc(r.text || (r.att ? 'Вложение: ' + r.att.name : ''))}</span></span>` : '';
+
+function listHTML(){
+  const dl = Chat.dialogs(), qq = norm(V.q || '');
+  const rows = dl.filter(x => !qq || norm(x.c.n).includes(qq)).map(({c, last, un}) => `<button class="dlg ${c.id === V.cid ? 'on' : ''} ${un ? 'un' : ''}" data-cid="${c.id}">
+      <span class="av m">${esc(c.ini)}</span>
+      <span class="t"><b>${esc(c.n)}</b><s>${last.by === 't' ? 'Вы: ' : ''}${esc(last.text || (last.att ? 'Вложение: ' + (last.att.snap || {}).name : ''))}</s></span>
+      <span class="r"><time>${esc(whenS(last.at))}</time>${un ? `<i class="ub">${un}</i>` : ''}</span></button>`).join('');
+  /* Поиск находит и клиентов без переписки — с ними можно начать диалог. */
+  const others = qq ? CLIENTS.filter(c => !dl.some(x => x.c.id === c.id) && norm(c.n).includes(qq)).slice(0, 8) : [];
+  return `<label class="search">${ICON.search}<input id="q" placeholder="Найти клиента…" value="${esc(V.q)}"></label>
+    <div class="msx-list">${rows || (qq ? '' : '<div class="mhint" style="padding:30px 16px">Сообщений пока нет</div>')}
+      ${others.length ? `<div class="lh">Начать диалог</div>` + others.map(c => `<button class="dlg ${c.id === V.cid ? 'on' : ''}" data-cid="${c.id}"><span class="av m">${esc(c.ini)}</span><span class="t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span></button>`).join('') : ''}</div>`;
+}
+function convHTML(){
+  const c = client(V.cid);
+  if(!c) return `<div class="msx-empty">Выберите диалог слева или найдите клиента</div>`;
+  const L = Chat.list(c.id, 't'), dr = Chat.draft('t', c.id) || {};
+  let day = '', body = '';
+  L.forEach(m => { const d = m.at.slice(0, 10);
+    if(d !== day){ day = d; body += `<div class="mday">${esc(dayS(d))}</div>` }
+    body += `<div class="mrow ${m.by === 't' ? 'me' : ''}" id="m-${esc(m.id)}">
+      <div class="bub">${quoteHTML(m.rep)}${esc(m.text)}${attHTML(c.id, m.att, m.id)}</div>
+      <div class="mmeta"><span>${m.by === 't' ? 'Вы' : esc(c.n.split(' ')[0])} · ${esc(hm(new Date(m.at)))}</span><button data-reply="${esc(m.id)}">Ответить</button></div></div>` });
+  if(!L.length) body = `<div class="mhint">Здесь будет переписка с ${esc(c.n.split(' ')[0])}. Вопросы о тренировках приходят со вложением: видно день, блок или упражнение и что было назначено.</div>`;
+  return `<div class="msx-h"><span class="av m">${esc(c.ini)}</span>
+      <span class="t"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span>
+      <span class="acts"><a class="btn gh sm" href="client.html?id=${c.id}">Карточка</a>${c.prog ? `<a class="btn gh sm" href="calendar.html?client=${c.id}">Календарь</a>` : ''}</span></div>
+    <div class="msx-body" id="body">${body}</div>
+    <div class="msx-comp">
+      ${dr.rep ? `<div class="repl"><span class="t"><b>Ответ на сообщение · ${dr.rep.by === 't' ? 'ваше' : esc(c.n.split(' ')[0])}</b><span>${esc(dr.rep.text || (dr.rep.att ? 'Вложение: ' + dr.rep.att.name : ''))}</span></span><button id="repx" title="Убрать цитату" aria-label="Убрать цитату">✕</button></div>` : ''}
+      <div class="r2"><textarea id="ta" rows="1" placeholder="Написать ${esc(c.n.split(' ')[0])}…">${esc(dr.text || '')}</textarea><button class="btn" id="send">Отправить</button></div>
+      <span class="hint">Ctrl/⌘ + Enter — отправить. Черновик сохраняется сам.</span>
+    </div>`;
+}
+function render(keepScroll){
+  const b0 = document.getElementById('body'), y = b0 ? b0.scrollTop : null;
+  if(V.cid) Chat.markRead(V.cid, 't');
+  $('#page').innerHTML = `<div class="msx"><div class="msx-side">${listHTML()}</div><div class="msx-main">${convHTML()}</div></div>`;
+  renderNav('messages.html');
+  const body = $('#body');
+  if(body){
+    const f = V.flash && document.getElementById('m-' + V.flash);
+    if(f){ f.classList.add('flash'); f.scrollIntoView({block:'center'}); setTimeout(() => f.classList.remove('flash'), 1600); V.flash = null }
+    else body.scrollTop = keepScroll && y != null ? y : body.scrollHeight;
+  }
+  bind();
+}
+function saveDraft(){ const ta = $('#ta'); if(!ta || !V.cid) return; const dr = Chat.draft('t', V.cid) || {}; Chat.setDraft('t', V.cid, {...dr, text:ta.value}) }
+function send(){
+  const ta = $('#ta'), v = ta.value.trim(); if(!v) { ta.focus(); return }
+  const dr = Chat.draft('t', V.cid) || {};
+  Chat.send(V.cid, 't', {text:v, rep:dr.rep || null});
+  Chat.setDraft('t', V.cid, null);
+  render(); $('#ta').focus();
+}
+function bind(){
+  const q = $('#q'); q.oninput = () => { V.q = q.value; const pos = q.selectionStart; $('.msx-side').innerHTML = listHTML(); bindList(); const nq = $('#q'); nq.focus(); nq.setSelectionRange(pos, pos) };
+  bindList();
+  const ta = $('#ta'); if(!ta) return;
+  const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(180, ta.scrollHeight) + 'px' }; grow();
+  ta.oninput = () => { grow(); saveDraft() };
+  ta.onkeydown = e => { if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); send() } };
+  $('#send').onclick = send;
+  const rx = $('#repx'); if(rx) rx.onclick = () => { const dr = Chat.draft('t', V.cid) || {}; Chat.setDraft('t', V.cid, {...dr, text:ta.value, rep:null}); render(true) };
+  $$('[data-reply]').forEach(b => b.onclick = () => { const m = Chat.find(V.cid, b.dataset.reply); Chat.setDraft('t', V.cid, {text:ta.value, rep:Chat.quoteOf(m)}); render(true); $('#ta').focus() });
+  $$('[data-more]').forEach(b => b.onclick = () => { const id = b.dataset.more, on = !V.open.has(id); on ? V.open.add(id) : V.open.delete(id);
+    b.closest('.att').classList.toggle('open', on); b.textContent = on ? 'Свернуть' : 'Подробнее'; b.setAttribute('aria-expanded', on) });
+  $$('[data-goto]').forEach(qe => qe.onclick = () => { const el = document.getElementById('m-' + qe.dataset.goto); if(el){ el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400) } });
+}
+function bindList(){
+  $$('.dlg[data-cid]').forEach(b => b.onclick = () => { saveDraft(); V.cid = b.dataset.cid; history.replaceState(null, '', 'messages.html?client=' + V.cid); render() });
+}
+/* Клиент написал в соседней вкладке — подтягиваем, не сбивая набранный текст. */
+addEventListener('storage', e => { if(!Chat.isChatKey(e.key)) return;
+  const ta = $('#ta'), focused = document.activeElement === ta, pos = ta ? ta.selectionStart : 0;
+  const atBottom = (b => !b || b.scrollHeight - b.scrollTop - b.clientHeight < 60)($('#body'));
+  render(!atBottom); if(focused){ const nt = $('#ta'); nt.focus(); nt.setSelectionRange(pos, pos) } });
+render();
+initShell({page:'messages.html', title:'Сообщения'});
+</script>
+</body>
+</html>

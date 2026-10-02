@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Группы · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="cons one">
+        <main><section class="pane" id="page"></section></main>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/chat.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/nav.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script src="assets/ui.js?v=20261002mxypqrstuvwxyzabcghjklmnopqst"></script>
+<script>
+/* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP-1, GRP-5) ═══════════
+   Список групп тренера: название, описание, состав. Клик по строке открывает
+   то же окно, что и создание, — название, описание, участники, — плюс
+   удаление; правой панели нет. Клиент состоит не больше чем в одной группе:
+   занятые другими группами показаны, но не выбираются. Сами тренировки группы
+   составляются в конструкторе и видны в календаре группы — туда ведёт кнопка
+   в строке. Тренировки меняет только тренер: и для всей группы, и для одного
+   участника — в его календаре. */
+const V = {q:'', open: new URLSearchParams(location.search).get('id')};
+const stackHTML = G => `<div class="gstack"><span class="stack">${G.members.slice(0, 5).map(cid => { const c = client(cid); return `<span class="av s" title="${esc(c.n)}">${esc(c.ini)}</span>` }).join('')}</span><s>${G.members.length ? G.members.length + ' ' + plural(G.members.length,'участник','участника','участников') : 'никого'}</s></div>`;
+
+function render(){
+  const list = GRPS.filter(G => !V.q || norm(G.n).includes(norm(V.q)) || G.members.some(cid => norm(client(cid).n).includes(norm(V.q))));
+  const cols = [
+    {k:'n', n:'Группа', sort:byStr('n'), cell:G => `<div class="cellname"><span class="cav grp">${esc(G.ini)}</span><div style="min-width:0"><div class="n">${esc(G.n)}</div><div class="s">${esc(G.about || 'без описания')}</div></div></div>`},
+    {k:'m', n:'Участники', w:'260px', sort:byNum(G => G.members.length), cell:stackHTML},
+    {k:'a', n:'', w:'150px', r:true, cell:G => `<a class="btn gh sm" href="calendar.html?group=${G.id}">${ICON.cal} Календарь</a>`},
+  ];
+  $('#page').innerHTML = paneHead('Группы', GRPS.length, `
+      <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Группа или участник…" value="${esc(V.q)}"></label>
+      <span class="sp"></span>
+      <button class="btn" id="gNew">${ICON.plus} Создать группу</button>`)
+    + (list.length ? dataTable('grp', cols, list)
+      : GRPS.length ? `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск</div></div>`
+      : `<div class="empty"><div class="t">Групп пока нет</div><div class="d">Соберите в группу тех, кто занимается по одной программе, — тренировку напишете один раз, и она встанет в календарь каждому.</div></div>`);
+  bindTable('grp', render);
+  /* Клик по строке — окно группы; кнопка календаря в строке ведёт по ссылке, окно не открывает. */
+  $$('[data-tbl="grp"] tr[data-row]').forEach(tr => tr.onclick = e => { if(e.target.closest('a,button')) return; openEdit(grp(tr.dataset.row)) });
+  $('#q').oninput = e => { V.q = e.target.value; render(); const q = $('#q'); q.focus(); q.setSelectionRange(V.q.length, V.q.length) };
+  $('#gNew').onclick = () => openEdit(null);
+}
+
+/* ─── Одно окно на создание, правку и удаление: название, описание, состав ─── */
+const footHTML = (G, confirm) => confirm
+  ? `<span class="gsum">Удалить группу «${esc(G.n)}»? Тренировки, которые уже стоят у участников, останутся у них.</span><span class="sp"></span><button class="btn gh" id="gDelNo">Не удалять</button><button class="btn rm" id="gDelOk">Удалить</button>`
+  : `${G ? `<button class="btn gh" id="gDel" style="color:var(--rm)">${ICON.x} Удалить группу</button>` : ''}<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="gSave">${G ? 'Сохранить' : 'Создать группу'}</button>`;
+function openEdit(G){
+  const pick = new Set(G ? G.members : []), was = new Set(G ? G.members : []);
+  let q = '';
+  openModal({title: G ? 'Группа' : 'Новая группа', wide:true, body:`
+    <div class="formfld"><span class="k">Название</span><input class="inp" id="gN" value="${esc(G ? G.n : '')}" placeholder="Например, ЛФК · утро" autocomplete="off"></div>
+    <div class="formfld" style="margin-top:12px"><span class="k">Описание · необязательно</span><input class="inp" id="gA" value="${esc(G ? G.about : '')}" placeholder="Кому и зачем эта группа"></div>
+    <div class="formfld" style="margin-top:16px"><span class="k">Участники · <span id="gCnt">${pick.size}</span></span>
+      <label class="search gsearch">${ICON.search}<input id="gQ" placeholder="Найти клиента" autocomplete="off"></label>
+      <div class="gpick" id="gPick"></div>
+      <div class="gsum" id="gSum"></div>
+    </div>`,
+    foot: footHTML(G, false)});
+  const draw = () => {
+    const other = c => { const g = groupOf(c.id); return g && g !== G ? g : null };   /* клиент состоит только в одной группе */
+    const rows = CLIENTS.filter(c => !q || norm(c.n).includes(norm(q))).sort((a, b) => (pick.has(b.id) - pick.has(a.id)) || (!!other(a) - !!other(b)) || a.n.localeCompare(b.n, 'ru'));
+    $('#gPick').innerHTML = rows.map(c => { const o = other(c);
+      if(o) return `<div class="cl dis"><span class="box"></span><span class="av">${esc(c.ini)}</span><span class="who"><b>${esc(c.n)}</b><s>в группе «${esc(o.n)}» — сначала уберите оттуда</s></span></div>`;
+      return `<button class="cl ${pick.has(c.id) ? 'on' : ''}" data-cl="${c.id}"><span class="box">${ICON.chk}</span><span class="av">${esc(c.ini)}</span>
+      <span class="who"><b>${esc(c.n)}</b><s>${esc(clientProgSub(c))}</s></span></button>` }).join('') || '<div class="hint">Никого не нашли</div>';
+    $('#gCnt').textContent = pick.size;
+    const add = [...pick].filter(id => !was.has(id)).length, rm = [...was].filter(id => !pick.has(id)).length;
+    $('#gSum').textContent = !G ? (pick.size ? 'Тренировки группы встанут каждому с сегодняшнего дня' : 'Участников можно добавить и потом')
+      : add || rm ? [add ? 'добавятся ' + add + ' — тренировки группы встанут им с сегодняшнего дня' : '', rm ? 'уйдут ' + rm + ' — будущие тренировки группы у них уберутся, изменённые под них останутся' : ''].filter(Boolean).join(' · ').replace(/^./, s => s.toUpperCase())
+      : '';
+  };
+  draw();
+  $('#gN').focus();
+  $('#gQ').oninput = e => { q = e.target.value; draw() };
+  $('#gPick').onclick = e => { const b = e.target.closest('[data-cl]'); if(!b) return; const id = b.dataset.cl; pick.has(id) ? pick.delete(id) : pick.add(id); draw() };
+  const wireFoot = () => {
+    const sv = $('#gSave'); if(sv) sv.onclick = () => {
+      const n = $('#gN').value.trim(), about = $('#gA').value.trim();
+      if(!n){ $('#gN').focus(); toast('Назовите группу'); return }
+      const g = G || groupCreate({n, about});
+      if(G) groupUpdate(G, {n, about});
+      [...pick].filter(id => !was.has(id)).forEach(id => groupAdd(g, id));
+      [...was].filter(id => !pick.has(id)).forEach(id => groupRemove(g, id));
+      saveGroups(); closeModal(); render(); initShell({page:'groups.html'});
+      toast(G ? 'Группа «' + g.n + '» сохранена' : 'Группа «' + g.n + '» создана · ' + g.members.length + ' ' + plural(g.members.length,'участник','участника','участников'));
+    };
+    /* Удаление подтверждается в том же окне: подвал меняется на вопрос. */
+    const dl = $('#gDel'); if(dl) dl.onclick = () => { $('#ov .mdf').innerHTML = footHTML(G, true); wireFoot() };
+    const no = $('#gDelNo'); if(no) no.onclick = () => { $('#ov .mdf').innerHTML = footHTML(G, false); wireFoot() };
+    const ok = $('#gDelOk'); if(ok) ok.onclick = () => { const n = G.n; groupDelete(G); saveGroups(); closeModal(); render(); initShell({page:'groups.html'}); toast('Группа «' + n + '» удалена') };
+  };
+  wireFoot();
+}
+render();
+initShell({page:'groups.html'});
+/* Ссылка с чипа группы в карточке клиента — сразу окно этой группы. */
+if(V.open && grp(V.open)) openEdit(grp(V.open));
+</script>
+</body>
+</html>

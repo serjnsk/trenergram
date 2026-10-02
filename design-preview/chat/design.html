@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Бренд и дизайн-система · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Реальные стили прототипа. Страница не пересказывает дизайн-систему, а
+     измеряет её: типографика ниже снята с настоящих классов через
+     getComputedStyle, поэтому разойтись с прототипом она не может. -->
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002mxypqrstuvwxyzabcghjklmnopqst">
+<style>
+/* ═══════════ БРЕНД И ДИЗАЙН-СИСТЕМА ═══════════
+   Рабочая страница, а не экран приложения: standalone, вне меню.
+   Направление логотипа выбрано — сплошной wordmark со срезом 45°.
+   Отклонённые направления лежат в истории, коммит 9b30940.
+
+   Все классы с префиксом d-: pages.css уже занимает .sw, .bar и .legend,
+   и без префикса страница ломалась бы о собственную дизайн-систему. */
+body{background:var(--bg);color:var(--tx1);font:400 14px/1.55 var(--ui)}
+.d-wrap{max-width:1180px;margin:0 auto;padding:40px 28px 90px}
+.d-wrap h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+.d-lede{color:var(--tx2);max-width:64ch;margin:0 0 4px}
+.d-note{color:var(--tx3);font-size:14px;margin:0}
+.d-wrap h2{font-size:16.5px;font-weight:700;letter-spacing:-.01em;margin:44px 0 4px;
+  padding-top:20px;border-top:1px solid var(--line)}
+.d-wrap h2 + p{color:var(--tx3);font-size:14px;margin:0 0 18px;max-width:74ch}
+.d-grp{font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--tx3);margin:20px 0 8px}
+
+/* ── кнопка ИИ: живые классы прототипа, крупно ── */
+.d-ai{display:flex;flex-wrap:wrap;gap:14px}
+.d-ai > div{flex:1 1 200px;border:1px solid var(--line);border-radius:var(--rad-m);padding:18px 16px 12px}
+.d-ai .st{zoom:2;display:flex;justify-content:center;align-items:center;height:30px}
+.d-ai b{display:block;font-size:13.5px;font-weight:600;margin-top:14px}
+.d-ai s{display:block;font-size:13px;color:var(--tx3);text-decoration:none}
+
+/* ── токены ── */
+.d-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.d-sw div{border:1px solid var(--line);border-radius:var(--rad-m);overflow:hidden}
+.d-sw i{display:block;height:48px}
+.d-sw b{display:block;font-size:13.5px;font-weight:600;padding:8px 10px 0}
+.d-sw s{display:block;font-size:13px;color:var(--tx3);text-decoration:none;
+  font-family:var(--mono);padding:1px 10px 9px}
+.d-sw div.dark i{background-image:linear-gradient(var(--tm-bg),var(--tm-bg))}
+.d-tp{display:flex;flex-direction:column}
+.d-tp div{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding:11px 0}
+.d-tp .sel{font-size:13px;color:var(--tx3);font-family:var(--mono);min-width:130px}
+.d-tp .spec{font-size:13px;color:var(--tx3);font-family:var(--mono);flex:1;min-width:0}
+.d-tp .name{font-size:14.5px;min-width:160px}
+.d-rad{display:flex;gap:14px;flex-wrap:wrap}
+.d-rad div{text-align:center}
+.d-rad i{display:block;width:72px;height:52px;background:var(--s1);border:1px solid var(--line2)}
+.d-rad s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);
+  font-family:var(--mono);margin-top:6px}
+
+/* ── заставки ── */
+.d-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;max-width:960px}
+@media(max-width:860px){.d-grid{grid-template-columns:1fr;max-width:320px}}
+.d-item .d-cap{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.d-item .d-cap b{font-size:16.5px;font-weight:700}
+.d-item .d-cap s{text-decoration:none;font-size:13px;color:var(--tx3)}
+.d-ph{width:100%;aspect-ratio:9/19.5;border-radius:34px;background:var(--acc);
+  position:relative;overflow:hidden;border:1px solid rgba(0,0,0,.08);
+  display:flex;align-items:center;justify-content:center}
+.d-ph .d-bar{position:absolute;top:0;left:0;right:0;height:46px;display:flex;
+  align-items:center;justify-content:space-between;padding:0 24px;color:#fff}
+.d-ph .d-bar .t{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.d-ph .d-mid{width:100%;padding:0 18px;text-align:center}
+/* Срез 45° сверху-слева и снизу-справа — фирменный приём Strava: он режет
+   первую и последнюю буквы. width:fit-content обязателен, иначе clip-path
+   режет border-box во всю ширину экрана и диагональ уходит мимо букв. */
+.d-lg{width:fit-content;max-width:100%;margin:0 auto;text-align:center;--c:0px;
+  clip-path:polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c))}
+.d-lg span{display:block;font-family:"Montserrat",var(--ui);font-weight:900;
+  text-transform:uppercase;letter-spacing:-.035em;line-height:.98;color:#fff;
+  white-space:nowrap}
+.d-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--tx3);margin-top:18px}
+.d-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+
+/* ── бренд в контексте ──
+   Иконке нужен знак: wordmark из десяти букв в 60 пикселей не помещается.
+   Знак — «Т» с тем же срезом 45°, что и в логотипе, иначе иконка и заставка
+   выглядели бы как два разных бренда. */
+.d-ico{display:grid;place-items:center;background:var(--acc);flex:none;
+  width:var(--s);height:var(--s);border-radius:calc(var(--s)*.225);overflow:hidden}
+.d-ico i{font-style:normal;color:#fff;display:block;
+  font:900 calc(var(--s)*.42)/1 "Montserrat",var(--ui);letter-spacing:-.05em;   /* две буквы «ТМ» — мельче, чем одна */
+  clip-path:polygon(calc(var(--s)*.11) 0,100% 0,100% calc(100% - var(--s)*.11),calc(100% - var(--s)*.11) 100%,0 100%,0 calc(var(--s)*.11))}
+.d-mocks{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:960px}
+.d-mocks2{display:grid;grid-template-columns:repeat(2,1fr);gap:28px;max-width:960px;margin-top:30px}
+@media(max-width:860px){.d-mocks,.d-mocks2{grid-template-columns:1fr;max-width:320px}}
+
+/* домашний экран: иконка среди чужих — единственная честная проверка знака */
+.d-home{background:linear-gradient(160deg,#2C3444,#161A24 70%)}
+.d-home .d-mid{padding:0 16px;align-self:flex-start;margin-top:58px}
+.d-apps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 10px}
+.d-app{text-align:center}
+.d-app .d-ico,.d-app .ph2{margin:0 auto 5px}
+.d-app .ph2{width:var(--s);height:var(--s);border-radius:calc(var(--s)*.225);
+  background:rgba(255,255,255,.16)}
+.d-app s{display:block;text-decoration:none;font-size:13px;color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-dock{position:absolute;left:14px;right:14px;bottom:14px;padding:9px 10px;border-radius:22px;
+  background:rgba(255,255,255,.14);display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.d-dock i{display:block;height:0;padding-bottom:100%;border-radius:22%;background:rgba(255,255,255,.2)}
+
+/* пуш: имя бренда живёт в верхнем регистре мелким кеглем — проверка длины */
+.d-lock{background:linear-gradient(160deg,#1E2430,#0E1117 70%)}
+.d-lock .d-mid{align-self:flex-start;margin-top:52px;padding:0 14px}
+.d-clock{text-align:center;color:#fff;margin-bottom:22px}
+.d-clock b{display:block;font-size:48px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.d-clock s{display:block;text-decoration:none;font-size:13.5px;opacity:.7;margin-top:2px}
+.d-push{background:rgba(255,255,255,.92);border-radius:16px;padding:10px 11px;text-align:left}
+.d-push .h{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.d-push .h s{text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--tx3);flex:1;min-width:0;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis}
+.d-push .h em{font-style:normal;font-size:13px;color:var(--tx3)}
+.d-push b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.d-push p{margin:2px 0 0;font-size:13.5px;color:var(--tx2);line-height:1.4}
+
+/* карточка в сторе и шапка веб-версии — бренд в мелком кегле */
+.d-card{border:1px solid var(--line);border-radius:var(--rad-l);padding:18px}
+.d-store{display:flex;gap:14px;align-items:flex-start}
+.d-store .t b{display:block;font-size:17.5px;font-weight:700;letter-spacing:-.01em}
+.d-store .t s{display:block;text-decoration:none;font-size:14px;color:var(--tx3);margin-top:2px}
+.d-store .t .r{font-size:13px;color:var(--tx3);margin-top:8px}
+.d-store .go{margin-left:auto;height:30px;padding:0 16px;border-radius:15px;background:var(--acc);
+  color:#fff;font-size:14px;font-weight:700;display:grid;place-items:center;flex:none}
+.d-top{display:flex;align-items:center;gap:12px;height:52px;padding:0 14px;
+  border:1px solid var(--line);border-radius:var(--rad-l);background:var(--bg)}
+.d-top .wm{font:900 15px/1 "Montserrat",var(--ui);letter-spacing:-.04em;text-transform:uppercase;
+  color:var(--ink);white-space:nowrap}
+.d-top .cr{font-size:14px;color:var(--tx3);flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-top .btn2{height:32px;padding:0 13px;border-radius:var(--rad-m);background:var(--acc);color:#fff;
+  font-size:14px;font-weight:600;display:grid;place-items:center;flex:none}
+
+#probe{position:absolute;left:-9999px;top:0;width:420px;visibility:hidden;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="d-wrap">
+
+<h1>Бренд и дизайн-система</h1>
+<p class="d-lede">Рабочая страница: токены визуального языка и рабочее название сервиса на заставке. Не экран приложения — в меню её нет.</p>
+<p class="d-note">Референс — Strava: оранжевый #FC5200, белый тяжёлый wordmark по центру, ничего лишнего.</p>
+
+<h2>Палитра</h2>
+<p>Все токены темы <code>assets/theme-01-strava.css</code>. Значения читаются из неё на лету, а не переписаны сюда: разойтись с прототипом они не могут.</p>
+<div id="pal"></div>
+
+<h2>Типографика</h2>
+<p>Не таблица «как задумано», а замер: стили сняты с настоящих классов прототипа через <code>getComputedStyle</code>. Если стиль в коде изменится — изменится и здесь.</p>
+<div class="d-tp" id="tp"></div>
+
+<h2>Радиусы</h2>
+<p>Четыре токена. <code>--rad-xl</code> в прототипе сейчас не используется ни разу — оставлен в теме про запас.</p>
+<div class="d-rad" id="rad"></div>
+
+<h2>Кнопка ИИ</h2>
+<p>Единственное место, где цвет выходит за палитру: радужное кольцо медленно вращается — так кнопку ИИ узнают без подписи. Звёздочки и буквы — чернилами: радужный текст на белом не читается. Кнопка стоит в углу блока текстом и строки текстом и переводит текст в структуру только по нажатию (CON-5). Образ — по <a href="https://dribbble.com/shots/25854034-AI-button">референсу</a>.</p>
+<div class="d-ai" id="ai"></div>
+
+<h2>Бренд в контексте</h2>
+<p>Название выбрано — Тренерграм. Логотип — сплошной wordmark со срезом 45°. Ниже он и производный от него знак в местах, где бренд реально живёт: заставка, иконка среди чужих иконок, пуш, витрина стора и шапка веб-версии.</p>
+<div class="d-mocks" id="mocks"></div>
+<div class="d-mocks2" id="mocks2"></div>
+<div class="d-legend">
+  <span><i style="background:var(--acc)"></i>#FC5200 — фон заставки и иконки</span>
+  <span><i style="background:#fff;border:1px solid var(--line2)"></i>#FFFFFF — логотип и знак</span>
+  <span><i style="background:var(--line2)"></i>срез — 0.34 от кегля в слове, 0.11 в знаке</span>
+</div>
+
+</div>
+<div id="probe"></div>
+<script>
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cs  = getComputedStyle(document.documentElement);
+const tok = v => cs.getPropertyValue(v).trim();
+
+/* ── палитра: все токены темы, сгруппированы по роли ── */
+const GROUPS = [
+  ['Акцент',      [['--acc','Акцент'],['--acc-d','Нажатие'],['--acc-a','Подложка'],['--acc-p','Подложка плотная'],['--on-acc','Текст на акценте']]],
+  ['Текст',       [['--ink','Чернила'],['--tx1','Основной'],['--tx2','Вторичный'],['--tx3','Приглушённый'],['--tx4','Слабый']]],
+  ['Поверхности', [['--bg','Фон'],['--s1','Поверхность 1'],['--s2','Поверхность 2'],['--page','Страница'],['--page-d','Страница тёмная'],['--frame','Рамка устройства']]],
+  ['Линии',       [['--line','Линия'],['--line2','Линия контрастная']]],
+  ['Статусы',     [['--ok','Успех'],['--ok-a','Успех · подложка'],['--rm','Ошибка'],['--rm-d','Ошибка · нажатие'],['--rm-a','Ошибка · подложка'],['--warn','Внимание']]],
+  ['Таймер',      [['--tm-bg','Фон'],['--tm-ink','Текст'],['--tm-dim','Затемнение']]],
+];
+document.getElementById('pal').innerHTML = GROUPS.map(([g,items])=>`
+  <div class="d-grp">${esc(g)}</div>
+  <div class="d-sw">${items.map(([v,n])=>{
+    const hex = tok(v);
+    /* Полупрозрачные токены на белом не видно — кладём на тёмную подложку */
+    const dark = hex.startsWith('rgba') ? ' class="dark"' : '';
+    return `<div${dark}><i style="background:${hex}"></i><b>${esc(n)}</b><s>${esc(hex)}</s></div>`;
+  }).join('')}</div>`).join('');
+
+/* ── типографика: замер реальных классов прототипа ── */
+const PROBES = [
+  ['Заголовок экрана',   '.prohead .nm', '<div class="prohead"><div class="nm">Артём Ковалёв</div></div>'],
+  ['Заголовок раздела',  '.sechead .t',  '<div class="sechead"><span class="t">Раздел</span></div>'],
+  ['Счётчик у раздела',  '.sechead .n',  '<div class="sechead"><span class="n">12</span></div>'],
+  ['Число в KPI',        '.kpi .v',      '<div class="kpi"><div class="v">27</div></div>'],
+  ['Подпись KPI',        '.kpi .d',      '<div class="kpi"><div class="d">по всем клиентам</div></div>'],
+  ['Название карточки',  '.tcard .nm',   '<div class="tcard"><div class="h"><span class="nm">Шаблон</span></div></div>'],
+  ['Текст в ленте',      '.fitem .tx',   '<div class="fitem"><div class="c"><div class="tx">Комментарий</div></div></div>'],
+  ['Чип',                '.chip',        '<span class="chip">чип</span>'],
+  ['Время, моноширинный','.tl .tm',      '<div class="tl"><div class="r"><span class="tm">07:30</span></div></div>'],
+];
+const probe = document.getElementById('probe');
+document.getElementById('tp').innerHTML = PROBES.map(([name,sel,html])=>{
+  probe.innerHTML = html;
+  const el = probe.querySelector(sel.split(' ').pop());
+  const c  = getComputedStyle(el);
+  const fam = c.fontFamily.split(',')[0].replace(/["']/g,'');
+  const lh  = c.lineHeight==='normal' ? '' : '/'+ (parseFloat(c.lineHeight)/parseFloat(c.fontSize)).toFixed(2);
+  const ls  = c.letterSpacing==='normal' ? '' : ', '+c.letterSpacing;
+  return `<div><span class="name">${esc(name)}</span><span class="sel">${esc(sel)}</span>
+    <span class="spec">${c.fontWeight} ${parseFloat(c.fontSize)}px${lh} ${esc(fam)}${esc(ls)}</span></div>`;
+}).join('');
+probe.innerHTML = '';
+
+/* ── кнопка ИИ: те же классы и та же разметка, что в конструкторе ── */
+const AIMARK = '<svg class="aim" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg>';
+document.getElementById('ai').innerHTML = [
+  ['',     'AI',        'Покой',          'кольцо вращается, 4 с на оборот'],
+  ['hov',  'AI',        'Наведение',      'заливка сереет, звёздочки мерцают по очереди'],
+  ['busy', 'Разбираю…', 'ИИ разбирает',   'кольцо быстрее, мерцание без наведения'],
+  ['dim',  'AI',        'Нечего разбирать','блок текстом пустой'],
+  ['sm',   'AI',        'В строке текстом','компактная, рядом с «Выбрать упражнение»'],
+].map(([c, l, n, d]) => `<div><div class="st"><button class="aib ${c}" tabindex="-1">${AIMARK}<span>${esc(l)}</span></button></div><b>${esc(n)}</b><s>${esc(d)}</s></div>`).join('');
+
+/* ── радиусы ── */
+document.getElementById('rad').innerHTML =
+  ['--rad-s','--rad-m','--rad-l','--rad-xl'].map(v=>
+    `<div><i style="border-radius:${tok(v)}"></i><s>${esc(v)} ${esc(tok(v))}</s></div>`).join('');
+
+/* ── заставки ── */
+const NAME = {n:'Тренерграм', w:'ТРЕНЕРГРАМ', ini:'ТМ'};
+const ICONS = `
+<span style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#fff"><rect x="0" y="7" width="3" height="4" rx=".7"/><rect x="4.5" y="5" width="3" height="6" rx=".7"/><rect x="9" y="2.5" width="3" height="8.5" rx=".7"/><rect x="13.5" y="0" width="3" height="11" rx=".7"/></svg>
+<svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a9.4 9.4 0 0 1 13 0"/><path d="M3.6 6.4a5.7 5.7 0 0 1 7.8 0"/><circle cx="7.5" cy="9.4" r=".9" fill="#fff" stroke="none"/></svg>
+<svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x=".8" y=".8" width="19" height="9.4" rx="2.8" stroke="#fff" stroke-opacity=".5" stroke-width="1.1"/><rect x="2.4" y="2.4" width="15.8" height="6.2" rx="1.6" fill="#fff"/><path d="M21.6 4v3a2 2 0 0 0 0-3Z" fill="#fff" fill-opacity=".5"/></svg>
+</span>`;
+const ico = size => `<span class="d-ico" style="--s:${size}px"><i>${esc(NAME.ini)}</i></span>`;
+const phone = (cls, inner, extra='') => `<div class="d-ph ${cls}">
+  <div class="d-bar"><span class="t">9:41</span>${ICONS}</div>${inner}${extra}</div>`;
+
+/* Чужие иконки — заглушки: на домашнем экране знак проверяется соседством,
+   в одиночку он всегда выглядит убедительно. */
+const OTHERS = ['Камера','Заметки','Часы','Погода','Карты','Музыка'];
+
+const MOCKS = [
+  ['Заставка', 'первый экран при запуске',
+    phone('', `<div class="d-mid"><div class="d-lg"><span>${esc(NAME.w)}</span></div></div>`)],
+
+  ['Домашний экран', 'знак среди чужих иконок',
+    phone('d-home', `<div class="d-mid"><div class="d-apps">
+      ${OTHERS.slice(0,3).map(n=>`<div class="d-app"><div class="ph2" style="--s:46px"></div><s>${esc(n)}</s></div>`).join('')}
+      <div class="d-app" style="--s:46px">${ico(46)}<s>${esc(NAME.n)}</s></div>
+      ${OTHERS.slice(3).map(n=>`<div class="d-app"><div class="ph2" style="--s:46px"></div><s>${esc(n)}</s></div>`).join('')}
+    </div></div>`,
+    `<div class="d-dock"><i></i><i></i><i></i><i></i></div>`)],
+
+  ['Уведомление', 'имя бренда в верхнем регистре мелким кеглем',
+    phone('d-lock', `<div class="d-mid">
+      <div class="d-clock"><b>9:41</b><s>среда, 26 августа</s></div>
+      <div class="d-push">
+        <div class="h">${ico(16)}<s>${esc(NAME.w)}</s><em>сейчас</em></div>
+        <b>Новый рекорд у Артёма</b>
+        <p>Присед 150 кг — было 145. Проценты в программе пересчитаны.</p>
+      </div>
+    </div>`)],
+];
+
+document.getElementById('mocks').innerHTML = MOCKS.map(([n,d,html])=>`
+  <div class="d-item">
+    <div class="d-cap"><b>${esc(n)}</b><s>${esc(d)}</s></div>
+    ${html}
+  </div>`).join('');
+
+document.getElementById('mocks2').innerHTML = `
+  <div class="d-item">
+    <div class="d-cap"><b>Витрина стора</b><s>знак и название в списке</s></div>
+    <div class="d-card d-store">
+      ${ico(64)}
+      <div class="t">
+        <b>${esc(NAME.n)}</b>
+        <s>Тренировки с вашим тренером</s>
+        <div class="r">4,9 ★ · 1,2 тыс. оценок · Фитнес</div>
+      </div>
+      <div class="go">Загрузить</div>
+    </div>
+  </div>
+  <div class="d-item">
+    <div class="d-cap"><b>Шапка веб-версии</b><s>логотип в рабочем интерфейсе тренера</s></div>
+    <div class="d-card" style="padding:14px">
+      <div class="d-top">
+        <span class="wm"><b style="color:var(--acc)">${esc(NAME.w[0])}</b>${esc(NAME.w.slice(1,-1))}<b style="color:var(--acc)">${esc(NAME.w.slice(-1))}</b></span>
+        <span class="cr">База программ / Сила + кроссфит / Неделя 4</span>
+        <span class="btn2">Создать тренировку</span>
+      </div>
+    </div>
+  </div>`;
+
+/* Подгонка кегля: имена от четырёх до девяти знаков, единый размер им не
+   подходит. Срез — доля от кегля, иначе на коротком имени он съест букву. */
+function fit(){
+  document.querySelectorAll('.d-lg').forEach(lg=>{
+    const box = lg.closest('.d-ph').clientWidth - 36;
+    const span = lg.querySelector('span');
+    let size = 62, guard = 0;
+    const apply = ()=>{
+      span.style.fontSize = size+'px';
+      lg.style.setProperty('--c', (size*0.34).toFixed(1)+'px');
+    };
+    apply();
+    while(lg.offsetWidth > box && size > 12 && guard++ < 110){ size -= 1; apply(); }
+  });
+}
+fit();
+/* Первый замер идёт на метриках подменного шрифта — пока Montserrat не
+   загрузился, ширины занижены и подгонка промахивается. Пересчитываем. */
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+addEventListener('resize', fit);
+
+</script>
+</body>
+</html>

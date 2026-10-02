@@ -1,0 +1,1513 @@
+/* ============================================================
+   Структура без цвета. Все цвета, шрифты и скругления берутся
+   из переменных темы — файл сам не задаёт ни одного значения
+   напрямую, поэтому одна и та же раскладка работает во всех
+   четырёх стилистиках.
+   ============================================================ */
+/* ============================================================
+   Тренер · конструктор тренировки
+
+   Каркас взят из рабочей версии mvp: слева полная навигация по
+   рабочему пространству, сверху хлебные крошки и действия, по
+   центру только неделя и документ дня, справа панель источников.
+   Стилистика — клиентская: белая база, один оранжевый акцент,
+   Inter. Вложенность показана тоном: холст серый → панель белая
+   → блок серый → строка белая. Ровно как на экране клиента.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--ui);color:var(--ink);background:var(--s2);
+  -webkit-font-smoothing:antialiased;font-size:15px}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;border:0;background:none}
+button{cursor:pointer}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ─── каркас ─── */
+.app{display:grid;grid-template-columns:var(--navw,238px) 1fr;min-height:100vh}
+.main{min-width:0;display:flex;flex-direction:column}
+
+/* ─── левая навигация ─── */
+.nav{background:var(--bg);border-right:1px solid var(--line);
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.nh{height:58px;display:flex;align-items:center;padding:0 16px;
+  border-bottom:1px solid var(--line);flex:none}
+/* Логотип — текст, а не SVG: десять кириллических прописных рисовать путями
+   до утверждения знака рано. Кегль подобран под сайдбар 238px минус отступы
+   32px: «ТРЕНЕРГРАМ» на 22px занимает ~158px и оставляет запас.
+   Срез 45° — фирменный приём, тот же, что на заставке; width:fit-content
+   обязателен, иначе clip-path режет строку во всю ширину шапки мимо букв. */
+.nh .logo{display:block}
+.nh .logo i{font-style:normal;display:block;width:fit-content;color:var(--ink);
+  font:900 22px/1 "Montserrat",var(--ui);letter-spacing:-.035em;text-transform:uppercase;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+.nh .logo i b{font-weight:inherit;color:var(--acc)}
+.nbody{flex:1;overflow-y:auto;padding:12px 10px 16px}
+.ngrp{font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--tx3);padding:14px 8px 6px}
+.ngrp:first-child{padding-top:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:var(--rad-m);
+  text-decoration:none;color:var(--tx2);font-size:15px;font-weight:500;letter-spacing:-.01em}
+.nav a:hover{background:var(--s1);color:var(--ink)}
+.nav a.on{background:var(--acc-a);color:var(--acc-d);font-weight:600}
+.nav a svg{width:17px;height:17px;flex:none;stroke-width:1.6}
+.nav a .ntxt{flex:1;min-width:0}
+/* Короткая подпись для стилистик с узким рельсом иконок. Обрезать
+   «База упражнений» средствами CSS нельзя — получится «БАЗА У»,
+   поэтому сокращение приходит из данных. Кому не нужно — не показывает. */
+.nav a .nab{display:none}
+.nav a .cnt{font-size:13px;font-weight:600;color:var(--tx3);
+  background:var(--s1);border-radius:var(--rad-s);padding:1px 6px}
+.nav a.on .cnt{background:var(--bg);color:var(--acc-d)}
+.nfoot{border-top:1px solid var(--line);padding:11px 14px;flex:none;
+  display:flex;align-items:center;gap:9px}
+.nfoot .av{width:28px;height:28px;border-radius:50%;background:var(--s1);
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3);flex:none}
+.nfoot b{font-size:14px;font-weight:600;display:block;letter-spacing:-.01em}
+.nfoot s{text-decoration:none;font-size:13px;color:var(--tx3);display:block}
+
+/* ─── топбар ─── */
+.topbar{height:58px;background:var(--bg);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:0 20px;flex:none}
+.crumb{display:flex;align-items:center;gap:7px;font-size:14.5px;min-width:0}
+.crumb a{color:var(--tx3);text-decoration:none;white-space:nowrap}
+.crumb a:hover{color:var(--ink)}
+.crumb .sep{color:var(--tx3)}
+.crumb .cur{font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.topbar .sp{flex:1}
+.iact{width:32px;height:32px;border-radius:var(--rad-m);background:var(--s1);display:grid;place-items:center;color:var(--tx2)}
+.iact:hover{background:var(--s2);color:var(--ink)}
+.iact svg{width:16px;height:16px}
+.forw{display:flex;align-items:center;gap:8px;background:var(--s1);border-radius:var(--rad-m);padding:4px 4px 4px 11px}
+.forw span{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+/* Системная стрелка селекта прижималась к правому краю плашки. Рисуем свою
+   и отводим ей место паддингом — тогда она стоит там, где задумано. */
+.forw select{height:28px;border-radius:var(--rad-s);background:var(--bg);font-size:14.5px;font-weight:600;
+  appearance:none;-webkit-appearance:none;padding:0 30px 0 11px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:13px}
+.forw select:hover{background-color:var(--s1)}
+.btn{height:36px;padding:0 16px;border-radius:var(--rad-m);background:var(--acc);color:var(--on-acc);
+  font-weight:600;font-size:15px;letter-spacing:-.01em;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{background:var(--acc-d)}
+.btn svg{width:15px;height:15px}
+.btn.gh{background:var(--s1);color:var(--ink)}
+.btn.gh:hover{background:var(--s2)}
+
+/* ─── страница конструктора ─── */
+.page{flex:1;background:var(--s2);min-width:0}
+.cons{display:grid;grid-template-columns:minmax(0,1fr) var(--railw,318px);gap:14px;
+  padding:14px 18px 60px;align-items:start}
+@media (max-width:1120px){ .cons{grid-template-columns:minmax(0,1fr)} .rail{display:none} }
+
+/* полоса недели */
+.wk{background:var(--bg);border-radius:var(--rad-l);padding:12px 14px;margin-bottom:12px}
+/* Переносится: в темах с капителью и разрядкой подписи кнопок шире,
+   и в одну строку неделя перестаёт помещаться. */
+.wkh{display:flex;align-items:center;gap:10px 11px;margin-bottom:10px;flex-wrap:wrap}
+.wkh b{font-family:var(--disp);white-space:nowrap}
+/* Стрелки стоят у самой недели, а не в топбаре: они листают её, и место
+   действия должно совпадать с местом, где виден результат. */
+.wkh .wkn{display:flex;gap:3px;flex:none}
+.wkh .wkn button{width:32px;height:32px;border-radius:var(--rad-s);background:var(--s1);
+  display:grid;place-items:center;color:var(--tx2)}
+.wkh .wkn button:hover:not(:disabled){background:var(--s2);color:var(--ink)}
+.wkh .wkn button:disabled{color:var(--tx4);cursor:default;background:none}
+.wkh .wkn svg{width:14px;height:14px}
+.wkh b{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.wkh s{text-decoration:none;font-size:14px;color:var(--tx3)}
+.wkh .sp{flex:1}
+.wkh .cp,.docacts .cp{font-size:14px;font-weight:500;color:var(--tx3);display:flex;align-items:center;gap:6px;
+  white-space:nowrap}
+.wkh .cp:hover,.docacts .cp:hover{color:var(--acc)}
+.wkh .cp svg,.docacts .cp svg{width:14px;height:14px}
+/* Лента недели — семь равных колонок на всю ширину: чем шире экран, тем
+   крупнее день и тем больше о нём видно (список блоков появляется от 900px
+   ширины самой ленты — container query, а не окна: панель справа может быть
+   свёрнута или развёрнута). */
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;container-type:inline-size}
+.day .bl{display:none;flex-direction:column;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.day .bl i{font-style:normal;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* нумерованный список блоков в дне календаря: номер в своей колонке, чтобы названия стояли ровно */
+.day .bl.num i{display:grid;grid-template-columns:16px minmax(0,1fr);gap:0 2px;align-items:baseline}
+.day .bl.num i s{text-decoration:none;font-size:13px;font-weight:600;color:var(--tx3);font-variant-numeric:tabular-nums}
+.day.on .bl.num i s{color:var(--acc-d)}
+.day .bl.num i b{font-weight:inherit;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@container (min-width:900px){
+  .day{min-height:118px;padding:11px 12px 12px}
+  .day .bl{display:flex}
+}
+.day{border-radius:var(--rad-m);background:var(--s1);padding:10px 11px 11px;text-align:left;min-height:76px;
+  display:flex;flex-direction:column;gap:4px;transition:.14s;border:1.5px solid transparent}
+.day:hover{background:var(--s2)}
+.day.on{background:var(--acc-a);border-color:var(--acc)}
+.day .d{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
+.day.on .d{color:var(--acc-d)}
+.day .t{font-size:15px;font-weight:600;line-height:1.3;letter-spacing:-.01em}
+.day .e{font-size:14px;color:var(--tx3);font-weight:500}
+.day .k{margin-top:2px;padding-top:4px;font-size:13.5px;font-weight:500;color:var(--tx3);
+  letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day.on .k{color:var(--acc-d)}
+/* Полоса нагрузки — приём стилистик с дорожкой недели; остальные
+   показывают объём словами и полосу не выводят. */
+.day .ld{display:none}
+
+/* документ дня */
+/* overflow:clip, а не hidden: обрезает так же, но не делает .doc полосой
+   прокрутки — иначе панель сохранения внизу не прилипала бы к экрану. */
+.doc{background:var(--bg);border-radius:var(--rad-l);padding:0 16px 18px;overflow:clip;border:1px solid var(--line)}
+/* Шапка дня одной строкой: название, счёт, действия иконками — теми же,
+   что у блоков. Одинаковые действия должны выглядеть одинаково на всех
+   уровнях, иначе тренеру приходится запоминать два языка. */
+/* Шапка тренировки — той же анатомии, что шапка блока и клетка дня: серая
+   полоса, название, действия справа квадратами с рамкой. */
+/* Полоса в тон выбранного дня в полосе недель (акцентная), иначе серая шапка
+   сливается с серым фоном страницы. */
+.doch{display:flex;align-items:center;gap:10px;margin:0 -16px 12px;padding:9px 14px 9px 12px;background:var(--acc-a);border-bottom:1px solid #FFD9C4}
+.doch .gr{color:var(--acc-d);opacity:.6}
+/* Кнопки-действия шапок: покой — белый квадрат с рамкой; наведение — рамка и
+   иконка акцентом; активно (есть заметка, сохранено, соревнование,
+   опубликовано) — залито акцентом с белой иконкой. */
+.doch .x{width:30px;height:30px;border-radius:var(--rad-s);display:grid;place-items:center;
+  color:var(--tx2);flex:none;background:var(--bg);border:1px solid var(--line2);transition:.12s}
+.doch .x:hover{border-color:var(--acc);color:var(--acc-d)}
+.doch .x.on,.doch .x.note-on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.doch .x.on:hover,.doch .x.note-on:hover{background:var(--acc-d);border-color:var(--acc-d);color:var(--on-acc)}
+.doch .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:var(--rm)}
+.doch .x svg{width:15px;height:15px}
+.doch input{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.03em;flex:1;min-width:0;
+  padding:3px 6px;margin-left:-6px;border-radius:var(--rad-s)}
+.doch input:focus{outline:0;background:var(--bg)}
+.doch .stat{font-size:14px;color:var(--tx3);white-space:nowrap;font-weight:500}
+
+.blk{background:var(--s1);border-radius:var(--rad-l);padding:11px 12px;margin-top:11px}
+.blk.over{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.blkh{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.blkh .bt{flex:1;min-width:0;font-size:16px;font-weight:600;letter-spacing:-.02em;
+  padding:4px 7px;margin-left:-7px;border-radius:var(--rad-s)}
+.blkh .bt:focus{outline:0;background:var(--bg)}
+.blkh .x{width:28px;height:28px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx2);background:var(--bg);border:1px solid var(--line2);flex:none}
+.blkh .x{transition:.12s}
+.blkh .x:hover{border-color:var(--acc);color:var(--acc-d)}
+.blkh .x.on,.blkh .x.note-on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.blkh .x.on:hover,.blkh .x.note-on:hover{background:var(--acc-d);border-color:var(--acc-d);color:var(--on-acc)}
+.blkh .x[data-delblk]:hover,.blkh .x.rm:hover{background:var(--rm-a);color:var(--rm);border-color:var(--rm)}
+.blkh .x svg{width:14px;height:14px}
+
+.bmeta{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.fld{display:flex;align-items:center;gap:9px;background:var(--bg);border-radius:var(--rad-m);
+  padding:7px 10px;border:1.5px solid transparent}
+.fld:focus-within{border-color:var(--acc)}
+.fld .k{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--tx3);flex:none;width:58px}
+.fld input{flex:1;min-width:0;font-size:15px}
+.fld input:focus{outline:0}
+.fld input::placeholder{color:var(--tx4)}
+.fld .hint{font-size:13px;color:var(--acc-d);white-space:nowrap;font-weight:500}
+
+.line{display:flex;align-items:center;gap:9px;background:var(--bg);border-radius:var(--rad-m);
+  padding:8px 10px;margin-bottom:4px;border:1.5px solid transparent;transition:.12s}
+.line:hover{border-color:var(--line2)}
+.line.edit{border-color:var(--acc)}
+/* Строка, которая осталась текстом: это нормальный этап работы, а не
+   ошибка. Пунктир вместо жёлтого — «здесь ещё не структура», спокойно. */
+.line.raw{border-style:dashed;border-color:var(--line2);background:none}
+.line.raw .txt{color:var(--tx2)}
+.gr{color:var(--tx3);cursor:grab;flex:none;display:grid}
+.gr:active{cursor:grabbing}
+.gr:hover{color:var(--acc)}
+.line .gr svg{width:13px;height:13px}
+.blkh .gr svg{width:14px;height:14px}
+.doch .gr svg{width:16px;height:16px}
+.line .txt{flex:1;min-width:0;padding:2px 0;font-size:15px}
+.line .txt:focus{outline:0}
+.line .nm{font-weight:600;letter-spacing:-.01em}
+.line .sc{color:var(--tx2);font-weight:500}
+/* Правило подсветки параметров (одно для конструктора и календаря):
+   название — обычный текст; введённые подходы/повторы/проценты — оранжевый
+   текст; рассчитанное (рабочий вес от ПМ) — оранжевый чип с фоном. */
+.line .pct{height:25px;padding:0 4px;border-radius:var(--rad-s);background:none;color:var(--acc-d);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+.line .pct:hover{background:var(--acc-a)}
+.line .pct.none{background:none;color:var(--tx3);font-weight:500;border:1px dashed var(--tx4);padding:0 9px}
+.line .kg{font-size:13.5px;color:var(--acc-d);white-space:nowrap;font-weight:600;flex:none;font-variant-numeric:tabular-nums}
+.line .kg:not(:empty){background:var(--acc-a);border-radius:var(--rad-s);padding:0 9px;height:25px;display:inline-flex;align-items:center}
+.line .x{width:25px;height:25px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none}
+.line .x:hover{background:var(--rm-a);color:var(--rm)}
+.line .x:hover{background:var(--s1);color:var(--acc)}
+.line .x svg{width:13px;height:13px}
+.addl{width:100%;text-align:left;padding:8px 10px;border-radius:var(--rad-m);color:var(--tx3);
+  font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
+.addl:hover{background:var(--bg);color:var(--acc)}
+.addl svg{width:14px;height:14px}
+.addb{width:100%;margin-top:10px;padding:10px;border-radius:var(--rad-l);border:1.5px dashed var(--line2);
+  color:var(--tx3);font-size:14.5px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px}
+.addb:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-a)}
+.addb svg{width:15px;height:15px}
+
+/* подсказка разбора: текст и структура — одно и то же (CON-1 + CON-5) */
+.sug{position:absolute;z-index:60;background:var(--bg);border-radius:var(--rad-m);min-width:290px;
+  box-shadow:0 12px 36px rgba(0,0,0,.15),0 0 0 1px var(--line);padding:5px}
+.sug .row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--rad-m);width:100%;text-align:left}
+.sug .row:hover,.sug .row.on{background:var(--s1)}
+.sug .row b{font-weight:600;flex:1;min-width:0;letter-spacing:-.01em;font-size:15px}
+.sug .row s{text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap}
+.sug .cap{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--tx3);padding:8px 10px 5px}
+.sug .ok{border-top:1px solid var(--line);margin-top:4px;padding-top:5px}
+
+/* ─── правая панель источников ─── */
+.rail{position:sticky;top:72px;background:var(--bg);border-radius:var(--rad-l);
+  display:flex;flex-direction:column;max-height:calc(100vh - 88px);overflow:hidden}
+.railhead{padding:12px 13px 11px;border-bottom:1px solid var(--line);flex:none}
+.tabs{display:flex;gap:3px;background:var(--s1);border-radius:var(--rad-m);padding:3px}
+.tabs button{flex:1;height:28px;border-radius:var(--rad-s);font-size:13px;font-weight:600;color:var(--tx3)}
+.tabs button.on{background:var(--bg);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.search{display:flex;align-items:center;gap:8px;background:var(--s1);border-radius:var(--rad-m);
+  padding:0 11px;height:34px;margin-top:9px;border:1.5px solid transparent}
+.search:focus-within{border-color:var(--acc);background:var(--bg)}
+.search svg{width:14px;height:14px;color:var(--tx3);flex:none}
+.search input{flex:1;min-width:0;font-size:14.5px}
+.search input:focus{outline:0}
+.railbody{flex:1;overflow-y:auto;padding:9px 10px 12px}
+.railfoot:empty{display:none}
+.railfoot{border-top:1px solid var(--line);padding:10px 13px;flex:none;
+  font-size:13px;color:var(--tx3);line-height:1.5}
+
+.grpttl{display:flex;align-items:center;gap:8px;padding:11px 4px 6px}
+.grpttl .lab{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+.grpttl .ln{flex:1;height:1px;background:var(--line)}
+.grpttl .n{font-size:13px;color:var(--tx3);font-weight:600}
+.exc{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:var(--rad-m);cursor:pointer}
+.exc:hover{background:var(--s1)}
+.exc .thumb{width:44px;height:44px;border-radius:var(--rad-m);background:var(--s1);flex:none;
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3)}
+.exc:hover .thumb{background:var(--bg)}
+.exc .thumb.pending{color:var(--tx3)}
+.exc .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.exc .nm{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exc .en{display:block;font-size:13px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exc .add{width:24px;height:24px;border-radius:var(--rad-s);display:grid;place-items:center;
+  color:var(--tx3);flex:none;opacity:0;pointer-events:none}
+.exc:hover .add{opacity:1}
+.exc .add:hover{background:var(--acc-a);color:var(--acc)}
+.exc .add svg{width:13px;height:13px}
+
+.tplc{padding:9px 10px;border-radius:var(--rad-m);background:var(--s1);margin-bottom:6px;cursor:pointer}
+.tplc:hover{background:var(--acc-a)}
+.tplc .h{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tplc .nm{flex:1;min-width:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tplc .chip{font-size:13px;font-weight:600;color:var(--acc-d);background:var(--bg);
+  border-radius:var(--rad-s);padding:2px 7px;flex:none;white-space:nowrap}
+.tplc .ls{display:flex;flex-direction:column;gap:2px}
+.tplc .ls span{font-size:13px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.railbody .empty{padding:26px 8px;text-align:center;color:var(--tx3);font-size:13.5px}
+.railbody .hint{font-size:13px;color:var(--tx3);line-height:1.5;padding:10px 4px 0}
+
+/* ─── шторка назначения ─── */
+.ov{position:fixed;inset:0;background:rgba(20,20,20,.4);display:none;
+  align-items:center;justify-content:center;z-index:80;padding:24px}
+.ov.on{display:flex}
+.md{background:var(--bg);border-radius:var(--rad-l);width:100%;max-width:760px;
+  display:flex;flex-direction:column;max-height:calc(100vh - 48px);overflow:hidden}
+.mdh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);flex:none}
+.mdh .dot{width:7px;height:7px;border-radius:50%;background:var(--acc);flex:none}
+.mdh h2{font-family:var(--disp);flex:1;font-size:18.5px;font-weight:700;letter-spacing:-.03em}
+.mdh .cls{width:30px;height:30px;border-radius:var(--rad-m);color:var(--tx2);background:var(--s1);font-size:15.5px;flex:none}
+.mdh .cls:hover{background:var(--s1);color:var(--ink)}
+.mdb{flex:1;overflow-y:auto;padding:16px 20px 18px}
+.mdf{display:flex;align-items:center;gap:9px;padding:13px 20px;border-top:1px solid var(--line);flex:none}
+.mdf .sp{flex:1}
+.mdf .btn{height:40px}
+.mdf .btn:disabled{background:var(--s2);color:var(--tx4);cursor:default}
+
+/* Что назначаем — с отбивкой акцентом, как в референсе */
+.mdt{border-left:3px solid var(--acc);padding-left:12px;margin-bottom:18px}
+.mdt b{display:block;font-size:18.5px;font-weight:700;letter-spacing:-.03em;margin-bottom:3px}
+.mdt s{text-decoration:none;font-size:14px;color:var(--tx3);letter-spacing:.01em}
+.md .lab{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--tx3);margin-bottom:8px}
+
+.md .cl{width:100%;display:flex;align-items:center;gap:13px;padding:10px 16px 10px 12px;
+  border-radius:var(--rad-m);margin-bottom:6px;border:1.5px solid var(--line);text-align:left;background:none}
+.md .cl:hover{border-color:var(--line2)}
+.md .cl.on{border-color:var(--acc);background:var(--acc-a)}
+.md .cl .box{width:22px;height:22px;border-radius:var(--rad-s);border:1.5px solid var(--line2);
+  display:grid;place-items:center;flex:none;color:transparent;background:var(--bg)}
+.md .cl.on .box{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+.md .cl .box svg{width:13px;height:13px}
+.md .cl .av{width:32px;height:32px;border-radius:var(--rad-m);background:var(--s1);
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3);flex:none}
+.md .cl.on .av{background:var(--bg)}
+.md .cl .who{flex:1;min-width:0}
+.md .cl .who b{display:block;font-size:15.5px;font-weight:600;letter-spacing:-.015em}
+.md .cl .who s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);
+  margin-top:2px;letter-spacing:.01em}
+.md .cl .pmv{text-align:right;flex:none}
+.md .cl .pmv b{display:block;font-size:18.5px;font-weight:700;letter-spacing:-.03em;color:var(--acc)}
+.md .cl .pmv s{display:block;text-decoration:none;font-size:13px;color:var(--tx3)}
+
+/* Сообщение ко всей тренировке (COM-4) — над блоками, как и у клиента:
+   там оно стоит под именем тренера и читается первым. */
+.wmsg{margin-top:10px;background:var(--acc-a);border-color:transparent}
+/* Иконка речи — та же, что у реплик на экране клиента: сразу видно, что
+   это обращение к человеку, а не поле назначения. */
+.wmsg .k{color:var(--acc-d);width:auto;display:inline-flex;align-items:center;gap:5px}
+.wmsg .k svg{width:13px;height:13px}
+.wmsg input::placeholder{color:var(--acc-d);opacity:.5}
+
+/* Назначение: видно, что программа едет, а переписка остаётся. Тренер
+   не должен об этом догадываться — граница показана до нажатия. */
+.carry{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.carry div{border-radius:var(--rad-m);padding:9px 11px;font-size:13.5px;line-height:1.5}
+.carry b{display:block;font-size:13px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;margin-bottom:3px}
+.carry s{text-decoration:none;color:var(--tx2)}
+.carry .go{background:var(--acc-a)}
+.carry .go b{color:var(--acc-d)}
+.carry .stay{background:var(--s1)}
+.carry .stay b{color:var(--tx3)}
+
+/* Клиент без максимума: тренировка на процентах придёт к нему пустой */
+.md .cl.blind .who s{color:var(--warn)}
+.md .cl.blind .pmv b{color:var(--tx3)}
+
+/* ═══════════ ПЕРЕТАСКИВАНИЕ ═══════════
+   Куда именно ляжет — показываем линией по краю цели, а не подсветкой
+   целиком: при переносе важно место вставки, а не сам факт наведения. */
+.dropbefore{box-shadow:0 -2px 0 0 var(--acc)}
+.dropafter{box-shadow:0 2px 0 0 var(--acc)}
+.blk.over{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.day.dayover{background:var(--acc-a);border-color:var(--acc);
+  box-shadow:0 0 0 3px rgba(252,82,0,.14)}
+.doc[draggable="true"],.blk[draggable="true"],.line[draggable="true"]{cursor:grabbing}
+.doc[draggable="true"],.blk[draggable="true"]{opacity:.55}
+
+/* Подсказка про Enter лежит ПОВЕРХ поля, а не в потоке: во flex-строке
+   она резервировала место даже будучи невидимой, и текст обрывался,
+   не доходя до края. Слева — растушёвка фона, чтобы длинная строка
+   не упиралась в чип, а уходила под него. */
+.wmsg{position:relative}
+.wmsg .ent{position:absolute;right:46px;top:50%;transform:translateY(-50%);
+  font-family:var(--ui);font-size:13px;font-weight:600;letter-spacing:.02em;
+  color:var(--acc-d);background:var(--bg);border-radius:var(--rad-s);padding:3px 7px;
+  opacity:0;transition:opacity .14s;pointer-events:none}
+.wmsg .ent::before{content:"";position:absolute;right:100%;top:-4px;bottom:-4px;width:26px;
+  background:linear-gradient(90deg,rgba(255,241,234,0),var(--acc-a))}
+.wmsg:focus-within .ent{opacity:1}
+.wmsg .ent.done{opacity:1;background:var(--ok);color:var(--on-acc)}
+
+.line .pick{flex:none;height:25px;padding:0 10px;border-radius:var(--rad-s);background:var(--s1);
+  color:var(--tx3);font-size:13px;font-weight:600;white-space:nowrap}
+.line .pick:hover{background:var(--acc-a);color:var(--acc-d)}
+
+/* «В шаблоны» — вторичное действие: заметное, но не спорит с «Назначить» */
+.tosave{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;
+  border-radius:var(--rad-m);background:var(--s1);color:var(--tx2);font-size:14px;font-weight:500;flex:none}
+.tosave:hover{background:var(--acc-a);color:var(--acc-d)}
+.tosave.rm:hover{background:var(--rm-a);color:var(--rm)}
+.tosave.rm svg{width:12px;height:12px}
+.tosave svg{width:13px;height:13px}
+.blkh .x[data-savblk]:hover{color:var(--acc)}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:90;
+  background:var(--ink);color:var(--on-acc);font-size:14.5px;font-weight:500;letter-spacing:-.01em;
+  padding:10px 12px 10px 18px;border-radius:var(--rad-m);box-shadow:0 8px 28px rgba(0,0,0,.22);
+  opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;
+  display:flex;align-items:center;gap:14px}
+.toast .undo{color:var(--acc);font-weight:600;font-size:14.5px;padding:4px 10px;
+  border-radius:var(--rad-s);pointer-events:auto}
+.toast .undo:hover{background:rgba(255,255,255,.1)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.on{pointer-events:auto}
+
+/* ═══════════ ТЕКСТ И КНОПКА AI (CON-5) ═══════════ */
+/* Блок текстом — та же рамка и шапка, что у любого блока, внутри — лист.
+   Пишут как в заметках; лист растёт по тексту (fitText), своей прокрутки нет.
+   Справа оставлено место под кнопку AI в углу. */
+.tbody{position:relative;padding:2px 0}
+.tbx{display:block;width:100%;min-height:80px;resize:none;overflow:hidden;
+  font-family:var(--ui);font-size:15px;line-height:1.6;color:var(--ink);
+  padding:6px 84px 6px 2px}
+.tbx:focus{outline:0}
+.tbx::placeholder{color:var(--tx4)}
+.tbody .aib{position:absolute;top:6px;right:0}
+.aibusy .tbx,.aibusy.line .txt{opacity:.45}
+/* Панель листа — только пока в блоке печатают, как подсказка клавиш под
+   строкой упражнения: кнопка «Список» и клавиши списка. Кнопка горит, когда
+   курсор стоит в пункте. */
+.tbar{display:none;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-size:13.5px;color:var(--tx3)}
+.tblk:focus-within .tbar{display:flex}
+.aibusy .tbar{display:none !important}
+.tfmt{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:var(--rad-s);border:1px solid var(--line2);background:var(--bg);color:var(--tx2);font-size:13.5px;font-weight:600;flex:none;transition:.12s}
+.tfmt:hover{border-color:var(--acc);color:var(--acc-d)}
+.tfmt.on{background:var(--acc-a);border-color:var(--acc);color:var(--acc-d)}
+.tfmt svg{width:15px;height:15px}
+.tkeys{display:flex;flex-wrap:wrap;gap:4px 14px}
+
+/* Кнопка AI — единственный путь из текста в структуру. Образ — по референсу
+   заказчика (dribbble.com/shots/25854034): белая таблетка в радужном кольце,
+   кольцо медленно вращается — так кнопку ИИ узнают без подписи. Звёздочки и
+   буквы — чернилами: радужный текст на белом не читается. При наведении
+   заливка сереет, звёздочки мерцают по очереди; пока ИИ разбирает — кольцо
+   крутится быстрее и звёздочки мерцают без наведения. Цвета кольца — токен
+   --ai-ring темы. Лёгкая тень, как в референсе, приподнимает кнопку над
+   плоским листом — среди строк её видно сразу. */
+@property --aia{syntax:'<angle>';inherits:false;initial-value:0deg}
+.aib{--aif:var(--bg);display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px 0 8px;flex:none;
+  border:2px solid transparent;border-radius:999px;
+  background:linear-gradient(var(--aif),var(--aif)) padding-box,conic-gradient(from var(--aia),var(--ai-ring)) border-box;
+  box-shadow:0 1px 5px rgba(20,20,20,.12);
+  color:var(--ink);font-size:13px;font-weight:600;letter-spacing:.02em;line-height:1;white-space:nowrap;
+  animation:airing 4s linear infinite;transition:box-shadow .15s}
+.aib:hover,.aib.hov{--aif:var(--s1)}   /* .hov — наведение на странице дизайн-системы */
+.aib:focus-visible{outline:0;box-shadow:0 0 0 3px var(--acc-a),0 1px 5px rgba(20,20,20,.12)}
+.aim{display:block;width:16px;height:16px;flex:none}
+.aib:hover .aim path,.aib.hov .aim path,.aib.busy .aim path{animation:aitw 1.2s ease-in-out infinite}
+.aib:hover .aim .s2,.aib.hov .aim .s2,.aib.busy .aim .s2{animation-delay:.4s}
+.aib:hover .aim .s3,.aib.hov .aim .s3,.aib.busy .aim .s3{animation-delay:.8s}
+.aib.sm{height:24px;padding:0 9px 0 6px;font-size:12px;gap:4px;box-shadow:0 1px 3px rgba(20,20,20,.1)}
+.aib.sm .aim{width:14px;height:14px}
+/* Разбирать пока нечего — кнопка на месте, но приглушена. */
+.aib.dim{opacity:.55}
+.aib.busy{cursor:progress;animation-duration:1.1s}
+@keyframes airing{to{--aia:360deg}}
+@keyframes aitw{0%,100%{opacity:1}50%{opacity:.22}}
+@media (prefers-reduced-motion:reduce){ .aib,.aib .aim path{animation:none !important} }
+
+/* Предложение: разобрано, но ещё не принято. Полоса сверху, блоки пунктиром —
+   видно, что это не готовый день, а вариант, от которого можно отказаться. */
+.propose{display:flex;align-items:center;gap:11px;background:var(--acc-a);
+  border-radius:var(--rad-l);padding:11px 13px;margin:10px 0 2px;
+  box-shadow:0 0 0 1.5px var(--acc)}
+.propose .t{flex:1;min-width:0}
+.propose .t b{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--acc-d)}
+.propose .t b svg{width:12px;height:12px}
+.propose .t s{display:block;text-decoration:none;font-size:14.5px;color:var(--tx1);margin-top:2px}
+.propose .lnk{font-size:14px;font-weight:500;color:var(--acc-d);text-decoration:underline;
+  text-underline-offset:2px;flex:none}
+.propose .btn{height:34px;flex:none}
+.propose .btn.gh{background:var(--bg)}
+.blk.pending{border:1.5px dashed var(--acc);background:var(--bg)}
+
+.srcov .md{max-width:560px}
+.src{font-family:var(--mono),ui-monospace,monospace;font-size:14px;line-height:1.7;
+  white-space:pre-wrap;color:var(--tx2);background:var(--s1);border-radius:var(--rad-m);padding:14px 16px;
+  max-height:52vh;overflow:auto}
+
+/* Только что добавленное: короткая вспышка, чтобы глаз нашёл, куда легло */
+.just{animation:just .9s ease-out}
+@keyframes just{
+  0%   {box-shadow:0 0 0 2px var(--acc); background:var(--acc-a)}
+  100% {box-shadow:0 0 0 2px transparent}
+}
+
+/* ═══════════ НЕДЕЛЯ ИЗ ШАБЛОНА ═══════════
+   Выбирают не по названию, а по раскладке: где тяжёлый день, где отдых.
+   Поэтому каждая неделя показана всеми семью днями сразу. */
+.wmd{max-width:820px}
+.wmd .warn{font-size:14.5px;color:var(--tx3);line-height:1.5;margin-bottom:14px}
+.wtpl{display:block;width:100%;text-align:left;border:1.5px solid var(--line);
+  border-radius:var(--rad-l);padding:13px 14px 14px;margin-bottom:10px;background:none;transition:.14s}
+.wtpl:hover{border-color:var(--acc);background:var(--acc-a)}
+.wtpl b{display:block;font-size:16.5px;font-weight:600;letter-spacing:-.02em}
+.wtpl s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx3);margin:3px 0 11px}
+.wdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.wd{border-radius:var(--rad-m);padding:7px 7px 8px;font-size:13px;line-height:1.35;min-height:56px;
+  border:1.5px dashed var(--line2);color:var(--tx3);display:flex;flex-direction:column;gap:3px}
+.wd i{font-style:normal;font-size:12.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--tx3)}
+.wd.on{border-style:solid;border-color:transparent;background:var(--s1);color:var(--tx1)}
+.wtpl:hover .wd.on{background:var(--bg)}
+.wd.on i{color:var(--tx3)}
+.foot-note{border-left:3px solid var(--line2);padding-left:11px;margin-top:4px;
+  font-size:13.5px;line-height:1.5;color:var(--tx3)}
+
+/* ═══════════ СОХРАНЕНИЕ НЕДЕЛИ ═══════════
+   Одно окно, одно решение. Сводка вместо перечисления: тренер хотел
+   сохранить неделю, а не каталогизировать двадцать блоков. */
+.wsave{max-width:600px}
+.wsave .nmf{margin-bottom:14px}
+.wsave .nmf .k{width:70px}
+.audit{border-radius:var(--rad-m);background:var(--s1);padding:12px 13px;margin-bottom:9px}
+.audit b{display:block;font-size:12.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--tx3);margin-bottom:4px}
+.audit s{display:block;text-decoration:none;font-size:15px;color:var(--tx1);font-weight:500}
+.audit.new{background:var(--acc-a)}
+.audit.new b{color:var(--acc-d)}
+.audit .names{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.audit .names span{font-size:13px;color:var(--tx2);background:var(--bg);
+  border-radius:var(--rad-s);padding:3px 8px}
+.audit .chk{display:flex;gap:9px;margin-top:12px;padding-top:11px;
+  border-top:1px solid rgba(0,0,0,.07);cursor:pointer}
+.audit .chk input{width:17px;height:17px;flex:none;margin-top:1px;accent-color:var(--acc)}
+.audit .chk span{font-size:14px;line-height:1.45;color:var(--tx2)}
+.audit .chk b{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em;
+  text-transform:none;letter-spacing:0;color:var(--ink);margin-bottom:2px}
+
+/* Подтверждение очистки: предмет назван, последствия описаны, кнопка
+   действия окрашена в цвет последствия, а не в акцент продукта. */
+.ask{max-width:460px}
+.ask .lead{font-size:16px;line-height:1.5;color:var(--tx1);margin-bottom:5px}
+.ask .lead b{font-weight:600}
+.ask .sub{font-size:14.5px;color:var(--tx3);margin-bottom:14px}
+.btn.rm{background:var(--rm)}
+.btn.rm:hover{background:var(--rm-d)}
+
+/* ─── заголовок рабочей зоны ───
+   Крошки и название переехали сюда из шапки. В шапке они делали её разной на
+   каждом экране и отрывали название от содержимого, к которому относятся;
+   действия страницы тоже здесь, рядом с тем, на что они действуют. */
+.phead{padding:4px 0 16px}
+.phead:empty{display:none}
+.phead .crumb{margin-bottom:7px}
+.phead .ph-row{display:flex;align-items:center;gap:12px;min-width:0}
+.phead h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phead h1{font-family:var(--disp);font-size:25px;font-weight:700;letter-spacing:-.02em;
+  margin:0;line-height:1.2}
+.phead .ph-sub{font-size:14.5px;color:var(--tx3)}
+.phead .sp{flex:1}
+
+/* ─── свёрнутое меню ───
+   Колонка в 64px: только иконки, подписи и счётчики скрыты, слово-логотип
+   уступает место знаку. Название пункта остаётся в title — иначе свёрнутое
+   меню превращается в ребус из восьми одинаковых квадратов. */
+.nh .logo em{display:none;font-style:normal;font:900 22px/1 "Montserrat",var(--ui);
+  letter-spacing:-.04em;color:var(--acc)}
+.navtog{margin-left:auto;width:26px;height:26px;border-radius:var(--rad-s);flex:none;
+  display:grid;place-items:center;color:var(--tx3);opacity:1;transition:opacity .12s}
+.nav:hover .navtog{opacity:1}
+.navtog:hover{background:var(--s1);color:var(--tx1)}
+.navtog svg{width:15px;height:15px}
+
+body.navmin{--navw:64px}
+body.navmin .nh{padding:0 8px;justify-content:center}
+body.navmin .nh .logo i{display:none}
+body.navmin .nh .logo em{display:block}
+body.navmin .navtog{display:none}
+body.navmin .nbody{padding:12px 8px 16px}
+/* Без подписи у пункта схлопывается высота — задаём квадрат явно,
+   иначе иконки слипаются в сплошную полосу. */
+body.navmin .nav a{justify-content:center;padding:0;gap:0;
+  width:40px;height:40px;margin:3px auto;border-radius:var(--rad-m)}
+body.navmin .nav a .ntxt,body.navmin .nav a .cnt{display:none}
+body.navmin .ngrp{font-size:0;padding:12px 0 6px;margin:0 6px;border-top:1px solid var(--line)}
+body.navmin .ngrp:first-child{border-top:0;padding-top:2px}
+body.navmin .nfoot{justify-content:center;padding:10px 0}
+body.navmin .nfoot span:last-child{display:none}
+/* Свёрнутое меню разворачивается по клику на знак — иначе из него не выйти. */
+body.navmin .nh .logo{cursor:pointer}
+
+/* ─── свёрнутая панель источников ───
+   Панель нужна, когда набирают тренировку из базы, и мешает, когда печатают
+   текстом — поэтому сворачивается в колонку 44px. Внутренности не скрываются
+   поштучно: прячем всё содержимое и оставляем только кнопку с подписью. */
+/* .rail остаётся sticky: он и так позиционирован, absolute-кнопке этого достаточно. */
+.railtog{position:absolute;top:10px;right:10px;width:26px;height:26px;z-index:2;
+  border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);
+  background:var(--bg);opacity:1;transition:opacity .12s}
+.rail:hover .railtog{opacity:1}
+.railtog:hover{background:var(--s1);color:var(--tx1)}
+.railtog::before{content:"›";font-size:18.5px;line-height:1;font-weight:600}
+body.railmin{--railw:44px}
+body.railmin .railhead,body.railmin .railbody,body.railmin .railfoot{display:none}
+body.railmin .rail{min-height:180px;align-self:stretch}
+body.railmin .railtog{opacity:1;top:9px;right:9px;left:9px;width:auto;height:26px}
+body.railmin .railtog::before{content:"‹"}
+/* Подпись вертикально: иначе свёрнутая колонка не объясняет, что в ней. */
+/* Подпись свёрнутой панели: вертикально, по центру полосы под стрелкой. Бокс
+   сжимается до ширины строки (left:50% + сдвиг), иначе vertical-rl прижимает
+   текст к правому краю. */
+body.railmin .rail::after{content:attr(data-min);position:absolute;top:48px;left:50%;transform:translateX(-50%);
+  writing-mode:vertical-rl;white-space:nowrap;font-family:var(--ui);font-size:14px;font-weight:600;letter-spacing:0;color:var(--tx2)}
+@media (max-width:1120px){ .railtog{display:none} }
+
+.day{position:relative}
+
+/* ─── конструктор: клиент в строке дорожки ─── */
+.wkh .cliSel{height:32px;padding:0 30px 0 11px;border-radius:var(--rad-m);background:var(--acc-a);
+  border:1.5px solid var(--acc);font-size:14.5px;font-weight:700;color:var(--acc-d);cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:13px;margin-right:6px}
+.wkh .cliSel:hover{background-color:var(--acc-p)}
+
+/* выбор источника в модалке копирования */
+.pk-src{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:14px;color:var(--tx3)}
+.pk-src select{height:32px;padding:0 10px;border-radius:var(--rad-m);background:var(--s1);font-size:14.5px;
+  font-weight:600;color:var(--ink);cursor:pointer}
+/* список выбора в модалке (шаблон / чужая тренировка) */
+.pk{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;padding:11px 13px;
+  border-radius:var(--rad-m);border-bottom:1px solid var(--line)}
+.pk:hover{background:var(--s2)}
+.pk b{font-size:15px;font-weight:600}
+.pk s{text-decoration:none;font-size:13px;color:var(--tx3)}
+
+/* ─── лента недели: пустые и несуществующие дни ─── */
+.day.void{visibility:hidden}
+.day.empty{background:var(--s1)}
+.day.empty:hover{border-color:var(--acc)}
+.day.out{cursor:default}
+.wkh .hint{text-decoration:none;font-size:14px;color:var(--acc-d);font-weight:600}
+/* действия тренировки — под названием, над блоками */
+.docacts{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 10px}
+.docacts .btn.sm{height:30px;padding:0 11px;font-size:14px}
+.docacts .btn svg{width:14px;height:14px}
+
+/* заголовок панели источников */
+.railttl{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin:0 0 9px 2px}
+
+/* ─── черновик и публикация ─── */
+.day .dr{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--warn);background:#FBF1DE;border-radius:4px;padding:1px 5px;width:fit-content}
+/* Панель сохранения (CON-20) прилипает к низу экрана: сохранить можно в любой
+   момент, не прокручивая длинный день до конца. Слева — статус, справа —
+   «Сохранить»; между ними — что ещё не сохранено. */
+.pubbar{display:flex;align-items:center;justify-content:flex-end;gap:20px;margin:14px -16px -18px;padding:12px 16px;border-top:1px solid var(--line);
+  position:sticky;bottom:0;z-index:15;background:var(--bg);box-shadow:0 -8px 18px -12px rgba(20,20,20,.18)}
+body.bk-on .pubbar{bottom:76px}
+/* «Опубликовать» — переключатель: включён — клиент видит тренировку. */
+.pubsw{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 2px;font-size:15px;font-weight:600;color:var(--tx2);flex:none;border-radius:var(--rad-s)}
+.pubsw i{position:relative;width:38px;height:22px;border-radius:11px;background:var(--line2);flex:none;transition:background .15s}
+.pubsw i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18);transition:left .15s}
+.pubsw:hover:not(:disabled) i{background:var(--tx4)}
+.pubsw.on{color:var(--ink)}
+.pubsw.on i,.pubsw.on:hover:not(:disabled) i{background:var(--ok)}
+.pubsw.on i::after{left:19px}
+.pubsw:disabled{color:var(--tx4);cursor:default}
+.pubsw:disabled i{opacity:.5}
+.pubsw:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.pubbar s{text-decoration:none;flex:1;font-size:14px;color:var(--tx3);line-height:1.45}
+.pubbar .btn{height:40px;padding:0 20px;font-size:15.5px}
+
+/* ─── заметка к блоку: за иконкой, компактной строкой ───
+   Заметки пишут к 5–10 % блоков; постоянная полоса под каждым заголовком
+   давала им вес, которого у них нет. */
+
+.bnote{display:flex;align-items:center;gap:7px;padding:2px 2px 6px;color:var(--tx3)}
+.bnote span{display:flex;flex:none}
+.bnote span svg{width:13px;height:13px}
+.bnote input{flex:1;min-width:0;font-size:14px;color:var(--tx2);background:none;padding:3px 0}
+.bnote input::placeholder{color:var(--tx4)}
+.bnote input:focus{outline:0;color:var(--tx1)}
+.wkh .iact{width:32px;height:32px;border-radius:var(--rad-m);display:grid;place-items:center;color:var(--tx3);background:var(--s1)}
+.wkh .iact:hover{background:var(--s2);color:var(--ink)}
+.wkh .iact svg{width:15px;height:15px}
+
+/* ─── кнопка шапки со списком ─── */
+.tsplit{position:relative;display:inline-flex}
+.tsplit .btn:first-child{border-radius:var(--rad-m) 0 0 var(--rad-m)}
+.tsplit .btn.arrow{width:34px;padding:0;justify-content:center;border-radius:0 var(--rad-m) var(--rad-m) 0;border-left:1px solid rgba(255,255,255,.28)}
+.tsplit .btn{text-decoration:none;font:600 13.5px/1 var(--ui);letter-spacing:-.01em}
+.tsplit .btn.arrow svg{width:14px;height:14px}
+.dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:300px;background:var(--bg);
+  border:1px solid var(--line);border-radius:var(--rad-l);padding:6px;z-index:60}
+.dd.on{display:block}
+.dd-i{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:var(--rad-m);text-decoration:none;color:inherit}
+.dd-i:hover{background:var(--s1)}
+.dd-i svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--acc)}
+.dd-i b{display:block;font-size:14.5px;font-weight:600}
+.dd-i s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);margin-top:2px;line-height:1.4}
+/* ─── визард ─── */
+.wz-steps{display:flex;gap:18px;padding:0 18px 12px;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx3)}
+.wz-steps span{display:flex;align-items:center;gap:7px}
+.wz-steps i{font-style:normal;width:20px;height:20px;border-radius:50%;background:var(--s1);display:grid;place-items:center;font-size:13px;font-weight:700}
+.wz-steps .on{color:var(--ink);font-weight:600}
+.wz-steps .on i{background:var(--acc);color:#fff}
+.wz-steps .done i{background:var(--ok-a);color:var(--ok)}
+.wz .mdb{max-height:52vh;overflow:auto}
+.wz-list{display:flex;flex-direction:column}
+.wz-it{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rad-m);cursor:pointer;border-bottom:1px solid var(--line)}
+.wz-it:hover{background:var(--s2)}
+.wz-it.on{background:var(--acc-a)}
+.wz-it input{display:none}
+.wz-it .tick{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;background:var(--bg)}
+.wz-it .tick svg{width:12px;height:12px;color:#fff;opacity:0}
+.wz-it.on .tick{background:var(--acc);border-color:var(--acc)}
+.wz-it.on .tick svg{opacity:1}
+.wz-it .t b{display:block;font-size:15px;font-weight:600}
+.wz-it .t s{display:block;text-decoration:none;font-size:13px;color:var(--tx3)}
+.wz-it.static{cursor:default}
+.wz-n{text-decoration:none;font-size:14px;color:var(--tx3)}
+.wz-pub{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--tx2)}
+
+/* ─── панель настройки упражнения ─── */
+.sug.setup{width:480px;padding:12px 14px 10px}
+.st-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.st-head b{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.st-head s{text-decoration:none;font-size:13.5px;color:var(--tx3);white-space:nowrap}
+.st-pmrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;margin:-4px 0 12px;background:var(--s2);border-radius:var(--rad-m);font-size:14px;color:var(--tx2)}
+.st-pmrow s{text-decoration:none;flex-basis:100%;font-size:13px;color:var(--tx3)}
+.st-grid{display:grid;grid-template-columns:134px 1fr;gap:12px 12px;align-items:center}
+.st-l{font-size:14px;color:var(--tx3)}
+.st-v{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.st-v i{font-style:normal;color:var(--tx3)}
+.st-n{width:58px;height:32px;border:1px solid var(--line2);border-radius:var(--rad-s);padding:0 8px;font:inherit;font-size:15px;font-weight:600;background:var(--bg);text-align:center}
+.st-n.wide{width:120px;text-align:left}
+.st-n:focus{outline:0;border-color:var(--acc)}
+.st-seg{display:inline-flex;border:1px solid var(--line2);border-radius:var(--rad-s);overflow:hidden}
+.st-seg button{height:30px;padding:0 10px;font-size:14px;font-weight:600;color:var(--tx2);border-right:1px solid var(--line2);white-space:nowrap}
+.st-seg button:last-child{border-right:0}
+.st-seg button:hover{background:var(--s1)}
+.st-seg button.on{background:var(--acc);color:#fff}
+.st-lnk{font-size:14px;color:var(--acc-d);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer}
+.st-res{text-decoration:none;font-size:14px;color:var(--tx3);white-space:nowrap}
+.st-res b{color:var(--ink);font-weight:600}
+.st-res i{font-style:normal;color:var(--warn,#b45309)}
+.st-foot{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.st-foot .sp{flex:1}
+.st-foot .lnk{font-size:14px;color:var(--tx3)}
+.st-foot .btn.sm{height:30px;padding:0 12px;font-size:14px}
+/* ─── визард: вкладки и форма ─── */
+.wz-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.wz-tabs button{height:28px;padding:0 12px;border-radius:20px;font-size:14px;color:var(--tx3);background:var(--s1);font-weight:500}
+.wz-tabs button:hover{color:var(--ink)}
+.wz-tabs button.on{background:var(--acc);color:#fff;font-weight:600}
+.wz-row{display:flex;gap:14px;margin-bottom:14px}
+.wz-f{display:flex;flex-direction:column;gap:5px;flex:1}
+.wz-f span{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+.wz-f select,.wz-f input{height:36px;border:1px solid var(--line2);border-radius:var(--rad-m);padding:0 10px;font:inherit;font-size:15px;background:var(--bg)}
+.wz-h{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px}
+
+/* ─── заголовок конструктора в строке ленты ─── */
+.wkh .wkttl{font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 6px 0 0;white-space:nowrap}
+.bnote .x{width:22px;height:22px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none}
+.bnote .x:hover{background:var(--s1);color:var(--acc)}
+.bnote .x svg{width:12px;height:12px}
+
+/* ─── тип блока ─── */
+.blkh .ftype{height:24px;padding:0 9px;border-radius:20px;font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--tx3);background:var(--bg);border:1px dashed var(--tx4);flex:none;white-space:nowrap}
+.blkh .ftype:hover{color:var(--tx2);border-color:var(--tx3)}
+.blkh .ftype.on{background:var(--acc-a);color:var(--acc-d);border:1px solid transparent;text-transform:none;letter-spacing:0;font-size:13.5px}
+.sug.ftp{width:440px}
+.ft-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ft-list button{height:28px;padding:0 11px;border-radius:20px;font-size:14px;font-weight:600;background:var(--s1);color:var(--tx2)}
+.ft-list button:hover{background:var(--s2);color:var(--ink)}
+.ft-list button.on{background:var(--acc);color:#fff}
+.tplc .h .ft{text-decoration:none;font-size:13px;font-weight:700;color:var(--acc-d);background:var(--acc-a);border-radius:20px;padding:2px 7px;margin-left:6px;white-space:nowrap}
+/* ─── упражнение текстом ─── */
+.st-n.full{width:100%;text-align:left;font-weight:500;font-size:14.5px}
+.setup.txt-on .dim{opacity:.4}
+
+/* ─── выбор клиента: кнопка и список с поиском ─── */
+.wkh .cliSel{display:inline-flex;align-items:center;gap:8px;padding:0 10px 0 6px;background-image:none;-webkit-appearance:none;appearance:none;cursor:pointer;font-weight:600;font-size:15px}
+.wkh .cliSel .cn{white-space:nowrap}
+.wkh .cliSel svg{width:12px;height:12px;opacity:.75;flex:none}
+.cav{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center;flex:none;letter-spacing:0}
+.sug.clipick{width:380px;padding:8px}
+.clipick .cl-s{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:var(--rad-m);background:var(--s1);margin-bottom:6px}
+.clipick .cl-s svg{width:14px;height:14px;color:var(--tx3);flex:none}
+.clipick .cl-s input{flex:1;min-width:0;height:100%;font-size:14.5px;border:0;outline:0;background:none;padding:0}
+.clipick .cl-s:focus-within{background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.clipick .cl-s:focus-within svg{color:var(--acc)}
+.clipick .cl-list{overflow:auto;max-height:360px}
+.clipick .row.cur .cl-t b{color:var(--acc-d)}
+.clipick .row > svg{width:14px;height:14px;color:var(--acc);flex:none}
+.clipick .cl-t{flex:1;min-width:0}
+.clipick .cl-t b{display:block;font-size:15px;font-weight:600}
+.clipick .cl-t s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ─── навигация по неделям под заголовком ─── */
+.wkn2{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.wkn2 .wkn{display:flex;gap:3px}
+.wkn2 .wkn button{width:28px;height:28px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);display:grid;place-items:center}
+.wkn2 .wkn button:hover:not(:disabled){background:var(--s2);color:var(--ink)}
+.wkn2 .wkn button:disabled{color:var(--tx4);cursor:default;background:none}
+.wkn2 .wkn svg{width:14px;height:14px}
+.wkn2 .today{height:28px;padding:0 11px;border-radius:var(--rad-s);background:var(--s1);font-size:13.5px;font-weight:600;color:var(--tx2)}
+.wkn2 .today:hover:not(:disabled){background:var(--s2);color:var(--ink)}
+.wkn2 .today:disabled{color:var(--tx4);background:none;cursor:default}
+
+/* ─── ориентиры ленты: диапазон, сегодня, вид ─── */
+.wkh .wkrange{text-decoration:none;font-size:15px;font-weight:600;color:var(--ink);margin-left:4px;white-space:nowrap}
+.wkn2 .sp{flex:1}
+.vtog{display:inline-flex;border:1px solid var(--line2);border-radius:var(--rad-s);overflow:hidden}
+.vtog button{width:34px;height:32px;display:grid;place-items:center;color:var(--tx3);border-right:1px solid var(--line2)}
+.vtog button:last-child{border-right:0}
+.vtog button:hover{background:var(--s1);color:var(--tx2)}
+.vtog button.on{background:var(--acc-a);color:var(--acc-d)}
+.vtog svg{width:15px;height:15px}
+.day .d{display:flex;align-items:center;gap:5px}
+.day .d .tdot{width:6px;height:6px;border-radius:50%;background:var(--acc);display:inline-block;flex:none}
+.day.today{box-shadow:inset 0 0 0 1.5px var(--acc-p, #FFC9AD)}
+.day.today.on{box-shadow:none}
+
+/* ─── календарь: месяц одного клиента ─── */
+/* .wk занят виджетом недели на дашборде (pages.css) — у календаря свой контейнер */
+.calwrap{background:var(--bg);border-radius:var(--rad-l);padding:12px 14px}
+.psum{text-decoration:none;font-size:14px;color:var(--tx3);margin-left:6px}
+.mon{margin-bottom:22px}
+.monh{position:sticky;top:calc(58px + var(--wkh, 62px));z-index:3;background:var(--bg);padding:10px 0 6px;margin:0 -2px;padding-left:2px;padding-right:2px}
+.monh b{display:block;font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+.dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:4px}
+.dow span{font-size:13.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:0 11px}
+.days.cal .day{text-decoration:none;color:inherit}
+.days.cal .day.dim{opacity:.55}
+/* правая панель клиентов */
+.crow{display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:var(--rad-m);cursor:pointer;width:100%;text-align:left}
+.crow:hover{background:var(--s1)}
+.crow.on{background:var(--acc-a)}
+.crow .cav{width:30px;height:30px;font-size:13px}
+.crow .body{flex:1;min-width:0}
+.crow .body b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .body s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow.on .body b{color:var(--acc-d)}
+.crow .fl{flex:none;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:20px;background:#FBF1DE;color:var(--warn)}
+.crow .fl.rm{background:var(--rm-a);color:var(--rm)}
+.crow .fl.gh{background:var(--s1);color:var(--tx3)}
+
+/* липкая шапка календаря: «Сегодня» и переход к дате всегда под рукой */
+.calwrap .wkh{position:sticky;top:58px;z-index:4;background:var(--bg);margin:-12px -14px 6px;padding:12px 14px 10px;border-radius:var(--rad-l) var(--rad-l) 0 0;border-bottom:1px solid var(--line)}
+.jump{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);font-size:13.5px;font-weight:600;cursor:pointer}
+.jump svg{width:14px;height:14px;color:var(--tx3)}
+.jump input{border:0;background:none;font:inherit;color:inherit;width:118px;cursor:pointer}
+.jump input:focus{outline:0}
+.day.flash{box-shadow:0 0 0 2px var(--acc);transition:box-shadow .3s}
+.crow{padding:7px 8px}
+.crow .body b{font-size:15px}
+
+/* ─── общий каркас списков: карточка во всю ширину + правая панель ─── */
+.pane{background:var(--bg);border-radius:var(--rad-l);padding:0 14px 14px;min-height:60vh}
+.pane-h{position:sticky;top:58px;z-index:4;background:var(--bg);display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 0 10px;margin:0 -14px 8px;padding-left:14px;padding-right:14px;border-bottom:1px solid var(--line);border-radius:var(--rad-l) var(--rad-l) 0 0}
+.pane-h .cnt{font-size:13.5px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:20px;padding:2px 8px;margin-left:-4px}
+.pane-h .sp{flex:1}
+.pane-h .chk{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--tx2);cursor:pointer;white-space:nowrap}
+.pane .tblwrap{margin:0 -14px;overflow:visible}   /* overflow:auto сделал бы обёртку контейнером для sticky */
+.pane .tbl th{position:sticky;top:116px;background:var(--bg);z-index:3}
+.pane .tbl tbody tr.on{background:var(--acc-a)}
+.pane .tbl tbody tr.on td{border-bottom-color:transparent}
+.rhead{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:12px 8px 6px}
+.rlist{display:flex;flex-direction:column;gap:1px}
+.rlist button{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rad-m);font-size:14.5px;color:var(--tx2);width:100%;text-align:left}
+.rlist button:hover{background:var(--s1)}
+.rlist button.on{background:var(--acc-a);color:var(--acc-d);font-weight:600}
+.rlist button s{text-decoration:none;font-size:13px;color:var(--tx3)}
+.rprev{padding:2px 8px 8px}
+.rprev .rt{display:block;font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+.rprev .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.rprev .rlines{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--tx2)}
+.rprev .rlines span{padding:5px 0;border-bottom:1px solid var(--line)}
+.rprev .rlines span:last-child{border-bottom:0}
+.rprev .rtext{font-size:14px;color:var(--tx2);line-height:1.5}
+.rprev .kv{grid-template-columns:auto 1fr;font-size:14px;margin-top:4px}
+.rprev .kv b{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:600}
+.rprev .avrow{margin:6px 0 4px}
+.rprev .avrow .av{width:44px;height:44px;font-size:16.5px}
+.rprev .acts{margin-top:12px}
+.pagewrap.wide{max-width:none}
+.rprev .kv{gap:8px 12px}
+.rprev .kv s{white-space:nowrap;padding-top:1px}
+.rprev .kv b .chip{height:20px}
+
+/* GIF-демонстрация упражнения (сэмпл EDB) */
+.thumb{overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.rgif{display:block;width:100%;border-radius:var(--rad-m);border:1px solid var(--line);margin:4px 0 10px;background:#fff}
+.thumb img{object-fit:cover;object-position:center 40%}
+
+/* ─── дашборд: лента в две колонки + панель «Аккаунт» ─── */
+.evday{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:12px 12px 6px}
+.fev{display:flex;gap:11px;padding:11px 12px;border-bottom:1px solid var(--line);align-items:flex-start}
+.fev:last-child{border-bottom:0}
+.fev .ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--s1);color:var(--tx3);font-size:13px;font-weight:700;flex:none}
+.fev .ico svg{width:15px;height:15px}
+.fev.t-pr .ico{background:var(--acc-a);color:var(--acc)}
+.fev.t-q .ico{background:#E6F1FB;color:#185FA5}
+.fev.t-miss .ico{background:#FBF1DE;color:var(--warn)}
+.fev.t-prog .ico{background:var(--rm-a);color:var(--rm)}
+.fev.t-new .ico,.fev.t-done .ico{background:var(--ok-a);color:var(--ok)}
+.fev .c{flex:1;min-width:0}
+.fev .h{display:flex;gap:8px;align-items:baseline}
+.fev .h b{font-size:14.5px;font-weight:600}
+.fev .h time{margin-left:auto;font-size:13px;color:var(--tx3);white-space:nowrap}
+.fev .tx{font-size:14px;color:var(--tx2);margin-top:2px;line-height:1.45}
+.fev .btn{flex:none;margin-top:1px}
+.fev .reply{display:flex;align-items:center;gap:8px;margin-top:9px;padding:8px 10px;border-radius:var(--rad-m);background:var(--s1)}
+.fev .reply input{flex:1;min-width:0;font-size:14px}
+.dash2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:0;margin:0 -14px}
+.dash2 .col{min-width:0;padding:0 2px}
+.dash2 .col+.col{border-left:1px solid var(--line)}
+.dash2 .colh{display:flex;align-items:center;gap:8px;padding:12px 12px 4px}
+.dash2 .colh b{font-family:var(--disp);font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.dash2 .colh .n{font-size:13.5px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:20px;padding:2px 8px}
+.pane-h .ph-sub{font-size:14.5px;color:var(--tx3)}
+.rkpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 8px 0}
+.rkpis .kpi{background:var(--s1);padding:10px 11px}
+.rkpis .kpi .v{font-size:21px;margin:3px 0 1px}
+.rkpis .kpi .k{font-size:13px}
+.rkpis .kpi .d{font-size:13px}
+.kpi .tr{display:inline-block;margin-left:5px;font-size:13px;font-weight:600;color:var(--ok)}
+.kpi .tr.dn{color:var(--rm)}
+.act{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.act:last-child{border-bottom:0}
+.act .n{width:26px;height:26px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);font-size:13px;font-weight:700;display:grid;place-items:center;flex:none}
+.act .t{flex:1;min-width:0}
+.act .t s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dkpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:12px 0 6px}
+.dkpis .kpi{background:var(--s1)}
+.dash2{margin-top:8px}
+
+/* ─── одна лента: подписи типов и фильтр ─── */
+.feed1{margin:0 -14px}
+.feed1 .evday{padding-left:14px}
+.feed1 .fev{padding-left:14px;padding-right:14px}
+.tabs2{display:flex;gap:4px;flex-wrap:wrap;padding:8px 0 6px;border-bottom:1px solid var(--line);margin:0 -14px;padding-left:14px;padding-right:14px}
+.tabs2 button{height:28px;padding:0 11px;border-radius:20px;font-size:14px;font-weight:600;color:var(--tx2);background:none}
+.tabs2 button:hover{background:var(--s1)}
+.tabs2 button.on{background:var(--acc-a);color:var(--acc-d)}
+.tabs2 button s{text-decoration:none;font-weight:500;color:var(--tx3);margin-left:4px}
+.tchip{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--s1);color:var(--tx3);white-space:nowrap}
+.tchip.t-pr{background:var(--acc-a);color:var(--acc-d)}
+.tchip.t-q{background:#E6F1FB;color:#185FA5}
+.tchip.t-miss{background:#FBF1DE;color:var(--warn)}
+.tchip.t-prog{background:var(--rm-a);color:var(--rm)}
+.tchip.t-new,.tchip.t-done{background:var(--ok-a);color:var(--ok)}
+/* крестик удаления сообщения клиенту — в тон полосы */
+.wmsg .x{width:26px;height:26px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--acc-d);flex:none}
+.wmsg .x:hover{background:var(--rm-a);color:var(--rm)}
+.wmsg .x svg{width:13px;height:13px}
+
+/* ─── статусы дня: отдых · черновик · опубликована · соревнование ─── */
+.day .dmark{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--tx3);background:none;padding:0}
+.day .dmark svg{width:21px;height:21px;stroke-width:2.4}
+.day .dmark.pub{color:var(--ok)} .day .dmark.draft{color:var(--warn)} .day .dmark.comp{color:#B8860B}
+.dmark[data-pub]{cursor:pointer}
+.dmark[data-pub]:hover{background:var(--bg);box-shadow:0 0 0 1px var(--line2)}
+.day.on .dmark[data-pub]:hover{background:var(--acc-a)}
+.day .stcell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 0 6px;color:var(--tx3);font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.day .stcell svg{width:28px;height:28px;stroke-width:2}
+.day .stcell s{text-decoration:none}
+.day .stcell.comp{color:#B8860B}
+.day.comp{background:#FFF8E6} .day.comp:hover{background:#FFF3D6} .day.comp.on{background:#FFF3D6;border-color:#E3B341}
+.day.draft{border-style:dashed;border-color:#E3C170}
+
+/* ─── страница календаря без правой панели: одна колонка, крупнее кегль ─── */
+.cons.one{grid-template-columns:minmax(0,1fr)}
+
+/* ═══════════ ЯЧЕЙКА ДНЯ, вариант А: шапка-полоса (день недели, число, статус) + тело (название, список блоков) ═══════════
+   Одна анатомия для календаря, полосы недель конструктора и карточки клиента.
+   Серым — только служебное: сокращение дня недели, номера блоков, «Отдых». */
+.days .day{position:relative;background:var(--bg);border:1.5px solid var(--line);border-radius:var(--rad-l);padding:0;display:flex;flex-direction:column;gap:0;overflow:hidden;min-height:150px;text-align:left;color:inherit;text-decoration:none}
+.days .day:hover{background:var(--bg);border-color:var(--line2)}
+/* margin:0 — иначе общий .empty .d (пустое состояние) добавляет отступы шапке несоставленного дня */
+.days .day .d{display:flex;align-items:center;gap:6px;height:36px;flex:none;margin:0;padding:0 40px 0 12px;background:var(--s2);border-bottom:1px solid var(--line);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink)}
+.days .day .d s{text-decoration:none;color:var(--tx3);font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.days .day .d .tdot{display:none}
+.day .d .udot{width:7px;height:7px;border-radius:50%;background:var(--warn);display:inline-block;flex:none}
+.days .day .dmark{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--tx3);background:var(--s1)}
+.days .day .dmark svg{width:18px;height:18px;stroke-width:2.2}
+.days .day .dmark.pub{background:#E4F4EA;color:var(--ok)}
+.days .day .dmark.draft{background:#FBF1DE;color:var(--warn)}
+.days .day .dmark.comp{background:#FFE9A8;color:#8A6300}
+.days .day .dmark[data-pub]:hover{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--line2)}
+.days .day .t{margin:10px 12px 0;font-size:16.5px;font-weight:600;line-height:1.25;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.days .day .bl{display:flex;flex-direction:column;gap:2px;margin:8px 12px 12px;padding-top:8px;border-top:1px solid #EDEDED}
+.days .day .bl i{font-size:14.5px;color:var(--ink);line-height:22px}
+.days .day .bl.num i{grid-template-columns:20px minmax(0,1fr)}
+.days .day .bl.num i s{font-size:13px;color:var(--tx3);font-weight:700}
+.days .day .bl .more{font-size:13px;color:var(--tx3);padding-left:20px;line-height:20px}
+.days .day .stcell{flex:none;flex-direction:row;justify-content:flex-start;gap:8px;margin:10px 12px 12px;padding:0;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--tx3)}
+.days .day .stcell svg{width:26px;height:26px;flex:none}
+.days .day .stcell.rest{flex:1;align-items:center;justify-content:center;margin:2px 12px 10px}
+.days .day .stcell.rest img{width:72px;height:72px;flex:none;opacity:.9}
+.days .day .stcell.comp{color:#8A6300}
+.days .day .stcell.comp svg{stroke-width:2}
+/* статусы */
+.days .day.rest,.days .day.empty{background:#FBFBFB;border-style:dashed}
+.days .day.empty{cursor:pointer}
+.days .day.empty:hover{border-color:var(--acc)}
+.days .day.out{opacity:.55;cursor:default}
+.days .day.draft{border-style:dashed;border-color:#E3C170}
+.days .day.comp{border-color:#F0D9A0}
+.days .day.comp .d{background:#FFF3D6;border-color:#F0D9A0;color:#6B4B00}
+.days .day.comp .d s{color:#8A6300}
+.days .day.today{border-color:var(--acc);box-shadow:none}
+.days .day.today .d{background:var(--acc-a);border-color:#FFD9C4;color:var(--acc-d)}
+.days .day.today .d s{color:var(--acc-d)}
+.days .day.on{border-color:var(--acc);background:var(--bg);box-shadow:0 0 0 2px var(--acc-p)}
+.days .day.on .d{background:var(--acc-a);color:var(--acc-d)}
+.days .day.on .d s{color:var(--acc-d)}
+/* компактный вид: шапка + одна строка */
+.days.compact .day{min-height:auto;padding:0;gap:0}
+.days.compact .day .d{height:32px}
+.days.compact .day .t{margin:8px 12px 10px;font-size:15.5px;-webkit-line-clamp:1}
+.days.compact .day .stcell{margin:7px 12px 9px}
+.days.compact .day .stcell svg{width:20px;height:20px}
+.days.compact .day .stcell.rest{flex:none;justify-content:flex-start;margin:6px 12px 8px}
+.days.compact .day .stcell.rest img{width:24px;height:24px}
+/* календарь на всю ширину — чуть крупнее */
+.days.cal:not(.compact) .day{min-height:156px}
+.days.cal .day .t{font-size:17px}
+.days.cal .day .bl i{font-size:15px}
+
+/* ─── шапка календаря: кнопки-действия и выбор даты ─── */
+.wkh .btn.sm{height:32px;padding:0 13px;font-size:14px}
+.wkh .jumpb{gap:7px;padding:0 10px 0 11px}
+.wkh .jumpb svg{width:15px;height:15px;color:var(--tx3)}
+.wkh .jumpb span{font-variant-numeric:tabular-nums}
+.sug.dpick{min-width:0;width:372px;padding:12px 12px 10px}
+.dp-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dp-h b{font-family:var(--disp);font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.dp-nav{width:32px;height:32px;border-radius:var(--rad-s);background:var(--s1);display:grid;place-items:center;color:var(--tx2)}
+.dp-nav:hover{background:var(--acc-a);color:var(--acc-d)}
+.dp-nav svg{width:16px;height:16px}
+.dp-w{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:2px}
+.dp-w span{text-align:center;height:26px;line-height:26px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+.dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dp-d{height:44px;border-radius:var(--rad-m);font-size:15.5px;font-weight:600;color:var(--ink);background:none;font-variant-numeric:tabular-nums}
+.dp-d:hover{background:var(--s1)}
+.dp-d.out{color:var(--tx4);font-weight:500}
+.dp-d.today{box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc-d)}
+.dp-d.sel{background:var(--acc);color:var(--on-acc);box-shadow:none}
+.dp-f{display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.pubbar .btn:disabled{background:var(--s1);color:var(--tx4);cursor:default}
+.pubbar .btn:disabled svg{opacity:.5}
+
+/* ─── подсказки (вместо системных title) ─── */
+.tip{position:fixed;z-index:1000;max-width:340px;padding:7px 11px;border-radius:var(--rad-m);background:#1F1F1F;color:#fff;font-size:14px;font-weight:500;line-height:1.35;box-shadow:0 6px 20px rgba(0,0,0,.18);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .1s,transform .1s}
+.tip.on{opacity:1;transform:none}
+/* статус тренировки слева от названия — индикатор, не кнопка */
+.doch .dst{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px 0 8px;border-radius:20px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;flex:none;cursor:pointer;transition:box-shadow .12s}
+.doch .dst:hover{box-shadow:0 0 0 1.5px currentColor}
+.doch .dst svg{width:16px;height:16px;stroke-width:2.2}
+.doch .dst.pub{background:#E4F4EA;color:var(--ok)}
+.doch .dst.draft{background:#FBF1DE;color:var(--warn)}
+
+/* главная кнопка шапки — кегль как у остальных кнопок действий */
+.tsplit .btn{font-size:15px;height:38px}
+.tsplit .btn.arrow{width:38px}
+
+/* кнопка клиента в шапках календаря и конструктора — в две строки, как строка списка выбора */
+.wkh .cliSel{height:46px;padding:0 30px 0 7px;gap:9px;text-align:left}
+.wkh .cliSel .cl-t{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.wkh .cliSel .cl-t b{font-size:15px;font-weight:600;color:var(--acc-d);white-space:nowrap}
+.wkh .cliSel .cl-t s{text-decoration:none;font-size:13px;font-weight:500;color:var(--tx3);white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis}
+.wkh .cliSel .cav{width:30px;height:30px;font-size:12.5px}
+
+/* ─── подробный вид дня: блок → упражнения со схемой и весом ─── */
+.days .day .bxs{margin:8px 12px 12px;display:flex;flex-direction:column;gap:6px}
+.days .day .bx{padding-top:7px;border-top:1px solid #EDEDED}
+.days .day .bx:first-child{border-top:0;padding-top:0}
+.days .day .bxh{margin-bottom:1px}
+/* Номер вплотную к названию блока; упражнения внутри — глубже названия, чтобы иерархия читалась по отступу. */
+.days .day .bxh{display:grid;grid-template-columns:12px minmax(0,1fr) auto;align-items:baseline;gap:0 6px;font-size:15.5px;font-weight:500;line-height:21px}
+.days .day .bxh s{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--tx3);font-variant-numeric:tabular-nums}
+.days .day .bxh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.days .day .bxh i{font-style:normal;font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--acc-d)}
+/* Упражнение: название и параметры в одной строке, если помещаются; если нет —
+   параметры целиком переносятся на следующую строку под название (обычный
+   текстовый перенос, без выравнивания вправо). */
+/* Упражнение начинается на одной вертикали с названием блока; висячий отступ:
+   если строка не влезла, продолжение (параметры) идёт со сдвигом вправо. */
+.days .day .bxi{display:block;padding:2px 0 2px 30px;text-indent:-12px;font-size:14.5px;line-height:20px}
+.days .day .bxi span{color:var(--ink)}
+.days .day .bxi em{display:inline-block;max-width:100%;margin-left:6px;text-indent:0;font-style:normal;font-size:14px;color:var(--acc-d);font-weight:600;font-variant-numeric:tabular-nums;white-space:normal;vertical-align:baseline}
+.days .day .bxi em:empty{display:none}
+.days .day .bxi em u{text-decoration:none;color:var(--acc-d);background:var(--acc-a);border-radius:5px;padding:0 6px;display:inline-block;line-height:19px}
+.days.cal.detail .day .bxi{font-size:15px;line-height:21px}
+.days.cal.detail .day .bxi em{font-size:14.5px}
+.days.detail .day.rest .stcell{min-height:110px}
+
+/* ─── единая шапка календаря и конструктора в одну строку:
+   заголовок · клиент по центру · даты · вид ─── */
+.wkh.one{display:flex;align-items:center;flex-wrap:nowrap;gap:14px;min-height:46px}
+.wkh.one .wkttl{margin:0;line-height:32px}
+.wkh.one .cliSel{margin:0}
+.wkh.one .dates{margin-left:auto}
+.wkh.one .dates{display:flex;align-items:center;gap:8px;flex:none}
+.wkh.one .views{display:flex;align-items:center;flex:none;margin-left:6px}
+
+/* ─── название страницы в шапке приложения: один шрифт везде ─── */
+.topbar .ptitle{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0;white-space:nowrap;display:flex;align-items:center;gap:9px}
+.topbar .ptitle .ptd{font-weight:500;color:var(--tx3);letter-spacing:-.01em}
+.topbar .ptitle .ptd:not(:empty)::before{content:"·";margin-right:9px;color:var(--tx4)}
+.topbar .ptitle .cnt{font-size:13.5px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:20px;padding:2px 8px;letter-spacing:0}
+.days.hide{display:none}
+
+/* плашка при перетаскивании упражнения, блока или тренировки */
+.dragghost{position:fixed;top:-200px;left:0;z-index:9999;padding:8px 13px;border-radius:var(--rad-m);background:var(--ink);color:#fff;font:600 14px/1.2 var(--ui);white-space:nowrap;max-width:320px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+
+/* ═══════════ массовые действия с днями ═══════════ */
+/* галочка в шапке дня — видна всегда */
+.bk-box{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--tx3);background:var(--bg);display:inline-grid;place-items:center;flex:none;cursor:pointer;color:transparent;margin-right:2px;user-select:none;transition:border-color .1s,background .1s}
+.bk-box svg{width:12px;height:12px}
+.bk-box:hover{border-color:var(--acc)}
+.bk-box.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.days .day.bksel{outline:2px solid var(--acc);outline-offset:-1px}
+.days .day.bksel .d{background:var(--acc-a)}
+/* выбор даты кликом по календарю */
+body.bk-picking .days .day[data-date]{cursor:copy}
+body.bk-picking .days .day[data-date]:hover{outline:2px dashed var(--acc);outline-offset:-1px}
+/* строка действий снизу */
+.bk-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:70;display:none;align-items:center;gap:2px;padding:7px 8px 7px 18px;border-radius:14px;background:#1F1F1F;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.28);white-space:nowrap}
+body.bk-on .bk-bar{display:flex}
+body.bk-on .page{padding-bottom:96px}
+body.bk-on .toast{bottom:96px}
+.bk-bar .bk-n{display:flex;flex-direction:column;line-height:1.2;margin-right:8px}
+.bk-bar .bk-n b{font-size:15px;font-weight:600}
+.bk-bar .bk-n s{text-decoration:none;font-size:13px;color:rgba(255,255,255,.7)}
+.bk-bar .bk-sep{width:1px;height:28px;background:rgba(255,255,255,.18);margin:0 6px}
+.bk-bar button{height:40px;padding:0 12px;border-radius:9px;color:#fff;font-size:14.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.bk-bar button svg{width:17px;height:17px;flex:none}
+.bk-bar button:hover{background:rgba(255,255,255,.12)}
+.bk-bar button.rm{color:#FF9A8A}
+.bk-bar button.rm:hover{background:rgba(255,110,90,.18)}
+.bk-bar .bk-pickmsg{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;margin-right:6px}
+.bk-bar .bk-pickmsg svg{width:17px;height:17px}
+/* всплывающие списки поверх окон */
+.sug.clipick,.sug.dpick{z-index:95}
+/* окно копирования и перемещения: три шага на одном экране */
+.md.bkmd{max-width:720px}
+.bkd{padding:6px 24px 8px}
+.bkd-step{display:grid;grid-template-columns:32px minmax(0,1fr);gap:0 14px;padding:18px 0;position:relative}
+.bkd-step + .bkd-step{border-top:1px solid var(--line)}
+.bkd-num{width:32px;height:32px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.bkd-t{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:32px;margin-bottom:10px}
+.bkd .cav{width:30px;height:30px;font-size:12px}
+.bkd-kv{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:0 12px}
+.bkd-kv + .bkd-kv{margin-top:12px}
+.bkd-kv .k{font-size:14px;font-weight:600;color:var(--tx2)}
+.bkd-src{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.bkd-src b{font-size:15px;font-weight:600}
+.bkd-src s{text-decoration:none;font-size:14.5px;color:var(--tx2)}
+.bkd-to{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bkd-chip{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 4px;border-radius:19px;background:var(--acc-a);color:var(--acc-d)}
+.bkd-chip b{font-size:14.5px;font-weight:600}
+.bkd-chip button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--acc-d)}
+.bkd-chip button svg{width:13px;height:13px}
+.bkd-chip button:hover{background:rgba(217,70,0,.12)}
+.bkd-add{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 13px;border-radius:19px;border:1.5px dashed var(--tx4);color:var(--tx2);font-size:14.5px;font-weight:600}
+.bkd-add svg{width:14px;height:14px}
+.bkd-add:hover{border-color:var(--acc);color:var(--acc-d)}
+.bkd-cli{display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 12px 0 6px;border-radius:var(--rad-m);border:1.5px solid var(--acc);background:var(--acc-a);color:var(--acc-d)}
+.bkd-cli b{font-size:15px;font-weight:600}
+.bkd-cli svg{width:13px;height:13px}
+.bkd-date{display:flex;align-items:center;gap:14px}
+.bkd-date .btn.sm{height:38px;padding:0 12px;font-size:15px;gap:8px}
+.bkd-date .btn.sm svg{width:15px;height:15px}
+.bkd-lnk{font-size:14.5px;font-weight:600;color:var(--acc-d)}
+.bkd-lnk:hover{text-decoration:underline}
+.bkd-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bkd-rules button{text-align:left;padding:11px 13px;border-radius:var(--rad-m);border:1.5px solid var(--line2);background:var(--bg)}
+.bkd-rules button:hover{border-color:var(--acc)}
+.bkd-rules button b{display:block;font-size:15px;font-weight:600}
+.bkd-rules button s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);margin-top:3px;line-height:1.35}
+.bkd-rules button.on{border-color:var(--acc);background:var(--acc-a)}
+.bkd-rules button.on b{color:var(--acc-d)}
+.bkd-sum{font-size:14.5px;color:var(--tx2)}
+.bkd-warn{display:inline-flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;color:#8A5A00;min-width:0}
+.bkmd .mdf .btn{white-space:nowrap;flex:none}
+.bkd-warn svg{width:17px;height:17px;flex:none}
+
+/* ═══════════ суперсет ═══════════ */
+.addrow{display:flex;gap:4px;flex-wrap:wrap}
+.addrow .addl{width:auto;flex:none}
+.ssg{margin:4px 0 8px;padding:4px 6px 2px;border-radius:var(--rad-l);background:var(--acc-a);border:1.5px solid var(--acc-p)}
+.ssg.over{border-color:var(--acc)}
+.line.ssh{background:none;border-color:transparent;padding:6px 4px 6px 4px;margin-bottom:2px}
+.line.ssh:hover{border-color:transparent}
+.ssh .ssb{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc-d)}
+.ssh .ssf{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;color:var(--tx2)}
+.ssh .ssf s{text-decoration:none}
+.ssh .ssf input{height:30px;border-radius:var(--rad-s);background:var(--bg);border:1px solid var(--line2);font-size:14.5px;font-weight:600;color:var(--ink);padding:0 8px}
+.ssh .ssf input:focus{outline:0;border-color:var(--acc)}
+.ssh .ssn{width:46px;text-align:center}
+.ssh .ssrest{width:120px}
+.ssh .ssrest::placeholder{color:var(--tx4);font-weight:500}
+.ssh .sp{flex:1}
+.ssg .addl.in{padding:6px 10px;font-size:14px}
+.app .ssg .line:hover{background:rgba(255,255,255,.6)}
+.ssg .line .kg:not(:empty){background:var(--bg)}
+.dropmerge{box-shadow:inset 0 0 0 2px var(--acc) !important;background:var(--acc-a) !important}
+/* календарь, подробный вид */
+.days .day .bxss{margin:3px 0 2px 20px;padding:1px 0 1px 8px;border-left:2px solid var(--acc)}
+.days .day .bxss .bxi{padding-left:12px}
+.days .day .bxssh{font-size:13.5px;font-weight:700;color:var(--acc-d);line-height:18px;margin-bottom:1px}
+/* шаблоны блоков: подпись суперсета и участники */
+.rprev .rlines .ssl,.tplc .ls .ssl{color:var(--acc-d);font-weight:600}
+.rprev .rlines .sub{padding-left:14px}
+.tplc .ls .sub{padding-left:12px}
+
+/* ═══════════ тип блока и настройка комплекса ═══════════ */
+[hidden]{display:none !important}
+.st-head.cx{align-items:flex-start}
+.st-head.cx s{white-space:normal;text-align:right}
+.tplc .ty{font-size:13px;font-weight:600;color:var(--acc-d);margin:-3px 0 5px}
+
+/* ═══════════ список клиентов: оплата ═══════════ */
+.paycell{display:flex;flex-direction:column;align-items:flex-start;gap:3px;white-space:nowrap}
+.paycell .pd{font-size:13.5px;color:var(--tx2);font-variant-numeric:tabular-nums;padding-left:2px}
+
+/* ═══════════ конструктор: как создать тренировку ═══════════ */
+.ways4{display:flex;flex-wrap:wrap;width:max-content;max-width:100%;margin:2px 0 12px;border:1px solid var(--line);border-radius:var(--rad-m);overflow:hidden}
+.way4{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;font-size:14.5px;font-weight:600;color:var(--tx2);background:var(--bg);border-right:1px solid var(--line)}
+.way4:last-child{border-right:0}
+.way4:hover{background:var(--s2);color:var(--ink)}
+.way4 svg{width:15px;height:15px;flex:none}
+
+/* ═══════════ добавить блок / блок текстом ═══════════ */
+.addbrow{display:flex;gap:8px;margin-top:11px}
+.addbrow .addb{flex:1;margin-top:0}
+.addbrow .addb svg{width:15px;height:15px}
+/* Где сейчас печатают — рамка блока текстом акцентом, как у полей. */
+.app .blk.tblk:focus-within{border-color:var(--acc)}
+
+/* ═══════════ подсказка упражнения: добавить в базу ═══════════ */
+.sug .row.newex b{display:inline-flex;align-items:center;gap:6px;color:var(--acc-d)}
+.sug .row.newex svg{width:13px;height:13px}
+/* Метка клавиши у строки, которую она возьмёт: Tab — первое из базы,
+   Enter — выбранное стрелками. */
+.sug .row .rk{font-family:inherit;font-size:12px;font-weight:600;color:var(--tx3);background:var(--s1);border-radius:5px;padding:1px 6px;flex:none}
+.sug .row.on .rk{background:var(--bg);color:var(--tx2)}
+.sugkeys .sk-ent{font-style:normal}
+/* Строка текстом: кнопка AI видна всегда — это главный путь в структуру;
+   «Выбрать упражнение» — при наведении и пока строку правят. */
+.line.raw .pick{opacity:0;transition:opacity .12s}
+.line.raw:hover .pick,.line.raw.act .pick,.line.raw .pick:focus-visible{opacity:1}
+.md.nexmd{max-width:520px}
+.nexmd .mdb{display:flex;flex-direction:column;gap:12px}
+.nx-f{display:flex;flex-direction:column;gap:5px}
+.nx-f > span{font-size:13.5px;font-weight:600;color:var(--tx2)}
+.nx-f input,.nx-f select{height:38px;padding:0 11px;border-radius:var(--rad-m);background:var(--s2);font-size:15px;color:var(--ink);border:1.5px solid transparent}
+.nx-f input:focus,.nx-f select:focus{outline:0;border-color:var(--acc);background:var(--bg)}
+.nx-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.nx-u{display:flex;flex-wrap:wrap;gap:6px}
+.nx-u button{height:32px;padding:0 13px;border-radius:20px;font-size:14.5px;font-weight:600;background:var(--s1);color:var(--tx2)}
+.nx-u button.on{background:var(--acc);color:#fff}
+.nx-note{margin:0;font-size:14px;line-height:1.45;color:var(--tx3)}
+
+/* ═══════════ правая панель конструктора: календарь или базы шаблонов ═══════════ */
+.srcsw{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 32px 11px 0}
+.srcsw button{display:flex;align-items:center;justify-content:center;gap:7px;height:34px;border-radius:var(--rad-m);border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--tx2);white-space:nowrap}
+.srcsw button:hover{border-color:var(--tx4);color:var(--ink)}
+.srcsw button.on{background:var(--acc-a);border-color:var(--acc);color:var(--acc-d)}
+.srcsw svg{width:15px;height:15px;flex:none}
+.csrc-cli{display:flex;align-items:center;gap:9px;width:100%;height:46px;padding:0 10px 0 7px;border-radius:var(--rad-m);background:var(--s2);text-align:left}
+.csrc-cli:hover{background:var(--s1)}
+.csrc-cli .cav{width:30px;height:30px;font-size:12.5px}
+.csrc-cli .cl-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.csrc-cli .cl-t b{font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csrc-cli .cl-t s{text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csrc-cli > svg{width:13px;height:13px;color:var(--tx3);flex:none}
+.mcal{margin-top:10px}
+.mcal-h{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.mcal-h b{flex:1;text-align:center;font-size:15px;font-weight:600}
+.mcal-h button{width:30px;height:30px;border-radius:var(--rad-s);font-size:20px;line-height:1;color:var(--tx2);display:grid;place-items:center}
+.mcal-h button:hover{background:var(--s1);color:var(--ink)}
+.mcal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mcal-g s{text-decoration:none;text-align:center;font-size:12.5px;font-weight:600;color:var(--tx3);padding:3px 0 4px}
+.mcal-g button{position:relative;height:34px;border-radius:var(--rad-s);font-size:14.5px;font-weight:500;color:var(--tx3);font-variant-numeric:tabular-nums}
+.mcal-g button:disabled{cursor:default}
+.mcal-g button.has{color:var(--ink);font-weight:600}
+.mcal-g button.has:hover{background:var(--s1)}
+.mcal-g button i{position:absolute;left:50%;bottom:3px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--acc)}
+.mcal-g button.draft i{background:var(--tx3)}
+.mcal-g button.today{box-shadow:inset 0 0 0 1px var(--line2)}
+.mcal-g button.cur{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.mcal-g button.on{background:var(--acc);color:#fff}
+.mcal-g button.on i{background:#fff}
+.csrc-h{padding:4px 4px 8px}
+.csrc-h b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.csrc-h s{text-decoration:none;font-size:13.5px;color:var(--tx3)}
+.csrc-copy{width:100%;justify-content:center;margin-bottom:10px;height:34px}
+.csrc-copy svg{width:14px;height:14px}
+.csb{border:1px solid var(--line);border-radius:var(--rad-m);margin-bottom:8px;overflow:hidden;cursor:grab;background:var(--bg)}
+.csb-h{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 4px;background:var(--s2);border-bottom:1px solid var(--line)}
+.csb-h .tt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.csb-h b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csb-h .ty{text-decoration:none;font-size:12.5px;font-weight:600;color:var(--acc-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csi{display:flex;align-items:center;gap:6px;padding:5px 6px 5px 4px;font-size:14px;cursor:grab}
+.csi + .csi{border-top:1px solid var(--line)}
+.csi:hover{background:var(--acc-a)}
+.csi .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.csi em{font-style:normal;font-size:13.5px;font-weight:600;color:var(--acc-d);white-space:nowrap;font-variant-numeric:tabular-nums}
+.csi.sub{padding-left:20px}
+.csi.ssl .nm{font-size:13px;font-weight:700;color:var(--acc-d)}
+.csb .gr{color:var(--tx4);display:grid;place-items:center;flex:none}
+.csb .gr svg{width:12px;height:12px}
+.csb .add{width:24px;height:24px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);flex:none;opacity:0}
+.csb-h:hover .add,.csi:hover .add{opacity:1}
+.csb .add:hover{background:var(--acc-a);color:var(--acc)}
+.csb .add svg{width:13px;height:13px}
+/* клиенты: с колонкой оплаты длинные заголовки переносятся, иначе таблица шире панели */
+.tbl[data-tbl="cli"] th{white-space:normal;line-height:1.35;vertical-align:bottom}
+/* в конструкторе панель шире: переключатель источников и календарь не влезали в 318px */
+body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
+@media (max-width:1120px){ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr)} }
+
+/* ═══════════ строка упражнения: схема и нагрузка прямо в строке ═══════════ */
+.blk{--nmw:220px}
+.line:not(.raw):not(.ssh) > .txt{flex:none;width:var(--nmw)}
+.ssg .line:not(.raw) > .txt{width:calc(var(--nmw) - 9px)}
+.nm-measure .line:not(.raw) > .txt{width:auto !important;white-space:nowrap}
+.line .prm{display:flex;align-items:center;gap:6px;flex:none;min-width:0}
+.line .pf{display:inline-flex;align-items:center;height:30px;border-radius:7px;background:var(--s2);border:1.5px solid transparent;color:var(--acc-d);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.line input.pf{padding:0 9px;font-family:inherit}
+.line .pf input{height:100%;border:0;background:none;padding:0 0 0 9px;font-family:inherit;font-size:15px;font-weight:600;color:inherit;min-width:0;font-variant-numeric:tabular-nums}
+.line .pf u{text-decoration:none;padding:0 9px 0 3px;opacity:.8;cursor:pointer;user-select:none;white-space:nowrap}
+.line .pf u:hover{opacity:1}
+.line input.pf:focus,.line .pf:focus-within{outline:0;background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
+.line .pf input:focus{outline:0}
+.line input.pf::placeholder,.line .pf input::placeholder{color:var(--tx4);font-weight:500}
+.app .line:hover .pf,.app .line.act .pf{background:var(--bg)}
+.line .prm .kg{background:none !important;padding:0 0 0 2px;height:auto;font-size:14px}
+.line.txtmode .pf.ld,.line.txtmode .prm .kg,.line.txtmode .pmf{display:none !important}
+.line .pmf{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--tx2);white-space:nowrap;margin-left:2px}
+.line .pmf.off{display:none}
+.line .pmf .pf{color:var(--ink)}
+.line .sp{flex:1}
+.app .line.act{background:var(--acc-a) !important;box-shadow:inset 3px 0 0 var(--acc) !important}
+.keyhint{display:flex;align-items:center;flex-wrap:wrap;gap:4px 16px;padding:6px 6px 9px 30px;font-size:13.5px;color:var(--tx3)}
+.keyhint kbd,.sugkeys kbd,.tkeys kbd{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--tx2);background:var(--s1);border-radius:5px;padding:1px 6px;margin-right:5px}
+.keyhint kbd + kbd,.sugkeys kbd + kbd,.tkeys kbd + kbd{margin-left:-2px}
+.keyhint .r{margin-left:auto}
+.sug .sugkeys{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 10px 4px;margin-top:4px;border-top:1px solid var(--line);font-size:13px;color:var(--tx3)}
+/* подсказки в пустых полях — только у строки, которую правят или над которой мышь */
+.line:not(.act):not(:hover) input.pf::placeholder,.line:not(.act):not(:hover) .pf input::placeholder{color:transparent}
+.line .pf.ld.empty u{opacity:.45}
+.keyhint{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+
+/* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP) ═══════════ */
+/* Аватар группы — скруглённый квадрат цвета текста: в списках не путается с клиентом. */
+.cav.grp{border-radius:7px;background:var(--ink);font-size:10.5px;letter-spacing:.02em}
+.wkh .cliSel .cav.grp{font-size:11px}
+.clipick .cl-cap{padding:8px 10px 4px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+.clipick .cl-cap:first-child{padding-top:2px}
+
+/* Метки в клетке дня: у клиента — из какой группы и не изменена ли для него,
+   у группы — у скольких участников тренировка и у скольких она поправлена. */
+.gtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-width:0;container-type:inline-size}
+.days .day .gtags{margin:6px 12px 0}
+.days.compact .day .t + .gtags{margin:-4px 12px 10px}
+.gtag{display:inline-flex;align-items:center;gap:4px;height:20px;max-width:100%;padding:0 7px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden}
+.gtag svg{width:13px;height:13px;flex:none}
+.gtag b{font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.gtag s{text-decoration:none;font-weight:500;flex:none}
+.gtag.busy{background:#FBF1DE;color:var(--warn)}
+.gtag .sh{display:none}
+.gtag b.sh{align-items:center;gap:2px}
+.gtag .sh svg{width:12px;height:12px}
+/* Узкая клетка (полоса конструктора, лента карточки клиента): числа и значки вместо слов.
+   Контейнер — сама строка меток, поэтому порог — её ширина, а не ширина сетки. */
+@container (max-width: 110px){
+  .gtag .lg{display:none}
+  .gtag .sh{display:inline-flex}
+}
+
+/* Панель участников в дне группы и полоса в дне клиента, пришедшем из группы. */
+.gpanel,.gribbon{margin:0 0 12px;border:1px solid var(--line);border-radius:var(--rad-l);padding:10px 12px;background:var(--bg)}
+.gp-h,.gribbon{display:flex;align-items:center;gap:10px}
+.gp-i,.gr-i{width:30px;height:30px;border-radius:7px;background:var(--s1);color:var(--tx2);display:grid;place-items:center;flex:none}
+.gp-i svg,.gr-i svg{width:17px;height:17px}
+.gp-t,.gr-t{flex:1;min-width:0}
+.gp-t b,.gr-t b{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.gp-t s,.gr-t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx3);margin-top:1px}
+.gp-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.gpm{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 4px;border-radius:15px;background:var(--s1);border:1.5px solid transparent;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap}
+.gpm .cav{width:22px;height:22px;font-size:10.5px;background:var(--tx4)}
+.gpm i{font-style:normal;font-size:12.5px;font-weight:600}
+.gpm:hover{background:var(--bg);border-color:var(--line2)}
+.gpm.none{color:var(--tx3);background:none;border-color:var(--line)} .gpm.none .cav{background:var(--line2)}
+.gribbon.busy{background:#FFF8E6;border-color:#F0DCA8}
+.gribbon.busy .gr-i{background:var(--bg);color:var(--warn)}
+.gribbon .btn{height:32px;flex:none}
+.gribbon .lnk{font-size:14px;font-weight:500;color:var(--acc-d);text-decoration:underline;text-underline-offset:2px;flex:none;white-space:nowrap;background:none}
+
+/* Строка списка выбора, которую выбрать нельзя (клиент уже в другой группе). */
+.clipick .row.dis{opacity:.5;cursor:default}
+.clipick .row.dis:hover{background:none}
+/* Окно занятых дней при публикации группы: по строке на участника и дату. */
+.md.ask.gcm{max-width:560px}
+.gc-list{display:flex;flex-direction:column;margin:12px 0 10px;border-top:1px solid var(--line)}
+.gc-r{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.gc-r .cav{width:28px;height:28px;font-size:12px}
+.gc-t{flex:1;min-width:0}
+.gc-t b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-t s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg{display:inline-flex;flex:none;background:var(--s1);border-radius:var(--rad-m);padding:2px}
+.seg button{height:26px;padding:0 10px;border-radius:6px;font-size:13px;font-weight:600;color:var(--tx3);background:none}
+.seg button.on{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.gc-all{display:flex;gap:14px;margin-bottom:4px}
+.gc-all button{font-size:13.5px;font-weight:500;color:var(--acc-d);background:none;text-decoration:underline;text-underline-offset:2px}
+.gcm .sub{margin-top:8px}
+
+/* ═══════════ СВЯЗКА В СТРОКЕ (CON-23) ═══════════
+   Упражнения подряд через «+», у каждого — свои поля. Строка переносится,
+   если не помещается. Поле «упражнение» в конце — только пока строку правят
+   или навели на неё, у новой связки — всегда. */
+.line.chain{flex-wrap:wrap;row-gap:6px;align-items:center}
+.line.chain .chl{flex:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc-d);background:var(--acc-a);border-radius:var(--rad-s);padding:3px 7px}
+.line.chain .cps{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.line.chain .cp{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.line.chain .cpn{font-weight:600;letter-spacing:-.01em;font-size:15px}
+.line.chain .cp.raw .cpn{font-weight:400;color:var(--tx2)}
+.line.chain .cplus{color:var(--tx3);font-weight:600;font-size:15px}
+.line.chain .cpx{width:20px;height:20px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--tx3);opacity:0;transition:opacity .12s}
+.line.chain .cpx svg{width:11px;height:11px}
+.line.chain .cp:hover .cpx{opacity:1}
+.line.chain .cpx:hover{background:var(--s1);color:var(--rm)}
+/* Вне правки — одной строкой: параметры текстом в скобках, полей нет. Поле
+   «упражнение» остаётся в строке (по нему в связку попадают Tab и стрелки),
+   но без места и невидимо, пока курсор не в связке. */
+.line.chain .cpt{color:var(--acc-d);font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums;cursor:text}
+.line.chain:focus-within .cpt{display:none}
+.line.chain:not(:focus-within) .cp .pf,.line.chain:not(:focus-within) .cp .kg,.line.chain:not(:focus-within) .cp .rng,.line.chain:not(:focus-within) .cp .pmf{display:none !important}
+.line.chain .cpn{cursor:text}
+.line.chain:not(:focus-within) .cpx{display:none}
+.line.chain .caddw{display:inline-flex;align-items:center;gap:8px}
+.line.chain:not(:focus-within):not(.empty) .caddw{width:0;overflow:hidden;opacity:0}
+.line.chain .cadd{min-width:12ch;padding:2px 0;font-size:15px;outline:0}
+.line.chain .cadd:empty::before{content:attr(data-ph);color:var(--tx4)}
+.line.chain .kg{font-size:13px}
+/* Строка связки короче, когда пустые поля не занимают места: пустая нагрузка
+   и крестик видны у упражнения, в котором курсор или на которое навели. */
+.line.chain .cp:not(:focus-within) .pf.ld.empty{display:none}
+.line.chain .cpx{width:18px;height:18px}
+/* ═══════════ ДИАПАЗОН НАГРУЗКИ (CON-24) ═══════════
+   «от–до» — дополнительная функция: кнопка видна только у строки, которую
+   правят (в связке — у упражнения с курсором). Набрать «70-80» можно и без
+   неё; у заданного диапазона кнопка горит и снимает его. */
+.rng{display:none;align-items:center;height:26px;padding:0 8px;border-radius:var(--rad-s);font-size:12.5px;font-weight:600;color:var(--tx3);background:var(--s1);white-space:nowrap;flex:none}
+.line.act:not(.chain) .rng,.line.chain .cp:focus-within .rng{display:inline-flex}
+.rng:hover,.rng.on{color:var(--acc-d);background:var(--acc-a)}
+/* ═══════════ ПОДРОБНЫЙ ВИД: СООБЩЕНИЕ К ТРЕНИРОВКЕ И СВЯЗКА ═══════════ */
+.days .day .bxmsg{display:flex;gap:6px;align-items:flex-start;padding:7px 9px;border-radius:var(--rad-m);background:var(--acc-a);color:var(--tx1);font-size:14px;line-height:1.4}
+/* Длинное сообщение не вытесняет тренировку: четыре строки, целиком — в подсказке. */
+.days .day .bxmsg span{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.days .day .bxmsg svg{width:14px;height:14px;flex:none;margin-top:2px;color:var(--acc-d)}
+.days .day .bxch em{font-style:normal;color:var(--acc-d);font-weight:600}
+
+/* ═══════════ ЕДИНЫЙ ЧАТ: счётчики непрочитанного ═══════════
+   «Сообщения» в меню и кнопка в карточке клиента: сколько ждут ответа.
+   Акцентом — это то, на что нужно нажать. В свёрнутом меню остаётся точкой. */
+.nav a .cnt.hot,.nav a.on .cnt.hot{background:var(--acc);color:#fff;border-radius:10px;padding:1px 7px;min-width:20px;text-align:center}
+body.navmin .nav a .cnt.hot{display:block;position:absolute;top:6px;right:8px;min-width:0;width:9px;height:9px;padding:0;font-size:0}
+.nav a{position:relative}
+.btn .cnt.hot{background:var(--acc);color:#fff;border-radius:10px;padding:0 7px;font-size:13px;line-height:20px;min-width:20px;text-align:center}
+
+/* «Отправить и в чат» под сообщением к дню: галочка слева, состояние справа */
+.wchat{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 4px;padding:0 4px;font-size:14px;color:var(--tx2)}
+.wchat label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:500;color:var(--tx1)}
+.wchat input{accent-color:var(--acc);width:16px;height:16px;margin:0}
+.wchat .wst{color:var(--tx3);display:inline-flex;align-items:center;gap:5px}
+.wchat .wst svg{width:14px;height:14px}
+.wchat .wst.ok{color:var(--ok)}
+.wchat .wst.warn{color:var(--warn)}
+.wchat .wagain{border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--acc-d);cursor:pointer;padding:0}
+
+/* Переход из чата к блоку или строке: короткая подсветка акцентом */
+.line.flash,.blk.flash{animation:tflash 1.9s ease-out}
+@keyframes tflash{0%,40%{box-shadow:0 0 0 2px var(--acc);background-color:var(--acc-a)}100%{box-shadow:0 0 0 0 transparent}}
+
+/* Статус тренировки клиента в календаре карточки — те же слова и значки, что в приложении:
+   зелёная галочка «Выполнена», оранжевая «Частично», оранжевая точка «В процессе»,
+   пустой кружок «Без отметок» */
+.days .day .fst{display:flex;align-items:center;gap:5px;margin:-3px 12px 10px;font-size:12.5px;font-weight:600;color:var(--tx3);white-space:nowrap}
+.days .day .fst svg{width:13px;height:13px;flex:none}
+.days .day .fst i{width:7px;height:7px;border-radius:50%;flex:none;margin:0 3px}
+.days .day .fst.done{color:var(--ok)}
+.days .day .fst.part{color:var(--acc-d)}
+.days .day .fst.prog{color:var(--acc-d)}
+.days .day .fst.prog i{background:var(--acc)}
+.days .day .fst.miss i{box-shadow:inset 0 0 0 1.5px var(--tx4)}

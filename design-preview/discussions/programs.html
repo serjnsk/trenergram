@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>База программ · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/theme-01-strava.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+<link rel="stylesheet" href="assets/pages.css?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="cons">
+        <main><section class="pane" id="page"></section></main>
+        <aside class="rail" data-min="Программа">
+          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
+          <div class="railhead"><div class="railttl" id="railttl">Программа</div></div>
+          <div class="railbody" id="railbody"></div>
+          <div class="railfoot" id="railfoot"></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/data.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/chat.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/nav.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script src="assets/ui.js?v=20261002v2mxypqrstuvwxyzabcdefghijklmnopqrst"></script>
+<script>
+/* ═══════════ БАЗА ПРОГРАММ (TPL-2) ═══════════
+   Вкладки «Недели» больше нет: недели как сущности не существует. Программа —
+   упорядоченная последовательность дней, которую тренер набирает в любом
+   ритме; хранить и искать «недели» отдельно стало нечем. */
+const cfg = { level:'программа', title:'Программы', railTitle:'Программа', ph:'Поиск программы…', add:'Сохранить программу' };
+renderLib(cfg);
+initShell({page:'programs.html'});
+initRail();
+</script>
+</body>
+</html>
