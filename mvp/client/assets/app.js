@@ -21,7 +21,7 @@ const CL_ICON = {
 };
 
 /* ── экраны с дизайном ── */
-const CL_RENDER = {
+const CL_RENDER = Object.assign({
   /* S1. Первый кадр — логотип на оранжевом, со второго — слайдшоу */
   splash(sc, v, p) {
     const go = clLinks('splash', v, p)[0].to;
@@ -30,14 +30,14 @@ const CL_RENDER = {
       <div class="ss" aria-hidden="true"></div>
     </div>`;
   }
-};
+}, CL_UI);
 
 /* Оживление экрана после вставки; возвращает уборку (таймеры) */
-const CL_MOUNT = {
+const CL_MOUNT = Object.assign({
   splash(scr) {
     return clSlideshow(scr.querySelector('.splash'));
   }
-};
+}, CL_UI_MOUNT);
 
 /* ── S1: слайдшоу в духе комикса ──
    Кадр за кадром на оранжевую страницу «шлёпаются» фото: сначала одно во
@@ -186,7 +186,7 @@ function clRender() {
   const sc = CL_SCREENS[id];
   const canBack = clStack.length > 1;
   const scr = document.createElement('main');
-  scr.className = 'scr' + (dir ? ' ' + dir : '');
+  scr.className = 'scr scr-' + id + (dir ? ' ' + dir : '');
   scr.innerHTML = CL_RENDER[id] ? CL_RENDER[id](sc, v, clP, canBack) : clStub(id, sc, canBack, v, clP);
   const old = clDev.querySelector('.scr');
   if (old) { old._off?.(); old.remove(); }
@@ -207,6 +207,7 @@ function clRender() {
 /* Попапы экранов. Пока дизайна нет — заглушка с кнопками */
 const CL_SHEETS = {
   home: {
+    icon: true,
     title: 'Установите Тренерграм на телефон',
     text: 'Приложение будет открываться с главного экрана в одно касание и работать без интернета.',
     acts: ['Установить', 'Позже']
@@ -221,9 +222,9 @@ function clSheet(id) {
   w.className = 'shw';
   w.innerHTML = `<div class="shbg" data-close></div>
     <div class="sheet" role="dialog" aria-label="${clEsc(x.title)}"><i class="grab"></i>
+      ${x.icon ? '<span class="appic"><i>ТМ</i></span>' : ''}
       <h2>${clEsc(x.title)}</h2>
       <p>${clEsc(x.text)}</p>
-      <span class="tag">Заглушка — дизайн попапа ещё не сделан</span>
       <div class="acts">${x.acts.map((l, i) =>
         `<button class="btn ${i ? 'sec' : 'pri'}" data-close>${clEsc(l)}</button>`).join('')}</div>
     </div>`;
@@ -265,7 +266,11 @@ clDev.addEventListener('click', e => {
   const c = e.target.closest('[data-close]');
   if (c) { const { id, v } = clParse(location.hash); clGo(id, clBase(id, v), true); return; }
   const g = e.target.closest('[data-go]');
-  if (g) clGo(g.dataset.go, g.dataset.v);
+  if (g) {
+    /* @next — следующий экран сценария при текущих параметрах */
+    const to = g.dataset.go === '@next' ? clNext(clParse(location.hash).id, clP) : g.dataset.go;
+    if (to) clGo(to, g.dataset.v);
+  }
 });
 
 addEventListener('hashchange', clRender);
