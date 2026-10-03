@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Клиентское приложение · стенд · Тренерграм</title>
+<script>
+/* На телефоне стенд не нужен — открываем само приложение с тем же экраном */
+if (matchMedia('(max-width: 760px)').matches) {
+  const m = location.hash.match(/^#\/([^?]*)(?:\?(.*))?/);
+  const v = m ? new URLSearchParams(m[2] || '').get('v') : '';
+  location.replace('app.html' + (m ? '#/' + m[1] + (v ? '?v=' + v : '') : ''));
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/theme-01-strava.css">
+<style>
+/* ═══════════ СТЕНД КЛИЕНТСКОГО ПРИЛОЖЕНИЯ ═══════════
+   Рабочая страница для просмотра на компьютере, не экран продукта.
+   Слева — параметры сценария и карта экранов под них, в центре — само приложение
+   (app.html во фрейме 360 px), справа — описание экрана и его виды.
+   Язык — кабинета тренера: плоскость, линии, акцент только на выбранном. */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--tx1);font:400 14px/1.5 var(--ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:var(--acc-d)}
+
+.cols{display:grid;grid-template-columns:400px minmax(0,1fr) 420px;height:100vh}
+@media(max-width:1360px){.cols{grid-template-columns:380px minmax(0,1fr) 340px}}
+
+/* ── левая колонка: карта ── */
+.map{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.mh{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.wm{font:900 15px/1 "Montserrat",var(--ui);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink)}
+.mh .sub{font-size:13px;color:var(--tx3);margin-top:6px}
+.mh h2{font-size:16.5px;font-weight:700;letter-spacing:-.01em;margin:16px 0 2px}
+.mh .cnt{font-size:13px;color:var(--tx3)}
+
+.mh{overflow-y:auto;max-height:56vh}
+/* Параметры сценария: строка — условие, справа переключатель. Карта ниже
+   собирается из них, поэтому блок стоит над деревом, а не в стороне. */
+.params{margin-top:14px;display:flex;flex-direction:column;gap:14px}
+.prm{display:flex;flex-direction:column;gap:6px}
+.prm span{font-size:13px;font-weight:500;color:var(--tx2)}
+.prm .seg{display:flex}
+.prm .seg button{flex:1 1 auto;height:32px;padding:0 6px;font-size:12.5px;white-space:nowrap}
+.prm.off{opacity:.4;pointer-events:none}
+/* Ноутбук поуже: три варианта «Пользователя» должны встать в одну строку */
+@media(max-width:1360px){.mh{padding-left:14px;padding-right:14px}.prm .seg button{padding:0 4px;font-size:12px}}
+
+.tree{flex:1;overflow-y:auto;padding:6px 10px 30px}
+.flow{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);
+  padding:8px 8px 6px;margin-top:6px}
+/* Раздел сворачивается: заголовок — переключатель, у свёрнутого — счётчик экранов */
+.tg{display:flex;align-items:center;gap:6px;width:100%;text-align:left;border-radius:var(--rad-s)}
+.tg:hover{background:var(--s2)}
+.tg .chv{width:12px;height:12px;stroke:var(--tx4);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+  flex:none;transition:transform .15s}
+.grp.col > .tg .chv{transform:rotate(-90deg)}
+.grp.col > .gb{display:none}
+.tg .n{margin-left:auto;font:500 12px/1 var(--ui);letter-spacing:0;text-transform:none;color:var(--tx3);
+  background:var(--s1);border-radius:9px;padding:3px 7px;flex:none}
+.grp:not(.col) > .tg .n,.tg .n:empty{display:none}
+/* Шаги сценария — по порядку, линия слева держит последовательность */
+.gb{margin-left:13px;border-left:1.5px solid var(--line2);padding-left:6px}
+.it{display:flex;align-items:center;gap:8px;width:100%;text-align:left;min-height:34px;
+  padding:6px 8px;border-radius:var(--rad-s);position:relative}
+.it:hover{background:var(--s2)}
+.it.on{background:var(--acc-a)}
+.it.on::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:3px;border-radius:0 2px 2px 0;background:var(--acc)}
+.it .no{font:500 11.5px/1 var(--mono);color:var(--tx4);min-width:14px}
+.it .cd{font:500 12px/1 var(--mono);color:var(--tx3);min-width:22px}
+.it.on .cd{color:var(--acc-d)}
+/* Название переносится, а не режется */
+.it .nm{flex:1;min-width:0;font-weight:500;line-height:1.3}
+.it.on .nm{font-weight:600;color:var(--ink)}
+.it .vn{font-weight:400;color:var(--tx3)}
+.it .vw{font-size:12px;color:var(--tx3);background:var(--s1);border-radius:9px;padding:1px 6px;flex:none}
+.it.on .vw{background:#fff}
+.it .web{font-size:11.5px;font-weight:600;color:#1E5BD8;background:#EAF2FF;border-radius:9px;padding:1px 6px;flex:none}
+.st{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.st.ready{background:var(--ok)}
+.st.draft{background:var(--acc)}
+.st.stub{background:none;box-shadow:inset 0 0 0 1.5px var(--tx4)}
+.tnote{font-size:12.5px;color:var(--tx4);font-style:italic;padding:4px 8px 6px;line-height:1.4}
+.goto{display:flex;align-items:center;gap:6px;width:100%;text-align:left;min-height:32px;padding:5px 8px;
+  border-radius:var(--rad-s);font-size:13px;color:var(--tx3)}
+.goto:hover{background:var(--s2);color:var(--ink)}
+.goto svg{width:14px;height:14px;stroke:var(--acc);fill:none;stroke-width:2;flex:none}
+.goto .cd{font:500 12px/1 var(--mono);color:var(--tx3)}
+.goto b{font-weight:600;color:var(--tx2)}
+
+/* ── центр: телефон ── */
+.stage{background:var(--page);display:flex;flex-direction:column;min-width:0;min-height:0}
+.tools{display:flex;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap;justify-content:center}
+.seg{display:flex;background:var(--bg);border-radius:var(--rad-m);padding:3px;gap:2px;box-shadow:inset 0 0 0 1px var(--line)}
+.seg button{height:28px;padding:0 11px;border-radius:6px;font-size:13px;font-weight:500;color:var(--tx2)}
+.seg button.on{background:var(--ink);color:#fff}
+.scale{font:500 12px/1 var(--mono);color:var(--tx3);min-width:40px;text-align:center}
+.ph-area{flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center;padding:4px 16px 20px}
+.phwrap{position:relative;flex:none}
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;padding:11px;border-radius:52px;background:var(--frame);
+  box-shadow:0 30px 60px -30px rgba(0,0,0,.45),inset 0 0 0 1.5px #2a2a2e}
+.phone iframe{display:block;border:0;border-radius:41px;background:#fff}
+.f-android .phone{border-radius:34px;padding:9px}
+.f-android .phone iframe{border-radius:25px}
+.dims{font:500 12px/1 var(--mono);color:var(--tx3);text-align:center;padding-bottom:10px}
+
+/* ── правая колонка: описание ── */
+.info{border-left:1px solid var(--line);overflow-y:auto;padding:22px 24px 40px}
+.crumbs{font-size:13px;color:var(--tx3);display:flex;gap:6px;flex-wrap:wrap}
+.crumbs i{font-style:normal;color:var(--tx4)}
+.ttl{display:flex;align-items:baseline;gap:10px;margin:8px 0 10px}
+.ttl .cd{font:500 14px/1 var(--mono);color:var(--acc-d)}
+.ttl h1{font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;
+  font-size:12.5px;font-weight:600;background:var(--s1);color:var(--tx2)}
+.chip.web{background:#EAF2FF;color:#1E5BD8}
+.chip.share{background:none;box-shadow:inset 0 0 0 1px var(--line2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.info h3{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);
+  margin:26px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+.info p{margin:0 0 8px;color:var(--tx2);font-size:14.5px;line-height:1.55}
+.info ul{margin:0;padding-left:18px;color:var(--tx2);font-size:14.5px}
+.info li{margin-bottom:6px}
+/* Виды экрана: выбор — плашкой с обводкой акцентом, как выбранный день в кабинете */
+.views{display:flex;flex-direction:column;gap:8px}
+.vbtn{display:flex;gap:11px;align-items:flex-start;text-align:left;padding:11px 13px;border-radius:var(--rad-m);
+  box-shadow:inset 0 0 0 1px var(--line)}
+.vbtn:hover{box-shadow:inset 0 0 0 1px var(--line2)}
+.vbtn.on{background:var(--acc-a);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.vbtn .rd{width:18px;height:18px;border-radius:50%;flex:none;margin-top:1px;box-shadow:inset 0 0 0 1.5px var(--line2);
+  display:grid;place-items:center}
+.vbtn.on .rd{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.vbtn.on .rd::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--acc)}
+.vbtn b{display:block;font-weight:600;font-size:14.5px}
+.vbtn s{display:block;text-decoration:none;color:var(--tx3);font-size:13.5px;margin-top:1px}
+.vbtn kbd{margin-left:auto;font:500 11.5px/1 var(--mono);color:var(--tx4);border:1px solid var(--line);
+  border-radius:4px;padding:3px 5px;flex:none}
+.lk{display:flex;flex-direction:column}
+.lk button{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 0;border-bottom:1px solid var(--line)}
+.lk button:last-child{border-bottom:0}
+.lk button:hover .to{color:var(--acc-d)}
+.lk .lb{flex:1;min-width:0;color:var(--tx2)}
+.lk .to{font-weight:600;white-space:nowrap}
+.lk .to .cd{font:500 12px/1 var(--mono);color:var(--tx3);margin-right:5px}
+.lk button.oth{opacity:.5}
+.lk button.oth:hover{opacity:1}
+.lk .wh{font-size:12px;color:var(--tx3);background:var(--s1);border-radius:9px;padding:1px 7px}
+.lk svg{width:14px;height:14px;stroke:var(--tx4);fill:none;stroke-width:2;flex:none}
+.empty{font-size:13.5px;color:var(--tx3)}
+.refs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.refs button{border-radius:var(--rad-m);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);aspect-ratio:9/19.5;background:var(--s2)}
+.refs img{width:100%;height:100%;object-fit:cover;display:block}
+.refdrop{border:1.5px dashed var(--line2);border-radius:var(--rad-m);padding:14px;font-size:13.5px;color:var(--tx3);line-height:1.5}
+.req{font:500 12.5px/1 var(--mono);text-decoration:none;color:var(--tx2);background:var(--s1);border-radius:6px;padding:5px 7px}
+.req:hover{color:var(--acc-d);background:var(--acc-a)}
+.keys{margin-top:30px;font-size:12.5px;color:var(--tx4);line-height:1.8}
+.keys kbd{font:500 11.5px/1 var(--mono);color:var(--tx3);border:1px solid var(--line);border-radius:4px;padding:2px 5px}
+
+.lbx{position:fixed;inset:0;background:rgba(10,10,12,.82);display:none;align-items:center;justify-content:center;z-index:50;cursor:zoom-out}
+.lbx.on{display:flex}
+.lbx img{max-height:92vh;max-width:92vw;border-radius:18px}
+</style>
+</head>
+<body>
+<div class="cols">
+  <aside class="map">
+    <div class="mh">
+      <div class="wm">Тренерграм</div>
+      <div class="sub">Клиентское приложение · стенд</div>
+      <h2>Сценарий</h2>
+      <div class="cnt">Условия входа — карта ниже собирается под них</div>
+      <div class="params" id="params"></div>
+    </div>
+    <nav class="tree" id="tree"></nav>
+  </aside>
+
+  <section class="stage">
+    <div class="tools">
+      <div class="seg" id="dev"></div>
+      <div class="seg" id="plat" title="Платформа: от неё зависит сценарий — например, подсказка установки есть только в вебе"></div>
+      <span class="scale" id="scale"></span>
+    </div>
+    <div class="ph-area" id="area">
+      <div>
+        <div class="phwrap" id="wrap"><div class="phone" id="phone"><iframe id="fr" title="Приложение"></iframe></div></div>
+      </div>
+    </div>
+    <div class="dims" id="dims"></div>
+  </section>
+
+  <aside class="info" id="info"></aside>
+</div>
+<div class="lbx" id="lbx"><img alt=""></div>
+
+<script src="assets/map.js"></script>
+<script>
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = id => document.getElementById(id);
+const viewName = (id, v) => ((CL_SCREENS[id].views || []).find(x => x.id === v) || {}).name;
+const DOCS = 'https://serjnsk.github.io/trenergram/docs/02-functional-requirements/';
+const ARR = '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const CHEV = '<svg class="chv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+
+/* Устройства: ширина эталона 360, высота и системные полосы — разные */
+const DEVICES = {
+  iphone:  { name: 'iPhone',  w: 360, h: 780, note: 'safe area 47 / 34' },
+  android: { name: 'Android', w: 360, h: 800, note: 'полосы 24 / 16' }
+};
+
+const ids = Object.keys(CL_SCREENS);
+
+/* ── состояние стенда; живёт в адресе, чтобы ссылкой можно было поделиться ── */
+const st = { id: CL_START, v: '', p: clNorm({}), dev: 'iphone' };
+try { st.dev = localStorage.getItem('cl.dev') || st.dev; } catch (e) {}
+if (!DEVICES[st.dev]) st.dev = 'iphone';
+
+function readHash() {
+  const m = location.hash.match(/^#\/([^?]*)(?:\?(.*))?/);
+  const q = new URLSearchParams(m ? m[2] || '' : '');
+  st.p = clNorm(Object.fromEntries(CL_PARAMS.filter(x => q.get(x.id)).map(x => [x.id, q.get(x.id)])));
+  st.id = m && CL_SCREENS[m[1]] ? m[1] : (clSeq(st.p)[0] || {}).id || CL_START;
+  st.v = q.get('v') || '';
+  settle();
+}
+/* Экран должен быть в сценарии; вид — тот, в котором он здесь стоит */
+function settle() {
+  st.p = clNearest(st.id, st.p, st.v);
+  const o = clInFlow(st.id, st.p);
+  st.v = clView(st.id, st.v || (o && o.v));
+}
+function writeHash() {
+  const q = new URLSearchParams();
+  if (st.v) q.set('v', st.v);
+  const d = clNorm({});
+  CL_PARAMS.forEach(x => { if (st.p[x.id] !== d[x.id]) q.set(x.id, st.p[x.id]); });
+  const s = q.toString();
+  history.replaceState(null, '', '#/' + st.id + (s ? '?' + s : ''));
+}
+
+/* ── параметры ── */
+function renderParams() {
+  /* Платформа — у телефона в центре: это свойство устройства, а не условие входа */
+  const plat = CL_PARAMS.find(x => x.id === 'platform');
+  const d = DEVICES[st.dev];
+  $('dims').textContent = `${d.name} · ${plat.opts.find(o => o[0] === st.p.platform)[1].toLowerCase()} · ${d.w} × ${d.h} · ${d.note}`;
+  $('plat').innerHTML = plat.opts.map(([v, n]) => `<button class="${st.p.platform === v ? 'on' : ''}" data-prm="platform" data-val="${v}">${esc(n)}</button>`).join('');
+  /* Все параметры — одной формы: подпись сверху, переключатель во всю ширину.
+     Неприменимый не прячем, а гасим — блок не прыгает */
+  $('params').innerHTML = CL_PARAMS.filter(x => x.id !== 'platform').map(x => `
+    <div class="prm${x.show && !x.show(st.p) ? ' off' : ''}"><span>${esc(x.name)}</span>
+      <div class="seg">${x.opts.map(([v, n]) => `<button class="${st.p[x.id] === v ? 'on' : ''}" data-prm="${x.id}" data-val="${v}">${esc(n)}</button>`).join('')}</div>
+    </div>`).join('');
+}
+/* Параметры поменялись: экран остаётся, если он есть в новом сценарии,
+   иначе — первый экран сценария */
+function setParams(p) {
+  st.p = clNorm(Object.assign({}, st.p, p));
+  const o = clInFlow(st.id, st.p);
+  if (!o) { st.id = clSeq(st.p)[0].id; st.v = ''; }
+  st.v = clView(st.id, (o && o.v) || st.v);
+  send(Object.assign({ cl: 'go', p: st.p }, frameGo()));
+  sync();
+}
+
+/* ── дерево: только шаги, подходящие под параметры ── */
+let folded = new Set();
+try { folded = new Set(JSON.parse(localStorage.getItem('cl.fold') || '[]')); } catch (e) {}
+const saveFold = () => { try { localStorage.setItem('cl.fold', JSON.stringify([...folded])); } catch (e) {} };
+
+const row = (id, v, n, extra) => {
+  const sc = CL_SCREENS[id];
+  const nv = sc.views && sc.views.length > 1 ? `<span class="vw" title="Вариантов вида">${sc.views.length}</span>` : '';
+  return `<button class="it" data-id="${id}" data-v="${v || ''}">
+      ${n ? `<span class="no">${n}</span>` : ''}<span class="cd">${esc(sc.code)}</span>
+      <span class="nm">${esc(sc.title)}${v ? `<span class="vn"> · ${esc(viewName(id, v))}</span>` : ''}</span>
+      ${extra || ''}${sc.only === 'web' ? '<span class="web">веб</span>' : ''}${nv}<i class="st ${sc.status}" title="${CL_STATUS[sc.status]}"></i></button>`;
+};
+
+function renderTree() {
+  let n = 0;
+  const flow = clFlow(st.p);
+  $('tree').innerHTML = flow.map((f, fi) => {
+    const body = f.items.map(it => {
+      if (it.note) return `<div class="tnote">${esc(it.note)}</div>`;
+      if (it.goto) {
+        const t = CL_SCREENS[it.goto];
+        return `<button class="goto" data-goto="${it.goto}">${ARR}<span>Дальше —</span><span class="cd">${esc(t.code)}</span><b>${esc(t.title)}</b></button>`;
+      }
+      return row(it.s, it.v, ++n);
+    }).join('');
+    const cnt = f.items.filter(it => it.s).length;
+    return `<div class="grp${folded.has('f' + fi) ? ' col' : ''}" data-c="f${fi}">
+      <button class="flow tg">${CHEV}<span>${esc(f.flow)}</span><span class="n">${cnt || ''}</span></button>
+      <div class="gb">${body}</div></div>`;
+  }).join('');
+  const on = document.querySelector(`.it[data-id="${st.id}"]`);
+  if (on) {
+    on.classList.add('on');
+    const g = on.closest('.grp');
+    if (g && g.classList.contains('col')) { g.classList.remove('col'); folded.delete(g.dataset.c); saveFold(); }
+    on.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+/* ── фрейм ── */
+const fr = $('fr');
+const frameGo = () => ({ id: st.id, v: st.v });
+const appHash = () => '#/' + st.id + (st.v ? '?v=' + st.v : '');
+const pStr = p => CL_PARAMS.map(x => x.id + ':' + p[x.id]).join(',');
+function loadFrame() {
+  const d = DEVICES[st.dev];
+  document.body.className = 'f-' + st.dev;
+  fr.width = d.w; fr.height = d.h;
+  fr.src = 'app.html?frame=' + st.dev + '&p=' + pStr(st.p) + appHash();
+  $('dev').innerHTML = Object.entries(DEVICES).map(([k, x]) =>
+    `<button class="${k === st.dev ? 'on' : ''}" data-dev="${k}">${x.name}</button>`).join('');
+  fit();
+}
+const send = m => fr.contentWindow && fr.contentWindow.postMessage(m, '*');
+
+/* Телефон целиком помещается по высоте; на низком экране — уменьшаем */
+function fit() {
+  const d = DEVICES[st.dev], ph = $('phone');
+  const pad = st.dev === 'android' ? 9 : 11;
+  const W = d.w + pad * 2, H = d.h + pad * 2;
+  const area = $('area');
+  const s = Math.min(1, (area.clientHeight - 24) / H, (area.clientWidth - 32) / W);
+  ph.style.transform = `scale(${s})`;
+  $('wrap').style.width = W * s + 'px';
+  $('wrap').style.height = H * s + 'px';
+  $('scale').textContent = s < 1 ? Math.round(s * 100) + '%' : '';
+}
+addEventListener('resize', fit);
+
+/* ── правая колонка ── */
+/* Входящие — при текущих параметрах: «дальше по сценарию» тоже считается */
+function inbound(id) {
+  const out = [];
+  ids.forEach(src => clLinks(src, '', st.p).concat(
+    (CL_SCREENS[src].links || []).filter(l => l.when && l.to === id)).forEach(l => {
+    if (l.to === id && !out.some(o => o.src === src && o.label === l.label)) out.push({ src, label: l.label, when: l.when, next: l.next });
+  }));
+  return out;
+}
+const tags = l => (l.next ? '<span class="wh">по сценарию</span>' : '') +
+  (clInFlow(l.to || l.src, st.p) ? '' : '<span class="wh">другой сценарий</span>');
+const lkRow = l => {
+  const t = CL_SCREENS[l.to];
+  return `<button data-to="${l.to}" class="${clInFlow(l.to, st.p) ? '' : 'oth'}">
+    <span class="lb">${esc(l.label)} ${tags(l)}</span>${ARR}<span class="to"><span class="cd">${esc(t.code)}</span>${esc(t.title)}</span></button>`;
+};
+const paras = a => (a || []).map(x => `<p>${esc(x)}</p>`).join('');
+/* Скриншоты HWPO лежат только в локальной копии — в публикации их нет */
+function refGone(img) {
+  const box = img.closest('.refs'); img.closest('button').remove();
+  if (box && !box.children.length) box.outerHTML = '<div class="refdrop">Референсы HWPO есть только в локальной версии прототипа.</div>';
+}
+
+function renderInfo() {
+  const sc = CL_SCREENS[st.id];
+  const views = sc.views || [];
+  const out = clLinks(st.id, st.v, st.p);
+  const inb = inbound(st.id);
+  const seq = clSeq(st.p), i = seq.findIndex(o => o.id === st.id);
+  const sect = (CL_MAP.find(f => f.items.some(it => it.s === st.id)) || {}).flow || '';
+  $('info').innerHTML = `
+    <div class="crumbs">${esc(sect)}<i>›</i>шаг ${i + 1} из ${seq.length} в сценарии</div>
+    <div class="ttl"><span class="cd">${esc(sc.code)}</span><h1>${esc(sc.title)}</h1></div>
+    <div class="chips"><span class="chip"><i class="st ${sc.status}"></i>${CL_STATUS[sc.status]}</span>
+      ${sc.only === 'web' ? '<span class="chip web">Только веб</span>' : ''}</div>
+
+    ${views.length > 1 ? `<h3>Варианты вида</h3><div class="views">${views.map((x, k) => `
+      <button class="vbtn ${x.id === st.v ? 'on' : ''}" data-view="${x.id}"><span class="rd"></span>
+        <span><b>${esc(x.name)}</b><s>${esc(x.note || '')}</s></span><kbd>${k + 1}</kbd></button>`).join('')}</div>` : ''}
+
+    <h3>Описание</h3>${paras(sc.desc)}
+
+    <h3>Переходы отсюда</h3>
+    ${out.length ? `<div class="lk">${out.map(lkRow).join('')}</div>` : '<div class="empty">Нет — конец собранной части карты</div>'}
+
+    <h3>Сюда приходят</h3>
+    ${inb.length ? `<div class="lk">${inb.map(l => {
+      const t = CL_SCREENS[l.src];
+      const w = l.when ? ` <span class="wh">${esc(viewName(l.src, l.when))}</span>` : '';
+      return `<button data-to="${l.src}" data-v="${l.when || ''}" class="${clInFlow(l.src, st.p) ? '' : 'oth'}"><span class="to"><span class="cd">${esc(t.code)}</span>${esc(t.title)}</span>${ARR}<span class="lb">${esc(l.label)}${w} ${tags(l)}</span></button>`;
+    }).join('')}</div>` : '<div class="empty">Точка входа в приложение</div>'}
+
+    ${sc.platform && sc.platform.length ? `<h3>Веб и приложение</h3>${paras(sc.platform)}` : ''}
+
+    <h3>Референс HWPO</h3>
+    ${sc.refs && sc.refs.length
+      ? `<div class="refs">${sc.refs.map(r => `<button data-ref="${esc(r.src)}" title="${esc(r.cap || '')}"><img src="${esc(r.src)}" alt="" loading="lazy" onerror="refGone(this)"></button>`).join('')}</div>`
+      : '<div class="refdrop">Скриншотов пока нет. Пришлите их в чат — положу в <code>client/ref/</code> и привяжу к экрану.</div>'}
+
+    ${sc.reqs && sc.reqs.length ? `<h3>Требования</h3><div class="chips">${sc.reqs.map(r => `<a class="req" href="${DOCS}" target="_blank" rel="noopener">${esc(r)}</a>`).join('')}</div>` : ''}
+
+    ${sc.questions && sc.questions.length ? `<h3>Открытые вопросы</h3><ul>${sc.questions.map(q => `<li>${esc(q)}</li>`).join('')}</ul>` : ''}
+
+    <div class="keys"><kbd>↑</kbd> <kbd>↓</kbd> шаги сценария · ${views.length > 1 ? '<kbd>1</kbd>–<kbd>' + views.length + '</kbd> или <kbd>←</kbd> <kbd>→</kbd> виды · ' : ''}<kbd>Esc</kbd> назад в приложении</div>`;
+}
+
+function sync() { renderParams(); renderTree(); renderInfo(); writeHash(); }
+
+/* Открыть экран: если его нет в сценарии — подобрать ближайшие параметры */
+function pick(id, v) {
+  const p0 = JSON.stringify(st.p);
+  st.v = v || (id === st.id ? st.v : '');
+  st.id = id;
+  settle();
+  send(Object.assign({ cl: 'go', p: st.p }, frameGo()));
+  sync();
+  return p0 !== JSON.stringify(st.p);
+}
+function setView(v) {
+  st.v = clView(st.id, v);
+  send(Object.assign({ cl: 'go', replace: true }, frameGo()));
+  sync();
+}
+/* Переход изнутри приложения. Ушли в экран другого сценария («Войти» у
+   нового пользователя) — параметры подстраиваются, приложение узнаёт о них */
+function arrived(id, v) {
+  if (id === st.id && v === st.v) return;
+  const p0 = JSON.stringify(st.p);
+  st.id = id; st.v = v;
+  settle();
+  if (p0 !== JSON.stringify(st.p)) send({ cl: 'params', p: st.p });
+  sync();
+}
+
+addEventListener('message', e => {
+  if (e.source !== fr.contentWindow) return;
+  const m = e.data || {};
+  if (m.cl === 'at') arrived(m.id, m.v || '');
+});
+
+['params', 'plat'].forEach(id => $(id).addEventListener('click', e => {
+  const b = e.target.closest('[data-prm]');
+  if (b) setParams({ [b.dataset.prm]: b.dataset.val });
+}));
+$('tree').addEventListener('click', e => {
+  const b = e.target.closest('.it'); if (b) return pick(b.dataset.id, b.dataset.v);
+  const t = e.target.closest('.tg');
+  if (t) {
+    const g = t.parentElement;
+    g.classList.toggle('col');
+    g.classList.contains('col') ? folded.add(g.dataset.c) : folded.delete(g.dataset.c);
+    return saveFold();
+  }
+  const g = e.target.closest('.goto');
+  if (g) pick(g.dataset.goto);
+});
+$('info').addEventListener('click', e => {
+  const v = e.target.closest('[data-view]'); if (v) return setView(v.dataset.view);
+  const t = e.target.closest('[data-to]'); if (t) return pick(t.dataset.to, t.dataset.v);
+  const r = e.target.closest('[data-ref]');
+  if (r) { $('lbx').querySelector('img').src = r.dataset.ref; $('lbx').classList.add('on'); }
+});
+$('lbx').addEventListener('click', () => $('lbx').classList.remove('on'));
+$('dev').addEventListener('click', e => {
+  const b = e.target.closest('[data-dev]'); if (!b || b.dataset.dev === st.dev) return;
+  st.dev = b.dataset.dev;
+  try { localStorage.setItem('cl.dev', st.dev); } catch (err) {}
+  loadFrame();
+  renderParams();
+});
+
+/* Клавиатура: стрелки по шагам и видам, цифры — виды, Esc — назад */
+addEventListener('keydown', e => {
+  if (e.target.closest?.('input,textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+  /* порядок — как строки в дереве, попап тоже в нём */
+  const rows = [...document.querySelectorAll('#tree .it')];
+  const i = rows.findIndex(r => r.dataset.id === st.id);
+  const views = CL_SCREENS[st.id].views || [];
+  const vi = views.findIndex(x => x.id === st.v);
+  if (e.key === 'ArrowDown' && i < rows.length - 1) { pick(rows[i + 1].dataset.id, rows[i + 1].dataset.v); e.preventDefault(); }
+  else if (e.key === 'ArrowUp' && i > 0) { pick(rows[i - 1].dataset.id, rows[i - 1].dataset.v); e.preventDefault(); }
+  else if (e.key === 'ArrowRight' && vi > -1 && vi < views.length - 1) setView(views[vi + 1].id);
+  else if (e.key === 'ArrowLeft' && vi > 0) setView(views[vi - 1].id);
+  else if (/^[1-9]$/.test(e.key) && views[+e.key - 1]) setView(views[+e.key - 1].id);
+  else if (e.key === 'Escape') { if ($('lbx').classList.contains('on')) $('lbx').classList.remove('on'); else send({ cl: 'back' }); }
+});
+
+/* Адрес поменяли руками или ссылкой — открываем, что в нём */
+addEventListener('hashchange', () => { readHash(); send(Object.assign({ cl: 'go', p: st.p }, frameGo())); sync(); });
+
+readHash();
+loadFrame();
+sync();
+</script>
+</body>
+</html>

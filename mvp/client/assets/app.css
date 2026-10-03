@@ -1,0 +1,195 @@
+/* ═══════════════════════════════════════════════════════════════
+   КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ
+
+   Палитра и шрифты — из темы кабинета (../assets/theme-01-strava.css),
+   новых цветов не вводим. Клиенту нужнее эмоция, чем плотность,
+   поэтому здесь крупнее кегли, мягче скругления и смелее акцент:
+   градиент из оранжевого бренда, тяжёлый Montserrat для заголовков-
+   акцентов и цифр. Плоскость кабинета остаётся основой.
+
+   Ширина эталона — 360 px. Отступы по краям — 16 px.
+   Касание — от 44 px. Основной текст — 16–17 px.
+   Safe area: в вебе и в приложении — env(), во фрейме стенда —
+   значения выбранного устройства (класс на <html>).
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --c-pad:16px;
+  --c-tap:44px;
+  --c-rad:16px;      /* карточки */
+  --c-rad-b:14px;    /* кнопки */
+  --c-grad:linear-gradient(150deg,#FF7A1F 0%,#FC5200 48%,#E24400 100%);
+  --c-head:"Montserrat",var(--ui);
+  --sa-t:env(safe-area-inset-top,0px);
+  --sa-b:env(safe-area-inset-bottom,0px);
+}
+/* Фрейм стенда: системные полосы рисуем сами, их высота — у устройства */
+html.f-android{--sa-t:24px;--sa-b:16px}
+html.f-iphone {--sa-t:47px;--sa-b:34px}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font:400 16px/1.45 var(--ui);color:var(--tx1);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;
+  overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+
+.dev{position:relative;height:100dvh;overflow:hidden;background:var(--bg)}
+.scr{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+.scr.enter{animation:cl-in .28s cubic-bezier(.2,.8,.2,1)}
+.scr.back{animation:cl-back .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes cl-in  {from{opacity:0;transform:translateX(24px)}}
+@keyframes cl-back{from{opacity:0;transform:translateX(-24px)}}
+@media (prefers-reduced-motion:reduce){
+  .scr.enter,.scr.back{animation:cl-fade .2s ease}
+  @keyframes cl-fade{from{opacity:0}}
+}
+
+/* ── системные полосы — только во фрейме стенда ── */
+.sbar{display:none;position:absolute;left:0;right:0;top:0;z-index:20;height:var(--sa-t);
+  align-items:center;justify-content:space-between;padding:0 18px 0 22px;
+  font:600 13px/1 var(--ui);letter-spacing:-.01em;pointer-events:none;color:var(--ink)}
+.f-iphone .sbar{padding:6px 26px 0 34px;font-size:15px}
+.sbar.light{color:#fff}
+.sbar .ic{display:flex;gap:5px;align-items:center}
+.sbar svg{display:block;fill:currentColor}
+.f-iphone .sbar::after{content:"";position:absolute;left:50%;top:11px;width:100px;height:28px;
+  margin-left:-50px;border-radius:14px;background:#000}
+.hbar{display:none;position:absolute;left:50%;bottom:8px;z-index:20;width:120px;height:4px;
+  margin-left:-60px;border-radius:2px;background:var(--ink);opacity:.85;pointer-events:none}
+.f-android .hbar{bottom:6px;width:96px;margin-left:-48px;opacity:.5}
+.hbar.light{background:#fff}
+.f-android .sbar,.f-iphone .sbar,.f-android .hbar,.f-iphone .hbar{display:flex}
+
+/* ── общие элементы ── */
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:4px;
+  padding:calc(var(--sa-t) + 4px) 6px 4px;min-height:calc(var(--sa-t) + 52px);
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.top .t{flex:1;min-width:0;text-align:center;font:600 17px/1.2 var(--ui);letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:var(--c-tap);height:var(--c-tap);display:grid;place-items:center;border-radius:50%;flex:none}
+.ib:active{background:var(--s1)}
+.ib svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ib.ghost{visibility:hidden}
+
+.body{flex:1;padding:8px var(--c-pad) 24px}
+.foot{position:sticky;bottom:0;padding:12px var(--c-pad) calc(var(--sa-b) + 12px);
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(to top,var(--bg) 70%,transparent)}
+
+.btn{height:52px;border-radius:var(--c-rad-b);display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:0 20px;font:700 16px/1 var(--ui);letter-spacing:-.005em;width:100%;
+  transition:transform .12s ease,filter .12s ease}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:var(--c-grad);color:var(--on-acc);
+  box-shadow:0 8px 20px -8px rgba(252,82,0,.55)}
+.btn.pri:active{filter:brightness(.94)}
+.btn.sec{background:var(--s1);color:var(--ink)}
+.btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── заглушка: экран есть в карте, дизайна ещё нет ── */
+.stub{border:1.5px dashed var(--line2);border-radius:var(--c-rad);padding:22px 18px;
+  display:flex;flex-direction:column;gap:10px;margin-top:8px;background:var(--s2)}
+.stub .cd{align-self:flex-start;font:500 13px/1 var(--mono);color:var(--acc-d);
+  background:var(--acc-a);padding:5px 8px;border-radius:6px}
+.stub h1{margin:0;font:800 26px/1.15 var(--ui);letter-spacing:-.025em}
+.stub p{margin:0;color:var(--tx2);font-size:16px}
+.stub .tag{font-size:14px;color:var(--tx3)}
+.sk{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.sk i{display:block;height:14px;border-radius:7px;background:var(--s1)}
+.sk i:nth-child(1){width:72%}.sk i:nth-child(2){width:90%}.sk i:nth-child(3){width:56%}
+.sk b{display:block;height:120px;border-radius:var(--c-rad);background:var(--s1);margin-top:6px}
+
+/* ── попап снизу ──
+   Лист поверх экрана: затемнение, ручка, скругление сверху. Над полосой Home
+   остаётся safe area. Закрывается кнопкой или тапом по затемнению. */
+.shw{position:absolute;inset:0;z-index:15}
+.shbg{position:absolute;inset:0;background:rgba(10,10,12,.42);animation:cl-fade .22s ease both}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:24px 24px 0 0;
+  padding:8px var(--c-pad) calc(var(--sa-b) + 16px);display:flex;flex-direction:column;gap:10px;
+  box-shadow:0 -12px 40px -12px rgba(0,0,0,.3);animation:sh-up .3s cubic-bezier(.2,.8,.2,1) both}
+.sheet .grab{display:block;width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 8px}
+.sheet h2{margin:0;font:800 22px/1.2 var(--ui);letter-spacing:-.02em}
+.sheet p{margin:0;color:var(--tx2);font-size:16px}
+.sheet .tag{font-size:14px;color:var(--tx3)}
+.sheet .acts{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.shw.out .shbg{animation:sh-fade-out .2s ease both}
+.shw.out .sheet{animation:sh-down .2s ease both}
+@keyframes sh-up{from{transform:translateY(100%)}}
+@keyframes sh-down{to{transform:translateY(100%)}}
+@keyframes sh-fade-out{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sheet,.shw.out .sheet{animation:cl-fade .2s ease both}}
+
+/* ── S1 заставка ── */
+.splash{flex:1;background:var(--c-grad);color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;position:relative;cursor:pointer;
+  padding:var(--sa-t) 24px var(--sa-b)}
+/* Срез 45° — как в логотипе на странице бренда: режет первую и последнюю
+   буквы. width:fit-content обязателен, иначе срез уходит мимо букв. */
+.wm{width:fit-content;--c:0px;
+  clip-path:polygon(var(--c) 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%,0 var(--c))}
+.wm span{display:block;font-family:var(--c-head);font-weight:900;text-transform:uppercase;
+  letter-spacing:-.035em;line-height:.98;color:#fff;white-space:nowrap}
+
+/* ── S1: слайдшоу ──
+   Страница — оранжевая, кадры ложатся на неё. Просветы между панелями —
+   косые, под тем же 45°-языком, что срез в логотипе. Фигуры — наклейки:
+   белая обводка и мягкая тень. Растр точками — печатный комикс. */
+.splash.play{overflow:hidden}
+.splash .wm{position:relative;z-index:2}
+.splash.go .wm{animation:ss-logo-out .38s cubic-bezier(.5,0,.75,0) both}
+@keyframes ss-logo-out{to{transform:scale(2.6);opacity:0}}
+.ss{position:absolute;inset:0;z-index:1;pointer-events:none}
+.ss.shake{animation:ss-shake .2s linear}
+@keyframes ss-shake{25%{transform:translate(3px,-2px)}50%{transform:translate(-3px,2px)}75%{transform:translate(2px,1px)}}
+.ss .lay{position:absolute;inset:0}
+.ss img{display:block}
+.ss .ht{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;
+  background:radial-gradient(rgba(40,12,0,.2) 1.1px,transparent 1.7px) 0 0/6px 6px}
+/* вспышка в момент удара */
+.ss .full::after,.ss .pn::after{content:"";position:absolute;inset:0;background:#fff;
+  animation:ss-flash .32s ease-out both;pointer-events:none}
+@keyframes ss-flash{from{opacity:.6}to{opacity:0}}
+
+.ss .full{position:absolute;inset:0;animation:ss-slam .34s cubic-bezier(.2,1.3,.35,1) both}
+.ss .full img{width:100%;height:100%;object-fit:cover}
+@keyframes ss-slam{from{transform:scale(1.4) rotate(-3deg);opacity:0}35%{opacity:1}}
+
+/* Три панели: линии раздела 37→29 % и 70→63 % высоты, просвет ~7 px */
+.ss .pn{position:absolute;inset:0}
+.ss .pn img{position:absolute;left:0;width:100%;object-fit:cover}
+.ss .p1{clip-path:polygon(0 0,100% 0,100% 28.6%,0 36.6%);animation:ss-l .3s cubic-bezier(.2,1.25,.35,1) both}
+.ss .p1 img{top:0;height:37%}
+.ss .p2{clip-path:polygon(0 37.5%,100% 29.5%,100% 62.5%,0 69.5%);animation:ss-r .3s cubic-bezier(.2,1.25,.35,1) both}
+.ss .p2 img{top:29%;height:41%}
+.ss .p3{clip-path:polygon(0 70.5%,100% 63.5%,100% 100%,0 100%);animation:ss-b .3s cubic-bezier(.2,1.25,.35,1) both}
+.ss .p3 img{top:63%;height:37%}
+/* Просветы между панелями — оранжевые, как страница под кадрами */
+.ss .gut{position:absolute;inset:0;background:var(--acc);animation:cl-fade .12s ease both}
+.ss .g1{clip-path:polygon(0 36%,100% 28%,100% 30%,0 38%)}
+.ss .g2{clip-path:polygon(0 69%,100% 62%,100% 64%,0 71%)}
+@keyframes ss-l{from{transform:translateX(-105%)}}
+@keyframes ss-r{from{transform:translateX(105%)}}
+@keyframes ss-b{from{transform:translateY(40%) scale(1.15);opacity:0}}
+
+.ss .stk{position:absolute;transform:rotate(var(--r));
+  filter:drop-shadow(2.5px 0 0 #fff) drop-shadow(-2.5px 0 0 #fff) drop-shadow(0 2.5px 0 #fff) drop-shadow(0 -2.5px 0 #fff)
+         drop-shadow(0 12px 18px rgba(30,10,0,.45));
+  animation:ss-pop .44s cubic-bezier(.2,1.5,.35,1) both}
+.ss .stk img{width:100%;height:auto}
+@keyframes ss-pop{from{transform:scale(.2) rotate(calc(var(--r) - 20deg));opacity:0}30%{opacity:1}}
+
+/* Плашка со знаком — как подпись в комиксе: жёсткая тень без размытия */
+.ss .cap{position:absolute;left:50%;bottom:calc(var(--sa-b) + 34px);padding:9px 14px 8px;
+  background:var(--acc);box-shadow:5px 5px 0 #141414;transform:translateX(-50%) rotate(-4deg);
+  animation:ss-cap .3s cubic-bezier(.2,1.4,.35,1) both}
+.ss .cap span{display:block;font:900 24px/1 var(--c-head);letter-spacing:-.035em;text-transform:uppercase;color:#fff;white-space:nowrap}
+@keyframes ss-cap{from{transform:translateX(-50%) rotate(-12deg) scale(1.8);opacity:0}}
+
+@media (prefers-reduced-motion:reduce){
+  .ss .full,.ss .pn,.ss .stk,.ss .cap,.splash.go .wm{animation:cl-fade .3s ease both}
+  .splash.go .wm{animation:ss-logo-fade .3s ease both}
+  @keyframes ss-logo-fade{to{opacity:0}}
+  .ss.shake,.ss .full::after,.ss .pn::after{animation:none}
+}
