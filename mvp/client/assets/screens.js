@@ -83,49 +83,28 @@ const clDateLong = date => { const d = D(date); return WD_FULL[dowMon(date)] + '
 const clBlockName = b => b.title || blockTypeLabel(b) || (isTextBlock(b) ? firstTextLine(b.text) : 'Блок');
 
 /* ── строки упражнения — как у HWPO, одна строка на упражнение ──
-   «3×5 Становая тяга · 132,5 кг»: схема жирным впереди, нагрузка после
-   названия. Проценты клиенту не показываем — только рабочий вес. */
+   «3×5 Становая тяга 132,5 кг»: схема впереди, нагрузка после названия, без
+   разделителей. Проценты клиенту не показываем — только рабочий вес.
+   Упражнение из базы и строка, набранная текстом, выглядят одинаково. */
 function clLoad(it, pm) {
-  if (it.pct != null) { const kg = it.exId ? kgText(it, pm) : null; return kg ? kg + '\u00a0кг' : ''; }
+  if (it.pct != null) { const kg = kgText(it, pm); return kg ? kg + '\u00a0кг' : ''; }
   return it.val ? loadText(it) : '';
 }
-/* Как показывать строку упражнения — три варианта на сравнение (виды T1):
-   text   — всё одинаково, обычным текстом: «3×5 Становая тяга · 132,5 кг»
-   accent — та же строка, у упражнения из базы схема жирным, нагрузка
-            жирным акцентом; строка, набранная текстом, — как написана
-   cols   — у упражнения из базы название слева, схема и нагрузка — колонкой
-            справа; строка текстом — на всю ширину */
-let clLineMode = 'text';
-const CL_LINE_MODES = ['text', 'accent', 'cols'];
-function clPart(it, pm, mode = clLineMode) {
+function clPart(it, pm) {
   const e = it.exId ? byId(it.exId) : null;
   const name = e ? e.ru : (it.raw || '');
   if (!e) return clEsc(name);                         /* строка текстом — как написана */
-  if (it.txt) return clEsc(name + ' — ' + it.txt);   /* пояснение вместо нагрузки — как написано */
+  if (it.txt) return clEsc(name + ' — ' + it.txt);    /* пояснение вместо нагрузки */
   const load = clLoad(it, pm);
-  if (mode === 'accent') return (it.scheme ? `<b class="sc">${clEsc(it.scheme)}</b> ` : '') + clEsc(name) + (load ? ` · <b class="ld">${clEsc(load)}</b>` : '');
-  return clEsc((it.scheme ? it.scheme + ' ' : '') + name + (load ? ' · ' + load : ''));
+  return clEsc([it.scheme, name, load].filter(Boolean).join(' '));
 }
-/* Колонка нагрузки для вида «Две колонки» */
-function clParams(it, pm) {
-  if (it.txt) return clEsc(it.txt);
-  const load = clLoad(it, pm);
-  return [it.scheme ? `<b>${clEsc(it.scheme)}</b>` : '', load ? clEsc(load) : ''].filter(Boolean).join(' · ');
+/* Связка — один подход из нескольких упражнений, вес один на всю связку:
+   «Взятие на грудь + Фронтальный присед + Толчок:» / «90 кг — 3×(1+1+1)». */
+function clChain(it, pm) {
+  const prm = [clLoad(it, pm), chainScheme(it)].filter(Boolean).join(' — ');
+  return clEsc(chainNames(it) + (prm ? ':' : '')) + (prm ? '<br>' + clEsc(prm) : '');
 }
-function clLine(it, pm) {
-  const parts = it.chain ? (it.parts || []).filter(partHas) : [it];
-  if (clLineMode === 'cols') {
-    /* В колонках связка — по строке на часть, следующие с «+»; пояснение
-       вместо нагрузки и строка текстом — на всю ширину */
-    return parts.map((p, k) => {
-      const plus = k ? '<span class="pl">+</span>' : '';
-      if (!p.exId || p.txt) return `<div class="xl${k ? ' cont' : ''}">${plus}${clPart(p, pm, 'text')}</div>`;
-      const prm = clParams(p, pm);
-      return `<div class="xl c2${k ? ' cont' : ''}"><span class="nm">${plus}${clEsc(byId(p.exId).ru)}</span>${prm ? `<span class="pr">${prm}</span>` : ''}</div>`;
-    }).join('');
-  }
-  return `<div class="xl">${parts.map(p => clPart(p, pm)).join(' + ')}</div>`;
-}
+const clLine = (it, pm) => `<div class="xl">${it.chain ? clChain(it, pm) : clPart(it, pm)}</div>`;
 
 /* Содержимое блока по группам, разделитель — только между группами:
    формат комплекса, подряд идущие упражнения, суперсет («5 кругов:» …
@@ -304,7 +283,6 @@ const CL_UI = {
 
   /* T1. Тренировка дня */
   workout(sc, v) {
-    clLineMode = CL_LINE_MODES.includes(v) ? v : 'text';
     const x = clDayAt(clDate), pm = pmOf(CL_ME), key = clDayKey(clDate);
     const msg = dayMsg(CL_ME, clDate);
     const doneAll = !!clS.dayDone[key];

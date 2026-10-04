@@ -234,17 +234,17 @@ const DEVICES = {
   iphone:  { name: 'iPhone',  r: 55, pad: 12, note: 'safe area 59 / 34', web: { top: 0, bottom: 84 } },
   android: { name: 'Android', r: 28, pad: 9,  note: 'полосы 24 / 16',    web: { top: 80, bottom: 16 } }
 };
-/* Разрешения экрана — отдельно от устройства: 393×852 — iPhone 15/16 Pro */
-const SIZES = [[360, 780], [393, 852], [450, 976]];
+/* Разрешения экрана — отдельно от устройства */
+const SIZES = [[360, 780], [450, 976]];
 const dev = () => { const [w, h] = st.size.split('x').map(Number); return Object.assign({ w, h }, DEVICES[st.dev]); };
 
 const ids = Object.keys(CL_SCREENS);
 
 /* ── состояние стенда; живёт в адресе, чтобы ссылкой можно было поделиться ── */
-const st = { id: CL_START, v: '', p: clNorm({}), dev: 'iphone', size: '393x852' };
+const st = { id: CL_START, v: '', p: clNorm({}), dev: 'iphone', size: '360x780' };
 try { st.dev = localStorage.getItem('cl.dev') || st.dev; st.size = localStorage.getItem('cl.size') || st.size; } catch (e) {}
 if (!DEVICES[st.dev]) st.dev = 'iphone';
-if (!SIZES.some(([w, h]) => w + 'x' + h === st.size)) st.size = '393x852';
+if (!SIZES.some(([w, h]) => w + 'x' + h === st.size)) st.size = '360x780';
 
 function readHash() {
   const m = location.hash.match(/^#\/([^?]*)(?:\?(.*))?/);

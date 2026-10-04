@@ -1447,12 +1447,21 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .line.chain .cpx svg{width:11px;height:11px}
 .line.chain .cp:hover .cpx{opacity:1}
 .line.chain .cpx:hover{background:var(--s1);color:var(--rm)}
-/* Вне правки — одной строкой: параметры текстом в скобках, полей нет. Поле
+/* Вне правки — одной строкой: параметры связки текстом в конце, полей нет. Поле
    «упражнение» остаётся в строке (по нему в связку попадают Tab и стрелки),
    но без места и невидимо, пока курсор не в связке. */
 .line.chain .cpt{color:var(--acc-d);font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums;cursor:text}
 .line.chain:focus-within .cpt{display:none}
-.line.chain:not(:focus-within) .cp .pf,.line.chain:not(:focus-within) .cp .kg,.line.chain:not(:focus-within) .cp .rng,.line.chain:not(:focus-within) .cp .pmf{display:none !important}
+.line.chain:not(:focus-within) .cp .pf,.line.chain:not(:focus-within) .cprm > :not(.cpt){display:none !important}
+/* Подходы, нагрузка и «от 1ПМ» — одни на всю связку: стоят после упражнений,
+   отделены чертой. Повторы — у каждого упражнения. */
+.line.chain .cprm{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.line.chain:focus-within .cprm{padding-left:10px;margin-left:2px;border-left:1.5px solid var(--line2)}
+.line.chain .cp .rep{width:auto}
+.line.chain .cof{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--tx2);white-space:nowrap}
+.line.chain .cof.off{display:none}
+.line.chain .cof select{height:30px;border-radius:7px;border:1.5px solid var(--line2);background:var(--bg);padding:0 8px;font:inherit;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;max-width:320px}
+.line.chain .cof select:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
 .line.chain .cpn{cursor:text}
 .line.chain:not(:focus-within) .cpx{display:none}
 .line.chain .caddw{display:inline-flex;align-items:center;gap:8px}
@@ -1460,16 +1469,14 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .line.chain .cadd{min-width:12ch;padding:2px 0;font-size:15px;outline:0}
 .line.chain .cadd:empty::before{content:attr(data-ph);color:var(--tx4)}
 .line.chain .kg{font-size:13px}
-/* Строка связки короче, когда пустые поля не занимают места: пустая нагрузка
-   и крестик видны у упражнения, в котором курсор или на которое навели. */
-.line.chain .cp:not(:focus-within) .pf.ld.empty{display:none}
+/* Крестик виден у упражнения, в котором курсор или на которое навели. */
 .line.chain .cpx{width:18px;height:18px}
 /* ═══════════ ДИАПАЗОН НАГРУЗКИ (CON-24) ═══════════
    «от–до» — дополнительная функция: кнопка видна только у строки, которую
    правят (в связке — у упражнения с курсором). Набрать «70-80» можно и без
    неё; у заданного диапазона кнопка горит и снимает его. */
 .rng{display:none;align-items:center;height:26px;padding:0 8px;border-radius:var(--rad-s);font-size:12.5px;font-weight:600;color:var(--tx3);background:var(--s1);white-space:nowrap;flex:none}
-.line.act:not(.chain) .rng,.line.chain .cp:focus-within .rng{display:inline-flex}
+.line.act:not(.chain) .rng,.line.chain:focus-within .cprm .rng{display:inline-flex}
 .rng:hover,.rng.on{color:var(--acc-d);background:var(--acc-a)}
 /* ═══════════ ПОДРОБНЫЙ ВИД: СООБЩЕНИЕ К ТРЕНИРОВКЕ И СВЯЗКА ═══════════ */
 .days .day .bxmsg{display:flex;gap:6px;align-items:flex-start;padding:7px 9px;border-radius:var(--rad-m);background:var(--acc-a);color:var(--tx1);font-size:14px;line-height:1.4}

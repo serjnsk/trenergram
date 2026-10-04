@@ -345,7 +345,7 @@ function tplKind(t){
 function tplLine([ex, scheme, val, unit, txt, sub]){
   if(ex === SS_TAG) return ssItem(scheme, val);          /* [SS_TAG, круги, отдых] */
   if(ex === TXT_TAG){ const r = rawItem(scheme || ''); if(sub) r.sub = true; return r }   /* [TXT_TAG, текст] */
-  if(ex === CH_TAG){ const c = chainItem((scheme || []).map(tplLine)); if(sub) c.sub = true; return c }   /* [CH_TAG, [части]] */
+  if(ex === CH_TAG){ const c = chainItem((scheme || []).map(tplLine), val); if(sub) c.sub = true; return c }   /* [CH_TAG, [части], {нагрузка}] */
   const i = mkItem(ex, scheme||'');
   /* Диапазон в шаблоне — строкой «70–80». */
   const [lo, hi] = String(val ?? '').split(/[–—-]/);
@@ -472,13 +472,14 @@ function mkItem(exId, scheme='', pct=null, unit=null, val='', txt=''){
 const rawItem = txt => ({id:nid('i'), exId:null, raw:txt, scheme:'', pct:null, unit:'', val:'', txt:''});
 /* Строка заготовки дня: [упражнение, схема, %, единица, значение, пояснение, в суперсете].
    Кроме упражнения — [SS_TAG, круги, отдых], [TXT_TAG, текст] — строка текстом,
-   [CH_TAG, [части]] — связка. Диапазон пишется строкой: '70-80' в % или в значении. */
+   [CH_TAG, [части], {n, p, u, v, of}] — связка: части с повторами, подходы и
+   нагрузка — одни на всю связку. Диапазон пишется строкой: '70-80' в % или в значении. */
 const RANGE_SPLIT = v => String(v).split(/\s*[–—-]\s*/);
 function mkLine(a){
   if(a[0] === SS_TAG) return ssItem(a[1], a[2]);
   const sub = a[6] ? {sub:true} : {};
   if(a[0] === TXT_TAG) return Object.assign(rawItem(a[1] || ''), sub);
-  if(a[0] === CH_TAG) return Object.assign(chainItem((a[1] || []).map(mkLine)), sub);
+  if(a[0] === CH_TAG) return Object.assign(chainItem((a[1] || []).map(mkLine), a[2]), sub);
   const [p, p2] = typeof a[2] === 'string' ? RANGE_SPLIT(a[2]) : [a[2]];
   const [v, v2] = a[4] ? RANGE_SPLIT(a[4]) : [''];
   const i = mkItem(a[0], a[1] || '', p != null ? parseFloat(p) : null, a[3] || null, v || '', a[5] || '');
@@ -508,13 +509,57 @@ const LIST_RE = /^[•\-–—*][ \t]+/;
 /* Первая строка текста без маркера и двоеточия — подпись блока без названия. */
 const firstTextLine = t => (textLines(t)[0] || '').replace(LIST_RE, '').replace(/:$/, '');
 /* ─── СВЯЗКА (CON-23) ───
-   Несколько упражнений подряд одной строкой: «Взятие на грудь (1) +
-   Фронтальный присед (1) + Толчок (2)». По сути суперсет на один круг, но в
-   блоке это одна запись: parts — упражнения со своими схемой и нагрузкой, той
-   же формы, что строка блока. Связка таскается, копируется и сохраняется
-   целиком, как одна строка. */
+   Несколько упражнений подряд как один подход: «Взятие на грудь + Фронтальный
+   присед + Толчок: 90 кг — 3×(1+1+1)». Штангу между частями не меняют, поэтому
+   нагрузка и число подходов — одни на всю связку (sets, pct/pct2 или
+   val/val2 + unit), а у частей — только упражнение и повторы (scheme).
+   Процент считается от 1ПМ одного упражнения связки: of — выбранное тренером,
+   пусто — самое слабое, с наименьшим 1ПМ клиента. Связка таскается,
+   копируется и сохраняется целиком, как одна строка. */
 const CH_TAG = '@ch';
-const chainItem = (parts = []) => ({id:nid('i'), chain:true, parts, exId:null, raw:null, scheme:'', pct:null, unit:'', val:'', txt:''});
+function chainItem(parts = [], prm){
+  const c = {id:nid('i'), chain:true, parts, exId:null, raw:null, scheme:'', sets:'', pct:null, unit:'', val:'', txt:'', of:null};
+  if(prm) Object.assign(c, resChain(prm));
+  return normChain(c);
+}
+/* Нагрузка связки в слепке и в заготовке: ключи пишутся, только если заданы. */
+const serChain = c => ({...(c.sets ? {n:String(c.sets)} : {}), ...(c.pct != null ? {p:c.pct} : {}), ...(c.pct2 != null ? {p2:c.pct2} : {}),
+  ...(c.unit ? {u:c.unit} : {}), ...(c.val ? {v:c.val} : {}), ...(c.val2 ? {v2:c.val2} : {}), ...(c.of ? {of:c.of} : {})});
+const resChain = r => ({sets: r.n != null ? String(r.n) : '', pct: r.p ?? null, unit: r.u || '', val: r.v != null ? String(r.v) : '', of: r.of || null,
+  ...(r.p2 != null ? {pct2:r.p2} : {}), ...(r.v2 ? {val2:String(r.v2)} : {})});
+/* Связка из прежней записи, где у каждой части были свои схема и нагрузка:
+   «3×1» у частей — три подхода связки, нагрузка — от первой части, у которой
+   она есть. У частей остаются только повторы. */
+function normChain(c){
+  const ps = c.parts || [], nm = sc => String(sc || '').match(/^(\d+)\s*×\s*(\d+)$/);
+  if(!c.sets){ const m = ps.map(p => nm(p.scheme)).find(Boolean); if(m) c.sets = m[1] }
+  ps.forEach(p => { const m = nm(p.scheme); if(m && m[1] === c.sets) p.scheme = m[2] });
+  if(c.pct == null && !c.val){
+    const src = ps.find(p => p.pct != null) || ps.find(p => p.val);
+    if(src && src.pct != null){ c.pct = src.pct; if(src.pct2 != null) c.pct2 = src.pct2 }
+    else if(src){ c.val = src.val; c.unit = src.unit || ''; if(src.val2) c.val2 = src.val2 }
+  }
+  ps.forEach(p => { p.pct = null; p.unit = ''; p.val = ''; delete p.pct2; delete p.val2 });
+  return c;
+}
+/* Упражнение связки, от 1ПМ которого считается процент: выбранное тренером,
+   а по умолчанию — самое слабое из тех, чей 1ПМ клиента известен. */
+const chainWeighted = c => (c.parts || []).filter(p => p.exId && pmKey(byId(p.exId)));
+function chainOf(c, pm){
+  const ws = chainWeighted(c); if(!ws.length) return null;
+  const pick = c.of && ws.find(p => p.exId === c.of); if(pick) return pick;
+  const max = p => pm ? pm[pmKey(byId(p.exId))] : null, known = ws.filter(max);
+  return known.length ? known.reduce((a, p) => max(p) < max(a) ? p : a) : ws[0];
+}
+/* Ключ 1ПМ, от которого считается процент строки или связки. */
+const pctKey = (it, pm) => it.chain ? ((p => p ? pmKey(byId(p.exId)) : null)(chainOf(it, pm))) : pmKey(it.exId && byId(it.exId));
+/* «3×(1+1+1)»: подходы связки и повторы частей; без подходов — «1+1+1». */
+function chainScheme(c){
+  const r = (c.parts || []).filter(partHas).map(p => p.scheme || '1'), n = parseInt(c.sets) || 0;
+  if(!r.length) return '';
+  const body = r.length > 1 ? r.join('+') : r[0];
+  return n > 1 ? n + '×' + (r.length > 1 ? '(' + body + ')' : body) : body;
+}
 const partHas = p => !!p && !!(p.exId || String(p.raw || '').trim());
 const partName = p => p.exId ? (byId(p.exId) || {}).ru || '' : String(p.raw || '').trim();
 const itemHas = y => !!y && !y.ss && (y.chain ? (y.parts || []).some(partHas) : !!(y.exId || String(y.raw || '').trim()));
@@ -726,7 +771,7 @@ function buildDay(pid, i){
 const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note || String(b.text||'').trim()).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
   ...(isTextBlock(b) ? {tx:b.text} : {}),
   i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''}
-    : it.chain ? {ch:(it.parts||[]).map(serItem), ...(it.sub ? {g:1} : {})}
+    : it.chain ? {ch:(it.parts||[]).map(serItem), ...serChain(it), ...(it.sub ? {g:1} : {})}
     : {...serItem(it), ...(it.sub ? {g:1} : {})})}))});
 /* Строка в слепке. Верхняя граница диапазона (p2, v2) пишется, только если
    задана: слепки прежних дней не меняются, опубликованное не становится
@@ -738,7 +783,10 @@ function resItem(it){ return {id:nid('i'), exId:it.e||null, raw:it.r||null, sche
 const restoreBlocks = rec => (rec.b||[]).map(b=>normFmt({id:nid('b'), kind:b.k||null, title:b.t||'', note:b.n||'', fmt:b.f||null,
   ...(typeof b.tx === 'string' ? {text:b.tx} : {}),
   items:(b.i||[]).map(it=> it.ss ? ssItem(it.n, it.z)
-    : Object.assign(it.ch ? chainItem(it.ch.map(resItem)) : resItem(it), it.g ? {sub:true} : {}))}));
+    : Object.assign(it.ch ? chainItem(it.ch.map(resItem), it) : resItem(it), it.g ? {sub:true} : {}))}));
+/* Слепок со связкой прежнего вида пересобирается в нынешний: иначе
+   опубликованный день сам собой стал бы «изменённым». */
+const reserDay = s => { if(!s || !s.includes('"ch":')) return s; const c = JSON.parse(s); return serializeDay({title:c.t, comp:c.c, blocks:restoreBlocks(c)}) };
 const savedDay = (pid,i) => ((STATE.days||{})[pid]||{})[i] || null;
 /* Черновики могут лежать за концом заготовок — план дотягиваем до них. */
 function planLength(pid){
@@ -751,7 +799,7 @@ function buildPlan(pid){
   return PLAN[pid].map((_,i)=>{
     const x = buildDay(pid,i), rec = savedDay(pid,i);
     if(rec && rec.c){ const c = JSON.parse(rec.c); x.title = c.t; x.blocks = restoreBlocks(c); x.rest = !x.blocks.length; x.comp = !!c.c; x.g = rec.g || null; }
-    x.pub = rec && !rec.draft ? rec.c : (rec ? (rec.pub||'') : serializeDay(x));
+    x.pub = rec && !rec.draft ? reserDay(rec.c) : (rec ? reserDay(rec.pub||'') : serializeDay(x));
     x.draft = !!(rec && rec.draft);
     return x;
   });
@@ -784,7 +832,7 @@ function buildSets(item, pm){
    «% от ПМ» доступен для любого упражнения со штангой или гантелями. */
 const pmKey = e => e ? (e.pm || ((e.u||[]).includes('кг') ? e.id : null)) : null;
 function workKg(item, pm){
-  const e = item.exId && byId(item.exId);
+  const src = item.chain ? chainOf(item, pm) : item, e = src && src.exId && byId(src.exId);
   const k = pmKey(e);
   if(!k || item.pct == null || !pm) return null;
   const max = pm[k];
@@ -1011,12 +1059,29 @@ const RE_PCT = /@?\s*(\d{1,3}(?:[.,]\d)?)(?:\s*[-–—]\s*(\d{1,3}(?:[.,]\d)?))
 /* «Взятие на грудь (1) + фронтальный присед 1 + толчок 2» — связка (CON-23):
    две и больше частей через « + », и каждая уверенно узнаётся. Скобки вокруг
    параметров — как пишут в тетради. Не узнана хоть одна — это не связка. */
+/* Запись связки целиком тоже узнаётся: «Взятие на грудь + Фронтальный присед +
+   Толчок: 90 кг — 3×(1+1+1)» — подходы и повторы частей по порядку. */
 function parseChain(L){
-  const parts = String(L || '').split(/\s\+\s/).map(t => t.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  let s = String(L || ''), sets = '', reps = null;
+  const m = s.match(/(?:(\d+)\s*[x×хХ*]\s*)?\(\s*(\d+(?:\s*\+\s*\d+)+)\s*\)/);
+  if(m){ sets = m[1] || ''; reps = m[2].split('+').map(x => x.trim()); s = s.replace(m[0], ' ') }
+  s = s.replace(/:/g, ' ').replace(/\s[—–]\s/g, ' ');
+  const parts = s.split(/\s\+\s/).map(t => t.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
   if(parts.length < 2) return null;
-  const out = [];
-  for(const t of parts){ const r = parseText(t)[0]; if(!r || r.type !== 'ok' || r.item.chain) return null; out.push(r.item) }
-  return chainItem(out);
+  /* Нагрузка — одна на связку, где бы её ни написали; повторы — число после упражнения. */
+  const out = [], ld = {};
+  for(let t of parts){
+    const mp = t.match(RE_PCT), mk = t.match(/(\d+(?:[.,]\d+)?)(?:\s*[-–—]\s*(\d+(?:[.,]\d+)?))?\s*кг(?![а-яё])/i);
+    if(mp){ if(ld.pct == null){ ld.pct = parseFloat(mp[1].replace(',', '.')); if(mp[2]) ld.pct2 = parseFloat(mp[2].replace(',', '.')) } t = t.replace(mp[0], ' ') }
+    else if(mk){ if(!ld.val){ ld.val = mk[1].replace(',', '.'); ld.unit = 'кг'; if(mk[2]) ld.val2 = mk[2].replace(',', '.') } t = t.replace(mk[0], ' ') }
+    const mr = t.match(/\s(\d+)\s*$/); if(mr) t = t.slice(0, mr.index);
+    const r = parseText(t.trim())[0]; if(!r || r.type !== 'ok' || r.item.chain) return null;
+    if(mr && !r.item.scheme) r.item.scheme = mr[1];
+    out.push(r.item);
+  }
+  if(reps && reps.length === out.length) out.forEach((p, k) => { p.scheme = reps[k] });
+  const c = Object.assign(chainItem(out), ld); if(sets) c.sets = sets;
+  return c;
 }
 const RE_SCHEME = /\d+\s*[x×хХ]\s*\d+|\d+(?:\s*-\s*\d+)+/;
 const RE_SETS   = /\d+\s*[x×хХ]/;
@@ -1326,8 +1391,8 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
       ['squat','3×2','85-90'],
       ['fsquat','',null,null,'','по самочувствию, 3–4 подхода']]],
     ['strength','Тяжелоатлетическая связка','Без разрыва между частями',null,[
-      [CH_TAG,[['clean','1',75],['fsquat','1',75],['jerk','2',75]]],
-      [CH_TAG,[['clean','1','80-85'],['jerk','1','80-85']]],
+      [CH_TAG,[['clean','1'],['fsquat','1'],['jerk','1']],{n:3,p:75}],
+      [CH_TAG,[['clean','1'],['jerk','2']],{n:2,p:80,p2:85,of:'clean'}],
       ['snatch','5×2',null,'кг','50-55']]],
     ['accessory','Подкачка · суперсет','',null,[
       [SS_TAG,4,'90 сек'],
@@ -1783,15 +1848,15 @@ function ensureDay(cid, date){
    у упражнения — подходы×повторы, процент от ПМ и рабочий вес (или объём). */
 /* Неразрывные пробелы внутри «40 %» и «500 м»: перенос допустим только между частями схемы. */
 const itemLabel = it => it.txt ? it.txt : [it.scheme, loadText(it)].filter(Boolean).join(' · ');
-/* Связка одной строкой: «Взятие на грудь (1 · 70 % · 84 кг) + Толчок (2)». */
+/* Связка: «Взятие на грудь + Фронтальный присед + Толчок: 80 % · 90 кг — 3×(1+1+1)». */
+const chainNames = it => (it.parts || []).filter(partHas).map(partName).join(' + ');
 function chainHTML1(it, pm){
-  return (it.parts || []).filter(partHas).map(p => {
-    const l = itemLabel(p), kg = pm && p.exId ? kgText(p, pm) : null;
-    const prm = [esc(l), kg ? `<u>${kg}\u00a0кг</u>` : ''].filter(Boolean).join(' · ');
-    return esc(partName(p)) + (prm ? ` <em>(${prm})</em>` : '');
-  }).join(' + ');
+  const kg = pm ? kgText(it, pm) : null, sc = chainScheme(it);
+  const load = [esc(loadText(it)), kg ? `<u>${kg}\u00a0кг</u>` : ''].filter(Boolean).join(' · ');
+  const prm = [load, esc(sc)].filter(Boolean).join(' — ');
+  return esc(chainNames(it)) + (prm ? `: <em>${prm}</em>` : '');
 }
-const chainText = it => (it.parts || []).filter(partHas).map(p => partName(p) + (itemLabel(p) ? ' (' + itemLabel(p) + ')' : '')).join(' + ');
+const chainText = it => { const prm = [loadText(it), chainScheme(it)].filter(Boolean).join(' — '); return chainNames(it) + (prm ? ': ' + prm : '') };
 /* Сообщение тренера ко всей тренировке (COM-4): чей день — клиента или группы. */
 const dayMsg = (sid, date) => !sid ? '' : ((TALK.workout[talkKey(sid, date)] || []).find(m => m.who === 'trainer') || {}).text || '';
 /* sid — чей день (клиент или группа): по нему находится сообщение тренера к

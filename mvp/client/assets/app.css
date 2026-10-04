@@ -561,12 +561,4 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .snd::after{content:"";position:absolute;inset:-6px}
 .snd .i{width:15px;height:15px;stroke-width:2.2;margin:1px 1px 0 0}
 
-/* ── строки упражнений: варианты «Акценты» и «Две колонки» ── */
-.xl .sc{font-weight:700}
-.xl .ld{font-weight:700;color:var(--acc-d)}
-.xl.c2{display:flex;align-items:baseline;gap:12px}
-.xl.c2 .nm{flex:1;min-width:0}
-.xl.c2 .pr{flex:none;max-width:48%;text-align:right;color:var(--tx2);font-variant-numeric:tabular-nums}
-.xl.c2 .pr b{font-weight:700;color:var(--ink)}
-.xl.cont{padding-top:0}
-.xl .pl{display:inline-block;width:14px;color:var(--tx3)}
+/* ── строки упражнений, вид «Списком»: маркер и висячий отступ ── */

@@ -342,26 +342,43 @@ function prmHTML(it, schPh){
       ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}`;
 }
 /* ─── СВЯЗКА В СТРОКЕ (CON-23) ───
-   Одна строка: «Взятие на грудь (1 · 70 %) + Фронтальный присед (1) + …».
-   Пока связку не правят, параметры стоят текстом в скобках; нажатие на
-   упражнение или курсор в строке открывают поля схемы и нагрузки — те же,
-   что у обычной строки. В конце — поле «упражнение» с подсказками из базы:
-   Tab берёт первое, Enter без выбора добавляет текстом, Enter в пустом поле —
-   к следующей строке. Крестик у упражнения убирает его из связки. */
-function partPrmHTML(p){
-  const l = itemLabel(p), kg = p.exId ? kgText(p, PM()) : null;
-  const prm = [esc(l), kg ? kg + '\u00a0кг' : ''].filter(Boolean).join(' · ');
-  return prm ? `<span class="cpt">(${prm})</span>` : '';
+   «Взятие на грудь + Фронтальный присед + Толчок  80 % · 90 кг — 3×(1+1+1)».
+   Связка — один подход, поэтому подходы и нагрузка у неё одни, а у каждого
+   упражнения — только повторы. Пока связку не правят, параметры стоят
+   текстом в конце; курсор в строке открывает поля: повторы у упражнений,
+   дальше — подходы, нагрузка и упражнение, от 1ПМ которого считается
+   процент (по умолчанию самое слабое). Поле «упражнение» с подсказками из
+   базы: Tab берёт первое, Enter без выбора добавляет текстом, Enter в
+   пустом поле — к следующей строке. Крестик убирает упражнение из связки. */
+const repsHTML = p => `<input class="pf sch rep" data-pf="sch" data-for="${p.id}" value="${esc(p.scheme || '')}" placeholder="повт" autocomplete="off" spellcheck="false" inputmode="numeric" style="width:${fw(p.scheme || '', 4, 20)}">`;
+/* Подпись «от 1ПМ»: самое слабое называется по имени, когда 1ПМ клиента известны. */
+function cofOpts(it){
+  const seen = new Set(), ws = chainWeighted(it).filter(p => !seen.has(p.exId) && seen.add(p.exId));
+  const auto = chainOf({...it, of:null}, PM()), known = auto && PM()[pmKey(byId(auto.exId))];
+  return `<option value="">${G_() || !known ? 'самого слабого' : esc(partName(auto)) + ' · самое слабое'}</option>`
+    + ws.map(p => `<option value="${p.exId}" ${it.of === p.exId ? 'selected' : ''}>${esc(partName(p))}</option>`).join('');
+}
+const chainSumm = it => { const kg = kgText(it, PM()), l = loadText(it);
+  return [[l, kg ? kg + '\u00a0кг' : ''].filter(Boolean).join(' · '), chainScheme(it)].filter(Boolean).join(' — ') };
+function chainPrmHTML(it){
+  const L = loadInfo(it), kg = kgText(it, PM()), ld = ldVal(it), sets = it.sets || '', summ = chainSumm(it);
+  return `<span class="cprm">${summ ? `<span class="cpt">${esc(summ)}</span>` : ''}
+      <span class="pf sets"><input data-pf="sets" data-for="${it.id}" value="${esc(sets)}" placeholder="1" inputmode="numeric" autocomplete="off" style="width:${fw(sets, 2, 4)}"><u>подх.</u></span>
+      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
+      <button class="rng ${hasRange(it) ? 'on' : ''}" data-rng="${it.id}" tabindex="-1" title="${hasRange(it) ? 'Убрать диапазон — оставить одно число' : 'Диапазон «от–до»: 70–80 % или 60–70 кг. Можно и набрать через дефис'}">от–до</button>` : ''}
+      ${L.weighted && chainWeighted(it).length > 1 ? `<span class="cof ${L.cur === '%' ? '' : 'off'}">от 1ПМ <select data-cof="${it.id}" tabindex="-1" title="От 1ПМ какого упражнения считать процент">${cofOpts(it)}</select></span>` : ''}
+      <span class="kg">${kg != null ? '→ ' + kg + ' кг' : G_() && it.pct != null ? 'от 1ПМ каждого' : ''}</span>
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}</span>`;
 }
 function chainLineHTML(it){
   const ps = it.parts || [];
   const parts = ps.map((p, k) => `${k ? '<span class="cplus">+</span>' : ''}<span class="cp${p.exId ? '' : ' raw'}" data-part="${p.id}">
-      <span class="cpn">${esc(partName(p))}</span>${p.exId ? partPrmHTML(p) + prmHTML(p, 'повт') : ''}
+      <span class="cpn">${esc(partName(p))}</span>${repsHTML(p)}
       <button class="cpx" data-delpart="${p.id}" tabindex="-1" title="Убрать из связки">${ICON.x}</button></span>`).join('');
   return `<div class="line chain${ps.length ? '' : ' empty'}" data-item="${it.id}">
     <span class="gr" title="Перетащить связку">${ICON.grip}</span>
     <span class="chl">Связка</span>
-    <span class="cps">${parts}<span class="caddw">${ps.length ? '<span class="cplus">+</span>' : ''}<span class="cadd" contenteditable data-edit="${it.id}" spellcheck="false" data-ph="${ps.length ? 'упражнение' : 'первое упражнение связки'}"></span></span></span>
+    <span class="cps">${parts}<span class="caddw">${ps.length ? '<span class="cplus">+</span>' : ''}<span class="cadd" contenteditable data-edit="${it.id}" spellcheck="false" data-ph="${ps.length ? 'упражнение' : 'первое упражнение связки'}"></span></span>${ps.length ? chainPrmHTML(it) : ''}</span>
     <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить связку">${ICON.x}</button>
   </div>`;
 }
@@ -1491,8 +1508,10 @@ function keepText(id, text){
 const VOL_UNITS = ['м','сек','мин','кал'];
 const UNITSEL = {};              /* единица строки, выбранная до ввода числа (на сессию) */
 function loadInfo(it){
-  const ex = byId(it.exId), key = pmKey(ex), weighted = !!key;
-  const units = [...(weighted ? ['%','кг'] : []), ...((ex && ex.u) || []).filter(u => VOL_UNITS.includes(u))];
+  /* У связки вес — от выбранного (или самого слабого) упражнения, объём — любой из единиц её упражнений. */
+  const ex = it.chain ? null : byId(it.exId), key = it.chain ? pctKey(it, PM()) : pmKey(ex), weighted = !!key;
+  const exU = it.chain ? (it.parts || []).flatMap(p => (byId(p.exId) || {}).u || []) : (ex && ex.u) || [];
+  const units = [...new Set([...(weighted ? ['%','кг'] : []), ...exU.filter(u => VOL_UNITS.includes(u))])];
   if(it.unit && it.val && !units.includes(it.unit)) units.push(it.unit);
   /* У группы по умолчанию проценты: вес у каждого участника свой, от его 1ПМ. */
   const def = weighted ? (PM()[key] || G_() ? '%' : 'кг') : (units[0] || '');
@@ -1563,15 +1582,16 @@ const autoWidth = f => { const sch = f.dataset.pf === 'sch';
 /* Вес, единица, поле 1ПМ и «текстовый» режим — на месте, без перерисовки:
    перерисовка сбила бы курсор. Поле 1ПМ, в котором сейчас печатают, не прячем. */
 function syncLoads(){
-  $$('#doc .line[data-item]:not(.chain), #doc .cp[data-part]').forEach(l => {
-    const {i} = findItem(l.dataset.item || l.dataset.part); if(!i || !i.exId) return;
+  $$('#doc .line[data-item]').forEach(l => {
+    const {i} = findItem(l.dataset.item); if(!i || !(i.exId || i.chain)) return;
     const L = loadInfo(i), kg = kgText(i, PM());
     l.classList.toggle('txtmode', !!i.txt);
     const k = l.querySelector('.kg'); if(k) k.textContent = kg != null ? '→ ' + kg + ' кг' : G_() && i.pct != null ? 'от 1ПМ каждого' : '';
     const rg = l.querySelector('[data-rng]'); if(rg) rg.classList.toggle('on', hasRange(i));
-    /* У упражнения связки — и параметры текстом, которые видны вне правки. */
-    if(l.dataset.part){ const pt = l.querySelector('.cpt'), html = partPrmHTML(i);
-      if(pt) pt.outerHTML = html; else if(html) l.querySelector('.cpn').insertAdjacentHTML('afterend', html) }
+    /* У связки — параметры текстом, которые видны вне правки, и выбор «от 1ПМ». */
+    if(i.chain){ const pr = l.querySelector('.cprm'); if(pr){ const t = chainSumm(i); let pt = pr.querySelector('.cpt');
+        if(!t){ if(pt) pt.remove() } else { if(!pt){ pr.insertAdjacentHTML('afterbegin', '<span class="cpt"></span>'); pt = pr.querySelector('.cpt') } pt.textContent = t } }
+      const cf = l.querySelector('.cof'); if(cf){ cf.classList.toggle('off', L.cur !== '%'); const sel = cf.querySelector('select'); if(sel) sel.options[0].textContent = cofOpts(i).match(/^<option value="">(.*?)<\/option>/)[1].replace(/&amp;/g, '&') } }
     const u = l.querySelector('[data-pfu]'); if(u){ u.textContent = L.cur; u.parentElement.classList.toggle('empty', !u.parentElement.querySelector('input').value.trim()) }
     const pm = l.querySelector('.pmf');
     if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key] && !G_()));
@@ -1581,6 +1601,9 @@ function syncLoads(){
 function normField(pf){
   const {i} = findItem(pf.dataset.for); if(!i) return;
   const kind = pf.dataset.pf, host = pf.closest('.cp') || pf.closest('.line');
+  /* У упражнения связки — только повторы, у самой связки — число подходов. */
+  if(kind === 'sch' && host && host.classList.contains('cp')){ i.scheme = pf.value.trim().replace(/\s+/g, '').replace(/[xхХ*]/g, '×'); i.txt = ''; pf.value = i.scheme; autoWidth(pf); syncLoads(); return }
+  if(kind === 'sets'){ i.sets = (pf.value.match(/\d+/) || [''])[0].replace(/^0+/, ''); pf.value = i.sets }
   if(kind === 'sch'){
     applyScheme(i, pf.value);
     pf.value = i.txt || i.scheme || '';
@@ -1681,7 +1704,7 @@ function chainAdd(id, exId, text, mode){
   if(!exId){ if(!t) return; c.parts.push(rawItem(t)); render(); if(mode !== 'quiet') focusLineField(id, 'e'); return }
   const tail = t.slice(exNameOf(t).length).trim(), r = parseParamsText(tail), p = mkItem(exId);
   setPrm(p, r.txt != null ? {txt: r.txt} : r);
-  c.parts.push(p); render();
+  c.parts.push(p); normChain(c); render();
   /* У упражнения связки почти всегда есть повторы — курсор сразу в схему. */
   focusPart(p.id, 'sch');
 }
@@ -1776,6 +1799,8 @@ const KEYHINT = {
   sch: `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">5x3 · 21-15-9 · 8 — или текстом</span>`,
   ld:  `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее</span><span>${KB('↑')}${KB('↓')}выше / ниже</span><span>${KB('Esc')}готово</span><span class="r">80% · 70-80% · 100к · 500м · 60с</span>`,
   ch:  `<span>${KB('Tab')}из базы</span><span>${KB('↑')}${KB('↓')}подсказка</span><span>${KB('Enter')}добавить в связку</span><span>${KB('Enter')}в пустом — дальше</span><span class="r">упражнения подряд одной строкой</span>`,
+  rep: `<span>${KB('Tab')}дальше</span><span>${KB('Shift Tab')}назад</span><span>${KB('Enter')}следующее упражнение связки</span><span>${KB('Esc')}готово</span><span class="r">повторы этого упражнения в одном подходе связки</span>`,
+  sets:`<span>${KB('Tab')}нагрузка</span><span>${KB('Shift Tab')}назад</span><span>${KB('Esc')}готово</span><span class="r">подходы связки: 3 → 3×(1+1+1)</span>`,
   pm:  `<span>${KB('Tab')}дальше</span><span>${KB('Enter')}следующее</span><span>${KB('Esc')}готово</span><span class="r">1ПМ клиента — от него считаются проценты</span>`,
 };
 document.addEventListener('focusin', e => {
@@ -1787,7 +1812,7 @@ document.addEventListener('focusin', e => {
   if(f.dataset.pf === 'ld'){ const {i} = findItem(f.dataset.for); if(i && !UNITSEL[i.id]) UNITSEL[i.id] = loadInfo(i).cur }
   line.classList.add('act');
   if(!h){ h = document.createElement('div'); h.id = 'keyhint'; h.className = 'keyhint' }
-  h.innerHTML = KEYHINT[f.dataset.pf || (line.classList.contains('chain') ? 'ch' : 'e')];
+  h.innerHTML = KEYHINT[f.closest('.cp') && f.dataset.pf === 'sch' ? 'rep' : f.dataset.pf || (line.classList.contains('chain') ? 'ch' : 'e')];
   if(line.nextElementSibling !== h) line.after(h);
 });
 document.addEventListener('focusout', e => {
@@ -1822,7 +1847,8 @@ document.addEventListener('keydown', e => {
     const {i: host} = findItem(id);
     if(host && host.chain){
       if(e.key === 'Enter'){ e.preventDefault(); closeSug(); if(text.trim()) chainAdd(id, null, text); else chainDone(id, 'enter'); return }
-      if(e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); closeSug(); if(text.trim()) chainAdd(id, null, text); else chainDone(id, 'tab'); return }
+      if(e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); closeSug(); if(text.trim()) chainAdd(id, null, text);
+        else { const fs = lineFields(line), nx = fs[fs.indexOf(ed) + 1]; if(nx) focusField(nx); else chainDone(id, 'tab') } return }
       if(e.key === 'Tab' && e.shiftKey){ e.preventDefault(); closeSug(); const fs = lineFields(line), k = fs.indexOf(ed); if(k > 0) focusField(fs[k - 1]); return }
       if(e.key === 'Escape'){ e.preventDefault(); closeSug(); ed.blur(); return }
       if(down || up){ e.preventDefault(); closeSug(); const to = neighborId(line, 'e', down ? 1 : -1); if(to) focusLineField(to, 'e'); return }
@@ -1965,8 +1991,8 @@ const FOLDER_OF = b => TYPE_FOLDER[b.kind] || (fmtPart(b.title) ? 'Компле�
   : /заминк|растяж|заверш/i.test(b.title) ? 'Заминки' : 'Разминки');
 
 /* Строка в шаблоне массивом [ex, scheme, val, unit, txt, sub]; диапазон —
-   строкой «70–80», связка — [CH_TAG, [части]]. */
-const tplArr = i => i.chain ? [CH_TAG, i.parts.filter(partHas).map(tplArr), '', '', '', i.sub?1:0]
+   строкой «70–80», связка — [CH_TAG, [части], {подходы и нагрузка}]. */
+const tplArr = i => i.chain ? [CH_TAG, i.parts.filter(partHas).map(tplArr), serChain(i), '', '', i.sub?1:0]
   : !i.exId ? [TXT_TAG, String(i.raw).trim(), '', '', '', i.sub?1:0]
   : i.pct != null ? [i.exId, i.scheme||'', i.pct2 != null ? i.pct + RNG + i.pct2 : i.pct, '%', i.txt||'', i.sub?1:0]
   : [i.exId, i.scheme||'', i.val2 ? i.val + RNG + i.val2 : i.val||'', i.unit||'', i.txt||'', i.sub?1:0];
@@ -2216,8 +2242,10 @@ document.addEventListener('click', e=>{
     const c = chainItem([]); b.items.push(c); render(); focusLineField(c.id, 'e'); return }
   const chl = e.target.closest('#doc .line.chain');
   if(chl && !e.target.closest('input, [contenteditable], button, .gr')){
-    const cp = e.target.closest('[data-part]'), {i: p} = cp ? findItem(cp.dataset.part) : {};
-    if(!(p && p.exId && focusPart(p.id, 'sch'))) focusLineField(chl.dataset.item, 'e');
+    const cp = e.target.closest('[data-part]'), {i: p} = cp ? findItem(cp.dataset.part) : {}, id = chl.dataset.item;
+    /* Поля видны, только пока курсор в связке: сначала входим в неё, потом — в нужное поле. */
+    focusLineField(id, 'e');
+    if(p) focusPart(p.id, 'sch'); else if(e.target.closest('.cprm')) focusLineField(id, 'sets');
     return }
   const dpart = e.target.closest('[data-delpart]');
   if(dpart){ const {i: p, chain} = findItem(dpart.dataset.delpart); if(!chain) return;
@@ -2436,6 +2464,9 @@ document.addEventListener('input', e=>{
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
 });
 document.addEventListener('change', e=>{
+  /* От 1ПМ какого упражнения связки считать процент; пусто — самого слабого. */
+  const cof = e.target.closest('[data-cof]');
+  if(cof){ const {i} = findItem(cof.dataset.cof); if(!i) return; i.of = cof.value || null; commitSoft(); return }
   /* Поле кругов не остаётся пустым; «90» в отдыхе — это секунды. */
   const sfc = e.target.closest('[data-ssf]');
   if(sfc){
@@ -2716,7 +2747,7 @@ function dropOnDay(idx){
 let PICK = new Set();
 /* Какой максимум показать справа: тот, от которого считается эта тренировка. */
 function mainPm(d){
-  const ids = d.blocks.flatMap(b=>b.items).flatMap(i => i.chain ? i.parts : [i]).filter(i=>i.exId && i.pct!=null).map(i=>pmKey(byId(i.exId)));
+  const ids = d.blocks.flatMap(b=>b.items).filter(i=>(i.exId || i.chain) && i.pct!=null).map(i=>pctKey(i, null));
   return ids.find(Boolean) || 'dead';
 }
 function clientRow(c, key, needsPm){
