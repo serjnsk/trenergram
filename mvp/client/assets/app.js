@@ -189,7 +189,10 @@ function clStub(id, sc, canBack, v, p) {
 
 /* ── фикстура фрейма: системные полосы рисуем сами ── */
 const clFrame = new URLSearchParams(location.search).get('frame');
-if (clFrame === 'iphone' || clFrame === 'android') document.documentElement.classList.add('f-' + clFrame);
+/* frame: iphone, android — приложение; iphone-web, android-web — в браузере */
+{ const [dev, web] = String(clFrame || '').split('-');
+  if (dev === 'iphone' || dev === 'android') document.documentElement.classList.add('f-' + dev);
+  if (web === 'web') document.documentElement.classList.add('f-web'); }
 const clInFrame = window.parent !== window;
 
 const clDev = document.getElementById('dev');
@@ -250,7 +253,8 @@ function clRender() {
   clSbar.classList.toggle('light', light);
   clHbar.classList.toggle('light', light);
   document.title = sc.title + ' · Тренерграм';
-  document.querySelector('meta[name=theme-color]').content = light ? '#FC5200' : '#FFFFFF';
+  /* Цвет полос браузера: Safari и Chrome красят их в цвет страницы */
+  document.querySelector('meta[name=theme-color]').content = light ? '#FC5200' : '#F7F3EF';
   clFit(scr);
   clSheet(sheet);
 

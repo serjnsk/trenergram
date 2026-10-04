@@ -102,11 +102,24 @@ a{color:var(--acc-d)}
 .scale{font:500 12px/1 var(--mono);color:var(--tx3);min-width:40px;text-align:center}
 .ph-area{flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center;padding:4px 16px 20px}
 .phwrap{position:relative;flex:none}
-.phone{position:absolute;left:0;top:0;transform-origin:0 0;padding:11px;border-radius:52px;background:var(--frame);
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--frame);
   box-shadow:0 30px 60px -30px rgba(0,0,0,.45),inset 0 0 0 1.5px #2a2a2e}
-.phone iframe{display:block;border:0;border-radius:41px;background:#fff}
-.f-android .phone{border-radius:34px;padding:9px}
-.f-android .phone iframe{border-radius:25px}
+.scrn{position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--pg,#F7F3EF)}
+.scrn iframe{display:block;flex:none;border:0;background:transparent}
+/* Полосы браузера в режиме «Веб» — в цвет страницы, как в Safari и Chrome */
+.bro{flex:none;display:none;position:relative;background:var(--pg,#F7F3EF);color:#141414}
+.bro.light{color:#fff}
+.web .bro.on{display:block}
+.bro .pill{position:absolute;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.82);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 16px -8px rgba(0,0,0,.25);
+  font:500 16px/1 -apple-system,"Inter",sans-serif;color:#141414}
+.bro .rnd{position:absolute;top:10px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.82);box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 16px -8px rgba(0,0,0,.25);color:#141414}
+.bro svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bro .hi{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:#141414}
+.bro.light .hi{background:#fff}
+.bro .bst{position:absolute;left:0;right:0;top:0;height:24px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;font:500 13px/1 "Roboto","Inter",sans-serif}
 .dims{font:500 12px/1 var(--mono);color:var(--tx3);text-align:center;padding-bottom:10px}
 
 /* ── правая колонка: описание ── */
@@ -187,12 +200,15 @@ a{color:var(--acc-d)}
   <section class="stage">
     <div class="tools">
       <div class="seg" id="dev"></div>
+      <div class="seg" id="size" title="Разрешение экрана"></div>
       <div class="seg" id="plat" title="Платформа: от неё зависит сценарий — например, подсказка установки есть только в вебе"></div>
       <span class="scale" id="scale"></span>
     </div>
     <div class="ph-area" id="area">
       <div>
-        <div class="phwrap" id="wrap"><div class="phone" id="phone"><iframe id="fr" title="Приложение"></iframe></div></div>
+        <div class="phwrap" id="wrap"><div class="phone" id="phone"><div class="scrn" id="scrn">
+          <div class="bro top" id="broTop"></div><iframe id="fr" title="Приложение"></iframe><div class="bro bot" id="broBot"></div>
+        </div></div></div>
       </div>
     </div>
     <div class="dims" id="dims"></div>
@@ -211,18 +227,24 @@ const DOCS = 'https://serjnsk.github.io/trenergram/docs/02-functional-requiremen
 const ARR = '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 const CHEV = '<svg class="chv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
 
-/* Устройства: ширина эталона 360, высота и системные полосы — разные */
+/* Устройства — как реальные телефоны. web — полосы браузера, которые
+   рисует стенд: у iPhone снизу панель Safari, у Android сверху статус-бар
+   и адресная строка Chrome, снизу жестовая полоса */
 const DEVICES = {
-  iphone:  { name: 'iPhone',  w: 360, h: 780, note: 'safe area 47 / 34' },
-  android: { name: 'Android', w: 360, h: 800, note: 'полосы 24 / 16' }
+  iphone:  { name: 'iPhone',  r: 55, pad: 12, note: 'safe area 59 / 34', web: { top: 0, bottom: 84 } },
+  android: { name: 'Android', r: 28, pad: 9,  note: 'полосы 24 / 16',    web: { top: 80, bottom: 16 } }
 };
+/* Разрешения экрана — отдельно от устройства: 393×852 — iPhone 15/16 Pro */
+const SIZES = [[360, 780], [393, 852], [450, 976]];
+const dev = () => { const [w, h] = st.size.split('x').map(Number); return Object.assign({ w, h }, DEVICES[st.dev]); };
 
 const ids = Object.keys(CL_SCREENS);
 
 /* ── состояние стенда; живёт в адресе, чтобы ссылкой можно было поделиться ── */
-const st = { id: CL_START, v: '', p: clNorm({}), dev: 'iphone' };
-try { st.dev = localStorage.getItem('cl.dev') || st.dev; } catch (e) {}
+const st = { id: CL_START, v: '', p: clNorm({}), dev: 'iphone', size: '393x852' };
+try { st.dev = localStorage.getItem('cl.dev') || st.dev; st.size = localStorage.getItem('cl.size') || st.size; } catch (e) {}
 if (!DEVICES[st.dev]) st.dev = 'iphone';
+if (!SIZES.some(([w, h]) => w + 'x' + h === st.size)) st.size = '393x852';
 
 function readHash() {
   const m = location.hash.match(/^#\/([^?]*)(?:\?(.*))?/);
@@ -251,7 +273,7 @@ function writeHash() {
 function renderParams() {
   /* Платформа — у телефона в центре: это свойство устройства, а не условие входа */
   const plat = CL_PARAMS.find(x => x.id === 'platform');
-  const d = DEVICES[st.dev];
+  const d = dev();
   $('dims').textContent = `${d.name} · ${plat.opts.find(o => o[0] === st.p.platform)[1].toLowerCase()} · ${d.w} × ${d.h} · ${d.note}`;
   $('plat').innerHTML = plat.opts.map(([v, n]) => `<button class="${st.p.platform === v ? 'on' : ''}" data-prm="platform" data-val="${v}">${esc(n)}</button>`).join('');
   /* Все параметры — одной формы: подпись сверху, переключатель во всю ширину.
@@ -264,7 +286,13 @@ function renderParams() {
 /* Параметры поменялись: экран остаётся, если он есть в новом сценарии,
    иначе — первый экран сценария */
 function setParams(p) {
+  const was = st.p.platform;
   st.p = clNorm(Object.assign({}, st.p, p));
+  if (st.p.platform !== was) {     /* веб ↔ приложение — другая рамка, перезагружаем фрейм */
+    const o = clInFlow(st.id, st.p);
+    if (!o) { st.id = clSeq(st.p)[0].id; st.v = ''; }
+    loadFrame(); sync(); return;
+  }
   const o = clInFlow(st.id, st.p);
   if (!o) { st.id = clSeq(st.p)[0].id; st.v = ''; }
   st.v = clView(st.id, (o && o.v) || st.v);
@@ -318,20 +346,58 @@ const frameGo = () => ({ id: st.id, v: st.v });
 const appHash = () => '#/' + st.id + (st.v ? '?v=' + st.v : '');
 const pStr = p => CL_PARAMS.map(x => x.id + ':' + p[x.id]).join(',');
 function loadFrame() {
-  const d = DEVICES[st.dev];
+  const d = dev(), web = st.p.platform === 'web';
   document.body.className = 'f-' + st.dev;
-  fr.width = d.w; fr.height = d.h;
-  fr.src = 'app.html?frame=' + st.dev + '&p=' + pStr(st.p) + appHash();
+  /* В вебе приложению достаётся высота за вычетом полос браузера */
+  const top = web ? d.web.top : 0, bot = web ? d.web.bottom : 0;
+  const sc = $('scrn'), ph = $('phone');
+  sc.className = 'scrn' + (web ? ' web' : '');
+  sc.style.width = d.w + 'px'; sc.style.height = d.h + 'px'; sc.style.borderRadius = d.r + 'px';
+  ph.style.padding = d.pad + 'px'; ph.style.borderRadius = (d.r + d.pad) + 'px';
+  fr.width = d.w; fr.height = d.h - top - bot;
+  $('broTop').className = 'bro top' + (top ? ' on' : ''); $('broTop').style.height = top + 'px';
+  $('broBot').className = 'bro bot' + (bot ? ' on' : ''); $('broBot').style.height = bot + 'px';
+  drawBrowser();
+  fr.src = 'app.html?frame=' + st.dev + (web ? '-web' : '') + '&p=' + pStr(st.p) + appHash();
   $('dev').innerHTML = Object.entries(DEVICES).map(([k, x]) =>
     `<button class="${k === st.dev ? 'on' : ''}" data-dev="${k}">${x.name}</button>`).join('');
+  $('size').innerHTML = SIZES.map(([w, h]) =>
+    `<button class="${w + 'x' + h === st.size ? 'on' : ''}" data-size="${w}x${h}">${w}×${h}</button>`).join('');
   fit();
 }
 const send = m => fr.contentWindow && fr.contentWindow.postMessage(m, '*');
 
+/* Полосы браузера: Safari — снизу «назад», адрес, «ещё»; Chrome — сверху
+   статус-бар и адресная строка. Цвет — из theme-color текущего экрана */
+const HOST = location.hostname === 'localhost' ? 'localhost' : location.hostname;
+function drawBrowser() {
+  const i = s => `<svg viewBox="0 0 24 24">${s}</svg>`;
+  if (st.dev === 'iphone') {
+    $('broBot').innerHTML = `<span class="rnd" style="left:16px">${i('<path d="M15 5l-7 7 7 7"/>')}</span>
+      <span class="pill" style="left:72px;right:72px;top:10px;height:48px;padding:0 16px;border-radius:24px">${i('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9h16"/>')}<span style="flex:1;text-align:center">${HOST}</span>${i('<path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/>')}</span>
+      <span class="rnd" style="right:16px">${i('<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>')}</span>
+      <i class="hi"></i>`;
+    $('broTop').innerHTML = '';
+  } else {
+    $('broTop').innerHTML = `<div class="bst"><span>9:41</span><span style="display:flex;gap:6px;align-items:center"><svg viewBox="0 0 16 12" style="width:16px;height:12px;fill:currentColor;stroke:none"><path d="M8 11.5 0.5 3a10.6 10.6 0 0 1 15 0z"/></svg><svg viewBox="0 0 14 12" style="width:14px;height:12px;fill:currentColor;stroke:none"><path d="M14 0v12H0z"/></svg><svg viewBox="0 0 8 13" style="width:8px;height:13px;fill:currentColor;stroke:none"><rect x="2" width="4" height="1.5"/><rect y="1.5" width="8" height="11.5" rx="1"/></svg></span></div>
+      <span class="pill" style="left:12px;right:56px;top:30px;height:42px;padding:0 14px;border-radius:21px;font-size:15px">${i('<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>')}<span>${HOST}</span></span>
+      <span style="position:absolute;right:14px;top:40px">${i('<circle cx="12" cy="6" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="18" r="1.3" fill="currentColor"/>')}</span>`;
+    $('broBot').innerHTML = '<i class="hi" style="width:108px;margin-left:-54px;bottom:6px;height:4px;opacity:.5"></i>';
+  }
+}
+function tintBrowser() {
+  let c = '#F7F3EF';
+  try { c = fr.contentDocument.querySelector('meta[name=theme-color]').content || c; } catch (e) {}
+  $('scrn').style.setProperty('--pg', c);
+  const light = /^#(FC5200|141414|000)/i.test(c);
+  $('broTop').classList.toggle('light', light); $('broBot').classList.toggle('light', light);
+}
+fr.addEventListener('load', tintBrowser);
+
 /* Телефон целиком помещается по высоте; на низком экране — уменьшаем */
 function fit() {
-  const d = DEVICES[st.dev], ph = $('phone');
-  const pad = st.dev === 'android' ? 9 : 11;
+  const d = dev(), ph = $('phone');
+  const pad = d.pad;
   const W = d.w + pad * 2, H = d.h + pad * 2;
   const area = $('area');
   const s = Math.min(1, (area.clientHeight - 24) / H, (area.clientWidth - 32) / W);
@@ -444,7 +510,7 @@ function arrived(id, v) {
 addEventListener('message', e => {
   if (e.source !== fr.contentWindow) return;
   const m = e.data || {};
-  if (m.cl === 'at') arrived(m.id, m.v || '');
+  if (m.cl === 'at') { arrived(m.id, m.v || ''); tintBrowser(); }
 });
 
 ['params', 'plat'].forEach(id => $(id).addEventListener('click', e => {
@@ -470,6 +536,12 @@ $('info').addEventListener('click', e => {
   if (r) { $('lbx').querySelector('img').src = r.dataset.ref; $('lbx').classList.add('on'); }
 });
 $('lbx').addEventListener('click', () => $('lbx').classList.remove('on'));
+$('size').addEventListener('click', e => {
+  const b = e.target.closest('[data-size]'); if (!b || b.dataset.size === st.size) return;
+  st.size = b.dataset.size;
+  try { localStorage.setItem('cl.size', st.size); } catch (err) {}
+  loadFrame(); renderParams();
+});
 $('dev').addEventListener('click', e => {
   const b = e.target.closest('[data-dev]'); if (!b || b.dataset.dev === st.dev) return;
   st.dev = b.dataset.dev;

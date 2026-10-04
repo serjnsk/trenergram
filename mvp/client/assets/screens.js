@@ -89,16 +89,43 @@ function clLoad(it, pm) {
   if (it.pct != null) { const kg = it.exId ? kgText(it, pm) : null; return kg ? kg + '\u00a0кг' : ''; }
   return it.val ? loadText(it) : '';
 }
-/* Как у HWPO: «10 Barbell Upright Row @ RPE 8-9» → «3×5 Становая тяга @ 132,5 кг» */
-function clPart(it, pm) {
+/* Как показывать строку упражнения — три варианта на сравнение (виды T1):
+   text   — всё одинаково, обычным текстом: «3×5 Становая тяга · 132,5 кг»
+   accent — та же строка, у упражнения из базы схема жирным, нагрузка
+            жирным акцентом; строка, набранная текстом, — как написана
+   cols   — у упражнения из базы название слева, схема и нагрузка — колонкой
+            справа; строка текстом — на всю ширину */
+let clLineMode = 'text';
+const CL_LINE_MODES = ['text', 'accent', 'cols'];
+function clPart(it, pm, mode = clLineMode) {
   const e = it.exId ? byId(it.exId) : null;
   const name = e ? e.ru : (it.raw || '');
-  if (it.txt) return clEsc(name + ' — ' + it.txt);
+  if (!e) return clEsc(name);                         /* строка текстом — как написана */
+  if (it.txt) return clEsc(name + ' — ' + it.txt);   /* пояснение вместо нагрузки — как написано */
   const load = clLoad(it, pm);
-  return clEsc((it.scheme ? it.scheme + ' ' : '') + name + (load ? ' @ ' + load : ''));
+  if (mode === 'accent') return (it.scheme ? `<b class="sc">${clEsc(it.scheme)}</b> ` : '') + clEsc(name) + (load ? ` · <b class="ld">${clEsc(load)}</b>` : '');
+  return clEsc((it.scheme ? it.scheme + ' ' : '') + name + (load ? ' · ' + load : ''));
 }
-const clLine = (it, pm) => `<div class="xl">${it.chain
-  ? (it.parts || []).filter(partHas).map(p => clPart(p, pm)).join(' + ') : clPart(it, pm)}</div>`;
+/* Колонка нагрузки для вида «Две колонки» */
+function clParams(it, pm) {
+  if (it.txt) return clEsc(it.txt);
+  const load = clLoad(it, pm);
+  return [it.scheme ? `<b>${clEsc(it.scheme)}</b>` : '', load ? clEsc(load) : ''].filter(Boolean).join(' · ');
+}
+function clLine(it, pm) {
+  const parts = it.chain ? (it.parts || []).filter(partHas) : [it];
+  if (clLineMode === 'cols') {
+    /* В колонках связка — по строке на часть, следующие с «+»; пояснение
+       вместо нагрузки и строка текстом — на всю ширину */
+    return parts.map((p, k) => {
+      const plus = k ? '<span class="pl">+</span>' : '';
+      if (!p.exId || p.txt) return `<div class="xl${k ? ' cont' : ''}">${plus}${clPart(p, pm, 'text')}</div>`;
+      const prm = clParams(p, pm);
+      return `<div class="xl c2${k ? ' cont' : ''}"><span class="nm">${plus}${clEsc(byId(p.exId).ru)}</span>${prm ? `<span class="pr">${prm}</span>` : ''}</div>`;
+    }).join('');
+  }
+  return `<div class="xl">${parts.map(p => clPart(p, pm)).join(' + ')}</div>`;
+}
 
 /* Содержимое блока по группам, разделитель — только между группами:
    формат комплекса, подряд идущие упражнения, суперсет («5 кругов:» …
@@ -127,16 +154,6 @@ function clBlockBody(b, pm) {
   }
   flush();
   return seg;
-}
-/* Прошлые результаты по упражнениям блока — подсказкой в «Результат и заметки» */
-function clLastOf(b, date) {
-  const out = [];
-  (b.items || []).forEach(it => {
-    if (!it.exId || it.ss) return;
-    const r = lastResult(CL_ME, it.exId, date, it.scheme);
-    if (r) out.push(`${clEsc(byId(it.exId).ru)}: ${clEsc(r.scheme)}${r.kg != null ? ' · ' + fmtNum(r.kg) + '\u00a0кг' : r.done ? ' → ' + clEsc(r.done) : ''}`);
-  });
-  return out;
 }
 /* Упражнения блока с карточкой в базе — для «Техники» */
 const clBlockEx = b => {
@@ -286,7 +303,8 @@ const CL_UI = {
   },
 
   /* T1. Тренировка дня */
-  workout() {
+  workout(sc, v) {
+    clLineMode = CL_LINE_MODES.includes(v) ? v : 'text';
     const x = clDayAt(clDate), pm = pmOf(CL_ME), key = clDayKey(clDate);
     const msg = dayMsg(CL_ME, clDate);
     const doneAll = !!clS.dayDone[key];
@@ -294,20 +312,22 @@ const CL_UI = {
       const bk = key + '#' + i, done = !!(clS.done[bk] || doneAll);
       const open = clS.open[bk] !== false;
       const exs = clBlockEx(b);
-      const last = clLastOf(b, clDate);
-      /* Одна строка из секций: заметка тренера, техника, результат клиента */
+      /* Обсуждение блока — переписка тренера и клиента: первым сообщением
+         заметка тренера к блоку, дальше сообщения клиента, внизу поле ввода */
+      const thread = (b.note ? `<div class="msgt"><span class="av">${clEsc(TRAINER.ini)}</span>
+            <div class="bub"><s>${clEsc(TRAINER.n)}</s><p>${clEsc(b.note)}</p></div></div>` : '') +
+        (clS.sent[bk] || []).map(m => `<div class="msgc"><div class="bub"><p>${clEsc(m.tx)}</p><s>${clEsc(m.at)}</s></div></div>`).join('');
       const rows = [
-        b.note ? ['note', 'Заметка', 'msg', `<p class="cnote">${clEsc(b.note)}</p>`] : null,
+        ['chat', 'Обсуждение', 'msg', `${thread ? `<div class="thr">${thread}</div>` : ''}
+          <div class="rin"><textarea class="inp ta" data-note="${bk}" rows="2" placeholder="Веса, повторы, время, вопрос тренеру…">${clEsc(clS.notes[bk] || '')}</textarea>
+            <button class="snd" data-send="${bk}" aria-label="Отправить тренеру"${(clS.notes[bk] || '').trim() ? '' : ' disabled'}>${clI('send')}</button></div>`],
         exs.length ? ['tech', 'Техника', 'video', `<div class="demos">${exs.map(e => `<button class="demo" data-ex="${e.id}">
             <span class="th">${e.gif ? `<img src="../${clEsc(e.gif)}-360.gif" alt="" loading="lazy">` : `<em>${clEsc(e.ru.slice(0, 1))}</em>`}<i>${clI('play')}</i></span>
-            <span class="dn">${clEsc(e.ru)}</span></button>`).join('')}</div>`] : null,
-        ['notes', 'Результат', 'pen', `${last.length ? `<div class="last"><s>В прошлый раз</s>${last.map(l => `<span>${l}</span>`).join('')}</div>` : ''}
-          ${(clS.sent[bk] || []).map(m => `<div class="sent"><p>${clEsc(m.tx)}</p><s>Отправлено тренеру · ${clEsc(m.at)}</s></div>`).join('')}
-          <div class="rin"><textarea class="inp ta" data-note="${bk}" rows="3" placeholder="Веса, повторы, время или как прошло…">${clEsc(clS.notes[bk] || '')}</textarea>
-            <button class="snd" data-send="${bk}" aria-label="Отправить тренеру"${(clS.notes[bk] || '').trim() ? '' : ' disabled'}>${clI('send')}</button></div>`]
+            <span class="dn">${clEsc(e.ru)}</span></button>`).join('')}</div>`] : null
       ].filter(Boolean);
       const tab = rows.some(r => r[0] === clS.open[bk + ':tab']) ? clS.open[bk + ':tab'] : '';
-      const has = { notes: !!(clS.sent[bk] || []).length };
+      /* Точка — в обсуждении есть сообщение тренера, а клиент его ещё не открывал */
+      const has = { chat: !!b.note && !clS.open[bk + ':seen'] };
       return `<section class="blk${done ? ' done' : ''}">
         <div class="bh">
           <button class="bt" data-bopen="${bk}" aria-expanded="${open}"><b>${clEsc(clBlockName(b))}</b>${clI('down', open ? 'up' : '')}</button>
@@ -316,7 +336,7 @@ const CL_UI = {
         ${open ? `<div class="card bcard">
           <div class="segs">${clBlockBody(b, pm).map(h => `<div class="seg">${h}</div>`).join('')}</div>
           <div class="sect" style="grid-template-columns:repeat(${rows.length},1fr)">${rows.map(([id, t, ic]) =>
-            `<button class="${tab === id ? 'on' : ''}" data-tab="${bk}:${id}" aria-expanded="${tab === id}">${clI(ic)}<span>${t}</span>${has[id] ? '<i class="dot"></i>' : ''}</button>`).join('')}</div>
+            `<button class="${tab === id ? 'on' : ''}" data-tab="${bk}:${id}" aria-expanded="${tab === id}"><span class="sic">${clI(ic)}${has[id] ? '<i class="dot" aria-label="новое"></i>' : ''}</span><span>${t}</span></button>`).join('')}</div>
           ${tab ? `<div class="rb">${rows.find(r => r[0] === tab)[3]}</div>` : ''}
         </div>` : ''}
       </section>`;
@@ -336,8 +356,9 @@ const CL_UI = {
       <span>${x.comp ? 'Соревнование — тренер не расписывал тренировку' : 'Тренировки нет — восстанавливайтесь'}</span></div></div>${clTabs('home')}`;
     return head + `<div class="pg wk">${cal}
       <p class="wdate">${clEsc(dateTx)}</p>
-      ${msg ? `<div class="card vrow${clS.open[key + ':msg'] ? ' on' : ''}"><button class="vh" data-row="${key}:msg">${clI(clS.open[key + ':msg'] ? 'down' : 'right')}<span>Сообщение тренера</span></button>
-        ${clS.open[key + ':msg'] ? `<div class="vb"><b>${clEsc(TRAINER.n)}</b><p>${clEsc(msg)}</p></div>` : ''}</div>` : ''}
+      ${msg ? (() => { /* развёрнуто по умолчанию; свернул — запоминаем */ const on = clS.open[key + ':msg'] !== false;
+        return `<div class="card vrow${on ? ' on' : ''}"><button class="vh" data-msg="${key}" aria-expanded="${on}">${clI(on ? 'down' : 'right')}<span>Сообщение тренера</span></button>
+        ${on ? `<div class="vb"><p>${clEsc(msg)}</p></div>` : ''}</div>`; })() : ''}
       ${blocks}
       <button class="cday${doneAll ? ' ok' : ''}" id="dayDone">${doneAll ? clI('check') + 'Тренировка завершена' : 'Завершить тренировку'}</button>
     </div>${clTabs('home')}`;
@@ -454,8 +475,12 @@ const CL_UI_MOUNT = {
       if (sd) { const k = sd.dataset.send, tx = (clS.notes[k] || '').trim(); if (!tx) return;
         const n = new Date(); (clS.sent[k] ||= []).push({ tx, at: String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') });
         clS.notes[k] = ''; clSave(); clRepaint(scr, 'workout'); return; }
+      const mg = e.target.closest('[data-msg]');
+      if (mg) { const k = mg.dataset.msg + ':msg'; clS.open[k] = clS.open[k] === false; clSave(); clRepaint(scr, 'workout'); return; }
       const tb = e.target.closest('[data-tab]');
-      if (tb) { const [b, id] = tb.dataset.tab.split(':'); const k = b + ':tab'; clS.open[k] = clS.open[k] === id ? '' : id; clSave(); clRepaint(scr, 'workout'); return; }
+      if (tb) { const [b, id] = tb.dataset.tab.split(':'); const k = b + ':tab'; clS.open[k] = clS.open[k] === id ? '' : id;
+        if (id === 'chat') clS.open[b + ':seen'] = true;
+        clSave(); clRepaint(scr, 'workout'); return; }
       const r = e.target.closest('[data-row]');
       if (r) { const k = r.dataset.row; clS.open[k] = !clS.open[k]; clSave(); clRepaint(scr, 'workout'); return; }
       const x = e.target.closest('[data-ex]');
@@ -474,7 +499,7 @@ const CL_UI_MOUNT = {
 /* Перерисовать экран на месте, без перехода и с сохранением прокрутки */
 function clRepaint(scr, id) {
   const top = scr.scrollTop;
-  scr.innerHTML = CL_UI[id](CL_SCREENS[id], '', clP);
+  scr.innerHTML = CL_UI[id](CL_SCREENS[id], clParse(location.hash).v, clP);
   scr.scrollTop = top;
 }
 
