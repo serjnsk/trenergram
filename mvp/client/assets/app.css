@@ -147,6 +147,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .sheet .grab{display:block;width:36px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 8px}
 .sheet h2{margin:0;font:800 22px/1.2 var(--ui);letter-spacing:-.02em}
 .sheet p{margin:0;color:var(--tx2);font-size:16px}
+.sheet .tsteps{margin:0;padding-left:22px;color:var(--tx2);font-size:15px;line-height:1.45;display:flex;flex-direction:column;gap:6px}
 .sheet .tag{font-size:14px;color:var(--tx3)}
 .sheet .acts{display:flex;flex-direction:column;gap:10px;margin-top:8px}
 .shw.out .shbg{animation:sh-fade-out .2s ease both}

@@ -10,3 +10,6 @@ mvp/client/ref/
 
 # Исходники фото для слайдшоу заставки — в прототип идут уменьшенные копии из mvp/client/slides/
 sld/
+
+# Кеш исходного JSON датасета упражнений (17 МБ) — tools/exdb/build-exdb.py скачивает его сам
+tools/exdb/.cache-exercises.json

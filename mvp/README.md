@@ -20,7 +20,7 @@
 | [Группы](https://serjnsk.github.io/trenergram/prototype/groups.html) | Список групп с описанием и составом; создание, правка и удаление в одном окне; переход в календарь группы (GRP-1) |
 | [Календарь](https://serjnsk.github.io/trenergram/prototype/calendar.html) | Месяц одного клиента или группы: статусы дней, три вида показа, выбор даты, массовые действия с днями (CAL, CON-4) |
 | **[Конструктор](https://serjnsk.github.io/trenergram/prototype/constructor.html)** | **Ядро продукта — см. функции ниже** |
-| [Упражнения](https://serjnsk.github.io/trenergram/prototype/exercises.html) | Стартовая база и свои упражнения: поиск, фильтры, карточка со всеми полями записи и связями (EX) |
+| [Упражнения](https://serjnsk.github.io/trenergram/prototype/exercises.html) | Общая база — 1324 упражнения из датасета [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) с превью, GIF, мышцами и техникой на русском — и свои упражнения тренера: поиск, фильтры, карточка с похожими и заменами (EX) |
 | [Блоки](https://serjnsk.github.io/trenergram/prototype/blocks.html) · [Тренировки](https://serjnsk.github.io/trenergram/prototype/workouts.html) · [Программы](https://serjnsk.github.io/trenergram/prototype/programs.html) | Базы шаблонов по уровням: своё и общее рядом; блок создаётся и прямо в базе (TPL) |
 | [Профиль](https://serjnsk.github.io/trenergram/prototype/profile.html) | Основные данные, подписка и тарифы, ссылка-приглашение, уведомления, пароль (TRN) |
 | [Бренд и дизайн-система](https://serjnsk.github.io/trenergram/prototype/design.html) | Знак, палитра, типографика, радиусы, кнопка AI во всех состояниях |
@@ -63,6 +63,6 @@
 
 ## Технически
 
-Статические HTML-страницы без сборки. Общие `assets/data.js` (доменная модель, демо-данные, разбор текста, состояние), `assets/nav.js` (сайдбар, выбор клиента или группы, выбор даты, окно занятых дней группы), `assets/ui.js` (шапка, тосты, модалки, графики, таблицы баз, лента событий), `assets/bulk.js` (массовые действия и окно копирования), `assets/pages.css` (компоненты страниц). Конструктор — `assets/trainer.js`, `assets/base-trainer.css`, `assets/theme-01-strava.css`; вырос из дизайн-концепции `showcase/01-strava/trainer.html` (тег `archive/screens-4-styles`), но давно ушёл от неё.
+Статические HTML-страницы без сборки. База упражнений — `assets/exdb.js` и `assets/exdb-steps.js`, их генерирует `tools/exdb/build-exdb.py` из датасета на закреплённом коммите; превью — `assets/ex/img/`, GIF — с jsDelivr. Общие `assets/data.js` (доменная модель, демо-данные, разбор текста, состояние), `assets/nav.js` (сайдбар, выбор клиента или группы, выбор даты, окно занятых дней группы), `assets/ui.js` (шапка, тосты, модалки, графики, таблицы баз, лента событий), `assets/bulk.js` (массовые действия и окно копирования), `assets/pages.css` (компоненты страниц). Конструктор — `assets/trainer.js`, `assets/base-trainer.css`, `assets/theme-01-strava.css`; вырос из дизайн-концепции `showcase/01-strava/trainer.html` (тег `archive/screens-4-styles`), но давно ушёл от неё.
 
 Что в модели и почему, решения, которые не стоит переигрывать, и открытые вопросы — в [`HANDOVER.md`](../HANDOVER.md).

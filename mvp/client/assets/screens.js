@@ -327,7 +327,7 @@ const CL_UI = {
           <div class="rin"><textarea class="inp ta" data-note="${bk}" rows="2" placeholder="Веса, повторы, время, вопрос тренеру…">${clEsc(clS.notes[bk] || '')}</textarea>
             <button class="snd" data-send="${bk}" aria-label="Отправить тренеру"${(clS.notes[bk] || '').trim() ? '' : ' disabled'}>${clI('send')}</button></div>`],
         exs.length ? ['tech', 'Техника', 'video', `<div class="demos">${exs.map(e => `<button class="demo" data-ex="${e.id}">
-            <span class="th">${e.gif ? `<img src="../${clEsc(e.gif)}-360.gif" alt="" loading="lazy">` : `<em>${clEsc(e.ru.slice(0, 1))}</em>`}<i>${clI('play')}</i></span>
+            <span class="th">${e.img ? `<img src="../${clEsc(e.img)}" alt="" loading="lazy">` : `<em>${clEsc(e.ru.slice(0, 1))}</em>`}<i>${clI('play')}</i></span>
             <span class="dn">${clEsc(e.ru)}</span></button>`).join('')}</div>`] : null,
         /* Рекорд — прямо в тренировке: в профиль за этим никто не пойдёт.
            Только упражнения, от 1ПМ которых считается вес; новый 1ПМ сразу
@@ -522,16 +522,19 @@ function clRepaint(scr, id) {
   scr.scrollTop = top;
 }
 
-/* Техника упражнения — лист снизу: демонстрация и описание из базы */
+/* Техника упражнения — лист снизу: демонстрация, акценты тренера и шаги из
+   базы. Шаги — в exdb-steps.js; у своих упражнений тренера их нет. */
+const clSteps = e => (typeof EXDB_STEPS !== 'undefined' && EXDB_STEPS[e.id]) || [];
 function clTech(e) {
   if (!e) return;
   const w = document.createElement('div');
   w.className = 'shw';
   w.innerHTML = `<div class="shbg" data-x></div>
     <div class="sheet" role="dialog" aria-label="${clEsc(e.ru)}"><i class="grab"></i>
-      ${e.gif ? `<img class="tgif" src="../${clEsc(e.gif)}-720.gif" alt="">` : `<div class="tgif none">${clI('play')}<span>Демонстрации пока нет</span></div>`}
+      ${e.gif ? `<img class="tgif" src="${clEsc(e.gif)}" alt="">` : `<div class="tgif none">${clI('play')}<span>Демонстрации пока нет</span></div>`}
       <h2>${clEsc(e.ru)}</h2>
-      <p>${clEsc(TECH[e.id] || 'Описание техники тренер ещё не добавил.')}</p>
+      ${TECH[e.id] ? `<p>${clEsc(TECH[e.id])}</p>` : ''}
+      ${clSteps(e).length ? `<ol class="tsteps">${clSteps(e).map(x => `<li>${clEsc(x)}</li>`).join('')}</ol>` : TECH[e.id] ? '' : '<p>Описание техники тренер ещё не добавил.</p>'}
       <div class="acts"><button class="btn sec" data-x>Понятно</button></div>
     </div>`;
   w.addEventListener('click', ev => { if (ev.target.closest('[data-x]')) { w.classList.add('out'); setTimeout(() => w.remove(), 220); } });
