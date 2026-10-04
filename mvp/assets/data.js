@@ -470,9 +470,26 @@ function mkItem(exId, scheme='', pct=null, unit=null, val='', txt=''){
   return {id:nid('i'), exId, raw:null, scheme, pct, unit: unit || (e ? e.u[0] : ''), val, txt: txt||''};
 }
 const rawItem = txt => ({id:nid('i'), exId:null, raw:txt, scheme:'', pct:null, unit:'', val:'', txt:''});
-const mkBlock = (kind,title,note,fmt,items) => ({id:nid('b'), kind, title, note:note||'', fmt:fmt||null,
-  items:(items||[]).map(a => a[0] === SS_TAG ? ssItem(a[1], a[2])
-    : Object.assign(mkItem(a[0],a[1]||'',a[2]??null,a[3]||null,a[4]||'',a[5]||''), a[6] ? {sub:true} : {}))});
+/* Строка заготовки дня: [упражнение, схема, %, единица, значение, пояснение, в суперсете].
+   Кроме упражнения — [SS_TAG, круги, отдых], [TXT_TAG, текст] — строка текстом,
+   [CH_TAG, [части]] — связка. Диапазон пишется строкой: '70-80' в % или в значении. */
+const RANGE_SPLIT = v => String(v).split(/\s*[–—-]\s*/);
+function mkLine(a){
+  if(a[0] === SS_TAG) return ssItem(a[1], a[2]);
+  const sub = a[6] ? {sub:true} : {};
+  if(a[0] === TXT_TAG) return Object.assign(rawItem(a[1] || ''), sub);
+  if(a[0] === CH_TAG) return Object.assign(chainItem((a[1] || []).map(mkLine)), sub);
+  const [p, p2] = typeof a[2] === 'string' ? RANGE_SPLIT(a[2]) : [a[2]];
+  const [v, v2] = a[4] ? RANGE_SPLIT(a[4]) : [''];
+  const i = mkItem(a[0], a[1] || '', p != null ? parseFloat(p) : null, a[3] || null, v || '', a[5] || '');
+  if(p2) i.pct2 = parseFloat(p2);
+  if(v2) i.val2 = v2;
+  return Object.assign(i, sub);
+}
+/* items строкой — блок текстом (CON-5): текст как написан, без строк упражнений. */
+const mkBlock = (kind,title,note,fmt,items) => typeof items === 'string'
+  ? Object.assign(textBlock(items, title || ''), {kind:kind || null, note:note || ''})
+  : ({id:nid('b'), kind, title, note:note||'', fmt:fmt||null, items:(items||[]).map(mkLine)});
 
 /* ─── ТЕКСТ — ПОЛНОПРАВНОЕ СОДЕРЖИМОЕ (CON-5) ───
    Набранный текст хранится как написан и сам ни во что не превращается:
@@ -1278,10 +1295,92 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
    Статус — поле дня (comp), хранится вместе с днём и публикуется как правка. */
 (function(){
   const p = PROGRAMS.find(x=>x.id==='p1'); if(!p || !PLAN.p1) return;
-  const i = daysBetween(p.start, addDays(TODAY, 6 - dowMon(TODAY)));
+  /* В воскресенье «сегодня» занято витриной ниже — соревнование уезжает на следующее */
+  let date = addDays(TODAY, 6 - dowMon(TODAY)); if(date === TODAY) date = addDays(date, 7);
+  const i = daysBetween(p.start, date);
   if(i >= 0 && i < PLAN.p1.length) PLAN.p1[i] = {t:'Соревнования · Open Cup', comp:true, b:[
     ['warmup','Разминка','Спокойно, без отказа',null,[['rom','2×',null,'сек','60'],['pvc','2×10'],['row',null,null,'м','500']]],
     ['complex','«Fran» · 21-15-9','Два зачётных выхода, отдых 10 мин',null,[['thrust','21-15-9',null,'кг','43'],['pullup','21-15-9']]]]};
+})();
+/* Витрина: сегодня у Артёма — тренировка, где собраны все виды записей, чтобы
+   на экранах клиента и в конструкторе было видно каждую вариацию разом:
+   нагрузка временем, дистанцией, калориями, повторами, своим весом, % и
+   диапазоном %; пояснение вместо нагрузки; строка текстом; связка; суперсет
+   с весом, текстом и связкой внутри; блоки всех типов; комплекс каждого
+   формата; комплекс, написанный тренером от руки; блок текстом без названия;
+   блок из одних строк текстом. Строка заготовки — как в mkLine. */
+(function(){
+  const p = PROGRAMS.find(x=>x.id==='p1'); if(!p || !PLAN.p1) return;
+  const i = daysBetween(p.start, TODAY);
+  if(i < 0 || i >= PLAN.p1.length) return;
+  const sub = (a) => { const r = [...a]; while(r.length < 6) r.push(r.length === 2 ? null : ''); r[6] = 1; return r };
+  PLAN.p1[i] = {t:'Все виды записей', b:[
+    ['warmup','Разминка','Темп спокойный, пульс до 130',null,[
+      ['rom','2×',null,'сек','60'],
+      ['row',null,null,'м','500'],
+      ['bike',null,null,'кал','10'],
+      ['pvc','2×10'],
+      [TXT_TAG,'Прокатать икры роллом, по 2 мин на ногу']]],
+    ['strength','Присед','Пауза 1 сек внизу',null,[
+      ['squat','5×3',80],
+      ['squat','3×2','85-90'],
+      ['fsquat','',null,null,'','по самочувствию, 3–4 подхода']]],
+    ['strength','Тяжелоатлетическая связка','Без разрыва между частями',null,[
+      [CH_TAG,[['clean','1',75],['fsquat','1',75],['jerk','2',75]]],
+      [CH_TAG,[['clean','1','80-85'],['jerk','1','80-85']]],
+      ['snatch','5×2',null,'кг','50-55']]],
+    ['accessory','Подкачка · суперсет','',null,[
+      [SS_TAG,4,'90 сек'],
+      sub(['bench','8',70]),
+      sub(['pullup','8']),
+      sub(['lunge','10',null,'кг','16-20']),
+      sub([TXT_TAG,'Вис на перекладине 30 сек'])]],
+    ['gymnastics','Гимнастика','Без кипа',null,[
+      [SS_TAG,3,'2 мин'],
+      sub([CH_TAG,[['ttb','5'],['c2b','5']]]),
+      sub(['hspu','6']),
+      ['ropec','3×1']]],
+    ['complex','','',`AMRAP 12`,[
+      ['wb','15',null,'кг','9'],
+      ['du','50'],
+      ['box','10']]],
+    ['complex','Тяга и эйрбайк','Нечётные минуты — тяга, чётные — эйрбайк','EMOM 10',[
+      ['dead','5',60],
+      ['bike',null,null,'кал','12']]],
+    ['complex','«Helen»','','3 раунда на время 14',[
+      ['run',null,null,'м','400'],
+      ['kbs','21',null,'кг','24'],
+      ['pullup','12']]],
+    ['complex','Табата','','Tabata',[
+      ['bike','',null,null,'','максимум калорий']]],
+    ['complex','Интервалы на гребле','Темп ровный, без рывка в начале','5 раундов по 3 мин отдых 1 мин',[
+      ['row',null,null,'м','700-800']]],
+    ['complex','Бёрпи до отказа','','Death by 1',[
+      ['burpee','']]],
+    ['complex','Корпус','','NFT',[
+      ['ttb','3×10'],
+      ['plank','3×',null,'сек','45']]],
+    ['complex','«Murph» по-нашему','Жилет 10 кг, если есть',null,
+`На время, лимит 60 мин
+Бай-ин: бег 1600 м
+Затем 20 раундов «Синди»:
+• 5 подтягиваний
+• 10 отжиманий
+• 15 воздушных приседаний
+Дробить как удобно, например 5-10-5 по 4 раза
+Бай-аут: бег 1600 м
+Масштаб: подтягивания с резиной, отжимания с колен, бег по 800 м`],
+    [null,'','',null,
+`Растяжка на выбор:
+- голубь, по 2 мин на сторону
+- couch stretch, по 90 сек на сторону
+- вис на перекладине 3×30 сек`],
+    [null,'Домашнее задание','',null,[
+      [TXT_TAG,'10 минут дыхания лёжа, выдох длиннее вдоха'],
+      [TXT_TAG,'Прогулка 30–40 минут']]],
+    ['cooldown','Заминка','',null,[
+      ['couch','2×',null,'сек','90'],
+      ['copen','2×',null,'сек','45']]]]};
 })();
 /* ═══════════ ГРУППЫ КЛИЕНТОВ (GRP) ═══════════
    Группа — набор клиентов, которых тренер ведёт одной программой; клиент

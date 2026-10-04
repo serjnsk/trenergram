@@ -540,9 +540,10 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .sent p{margin:0;font-size:15px;line-height:1.4;color:var(--ink);white-space:pre-wrap}
 .sent s{display:block;margin-top:4px;text-decoration:none;font-size:12.5px;color:var(--tx3)}
 .rin{position:relative}
-.rin .ta{padding-right:56px}
-.snd{position:absolute;right:6px;bottom:6px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+.rin .ta{padding-right:48px}
+.snd{position:absolute;right:8px;bottom:8px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
   background:var(--acc);color:#fff;box-shadow:0 4px 10px -6px rgba(252,82,0,.8)}
 .snd:active{background:var(--acc-d)}
 .snd:disabled{background:rgba(60,40,20,.1);color:var(--tx4);box-shadow:none}
-.snd .i{width:19px;height:19px;stroke-width:2;margin:1px 1px 0 0}
+.snd::after{content:"";position:absolute;inset:-6px}
+.snd .i{width:15px;height:15px;stroke-width:2.2;margin:1px 1px 0 0}
