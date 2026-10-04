@@ -36,6 +36,8 @@ const CL_SVG = {
   video: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/>',
   pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
   send: '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
@@ -45,7 +47,7 @@ const clI = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 2
 
 /* ── состояние клиента ── */
 const clS = (() => {
-  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {} };
+  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '' };
   try { return Object.assign(def, JSON.parse(localStorage.getItem('trenergram.client') || '{}')); } catch (e) { return def; }
 })();
 const clSave = () => { try { localStorage.setItem('trenergram.client', JSON.stringify(clS)); } catch (e) {} };
@@ -99,10 +101,11 @@ function clPart(it, pm) {
   return clEsc([it.scheme, name, load].filter(Boolean).join(' '));
 }
 /* Связка — один подход из нескольких упражнений, вес один на всю связку:
-   «Взятие на грудь + Фронтальный присед + Толчок:» / «90 кг — 3×(1+1+1)». */
+   «Взятие на грудь + Фронтальный присед + Толчок: 90 кг — 3×(1+1+1)». Строка
+   переносится, где придётся, но вес с подходами не разрываются. */
 function clChain(it, pm) {
   const prm = [clLoad(it, pm), chainScheme(it)].filter(Boolean).join(' — ');
-  return clEsc(chainNames(it) + (prm ? ':' : '')) + (prm ? '<br>' + clEsc(prm) : '');
+  return clEsc(chainNames(it) + (prm ? ':' : '')) + (prm ? ' <span class="nw">' + clEsc(prm) + '</span>' : '');
 }
 const clLine = (it, pm) => `<div class="xl">${it.chain ? clChain(it, pm) : clPart(it, pm)}</div>`;
 
@@ -254,7 +257,7 @@ const CL_UI = {
     const pm = pmOf(CL_ME);
     const tasks = [
       ['Заполнить профиль', true, '', ''],
-      ['Указать максимумы', Object.keys(pm).length > 0, 'Указать', 'profile'],
+      ['Указать рекорды', Object.keys(pm).length > 0, 'Указать', 'profile'],
       ['Выполнить первую тренировку', Object.keys(clS.dayDone).length > 0, 'Начать', 'workout']
     ];
     const nDone = tasks.filter(t => t[1]).length;
@@ -342,15 +345,6 @@ const CL_UI = {
     </div>${clTabs('home')}`;
   }
 };
-
-/* P0. Профиль — пока заглушка, но это вкладка: внизу таб-бар, как на главной */
-CL_UI.profile = sc => `<header class="top"><span class="ib ghost"></span><div class="t">${clEsc(sc.title)}</div><span class="ib ghost"></span></header>
-  <div class="pg">
-    <div class="stub"><span class="cd">${clEsc(sc.code)}</span><h1>${clEsc(sc.title)}</h1>
-      <p>${clEsc((sc.desc || [])[0] || '')}</p><span class="tag">Заглушка — дизайн экрана ещё не сделан</span></div>
-    <div class="sk"><i></i><i></i><i></i><b></b></div>
-  </div>
-  ${clTabs('profile')}`;
 
 /* Карточка тренировки дня на главной — вместо курсов HWPO */
 function clDayCard(x) {
@@ -608,4 +602,230 @@ CL_UI_MOUNT.feed = scr => {
   });
   /* Открыл ленту — всё прочитано: точки уйдут при следующем входе */
   ev.forEach(x => { clS.read[x.k] = true; }); clSave();
+};
+
+/* ═══ P0. Профиль ═══
+   По разделению карточки клиента в кабинете тренера: сверху общая
+   информация, ниже табы. Рекорды (1ПМ и 3ПМ) и замеры клиент вносит сам —
+   они те же, что видит тренер; от 1ПМ считается вес в тренировках.
+   Вкладка — вид экрана (v): pr — рекорды, meas — замеры. */
+const CL_MEAS = [['w', 'Вес', 'кг'], ['waist', 'Талия', 'см'], ['chest', 'Грудь', 'см'], ['hips', 'Бёдра', 'см'], ['fat', 'Жир', '%']];
+let clPmSel = null, clMeasSel = 'w', clPrView = 'pr';
+const clMe = () => client(CL_ME);
+const clShortDate = iso => { const d = D(iso); return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3) + (d.getFullYear() !== D(TODAY).getFullYear() ? ' ' + d.getFullYear() : ''); };
+const clFullDate = iso => { const d = D(iso); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); };
+const clNum = (v, dec) => v == null || v === '' ? '—' : fmtNum(dec ? Math.round(v * 10) / 10 : v);
+/* Свои данные клиента — поверх карточки у тренера */
+function clProf() {
+  const c = clMe(), p = clS.prof, [first, last] = c.n.split(' ');
+  return { first: p.first || first, last: p.last || last, sex: p.sex || c.sex, born: p.born || c.born, h: p.h || c.h,
+    level: p.level || c.level, goal: clS.goal || 'Стать сильнее', goal2: clS.goal2 || '' };
+}
+/* Замеры: внесённые у тренера и свои, по дате */
+const clMeasAll = () => [...(clMe().meas || []), ...clS.meas].sort((a, b) => a.date.localeCompare(b.date));
+/* Рекорды: история 1ПМ — у тренера и свои записи */
+const clPmName = k => PMNAMES[k] || (byId(k) || {}).ru || k;
+const clPmHist = k => [...((clMe().hist || {})[k] || []), ...(clS.pmh[k] || [])].sort((a, b) => a[0].localeCompare(b[0]));
+const clPm3 = () => ((STATE.pm3 ||= {})[CL_ME] ||= {});
+
+/* График по датам: линия с заливкой, точки, сетка с подписями справа */
+function clChart(series, unit, dec) {
+  const W = 320, H = 150, L = 6, R = 42, T = 14, B = 24;
+  const xs = series.map(s => D(s[0]).getTime()), ys = series.map(s => s[1]);
+  /* Шкала — круглыми числами: шаг 1, 2, 2,5 или 5 нужного порядка, 2–4 деления */
+  let lo = Math.min(...ys), hi = Math.max(...ys); if (hi === lo) { hi += 1; lo -= 1; }
+  const raw = (hi - lo) / 2, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(x => x >= raw);
+  const ticks = []; for (let t = Math.floor(lo / step) * step; t <= hi + step * .999; t += step) ticks.push(Math.round(t * 100) / 100);
+  lo = ticks[0]; hi = ticks[ticks.length - 1];
+  const x0 = xs[0], x1 = xs[xs.length - 1];
+  const X = t => L + (W - L - R) * (x1 === x0 ? .5 : (t - x0) / (x1 - x0)), Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const pts = series.map((s, i) => [X(xs[i]), Y(s[1])]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const grid = ticks.map(v => { const y = Y(v);
+    return `<line x1="${L}" x2="${W - R + 6}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text x="${W - R + 10}" y="${(y + 4).toFixed(1)}">${clNum(v)}</text>`; }).join('');
+  const lab = series.length <= 6 ? series.map((s, i) => [i, s[0]]) : [[0, series[0][0]], [series.length - 1, series[series.length - 1][0]]];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="График, ${clEsc(unit)}">
+    <defs><linearGradient id="chg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FC5200" stop-opacity=".22"/><stop offset="1" stop-color="#FC5200" stop-opacity="0"/></linearGradient></defs>
+    <g class="gd">${grid}</g>
+    <path class="ar" d="${line} L${pts[pts.length - 1][0].toFixed(1)} ${H - B} L${pts[0][0].toFixed(1)} ${H - B} Z"/>
+    <path class="ln" d="${line}"/>
+    ${pts.map((p, i) => `<circle class="${i === pts.length - 1 ? 'last' : ''}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i === pts.length - 1 ? 4.5 : 3.2}"/>`).join('')}
+    <g class="xl2">${lab.map(([i, d]) => `<text x="${pts[i][0].toFixed(1)}" y="${H - 6}" text-anchor="${lab.length > 2 ? 'middle' : i ? 'end' : 'start'}">${clShortDate(d)}</text>`).join('')}</g>
+  </svg>`;
+}
+/* Изменение со знаком: «+17,5 кг», «−1,2 см» */
+const clDelta = (d, unit, dec) => !d ? '' : (d > 0 ? '+' : '−') + clNum(Math.abs(d), dec) + (unit === '%' ? ' %' : ' ' + unit);
+
+/* Рекорды — два варианта на сравнение (виды P0):
+   pr     — список упражнений; тап раскрывает график прямо под строкой
+   pr-sel — сверху строка с выпадающим списком упражнений, под ней график,
+            ниже — все рекорды списком для обзора */
+function clPrHead(k) {
+  const pm = pmOf(CL_ME), pm3 = clPm3(), h = clPmHist(k), first = h[0];
+  const since = h.length > 1 ? `<span class="dlt ${pm[k] - first[1] >= 0 ? 'up' : 'dn'}">${clDelta(pm[k] - first[1], 'кг')}</span> с ${clShortDate(first[0])}` : '';
+  return { since, chart: h.length > 1 ? clChart(h, 'кг') : `<div class="nochart">История появится после второго рекорда</div>`,
+    p3: pm3[k] != null ? `<em>3ПМ ${clNum(pm3[k])} кг</em>` : '' };
+}
+function clPrTab(mode) {
+  const pm = pmOf(CL_ME), pm3 = clPm3(), keys = Object.keys(pm);
+  if (!keys.length) return `<div class="card empty">${clI('trophy')}<b>Рекордов нет</b><span>Добавьте 1ПМ — от него тренер считает вес в тренировках</span></div>
+    <button class="btn pri pbtn" data-addpm>${clI('plus')}Добавить рекорд</button>`;
+  /* null — ещё не выбирали, '' — в списке всё свёрнуто */
+  const def = keys.find(x => clPmHist(x).length > 1) || keys[0];
+  if (clPmSel == null || (clPmSel && !keys.includes(clPmSel))) clPmSel = def;
+  const k = mode === 'sel' ? clPmSel || def : clPmSel, foot = `<button class="btn pri pbtn" data-addpm>${clI('plus')}Новый рекорд</button>
+    <p class="pnote">От 1ПМ тренер считает вес в тренировках: новый рекорд — новые веса. Тренер увидит изменение.</p>`;
+  const sub = x => { const hx = clPmHist(x), lx = hx[hx.length - 1]; return lx ? 'обновлён ' + clShortDate(lx[0]) : 'без истории'; };
+  const val = x => `<span class="pv">${clNum(pm[x])}<i>кг</i>${pm3[x] != null ? `<s>3ПМ ${clNum(pm3[x])}</s>` : ''}</span>`;
+  if (mode === 'sel') {
+    const hd = clPrHead(k);
+    return `<div class="card pch">
+        <div class="gr psel"><label for="pm-pick">Упражнение</label><select id="pm-pick" data-pmpick>${keys.map(x => `<option value="${x}"${x === k ? ' selected' : ''}>${clEsc(clPmName(x))}</option>`).join('')}</select>${clI('down')}</div>
+        <div class="pchh"><div><s>1ПМ</s><b>${clNum(pm[k])}<i>кг</i></b>${hd.p3}</div><span class="since">${hd.since}</span></div>
+        ${hd.chart}
+      </div>
+      <div class="card plist">${keys.map(x => `<div class="prow${x === k ? ' on' : ''}"><span><b>${clEsc(clPmName(x))}</b><s>${sub(x)}</s></span>${val(x)}</div>`).join('')}</div>` + foot;
+  }
+  /* Раскрыт один: тап по раскрытому — свернуть */
+  return `<div class="card plist acc">${keys.map(x => { const on = x === k, hd = on ? clPrHead(x) : null;
+      return `<button class="prow${on ? ' on' : ''}" data-pm="${x}" aria-expanded="${on}"><span><b>${clEsc(clPmName(x))}</b><s>${sub(x)}</s></span>${val(x)}${clI('down', 'chev')}</button>
+        ${on ? `<div class="pexp">${hd.since ? `<div class="since l">${hd.since}</div>` : ''}${hd.chart}</div>` : ''}`; }).join('')}</div>` + foot;
+}
+function clMeasTab() {
+  const rows = clMeasAll(), [k, name, unit] = CL_MEAS.find(m => m[0] === clMeasSel) || CL_MEAS[0];
+  const dec = k === 'w' || k === 'fat';
+  const ser = rows.filter(r => r[k] != null).map(r => [r.date, r[k]]);
+  const chips = `<div class="mchips">${CL_MEAS.map(([x, n]) => `<button class="${x === k ? 'on' : ''}" data-meas="${x}">${n}</button>`).join('')}</div>`;
+  if (!ser.length) return chips + `<div class="card empty">${clI('scale')}<b>Замеров нет</b><span>Добавьте первый — будет видна динамика</span></div>
+    <button class="btn pri pbtn" data-addmeas>${clI('plus')}Добавить замер</button>`;
+  const cur = ser[ser.length - 1], d0 = cur[1] - ser[0][1];
+  return chips + `<div class="card pch">
+      <div class="pchh"><div><s>${name} · ${clShortDate(cur[0])}</s><b>${clNum(cur[1], dec)}<i>${unit}</i></b></div>
+        <span class="since">${ser.length > 1 && d0 ? `<span class="dlt n">${clDelta(d0, unit, dec)}</span> с ${clShortDate(ser[0][0])}` : ''}</span></div>
+      ${ser.length > 1 ? clChart(ser, unit, dec) : '<div class="nochart">График появится после второго замера</div>'}
+    </div>
+    <div class="card plist">${ser.map((r, i) => ({ r, d: i ? r[1] - ser[i - 1][1] : 0 })).reverse().map(({ r, d }) =>
+      `<div class="prow"><span><b>${clFullDate(r[0])}</b></span><span class="pv">${clNum(r[1], dec)}<i>${unit}</i><s class="${d ? 'n' : ''}">${clDelta(Math.round(d * 10) / 10, unit, dec)}</s></span></div>`).join('')}</div>
+    <button class="btn pri pbtn" data-addmeas>${clI('plus')}Добавить замер</button>`;
+}
+CL_UI.profile = (sc, v) => {
+  const p = clProf(), c = clMe(), g = groupOf(CL_ME), tab = v === 'meas' ? 'meas' : 'pr';  /* pr и pr-sel — оба «Рекорды» */
+  if (v === 'pr' || v === 'pr-sel') clPrView = v;
+  const w = [...clMeasAll()].reverse().find(r => r.w != null);
+  const ini = ((p.first || '')[0] || '') + ((p.last || '')[0] || '');
+  const f = (k, val) => `<div class="pf"><s>${k}</s><b>${clEsc(val || '—')}</b></div>`;
+  return `<header class="hhead"><div class="wmk">Профиль</div></header>
+  <div class="pg prof">
+    <section class="card pcard">
+      <div class="pid"><button class="pav ph" data-photo aria-label="Сменить фото">${clS.photo ? `<img src="${clS.photo}" alt="">` : clEsc(ini.toUpperCase())}<i>${clI('camera')}</i></button>
+        <div><b>${clEsc(p.first + ' ' + p.last)}</b><s>${p.sex === 'ж' ? 'Женщина' : 'Мужчина'}${clAge(p.born) ? ', ' + clEsc(clAge(p.born)) : ''}${g ? ' · ' + clEsc(g.n) : ''}</s></div>
+        <button class="ib pedit" data-pedit aria-label="Изменить данные">${clI('pen')}</button></div>
+      <input type="file" accept="image/*" id="photo-in" hidden>
+      <div class="pgrid">${f('Телефон', c.phone)}${f('Уровень', p.level)}${f('Рост', p.h ? p.h + ' см' : '')}${f('Вес', w ? clNum(w.w, 1) + ' кг' : '')}</div>
+      <div class="pgoal"><s>Цель</s><b>${clEsc(p.goal)}</b>${p.goal2 ? `<span>${clEsc(p.goal2)}</span>` : ''}</div>
+    </section>
+    <section class="card ptr"><span class="pav sm">${clEsc(TRAINER.ini)}</span><div><s>Тренер</s><b>${clEsc(TRAINER.n)}</b><span>${clEsc(TRAINER.workspace)} · с ${clFullDate(c.since)}</span></div></section>
+    <nav class="ptabs" role="tablist"><button role="tab" class="${tab === 'pr' ? 'on' : ''}" data-ptab="${clPrView}">Рекорды</button><button role="tab" class="${tab === 'meas' ? 'on' : ''}" data-ptab="meas">Замеры</button></nav>
+    <div class="ptab">${tab === 'pr' ? clPrTab(clPrView === 'pr-sel' ? 'sel' : 'acc') : clMeasTab()}</div>
+    <button class="lnk pout" data-go="phone">Выйти</button>
+  </div>
+  ${clTabs('profile')}`;
+};
+
+/* Лист снизу с формой: строки glist, «Сохранить» активна, когда форма годится */
+function clForm(title, rows, ok, save) {
+  const w = document.createElement('div');
+  w.className = 'shw';
+  w.innerHTML = `<div class="shbg" data-x></div>
+    <div class="sheet fsheet" role="dialog" aria-label="${clEsc(title)}"><i class="grab"></i>
+      <div class="fsh"><button class="lnk" data-x>Отмена</button><b>${clEsc(title)}</b><button class="lnk acc" data-ok>Сохранить</button></div>
+      <div class="glist">${rows}</div>
+    </div>`;
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 220); };
+  const sb = w.querySelector('[data-ok]'), check = () => { sb.disabled = !ok(w); };
+  w.addEventListener('input', check); w.addEventListener('change', check);
+  w.addEventListener('click', e => { if (e.target.closest('[data-x]')) close(); else if (e.target.closest('[data-ok]') && !sb.disabled) { save(w); close(); } });
+  document.getElementById('dev').appendChild(w); check();
+  return w;
+}
+const clVal = (w, id) => { const v = parseFloat(String(w.querySelector('#' + id).value).replace(',', '.')); return isFinite(v) && v > 0 ? v : null; };
+function clToast(t) {
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = t;
+  document.getElementById('dev').appendChild(el); setTimeout(() => el.classList.add('out'), 2200); setTimeout(() => el.remove(), 2500);
+}
+/* Вкладка профиля сменяется на месте: адрес и стенд узнают новый вид без перехода */
+function clProfTab(scr, v) {
+  const h = clHash('profile', v);
+  history.replaceState(null, '', h); clStack[clStack.length - 1] = h; clCur = 'profile|' + v;
+  clRepaint(scr, 'profile');
+  if (clInFrame) parent.postMessage({ cl: 'at', id: 'profile', v }, '*');
+}
+CL_UI_MOUNT.profile = scr => {
+  scr.addEventListener('change', e => {
+    if (e.target.matches('[data-pmpick]')) { clPmSel = e.target.value; clRepaint(scr, 'profile'); return; }
+    /* Фото — сразу по выбору файла: уменьшаем до 320 px и храним на устройстве */
+    if (e.target.id === 'photo-in' && e.target.files[0]) {
+      const img = new Image(), url = URL.createObjectURL(e.target.files[0]);
+      img.onload = () => { const n = 320, c = document.createElement('canvas'), m = Math.min(img.width, img.height);
+        c.width = c.height = n; c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, n, n);
+        URL.revokeObjectURL(url); clS.photo = c.toDataURL('image/jpeg', .85); clSave(); clRepaint(scr, 'profile'); clToast('Фото обновлено'); };
+      img.src = url;
+    }
+  });
+  scr.addEventListener('click', e => {
+    const t = e.target.closest('[data-ptab]'); if (t) { clProfTab(scr, t.dataset.ptab); return; }
+    /* Раскрытие строки: выше свернулся другой график — строку держим там же, где по ней тапнули */
+    const pr = e.target.closest('[data-pm]'); if (pr) { const k = pr.dataset.pm, y = pr.getBoundingClientRect().top;
+      clPmSel = clPmSel === k ? '' : k; clRepaint(scr, 'profile');
+      const nr = scr.querySelector(`[data-pm="${k}"]`); if (nr) scr.scrollTop += nr.getBoundingClientRect().top - y; return; }
+    if (e.target.closest('[data-photo]')) { scr.querySelector('#photo-in').click(); return; }
+    const ms = e.target.closest('[data-meas]'); if (ms) { clMeasSel = ms.dataset.meas; clRepaint(scr, 'profile'); return; }
+    if (e.target.closest('[data-addpm]')) {
+      /* Упражнения с весом: уже с рекордом — сверху, остальные — по алфавиту */
+      const pm = pmOf(CL_ME), seen = new Set(Object.keys(pm)), more = [];
+      EX.forEach(x => { const k = pmKey(x); if (!k || seen.has(k)) return; seen.add(k); more.push([k, PMNAMES[k] || x.ru]); });
+      more.sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+      const opts = [...Object.keys(pm).map(k => [k, clPmName(k)]), ...more];
+      clForm('Новый рекорд', `
+        <div class="gr"><label for="n-ex">Упражнение</label><select id="n-ex">${opts.map(([k, n]) => `<option value="${k}"${k === clPmSel ? ' selected' : ''}>${clEsc(n)}</option>`).join('')}</select>${clI('down')}</div>
+        <div class="gr"><label for="n-1">1ПМ</label><input id="n-1" inputmode="decimal" placeholder="${pm[clPmSel] ? clNum(pm[clPmSel]) : '—'}"><span class="unit">кг</span></div>
+        <div class="gr"><label for="n-3">3ПМ</label><input id="n-3" inputmode="decimal" placeholder="по желанию"><span class="unit">кг</span></div>`,
+        w => clVal(w, 'n-1') != null,
+        w => { const k = w.querySelector('#n-ex').value, v1 = clVal(w, 'n-1'), v3 = clVal(w, 'n-3');
+          pm[k] = v1; (clS.pmh[k] ||= []).push([TODAY, v1]); if (v3 != null) clPm3()[k] = v3;
+          saveState(); clSave(); clPmSel = k; clRepaint(scr, 'profile'); clToast('Рекорд сохранён — веса в тренировках пересчитаны'); });
+      return;
+    }
+    if (e.target.closest('[data-addmeas]')) {
+      const last = [...clMeasAll()].reverse();
+      const ph = k => { const r = last.find(x => x[k] != null); return r ? clNum(r[k], k === 'w' || k === 'fat') : '—'; };
+      clForm('Новый замер', `<div class="gr"><label for="m-d">Дата</label><input id="m-d" type="date" max="${TODAY}" value="${TODAY}"></div>` +
+        CL_MEAS.map(([k, n, u]) => `<div class="gr"><label for="m-${k}">${n}</label><input id="m-${k}" inputmode="decimal" placeholder="${ph(k)}"><span class="unit">${u}</span></div>`).join(''),
+        w => !!w.querySelector('#m-d').value && CL_MEAS.some(([k]) => clVal(w, 'm-' + k) != null),
+        w => { const r = { date: w.querySelector('#m-d').value }; CL_MEAS.forEach(([k]) => { const v = clVal(w, 'm-' + k); if (v != null) r[k] = v; });
+          const same = clS.meas.find(x => x.date === r.date); if (same) Object.assign(same, r); else clS.meas.push(r);
+          if (r[clMeasSel] == null) clMeasSel = CL_MEAS.find(([k]) => r[k] != null)[0];
+          clSave(); clRepaint(scr, 'profile'); clToast('Замер сохранён'); });
+      return;
+    }
+    if (e.target.closest('[data-pedit]')) {
+      const p = clProf();
+      const opt = (val, label) => `<button type="button" class="opt${p.sex === val ? ' on' : ''}" data-sx="${val}">${label}</button>`;
+      const w = clForm('Мои данные', `
+        <div class="gr"><label for="e-last">Фамилия</label><input id="e-last" autocomplete="family-name" value="${clEsc(p.last)}"></div>
+        <div class="gr"><label for="e-first">Имя</label><input id="e-first" autocomplete="given-name" value="${clEsc(p.first)}"></div>
+        <div class="gr"><label>Пол</label><div class="seg2">${opt('м', 'Мужской')}${opt('ж', 'Женский')}</div></div>
+        <div class="gr"><label for="e-born">Дата рождения</label><input id="e-born" type="date" max="${TODAY}" value="${clEsc(p.born)}"></div>
+        <div class="gr"><label for="e-h">Рост</label><input id="e-h" inputmode="decimal" value="${clEsc(p.h || '')}" placeholder="по желанию"><span class="unit">см</span></div>
+        <div class="gr"><label for="e-lvl">Уровень</label><select id="e-lvl">${CL_LEVELS.map(l => `<option${p.level === l ? ' selected' : ''}>${clEsc(l)}</option>`).join('')}</select>${clI('down')}</div>
+        <div class="gr"><label for="e-goal">Цель</label><select id="e-goal">${CL_GOALS.map(x => `<option${p.goal === x ? ' selected' : ''}>${clEsc(x)}</option>`).join('')}</select>${clI('down')}</div>
+        <div class="gr col"><label for="e-goal2">Дополнительная цель</label><textarea id="e-goal2" rows="2" placeholder="по желанию">${clEsc(p.goal2)}</textarea></div>`,
+        w => !!w.querySelector('#e-first').value.trim() && !!w.querySelector('#e-last').value.trim(),
+        w => { const q = id => w.querySelector('#' + id).value.trim();
+          Object.assign(clS.prof, { last: q('e-last'), first: q('e-first'), sex: w.querySelector('[data-sx].on').dataset.sx, born: q('e-born'), h: q('e-h'), level: q('e-lvl') });
+          clS.goal = q('e-goal'); clS.goal2 = q('e-goal2'); clSave(); clRepaint(scr, 'profile'); clToast('Данные сохранены'); });
+      w.addEventListener('click', e2 => { const b = e2.target.closest('[data-sx]'); if (!b) return; w.querySelectorAll('[data-sx]').forEach(x => x.classList.toggle('on', x === b)); });
+    }
+  });
 };
