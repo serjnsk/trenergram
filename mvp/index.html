@@ -63,7 +63,7 @@ function render(){
   const types = [['all','Все',ev.length], ...Object.keys(TYPES).filter(t=>ev.some(e=>e.t===t)).map(t=>[t,TYPES[t],ev.filter(e=>e.t===t).length])];
   const st = stats();
   $('#page').innerHTML = paneHead('Дашборд', null, `<span class="ph-sub">${['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(TODAY)]}, ${humanDate(TODAY)}</span><span class="sp"></span>`)
-    + `<div class="dkpis">${st.map(s=>kpiHTML(s)).join('')}</div>
+    + limitAlertHTML() + `<div class="dkpis">${st.map(s=>kpiHTML(s)).join('')}</div>
       <div class="tabs2">${types.map(([k,n,c])=>`<button data-t="${k}" class="${F.t===k?'on':''}">${n}<s>${c}</s></button>`).join('')}</div>
       <div class="feed1">${feedHTML(list)}</div>`;
   $$('.tabs2 [data-t]').forEach(b=>b.onclick=()=>{ F.t=b.dataset.t; render() });

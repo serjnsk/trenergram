@@ -131,13 +131,14 @@ function pmHTML(){
 
 function render(){
   const P = C.prog ? program(C.prog) : null;
-  $('#page').innerHTML = `
+  const over = isOver(C.id);
+  $('#page').innerHTML = limitAlertHTML(C.id) + `
     <div class="chead">
       <div class="chead-top">
         <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
         <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}${groupOf(C.id) ? ` · <span class="gchips"><a class="gchip" href="groups.html?id=${groupOf(C.id).id}" title="Группа «${esc(groupOf(C.id).n)}»">${GRPICON}${esc(groupOf(C.id).n)}</a></span>` : ''}</div></div>
         <div class="cacts">
-          ${P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
+          ${over ? '' : P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
         </div>
       </div>
       <div class="cgrid">

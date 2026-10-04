@@ -254,7 +254,7 @@ function clRender() {
   clHbar.classList.toggle('light', light);
   document.title = sc.title + ' · Тренерграм';
   /* Цвет полос браузера: Safari и Chrome красят их в цвет страницы */
-  document.querySelector('meta[name=theme-color]').content = light ? '#FC5200' : '#F7F3EF';
+  document.querySelector('meta[name=theme-color]').content = light ? '#FC5200' : clPageColor();
   clFit(scr);
   clSheet(sheet);
 
@@ -335,6 +335,8 @@ addEventListener('message', e => {
   const m = e.data || {};
   if (m.cl === 'go') { if (m.p) clP = clNorm(m.p); clGo(m.id, m.v, m.replace); }
   if (m.cl === 'params') clP = clNorm(m.p);
+  /* Тема со стенда: перерисовываем текущий экран — в настройках виден выбор */
+  if (m.cl === 'theme' && m.t && clInFrame) { clS.set.theme = m.t; clSave(); clApplyTheme(); clCur = ''; clRender(); parent.postMessage({ cl: 'theme' }, '*'); }
   if (m.cl === 'back' && clStack.length > 1) history.back();
 });
 addEventListener('resize', () => clFit());

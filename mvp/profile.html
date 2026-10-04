@@ -102,7 +102,7 @@ function render(){
     <div class="side">
       <div class="card cb">
         <div class="subhead"><span class="pl">${esc(pl.n)}</span><span class="chip ${left>0?'ok':'rm'}">${left>0?'активна':'истекла'}</span></div>
-        <div class="usage"><div class="l"><span>Клиентов</span><b>${used} из ${pl.limit}</b></div><div class="bar"><i style="width:${Math.min(100,used/pl.limit*100)}%"></i></div></div>
+        <div class="usage${used>pl.limit?' over':''}"><div class="l"><span>Клиентов</span><b>${used} из ${pl.limit}${used>pl.limit?' · перерасход':''}</b></div><div class="bar"><i style="width:${Math.min(100,used/pl.limit*100)}%"></i></div></div>
         <div class="kv">
           <s>Оплачено до</s><b>${dshort(P.sub.until)}${left>0?` · ${left} ${plural(left,'день','дня','дней')}`:''}</b>
           <s>Следующий платёж</s><b>${rub(pl.price)} · ${dshort(P.sub.until)}</b>

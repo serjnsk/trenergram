@@ -292,3 +292,15 @@ function openDatePicker(btn, curDate, onPick){
   addEventListener('scroll', hide, true);
   addEventListener('keydown', hide, true);
 })();
+
+/* Алерт перерасхода лимита клиентов (TRN-2) — на всех страницах кабинета, в том
+   числе в конструкторе. Без cid — общий, для дашборда;
+   с cid — только на страницах клиента сверх лимита. */
+function limitAlertHTML(cid){
+  const over = overLimit(); if(!over.length || (cid && !isOver(cid))) return '';
+  const pl = planNow(), n = CLIENTS.length;
+  const tx = cid
+    ? `Клиент сверх лимита тарифа «${esc(pl.n)}» — до ${pl.limit} клиентов. Он пользуется приложением как обычно, но, пока вы не измените лимит, составлять ему тренировки нельзя.`
+    : `В аккаунте ${n} ${plural(n,'клиент','клиента','клиентов')} при лимите ${pl.limit} на тарифе «${esc(pl.n)}». Клиенты сверх лимита пользуются приложением, но, пока вы не измените лимит, составлять им тренировки нельзя: ${over.map(c=>`<a href="client.html?id=${c.id}">${esc(c.n)}</a>`).join(', ')}.`;
+  return `<div class="lalert" role="alert"><span class="t"><b>Перерасход лимита клиентов</b><s>${tx}</s></span><a class="btn sm" href="profile.html">Изменить тариф</a></div>`;
+}

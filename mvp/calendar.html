@@ -111,7 +111,7 @@ function months(){ const out = []; for(let k = C.from; ymKey(k) <= ymKey(C.to); 
 function renderCal(keepYM){
   const x = ctx(), {c, pid, p} = x;
   const done = pid ? composedDays(pid) : 0;
-  $('#cal').innerHTML = `
+  $('#cal').innerHTML = (c && c.id ? limitAlertHTML(c.id) : '') + `
     <div class="wkh one">
       <button class="cliSel" id="cli" title="Сменить клиента или группу">${whoBtnHTML(c)}${ICON.chev}</button>
       <div class="dates">

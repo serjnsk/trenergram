@@ -96,7 +96,7 @@ function render(){
             <td><div class="cellname">
               <span class="av m">${esc(c.ini)}</span>
               <div>
-                <div class="n">${esc(c.n)}${u?` <span class="chip acc">${u}</span>`:''}</div>
+                <div class="n">${esc(c.n)}${u?` <span class="chip acc">${u}</span>`:''}${isOver(c.id)?' <span class="chip over" title="Пока не изменён лимит тарифа, составлять тренировки нельзя">сверх лимита</span>':''}</div>
                 <div class="s">${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</div>
               </div>
             </div></td>
