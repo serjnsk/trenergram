@@ -92,6 +92,16 @@ const Q = new URLSearchParams(location.search);
 const S = { cid: Q.get('group') || Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
             tab:'ex', q:'', src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
             tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
+/* Два вида конструктора. По умолчанию — «быстрый старт» (QUICK): одно поле
+   с курсором — печатают упражнение или вставляют текст; копирование — из
+   правой панели; без подсказки
+   клавиш под строкой и в блоке текстом, без ленты дней (календаря) над тренировкой, без отметки «соревнование» в шапке
+   дня и без настройки комплекса (AMRAP, EMOM…) в типе блока; в пустом
+   названии — «Новая тренировка» (дата и так в заголовке страницы).
+   Прежний вид (шапка со всеми действиями, четыре способа начать, пустой
+   блок) — только для сравнения, по ссылке ?start=classic; не запоминается. */
+const QUICK = Q.get('start') !== 'classic';
+const CLASSIC_Q = QUICK ? '' : '&start=classic';    /* адрес дня не теряет прежний вид при смене дня */
 const blockSig = b => serializeDay({title:'', blocks:[b]});
 const PCACHE = {};
 /* planOf строит план один раз на программу и сразу переносит формат блока в
@@ -253,7 +263,9 @@ function planStat(){
    а не заполняет семь ячеек. Полоса прокручивается, выбранный день в центре. */
 /* Вид ленты — свойство аккаунта: подробный (что внутри тренировок) или
    компактный (дата и статус). Запоминается вместе с остальным состоянием. */
+/* В быстром старте ленты дней на странице нет — только тренировка дня. */
 const laneView = () => STATE.laneView === 'compact' ? 'compact' : STATE.laneView === 'detail' ? 'detail' : 'full';
+const laneHid = () => QUICK || STATE.laneHidden;
 (function(){ const v = Q.get('view'); if(v==='hidden'){ STATE.laneHidden = true; saveState() } else if(v && ['compact','full','detail'].includes(v)){ STATE.laneHidden = false; STATE.laneView = v; saveState() } })();
 /* «24 августа – 6 сентября 2026»: подпись диапазона с месяцами и годом. */
 function rangeLabel(a, b){
@@ -276,20 +288,20 @@ function renderStrip(){
   $('#wk').innerHTML = `
     <div class="wkh one">
       <button class="cliSel" id="cli" title="Сменить клиента или группу">${whoBtnHTML(who(S.cid))}${ICON.chev}</button>
-      <div class="dates">${STATE.laneHidden ? '' : `
+      <div class="dates">${laneHid() ? '' : `
         <span class="wkn">
           <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
           <button id="dayNext" title="Неделей позже">${ICON.arr}</button>
         </span>`}
       </div>
-      <div class="views"><span class="vtog" title="Вид ленты">
+      <div class="views">${QUICK ? '' : `<span class="vtog" title="Вид ленты">
         <button data-view="hidden" class="${STATE.laneHidden?'on':''}" title="Скрыть календарь — только тренировка дня">${ICON.vhide}</button>
         <button data-view="compact" class="${!STATE.laneHidden && laneView()==='compact'?'on':''}" title="Свёрнуто — дата, статус и название">${ICON.vcompact}</button>
         <button data-view="full" class="${!STATE.laneHidden && laneView()==='full'?'on':''}" title="Блоки — что внутри тренировки">${ICON.vfull}</button>
         <button data-view="detail" class="${!STATE.laneHidden && laneView()==='detail'?'on':''}" title="Полностью — блоки, упражнения, подходы и веса">${ICON.vdetail}</button>
-      </span></div>
+      </span>`}</div>
     </div>
-    <div class="days ${laneView()==='compact'?'compact':''} ${laneView()==='detail'?'detail':''} ${STATE.laneHidden?'hide':''}" id="strip">
+    <div class="days ${laneView()==='compact'?'compact':''} ${laneView()==='detail'?'detail':''} ${laneHid()?'hide':''}" id="strip">
       ${cells.map((c,k)=>{
         const dt = new Date(c.date + 'T00:00:00');
         /* Месяц подписан на стыке и в первой ячейке — чтобы, листая недели,
@@ -379,6 +391,7 @@ function chainLineHTML(it){
     <span class="gr" title="Перетащить связку">${ICON.grip}</span>
     <span class="chl">Связка</span>
     <span class="cps">${parts}<span class="caddw">${ps.length ? '<span class="cplus">+</span>' : ''}<span class="cadd" contenteditable data-edit="${it.id}" spellcheck="false" data-ph="${ps.length ? 'упражнение' : 'первое упражнение связки'}"></span></span>${ps.length ? chainPrmHTML(it) : ''}</span>
+    ${QUICK && !ps.length ? kindHTML(it, 'ch') : ''}
     <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить связку">${ICON.x}</button>
   </div>`;
 }
@@ -391,7 +404,8 @@ function lineHTML(it){
      строки и ручной выбор из базы. */
   if(!ex) return `<div class="line raw" data-item="${it.id}">
     <span class="gr">${ICON.grip}</span>
-    <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false">${esc(it.raw||'')}</span>
+    <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"${QUICK ? ` data-ph="${it.sub ? 'упражнение суперсета' : 'упражнение'}"` : ''}>${esc(it.raw||'')}</span>
+    ${QUICK && !String(it.raw||'').trim() ? kindHTML(it, 'ex') : ''}
     ${String(it.raw||'').trim() ? `<button class="pick" data-pickfor="${it.id}" tabindex="-1">Выбрать упражнение</button>
     ${aiBtn('ailine', it.id, 'Разобрать строку: ИИ найдёт упражнение в базе, схему и нагрузку', true)}` : ''}
     <button class="x" data-del="${it.id}" tabindex="-1">${ICON.x}</button>
@@ -435,7 +449,7 @@ function ssHTML(h, mem){
       <button class="x" data-delss="${h.id}" title="Удалить суперсет вместе с упражнениями">${ICON.x}</button>
     </div>
     ${mem.map(lineHTML).join('')}
-    <button class="addl in" data-addin="${h.id}">${ICON.plus} упражнение</button>
+    <button class="addl in" data-addin="${h.id}">${ICON.plus} ${QUICK ? 'в суперсет' : 'упражнение'}</button>
   </div>`;
 }
 /* Блок текстом устроен как любой блок — та же шапка, тип, заметка, закладка,
@@ -451,13 +465,13 @@ AMRAP 12:
 • подтягивания 8
 • гребля 250 м`;
 const LIST_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘⇧8' : 'Ctrl+Shift+8';
-function blockHTML(b){
+function blockHTML(b, k){
   const txt = isTextBlock(b);
   return `<div class="blk ${txt ? 'tblk' : ''} ${PENDING && PENDING.ids.has(b.id) ? 'pending' : ''}" data-blk="${b.id}">
     <div class="blkh">
       <span class="gr" title="Перетащить блок">${ICON.grip}</span>
       <input class="bt" data-f="title" value="${esc(b.title)}"
-             placeholder="${b.kind || txt ? 'Название блока (необязательно)' : 'Введите название блока'}">
+             placeholder="${QUICK ? 'Блок ' + (k + 1) : b.kind || txt ? 'Название блока (необязательно)' : 'Введите название блока'}">
       <button class="ftype ${b.kind?'on':''}" data-ftype="${b.id}" title="${b.fmt ? esc(fmtDesc(b.fmt)) : b.kind ? '' : 'Разминка, силовая, комплекс…'}">${b.kind ? esc(blockTypeLabel(b)) : 'тип блока'}</button>
       <button class="x ${b.note?'on':''}" data-notetog="${b.id}" title="${b.note?'Заметка к блоку':'Добавить заметку к блоку'}">${ICON.chat}</button>
       <button class="x ${b.savedSig === blockSig(b) ? 'on':''}" data-savblk="${b.id}" title="${b.savedSig === blockSig(b) ? 'Сохранён в базу блоков' : 'Сохранить блок в базу'}">${ICON.star}</button>
@@ -477,10 +491,151 @@ function blockHTML(b){
       </div>` : `${itemsHTML(b)}
     <div class="addrow">
       <button class="addl" data-add="${b.id}">${ICON.plus} упражнение</button>
-      <button class="addl" data-addss="${b.id}">${ICON.plus} суперсет</button>
-      <button class="addl" data-addch="${b.id}" title="Несколько упражнений подряд одной строкой">${ICON.plus} связка</button>
+      ${QUICK ? '' : `<button class="addl" data-addss="${b.id}">${ICON.plus} суперсет</button>
+      <button class="addl" data-addch="${b.id}" title="Несколько упражнений подряд одной строкой">${ICON.plus} связка</button>`}
     </div>`}
   </div>`;
+}
+/* ═══════════ БЫСТРЫЙ СТАРТ: ПУСТОЙ ДЕНЬ ═══════════
+   Пустой день — одно поле с курсором. Печатают — подсказки из базы, как в
+   любой строке; вставили несколько строк — блок текстом (общий обработчик
+   вставки). Блок, его шапка, действия дня и панель сохранения появляются,
+   когда есть что составлять. Под полем — та же кнопка «Блок текстом», что и
+   в составленном дне; скопировать шаблон или прошлый день — из правой панели. */
+const isFreshDay = d => !d.comp && !dayHas(d) && !trainerMsg(d.date) && S.msgOpen !== d.date
+  && !(PENDING && PENDING.date === d.date)
+  && !d.blocks.some(b => isTextBlock(b) || ownTitle(b) || b.note || b.noteOpen || b.items.some(i => i.ss || i.chain || i.exId || String(i.raw || '').trim()));
+let QAUTO = null;                         /* день, в поле которого курсор уже ставили */
+function renderFresh(d){
+  if(d.blocks.length !== 1 || isTextBlock(d.blocks[0])) d.blocks = [mkBlock(null,'','',null,[])];
+  const b = d.blocks[0];
+  if(!b.title) b.title = 'Блок 1';                /* поле пустого дня — это уже первый блок */
+  if(!b.items.length) b.items.push(rawItem('')); else b.items.length = 1;
+  $('#doc').innerHTML = `
+    <div class="doch">
+      <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
+             placeholder="Новая тренировка">
+    </div>
+    ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
+    <div class="blk qblk" data-blk="${b.id}">${itemsHTML(b)}</div>
+    <div class="addbrow">
+      <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>
+    </div>`;
+  const ed = $('#doc .qblk [data-edit]');
+  if(ed) ed.dataset.ph = 'Выберите упражнение из базы или введите вручную';
+}
+/* «+ Блок» и «Блок текстом» в быстром старте. Пустой блок — заготовка: без
+   строк, названия и заметки. Повторное нажатие не плодит заготовки, а ставит
+   курсор в уже добавленную; заготовки другого вида при этом убираются. Новый
+   обычный блок сразу со строкой упражнения — курсор в ней, название по желанию. */
+const blankBlock = b => !!b && !blockHas(b) && !ownTitle(b) && !b.note && !(b.items || []).some(i => i.ss || i.chain);
+function quickAddBlock(text){
+  /* Строка текстом пишется в модель при уходе из неё — позже, чем этот клик
+     перерисует день (фокус к тому же уже на кнопке). Без этого набранное
+     пропадало. */
+  flushRaw();
+  const d = day(), last = d.blocks[d.blocks.length - 1];
+  let nb = blankBlock(last) && isTextBlock(last) === text ? last : null;
+  if(!nb){ nb = text ? textBlock('') : mkBlock(null,'','',null,[]); d.blocks = [...d.blocks.filter(b => !blankBlock(b)), nb] }
+  let it = !text && nb.items.find(i => !i.exId && !String(i.raw || '').trim());
+  if(!text && !it){ it = rawItem(''); nb.items.push(it) }
+  render();
+  if(text) focusText(nb.id); else focusLineField(it.id, 'e');
+}
+/* Набранное в строках текстом — в модель (обычно это делает уход из строки,
+   но клик по кнопке добавления перерисовывает день раньше). */
+function flushRaw(){
+  const a = document.activeElement;                 /* схема и нагрузка тоже пишутся при уходе из поля */
+  if(a && a.matches && a.matches('#doc [data-pf]')) normField(a);
+  $$('#doc .line.raw [data-edit]').forEach(ed => { const {i} = findItem(ed.dataset.edit), t = ed.textContent.trim(); if(i && !i.exId && t) i.raw = t });
+  closeSug();
+}
+/* Добавления внутри блока в быстром старте: строка в блок (ex) и строка в
+   суперсет (in); суперсет и связку делают из пустой строки переключателем
+   вида (setKind). Правило: пустая строка уже есть — курсор в неё, новую не
+   плодим; пустые суперсеты и связки в блоке убираются. */
+const blankLine = i => !!i && !i.ss && !i.chain && !i.exId && !String(i.raw || '').trim();
+const blankChain = i => !!i && i.chain && !(i.parts || []).length;
+function quickAdd(bid, kind, ssId){
+  flushRaw();
+  const b = day().blocks.find(x => x.id === bid); if(!b || isTextBlock(b)) return;
+  normSS(b);
+  const its = b.items, groups = [];             /* [начало, конец) — строка или суперсет целиком */
+  for(let k = 0; k < its.length;){ const j = its[k].ss ? ssEnd(its, k) : k + 1; groups.push([k, j]); k = j }
+  const blankSS = ([k, j]) => its[k].ss && its.slice(k + 1, j).every(blankLine);
+  const isBlank = g => its[g[0]].ss ? blankSS(g) : blankLine(its[g[0]]) || blankChain(its[g[0]]);
+  let target = null, keep = null;               /* строка, куда встанет курсор; группа, которую не трогаем */
+  if(kind === 'in'){
+    const g = groups.find(([k]) => its[k].id === ssId); if(!g) return;
+    keep = g; target = its.slice(g[0] + 1, g[1]).find(blankLine) || null;
+  } else {
+    const same = groups.find(g => blankLine(its[g[0]]) && !its[g[0]].sub);
+    if(same){ keep = same; target = its[same[0]] }
+  }
+  /* Остальные пустые заготовки — прочь; строки внутри непустых суперсетов не трогаем. */
+  b.items = groups.filter(g => g === keep || !isBlank(g)).flatMap(([k, j]) => its.slice(k, j));
+  if(!target){
+    if(kind === 'ex'){ target = rawItem(''); b.items.push(target) }
+    else { const k = b.items.findIndex(x => x.id === ssId); target = rawItem(''); target.sub = true; b.items.splice(ssEnd(b.items, k), 0, target) }
+  }
+  render(); focusLineField(target.id, 'e');
+}
+/* Вид пустой строки — переключатель в ней самой: упражнение, суперсет, связка.
+   Суперсет: строка становится его первым упражнением (вторая — следом, без
+   двух суперсет не держится). Связка: строка становится связкой. Как только
+   в строке появился текст, переключатель пропадает — вид определился. */
+const KINDS = [['ex', 'Упражнение'], ['ss', 'Суперсет'], ['ch', 'Связка']];
+const kindHTML = (it, cur) => `<span class="kind">${KINDS.filter(([k]) => !(k === 'ss' && it.sub))
+  .map(([k, n]) => `<button data-kind="${k}" data-for="${it.id}" tabindex="-1" class="${k === cur ? 'on' : ''}">${n}</button>`).join('')}</span>`;
+function setKind(id, k){
+  flushRaw();
+  const {b, i} = findItem(id); if(!b || !i) return;
+  const at = b.items.indexOf(i), sub = !!i.sub, mark = x => (sub && (x.sub = true), x);
+  let to;
+  if(k === 'ch' && !i.chain){ to = mark(chainItem([])); b.items.splice(at, 1, to) }
+  else if(k === 'ex' && i.chain){ to = mark(rawItem('')); b.items.splice(at, 1, to) }
+  else if(k === 'ss' && !sub){ const h = ssItem(3, ''), m2 = rawItem(''); to = i.chain ? rawItem('') : i; to.sub = m2.sub = true; b.items.splice(at, 1, h, to, m2) }
+  else return;
+  render(); focusLineField(to.id, 'e');
+}
+/* «+» сразу после выбранного из базы упражнения — в поле названия или в
+   пустом поле схемы — делает строку связкой: упражнение становится её первой
+   частью (подходы и нагрузка переезжают к связке), курсор — в следующую.
+   Строку текстом «+» не трогает: она сохраняется как написана. */
+document.addEventListener('keydown', e => {
+  if(!QUICK || e.key !== '+') return;
+  const f = e.target.closest && e.target.closest('#doc .line:not(.chain) [data-edit], #doc .line:not(.chain) [data-pf="sch"]'); if(!f) return;
+  if(f.dataset.pf === 'sch' && f.value.trim()) return;
+  const {b, i} = findItem(f.dataset.edit || f.dataset.for); if(!b || !i || !i.exId || i.chain || i.ss) return;
+  e.preventDefault(); e.stopPropagation(); closeSug();
+  const part = {...i, id: nid('i')}; delete part.sub;
+  const c = chainItem([part]); if(i.sub) c.sub = true;
+  b.items.splice(b.items.indexOf(i), 1, c);
+  render(); focusLineField(c.id, 'e');
+}, true);
+/* Название блока по умолчанию — «Блок N» по месту в дне: его видят и тренер, и
+   клиент. Вписали своё — встаёт своё; стёрли — вернётся «Блок N». Номера
+   пересчитываются при перестановке и удалении. Название получают только
+   новые блоки (пустой без названия, вставленный текст, разобранное ИИ):
+   безымянные блоки уже составленных дней не трогаем — иначе день считался
+   бы изменённым от одного просмотра. */
+function autoTitles(d){
+  d.blocks.forEach((b, k) => { if(AUTO_TITLE.test(b.title) || (!b.title && !b.kind && !b.fmt && !blockHas(b))) b.title = 'Блок ' + (k + 1) });
+}
+/* Название по умолчанию выделяется целиком при входе в поле — печать сразу его заменяет. */
+document.addEventListener('focusin', e => { const t = QUICK && e.target.closest && e.target.closest('#doc .bt'); if(t && AUTO_TITLE.test(t.value)) setTimeout(() => t.select(), 0) });
+document.addEventListener('focusout', e => {
+  const t = QUICK && e.target.closest && e.target.closest('#doc .bt'); if(!t || t.value.trim()) return;
+  const d = day(), b = d.blocks.find(x => x.id === t.closest('[data-blk]').dataset.blk); if(!b) return;
+  b.title = 'Блок 1'; autoTitles(d); t.value = b.title; commitSoft();
+});
+/* Курсор — в поле, когда открыли пустой день; не отбираем его у другого поля. */
+function freshFocus(){
+  const d = day(), ed = $('#doc.fresh .qblk [data-edit]');
+  if(!ed || QAUTO === d.date) return;
+  QAUTO = d.date;
+  const a = document.activeElement;
+  if(!a || a === document.body) ed.focus({preventScroll:true});
 }
 function renderDoc(){
   /* Клиент сверх лимита тарифа (TRN-2): пока тренер не изменит лимит,
@@ -490,6 +645,10 @@ function renderDoc(){
   /* Пустой день открывается как ручной ввод: сразу пустой блок со строкой
      упражнения, без карточек-подсказок — они дублировали кнопки под названием. */
   if(!d.blocks.length) d.blocks.push(mkBlock(null,'','',null,[]));
+  const fresh = QUICK && isFreshDay(d);
+  $('#doc').classList.toggle('quick', QUICK);
+  $('#doc').classList.toggle('fresh', fresh);
+  if(fresh) return renderFresh(d);
   /* Считается всё содержимое, и текст тоже: день из одного блока текстом —
      тренировка, её публикуют. */
   const n = dayCount(d);
@@ -509,29 +668,31 @@ function renderDoc(){
       <span class="gr" title="Перетащить тренировку на другой день">${ICON.grip}</span>
       ${docStatusHTML(d, n)}
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
-             placeholder="${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}">
-      <button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>
+             placeholder="${QUICK ? 'Новая тренировка' : `${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}`}">
+      ${QUICK ? '' : `<button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>`}
       <button class="x ${trainerMsg(d.date)?'on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение '+aud(1):'Добавить сообщение '+aud(1)}">${ICON.chat}</button>
       <button class="x ${S.tplSaved[d.date] === serializeDay(d) ? 'on':''}" id="sav-wo" title="${S.tplSaved[d.date] === serializeDay(d) ? 'Сохранена в базу тренировок' : 'Сохранить тренировку в базу'}">${ICON.star}</button>
       <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
     </div>
     ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
-    <div class="ways4" role="group" aria-label="Как создать тренировку">${[
+    ${QUICK ? '' : `<div class="ways4" role="group" aria-label="Как создать тренировку">${[
       ['hand', ICON.pen,  'Вручную'],
       ['tpl',  ICON.tpl,  'Скопировать из шаблона'],
       ['cal',  ICON.cal,  'Скопировать из календаря'],
       ['text', ICON.text, 'Текстом'],
-    ].map(([k, ic, n]) => `<button class="way4" data-way="${k}">${ic}<span>${n}</span></button>`).join('')}</div>
+    ].map(([k, ic, n]) => `<button class="way4" data-way="${k}">${ic}<span>${n}</span></button>`).join('')}</div>`}
     ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} ${G_() ? 'Группе' : 'Клиенту'}</span>
       <input id="w-msg" value="${esc(trainerMsg(d.date))}"
              placeholder="${G_() ? 'Сообщение ко всей тренировке — каждый участник увидит его первым' : 'Сообщение ко всей тренировке — клиент увидит его первым'}">
       <kbd class="ent">↵ Enter</kbd>
       <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
     </label>` : ''}
-    ${d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b)).join('')}
-    <div class="addbrow">
-      <button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
-      <button class="addb" id="add-blk-text">${ICON.text} Добавить блок текстом</button>
+    ${d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b, k)).join('')}
+    <div class="addbrow">${QUICK
+      ? `<button class="addb" id="add-blk">${ICON.plus} Блок</button>
+      <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>`
+      : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
+      <button class="addb" id="add-blk-text">${ICON.text} Добавить блок текстом</button>`}
     </div>
     ${pubbarHTML(d, n)}`;
 }
@@ -609,7 +770,7 @@ function switchWho(id, date){
   const follow = CSRC.cid === S.cid;
   if(!bindClient(id, date) && !bindClient(id, TODAY)) return toast('Не получилось открыть календарь');
   if(follow) csrcReset(id);
-  history.replaceState(null, '', `constructor.html?${subjQ(S.cid)}&date=${plan()[S.i].date}`);
+  history.replaceState(null, '', `constructor.html?${subjQ(S.cid)}&date=${plan()[S.i].date}${CLASSIC_Q}`);
   render();
 }
 function openCliPick(btn){
@@ -679,7 +840,7 @@ function csrcCopyItems(ref){
 }
 const csrcCopyBlock = bi => { const x = csrcDay(), b = x && x.blocks[+bi]; return b ? copyBlocks([b])[0] : null };
 /* Пустая заготовка блока (появляется на каждом пустом дне) не должна оставаться над вставленным. */
-const dropEmptyBlocks = d => { d.blocks = d.blocks.filter(b => b.items.length || b.title || b.note || blockHas(b)) };
+const dropEmptyBlocks = d => { d.blocks = d.blocks.filter(b => b.items.length || ownTitle(b) || b.note || blockHas(b)) };
 function csrcCopyWorkout(){
   const x = csrcDay(); if(!x) return;
   const d = day(), snap = {title: d.title, blocks: d.blocks}, had = dayHas(d);
@@ -732,10 +893,11 @@ function renderSrc(){
     const list = EX.filter(e=>!q || norm(e.ru).includes(q) || norm(e.en).includes(q) ||
                               norm(e.eq).includes(q) || (ALIAS[e.id]||[]).some(a=>norm(a).includes(q)));
     const g = {}; list.forEach(e => (g[e.g] ||= []).push(e));
-    box.innerHTML = Object.entries(g).map(([k,arr])=>`
+    const gi = k => (i => i < 0 ? 99 : i)(GROUPS.indexOf(k));
+    box.innerHTML = Object.entries(g).sort((a, b) => gi(a[0]) - gi(b[0])).map(([k,arr])=>`
       <div class="grpttl"><span class="lab">${esc(k)}</span><span class="ln"></span><span class="n">${arr.length}</span></div>
       ${arr.map(e=>`<div class="exc" draggable="true" data-ex="${e.id}">
-        <span class="thumb ${e.m==='pending'?'pending':''}">${e.gif?`<img src="${e.gif}-180.gif" alt="">`:e.m==='ok'?esc(initials(e)):'·'}</span>
+        <span class="thumb ${e.m==='pending'?'pending':''}">${e.img?`<img src="${e.img}" alt="" loading="lazy">`:e.m==='ok'?esc(initials(e)):'·'}</span>
         <span class="body"><span class="nm">${esc(e.ru)}</span>
           <span class="en">${esc(e.en)} · ${esc(e.eq)}</span></span>
         <button class="add" data-addex="${e.id}" title="В открытый блок">${ICON.plus}</button>
@@ -845,8 +1007,9 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist(
 const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
 /* «Пятница, 19 сентября» — дата открытого дня в заголовке страницы; год — если не текущий. */
 const fullDate = date => { const t = D(date), y = t.getFullYear(); return DOW[dowMon(date)] + ', ' + t.getDate() + ' ' + MONTHS[t.getMonth()] + (y !== new Date().getFullYear() ? ' ' + y : '') };
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
-  const pt = $('#ptd'); if(pt && cur) pt.textContent = fullDate(cur.date) }
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur) autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
+  const pt = $('#ptd'); if(pt && cur) pt.textContent = fullDate(cur.date);
+  if(QUICK) freshFocus() }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -950,7 +1113,7 @@ function wizardApply(){
   const n = pl.rows.length, write = (pub, replace) => pl.rows.forEach(r => { const d = plan()[r.i], c = serializeDay(d);
       d.draft = !pub; if(pub){ d.pub = c; putDay(S.pid, r.i, {c, draft:false}, true, replace) } else putDay(S.pid, r.i, {c, pub: d.pub, draft:true}); d.saved = c }),
     done = pub => { persist(); render();
-      history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}`);
+      history.replaceState(null,'',`constructor.html?${subjQ(S.cid)}&date=${S.date}${CLASSIC_Q}`);
       toast('Создано ' + n + ' ' + plural(n,'тренировка','тренировки','тренировок') + (pub ? ' — в календаре' : ' — черновиками')) };
   if(!WZ.publish){ write(false); return done(false) }
   /* Публикация набора в группу — через окно занятых дней участников, как у одного дня. */
@@ -1135,11 +1298,11 @@ async function aiBlock(id){
     toast('ИИ не нашёл в тексте упражнений из базы — блок остался текстом');
     return;
   }
-  const made = parsed.map(b => blockOf(b.title, b.items));
+  const made = parsed.map(b => blockOf(b.title || (QUICK ? 'Блок 1' : ''), b.items));   /* номер выставит autoTitles */
   /* Название, тип и заметка, которые тренер задал блоку текстом, переходят
      к первому собранному блоку, если своих в тексте не нашлось. */
   const f = made[0];
-  if(tb.title && !f.title) f.title = tb.title;
+  if(tb.title && (!f.title || AUTO_TITLE.test(f.title))) f.title = tb.title;
   if(tb.kind && !f.kind){ f.kind = tb.kind; if(tb.fmt && !f.fmt) f.fmt = {...tb.fmt} }
   if(tb.note) f.note = tb.note;
   d.blocks.splice(k, 1, ...made);
@@ -1185,8 +1348,8 @@ const focusText = id => { const t = $(`#doc [data-blk="${id}"] .tbx`); if(t){ t.
 /* Новый блок текстом встаёт после блока after или в конец дня. В пустом дне
    он заменяет заготовку ручного ввода — она нужна, только чтобы было куда печатать. */
 function addTextBlock(text, after){
-  const d = day(), tb = textBlock(text || '');
-  if(!dayHas(d) && !d.blocks.some(b => b.title || b.note)) d.blocks = [];
+  const d = day(), tb = textBlock(text || '', QUICK ? 'Блок 1' : '');   /* номер выставит autoTitles */
+  if(!dayHas(d) && !d.blocks.some(b => ownTitle(b) || b.note)) d.blocks = [];
   const k = after ? d.blocks.indexOf(after) : -1;
   if(k >= 0) d.blocks.splice(k + 1, 0, tb); else d.blocks.push(tb);
   render();
@@ -1789,7 +1952,7 @@ function alignNames(){
   doc.classList.add('nm-measure');
   const ws = [...doc.querySelectorAll('.blk')].map(bk => {
     let w = 0;
-    bk.querySelectorAll('.line:not(.raw) > .txt').forEach(t => { w = Math.max(w, t.getBoundingClientRect().width + (t.closest('.ssg') ? 9 : 0)) });
+    bk.querySelectorAll('.line:not(.raw) > .txt').forEach(t => { w = Math.max(w, t.getBoundingClientRect().width + (t.closest('.ssg') ? (QUICK ? 26 : 9) : 0)) });   /* в быстром старте суперсет с отступом 26 */
     return [bk, w];
   });
   doc.classList.remove('nm-measure');
@@ -1814,6 +1977,7 @@ document.addEventListener('focusin', e => {
   if(!line){ if(h) h.remove(); return }
   if(f.dataset.pf === 'ld'){ const {i} = findItem(f.dataset.for); if(i && !UNITSEL[i.id]) UNITSEL[i.id] = loadInfo(i).cur }
   line.classList.add('act');
+  if(QUICK){ if(h) h.remove(); return }                     /* быстрый старт — без подсказки клавиш */
   if(!h){ h = document.createElement('div'); h.id = 'keyhint'; h.className = 'keyhint' }
   h.innerHTML = KEYHINT[f.closest('.cp') && f.dataset.pf === 'sch' ? 'rep' : f.dataset.pf || (line.classList.contains('chain') ? 'ch' : 'e')];
   if(line.nextElementSibling !== h) line.after(h);
@@ -1880,7 +2044,7 @@ document.addEventListener('keydown', e => {
 
 /* ═══════════ ТИП БЛОКА ═══════════
    Панель под меткой типа: сверху тип блока, у комплекса ниже — его настройка
-   (AMRAP, EMOM, на время…) с параметрами. Меняется на лету, метка в шапке
+   (AMRAP, EMOM, на время…) с параметрами; в быстром старте настройки нет. Меняется на лету, метка в шапке
    блока обновляется без перерисовки документа. */
 function openFtype(btn){
   closeSug();
@@ -1916,7 +2080,7 @@ function openFtype(btn){
     box.innerHTML = `
       <div class="st-head"><b>Тип блока</b></div>
       <div class="ft-list">${BLOCK_TYPES.map(t=>`<button data-bt-k="${t.k||''}" class="${(b.kind||null)===t.k?'on':''}">${t.n}</button>`).join('')}</div>
-      ${b.kind === 'complex' ? `<div class="st-head cx"><b>Настройка комплекса</b><s class="st-desc">${b.fmt ? esc(fmtDesc(b.fmt)) : ''}</s></div>
+      ${b.kind === 'complex' && !QUICK ? `<div class="st-head cx"><b>Настройка комплекса</b><s class="st-desc">${b.fmt ? esc(fmtDesc(b.fmt)) : ''}</s></div>
       <div class="ft-list">${FMT_TYPES.map(t=>`<button data-ft-k="${t.k||''}" class="${(b.fmt?b.fmt.k:null)===t.k?'on':''}">${t.n}</button>`).join('')}</div>
       ${b.fmt && b.fmt.k!=='NFT' ? `<div class="st-grid">${params()}</div>` : ''}` : ''}
       <div class="st-foot"><span class="sp"></span><button class="btn sm" data-st-ok>Готово ↵</button></div>`;
@@ -1961,7 +2125,7 @@ function openFtype(btn){
 const structBlock = d => {
   const last = d.blocks[d.blocks.length-1];
   if(last && !isTextBlock(last)) return last;
-  const nb = mkBlock(null, last ? '' : 'Новый блок', '', null, []);
+  const nb = mkBlock(null, last || QUICK ? '' : 'Новый блок', '', null, []);
   d.blocks.push(nb);
   return nb;
 };
@@ -2231,7 +2395,9 @@ document.addEventListener('click', e=>{
   const ae = e.target.closest('[data-ex]');  if(ae){ addEx(ae.dataset.ex); return }
   const at = e.target.closest('[data-tpl]'); if(at){ addTpl(tplById(at.dataset.tpl)); return }
 
+  const kd = e.target.closest('[data-kind]'); if(kd){ setKind(kd.dataset.for, kd.dataset.kind); return }
   const add = e.target.closest('[data-add]');
+  if(add && QUICK) return quickAdd(add.dataset.add, 'ex');
   if(add){
     const b = day().blocks.find(x=>x.id===add.dataset.add);
     b.items.push(rawItem('')); render();
@@ -2268,6 +2434,7 @@ document.addEventListener('click', e=>{
     return;
   }
   const addin = e.target.closest('[data-addin]');
+  if(addin && QUICK){ const {b} = findItem(addin.dataset.addin); return b && quickAdd(b.id, 'in', addin.dataset.addin) }
   if(addin){
     const {b} = findItem(addin.dataset.addin); if(!b) return;
     const it = rawItem(''); it.sub = true;
@@ -2333,13 +2500,14 @@ document.addEventListener('click', e=>{
     if(k === 'cal'){ pickExisting(); return }
     focusText(addTextBlock('').id); return;
   }
-  if(e.target.closest('#add-blk-text')){ focusText(addTextBlock('').id); return }
+  if(e.target.closest('#add-blk-text')){ if(QUICK) return quickAddBlock(true); focusText(addTextBlock('').id); return }
   if(e.target.closest('[data-newex]') && SUG){ const id = SUG.dataset.forItem, text = SUG.dataset.text || ''; closeSug(); openNewEx(id, text); return }
   const pfu = e.target.closest('[data-pfu]');
   if(pfu){ const {i} = findItem(pfu.dataset.pfu); if(!i) return; const L = loadInfo(i), inp = pfu.parentElement.querySelector('input');
     if(L.units.length > 1){ const nu = L.units[(L.units.indexOf(L.cur) + 1) % L.units.length]; UNITSEL[i.id] = nu; applyLoad(i, inp.value, nu); syncLoads(); commitSoft() }
     inp.focus(); return }
   if(e.target.closest('#add-blk')){
+    if(QUICK) return quickAddBlock(false);
     /* Кнопка стоит сверху — значит и блок появляется сверху, под курсором,
        а не улетает в конец длинного дня. */
     const nb = mkBlock(null,'','',null,[]);
@@ -2393,6 +2561,11 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keydown', e => { const ta = e.target.closest && e.target.closest('#doc .tbx'); if(ta) listKey(ta, e) });
 /* То же у «от–до»: кнопка видна, пока курсор в строке, — фокус не уводим. */
 document.addEventListener('mousedown', e => { if(e.target.closest && e.target.closest('#doc .tbar, #doc [data-rng]')) e.preventDefault() });
+/* Быстрый старт: кнопки добавления не забирают фокус. Иначе поле, где стоял
+   курсор, успевало его потерять — у блока текстом пряталась панель «Список»,
+   блок сжимался, кнопка уезжала из-под мыши, и всё мигало. Набранное в
+   строках quickAdd/quickAddBlock сохраняют сами. */
+document.addEventListener('mousedown', e => { if(QUICK && e.target.closest && e.target.closest('#doc .addb, #doc .addl, #doc .kind')) e.preventDefault() });
 ['keyup', 'click', 'focusin'].forEach(t => document.addEventListener(t, e => { const ta = e.target.closest && e.target.closest('#doc .tbx'); if(ta) listState(ta) }));
 document.addEventListener('selectionchange', () => { const a = document.activeElement; if(a && a.matches && a.matches('#doc .tbx')) listState(a) });
 
@@ -2418,6 +2591,7 @@ document.addEventListener('paste', e=>{
 document.addEventListener('input', e=>{
   const ed = e.target.closest('[data-edit]');
   if(ed){
+    if(!ed.textContent && ed.dataset.ph) ed.innerHTML = '';   /* стёрли всё — остаётся <br>, и подсказка в поле не возвращалась */
     ed.closest('.line').classList.add('edit');
     showSug(ed, ed.textContent);
     if(SUG){ SUG.dataset.forItem = ed.dataset.edit; SUG.dataset.text = ed.textContent }
@@ -2522,7 +2696,9 @@ document.addEventListener('focusout', e=>{
        связка без упражнений не остаётся. */
     if(i && i.chain){ const t = ed.textContent.trim(); if(t) chainAdd(id, null, t, 'quiet'); else if(!i.parts.length){ b.items = b.items.filter(x => x !== i); render() } return }
     /* Пустая строка, из которой ушли, не остаётся в тренировке. */
-    if(i && !i.exId && !i.raw && !ed.textContent.trim()){ b.items = b.items.filter(x => x !== i); render(); return }
+    /* В быстром старте пустая строка суперсета остаётся: без неё суперсет из
+       двух строк распался бы от одного клика мимо. */
+    if(i && !i.exId && !i.raw && !ed.textContent.trim()){ if(QUICK && i.sub) return; b.items = b.items.filter(x => x !== i); render(); return }
     if(!SUG || SUG.dataset.forItem !== id) commitIfChanged(id, ed.textContent);
   }, 120);
 });
@@ -2566,7 +2742,7 @@ document.addEventListener('dragstart', e=>{
     /* Тренировку кладут только на день в полосе недель: если полоса скрыта —
        перетаскивать некуда, говорим об этом, а не молча ничего не делаем. */
     const strip = $('#strip');
-    if(STATE.laneHidden || !strip){ e.preventDefault(); clearDrag(); toast('Покажите календарь — тренировку переносят на день в полосе недель'); return }
+    if(laneHid() || !strip){ e.preventDefault(); clearDrag(); toast('Покажите календарь — тренировку переносят на день в полосе недель'); return }
     DRAG = {t:'workout', v:S.i};
     dragGhost(e, day().title || 'Тренировка');
     const r = strip.getBoundingClientRect(); if(r.top < 70) window.scrollBy({top: r.top - 90, behavior:'smooth'});

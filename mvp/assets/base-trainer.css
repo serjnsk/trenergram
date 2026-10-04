@@ -1497,3 +1497,41 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .days .day .bxmsg span{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .days .day .bxmsg svg{width:14px;height:14px;flex:none;margin-top:2px;color:var(--acc-d)}
 .days .day .bxch em{font-style:normal;color:var(--acc-d);font-weight:600}
+/* ═══════════ «БЫСТРЫЙ СТАРТ» — вид конструктора по умолчанию (.doc.quick) ═══════════
+   Пустой день — одно поле. Ничего не прячется до наведения: что есть на
+   экране, то видно всегда — скрытое при наведении путает так же, как лишнее. */
+
+.doc.fresh .doch{margin-bottom:16px}
+.app .blk.qblk{background:none;padding:0;margin-top:0;border:0;border-radius:0;overflow:visible}
+.qblk .line.raw{background:var(--bg);border:1.5px solid var(--line2);border-radius:var(--rad-l);padding:15px 18px;margin:0}
+.qblk .line.raw:hover{border-color:var(--tx4)}
+.qblk .line.raw:focus-within,.qblk .line.raw.edit{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
+.qblk .line .gr,.qblk .line .x{display:none}
+.qblk .line .txt{font-size:17px;color:var(--ink)}
+.qblk .line .txt:empty::before{content:attr(data-ph);color:var(--tx4)}
+.doc.quick .tkeys{display:none}
+.doc.quick .line.raw .txt:empty::before{content:attr(data-ph);color:var(--tx4)}
+.kind{display:inline-flex;flex:none;margin-left:auto;gap:2px}
+.kind button{height:26px;padding:0 9px;border-radius:var(--rad-s);font-size:13px;font-weight:600;color:var(--tx3);white-space:nowrap}
+.kind button:hover{color:var(--tx2);background:var(--s1)}
+.kind button.on{color:var(--acc-d);background:var(--acc-a)}
+.line.raw:has(.txt:not(:empty)) .kind,.line.chain:has(.cadd:not(:empty)) .kind{display:none}
+
+/* ─── быстрый старт: суперсет в той же манере, что связка ───
+   Без заливки и рамки: шапка — обычная строка с меткой «Суперсет» как у
+   связки, круги и отдых — такие же поля, как схема и нагрузка. Иерархию
+   держит отступ и вертикальная линия от метки вниз вдоль упражнений;
+   их схема и нагрузка остаются в общей колонке блока. */
+.doc.quick .ssg{position:relative;margin:0;padding:0;border:0;border-radius:0;background:none}
+.doc.quick .ssg::before{content:"";position:absolute;left:16px;top:42px;bottom:16px;width:2px;border-radius:2px;background:var(--acc-p)}
+.doc.quick .ssg.over{background:var(--acc-a)}
+.doc.quick .line.ssh{padding:8px 10px;margin-bottom:4px}
+.doc.quick .ssh .ssb{flex:none;font-size:12px;letter-spacing:.06em;background:var(--acc-a);border-radius:var(--rad-s);padding:3px 7px}
+.doc.quick .ssh .ssf{gap:5px;font-size:14px;color:var(--tx3)}
+.doc.quick .ssh .ssf input{height:30px;border-radius:7px;border:1.5px solid transparent;background:var(--s2);color:var(--acc-d);font-size:15px;font-weight:600}
+.doc.quick .ssh .ssf input:focus{background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
+.app .doc.quick .ssh:hover .ssf input{background:var(--bg)}
+.doc.quick .ssg > .line:not(.ssh),.doc.quick .ssg > .keyhint{margin-left:26px}
+.doc.quick .ssg > .addl.in{margin-left:26px;width:auto}
+.doc.quick .ssg .line:not(.raw) > .txt{width:calc(var(--nmw) - 26px)}
+.app .doc.quick .ssg .line:hover{background:var(--bg)}

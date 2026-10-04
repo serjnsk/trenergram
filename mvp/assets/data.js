@@ -769,9 +769,16 @@ function buildDay(pid, i){
    по дню помечал бы его черновиком. */
 /* Текст блока (tx) пишется только у блока текстом: у остальных слепок не
    меняется, и опубликованные дни не становятся черновиками сами собой. */
-const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>(b.items||[]).length || b.title || b.note || String(b.text||'').trim()).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
+/* Пустая строка ввода — место, куда печатать, а не содержимое: в слепок она
+   не идёт, иначе день с одной заготовкой считался бы изменённым. */
+const serItems = b => (b.items||[]).filter(it => it.ss || it.chain || it.exId || String(it.raw||'').trim());
+/* Название по умолчанию «Блок 1», «Блок 2»… (быстрый старт конструктора) — не
+   своё название: пустой блок с ним в слепок не идёт, как и пустой без названия. */
+const AUTO_TITLE = /^Блок \d+$/;
+const ownTitle = b => !!b.title && !AUTO_TITLE.test(b.title);
+const serializeDay = x => JSON.stringify({t: x.title||'', ...(x.comp ? {c:1} : {}), b: (x.blocks||[]).filter(b=>serItems(b).length || ownTitle(b) || b.note || String(b.text||'').trim()).map(b=>({k:b.kind, t:b.title||'', n:b.note||'', f:b.fmt||null,
   ...(isTextBlock(b) ? {tx:b.text} : {}),
-  i:(b.items||[]).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''}
+  i:serItems(b).map(it=> it.ss ? {ss:1, n:it.rounds, z:it.rest||''}
     : it.chain ? {ch:(it.parts||[]).map(serItem), ...serChain(it), ...(it.sub ? {g:1} : {})}
     : {...serItem(it), ...(it.sub ? {g:1} : {})})}))});
 /* Строка в слепке. Верхняя граница диапазона (p2, v2) пишется, только если
