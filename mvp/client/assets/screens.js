@@ -32,27 +32,40 @@ const CL_SVG = {
   msg: '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/>',
   play: '<path d="M8 5v14l11-7z"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4.5a1.5 1.5 0 0 0 0 3H7M17 6h2.5a1.5 1.5 0 0 1 0 3H17"/>',
-  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  video: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/>',
+  pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  send: '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
+/* Отдых — та же иконка, что в календаре кабинета тренера (из брифа) */
+const CL_REST_ICON = '<img class="resti" src="../assets/icons/rest.png" alt="">';
 const clI = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${CL_SVG[n]}</svg>`;
 
 /* ── состояние клиента ── */
 const clS = (() => {
-  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, dayDone: {}, open: {}, hideTasks: false };
+  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {} };
   try { return Object.assign(def, JSON.parse(localStorage.getItem('trenergram.client') || '{}')); } catch (e) { return def; }
 })();
 const clSave = () => { try { localStorage.setItem('trenergram.client', JSON.stringify(clS)); } catch (e) {} };
 
 /* Выбранный на главной день; тренировка открывается на нём */
 let clDate = TODAY;
+/* Полоса недели на экране тренировки — выезжает по иконке календаря */
+let clCalOpen = false;
 
 /* ── день клиента из плана тренера ──
    Клиент видит только опубликованное: у черновика — прошлый слепок (pub),
    а если тренер ещё ни разу не публиковал день — его нет. */
+/* План собирается долго (весь контейнер дней) — держим его в памяти, пока
+   идёт одна отрисовка: месяц в календаре — это 30 дней подряд */
+let clPlanMemo = null;
+const clPlan = pid => { if (!clPlanMemo) { clPlanMemo = buildPlan(pid); setTimeout(() => { clPlanMemo = null; }, 0); } return clPlanMemo; };
 function clDayAt(date) {
   const c = client(CL_ME), p = program(c.prog);
   const i = daysBetween(p.start, date);
-  const x = i >= 0 ? buildPlan(c.prog)[i] : null;
+  const x = i >= 0 ? clPlan(c.prog)[i] : null;
   const base = { date, title: 'Отдых', rest: true, comp: false, blocks: [] };
   if (!x) return base;
   let title = x.title, blocks = x.blocks, comp = x.comp;
@@ -69,40 +82,61 @@ const WD_FULL = ['понедельник', 'вторник', 'среда', 'че
 const clDateLong = date => { const d = D(date); return WD_FULL[dowMon(date)] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; };
 const clBlockName = b => b.title || blockTypeLabel(b) || (isTextBlock(b) ? firstTextLine(b.text) : 'Блок');
 
-/* ── строки упражнения: название, схема, вес ── */
-function clItemRow(it, pm, date) {
-  if (it.chain) {
-    const parts = (it.parts || []).filter(partHas);
-    return `<div class="xr"><div class="xn">${parts.map(p => clEsc(partName(p))).join(' + ')}</div>
-      <div class="xp">${parts.map(p => { const kg = p.exId ? kgText(p, pm) : null;
-        return [clEsc(p.txt || p.scheme || ''), kg ? `<b>${kg} кг</b>` : (!p.txt && loadText(p) && p.pct == null ? clEsc(loadText(p)) : '')].filter(Boolean).join(' · '); }).join(' + ')}</div></div>`;
-  }
+/* ── строки упражнения — как у HWPO, одна строка на упражнение ──
+   «3×5 Становая тяга · 132,5 кг»: схема жирным впереди, нагрузка после
+   названия. Проценты клиенту не показываем — только рабочий вес. */
+function clLoad(it, pm) {
+  if (it.pct != null) { const kg = it.exId ? kgText(it, pm) : null; return kg ? kg + '\u00a0кг' : ''; }
+  return it.val ? loadText(it) : '';
+}
+/* Как у HWPO: «10 Barbell Upright Row @ RPE 8-9» → «3×5 Становая тяга @ 132,5 кг» */
+function clPart(it, pm) {
   const e = it.exId ? byId(it.exId) : null;
   const name = e ? e.ru : (it.raw || '');
-  const kg = e ? kgText(it, pm) : null;
-  /* Проценты клиенту не показываем: вместо них рабочий вес */
-  const load = it.pct != null ? (kg ? `<b>${kg} кг</b>` : '') : (it.val ? `<b>${clEsc(loadText(it))}</b>` : '');
-  const prm = it.txt ? clEsc(it.txt) : [clEsc(it.scheme || ''), load].filter(Boolean).join(' · ');
-  const last = e ? lastResult(CL_ME, it.exId, date, it.scheme) : null;
-  const lastTx = last ? (last.kg != null ? `${clEsc(last.scheme)} · ${fmtNum(last.kg)} кг` : clEsc(last.done || last.scheme)) : '';
-  return `<div class="xr"><div class="xn">${clEsc(name)}</div>${prm ? `<div class="xp">${prm}</div>` : ''}
-    ${lastTx ? `<div class="xl">В прошлый раз: ${lastTx}</div>` : ''}</div>`;
+  if (it.txt) return clEsc(name + ' — ' + it.txt);
+  const load = clLoad(it, pm);
+  return clEsc((it.scheme ? it.scheme + ' ' : '') + name + (load ? ' @ ' + load : ''));
 }
-/* Содержимое блока: формат комплекса, строки, суперсеты, блок текстом */
-function clBlockBody(b, pm, date) {
-  if (isTextBlock(b)) return textLines(b.text).map(l => `<div class="xt">${clEsc(l)}</div>`).join('');
-  let h = '', k = 0;
+const clLine = (it, pm) => `<div class="xl">${it.chain
+  ? (it.parts || []).filter(partHas).map(p => clPart(p, pm)).join(' + ') : clPart(it, pm)}</div>`;
+
+/* Содержимое блока по группам, разделитель — только между группами:
+   формат комплекса, подряд идущие упражнения, суперсет («5 кругов:» …
+   «Отдых 90 сек между кругами»), блок текстом */
+function clBlockBody(b, pm) {
+  const seg = [];
+  const fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null;
+  if (fmt) seg.push(`<div class="xl">${clEsc(fmtLabel(fmt) + ' — ' + fmtDesc(fmt))}</div>`);
+  if (isTextBlock(b)) { seg.push(textLines(b.text).map(l => `<div class="xl">${clEsc(l)}</div>`).join('')); return seg; }
+  let run = '', k = 0;
   const its = b.items;
+  const flush = () => { if (run) { seg.push(run); run = ''; } };
   while (k < its.length) {
     if (its[k].ss) {
-      const j = ssEnd(its, k), mem = its.slice(k + 1, j).filter(itemHas);
-      if (mem.length) h += `<div class="ssg"><div class="ssh">${clEsc(ssLabel(its[k]))}</div>${mem.map(x => clItemRow(x, pm, date)).join('')}</div>`;
+      const h = its[k], j = ssEnd(its, k), mem = its.slice(k + 1, j).filter(itemHas);
+      if (mem.length) {
+        flush();
+        seg.push(`<div class="xl">${h.rounds} ${plural3(+h.rounds, 'круг', 'круга', 'кругов')}:</div>` +
+          mem.map(x => clLine(x, pm)).join('') +
+          (h.rest ? `<div class="xl">Отдых ${clEsc(h.rest)} между кругами</div>` : ''));
+      }
       k = j; continue;
     }
-    if (itemHas(its[k])) h += clItemRow(its[k], pm, date);
+    if (itemHas(its[k])) run += clLine(its[k], pm);
     k++;
   }
-  return h;
+  flush();
+  return seg;
+}
+/* Прошлые результаты по упражнениям блока — подсказкой в «Результат и заметки» */
+function clLastOf(b, date) {
+  const out = [];
+  (b.items || []).forEach(it => {
+    if (!it.exId || it.ss) return;
+    const r = lastResult(CL_ME, it.exId, date, it.scheme);
+    if (r) out.push(`${clEsc(byId(it.exId).ru)}: ${clEsc(r.scheme)}${r.kg != null ? ' · ' + fmtNum(r.kg) + '\u00a0кг' : r.done ? ' → ' + clEsc(r.done) : ''}`);
+  });
+  return out;
 }
 /* Упражнения блока с карточкой в базе — для «Техники» */
 const clBlockEx = b => {
@@ -115,10 +149,12 @@ const clBlockEx = b => {
 };
 
 /* ── общие куски ── */
-const clTabs = on => `<nav class="tabs">
+const clTabs = on => { const n = on === 'feed' ? 0 : clEvents().filter(e => !clS.read[e.k]).length;
+  return `<nav class="tabs">
   <button class="${on === 'home' ? 'on' : ''}" data-go="home">${clI('home')}<span>Главная</span></button>
+  <button class="${on === 'feed' ? 'on' : ''}" data-go="feed"><i class="tbi">${clI('bell')}${n ? `<b class="badge">${n}</b>` : ''}</i><span>Лента</span></button>
   <button class="${on === 'profile' ? 'on' : ''}" data-go="profile">${clI('user')}<span>Профиль</span></button>
-</nav>`;
+</nav>`; };
 const clDots = (n, at) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === at ? 'on' : ''}"></i>`).join('')}</div>`;
 const clHead = (title, sub) => `<h1 class="h1">${clEsc(title)}</h1><i class="tbar"></i>${sub ? `<p class="hsub">${clEsc(sub)}</p>` : ''}`;
 const clPhoneFmt = d => { d = d.slice(0, 10); return [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(Boolean)
@@ -136,7 +172,7 @@ const CL_UI = {
   phone(sc, v) {
     const inv = v === 'invite' ? `<div class="invc">
         <div class="av">${clEsc(TRAINER.ini)}</div>
-        <div><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться · ${clEsc(TRAINER.workspace)}</s></div>
+        <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться · ${clEsc(TRAINER.workspace)}</s></div>
       </div>` : '';
     return `<div class="pg auth">
       ${inv}
@@ -165,37 +201,46 @@ const CL_UI = {
     </div>`;
   },
 
-  /* W1. Создание аккаунта · данные */
+  /* W1. Создание аккаунта · данные — одна карточка строк, как форма HWPO
+     и настройки iOS: подпись слева, значение справа, всё в столбик и на
+     одном экране */
   'wiz-data'() {
     const p = clS.prof;
-    const opt = (name, val, label) => `<button type="button" class="opt${p[name] === val ? ' on' : ''}" data-f="${name}" data-val="${clEsc(val)}">${clEsc(label)}</button>`;
+    const opt = (val, label) => `<button type="button" class="opt${p.sex === val ? ' on' : ''}" data-f="sex" data-val="${val}">${label}</button>`;
     return `<header class="top">${clDots(2, 0)}</header>
     <div class="pg form">
-      ${clHead('Ваши данные', 'Тренер подберёт нагрузку под вас')}
-      <label class="lbl">Фамилия</label><input class="inp" data-f="last" autocomplete="family-name" value="${clEsc(p.last || '')}">
-      <label class="lbl">Имя</label><input class="inp" data-f="first" autocomplete="given-name" value="${clEsc(p.first || '')}">
-      <label class="lbl">Отчество <em>по желанию</em></label><input class="inp" data-f="mid" autocomplete="additional-name" value="${clEsc(p.mid || '')}">
-      <label class="lbl">Пол</label><div class="seg2">${opt('sex', 'м', 'Мужской')}${opt('sex', 'ж', 'Женский')}</div>
-      <label class="lbl">Дата рождения <em id="age">${clEsc(clAge(p.born))}</em></label>
-      <div class="fld">${clI('cal')}<input type="date" data-f="born" max="${TODAY}" value="${clEsc(p.born || '')}"></div>
-      <div class="two">
-        <div><label class="lbl">Рост <em>по желанию</em></label><div class="fld">${clI('ruler')}<input inputmode="decimal" data-f="h" value="${clEsc(p.h || '')}" placeholder="—"><span class="unit">см</span></div></div>
-        <div><label class="lbl">Вес <em>по желанию</em></label><div class="fld">${clI('scale')}<input inputmode="decimal" data-f="w" value="${clEsc(p.w || '')}" placeholder="—"><span class="unit">кг</span></div></div>
+      ${clHead('Ваши данные')}
+      <div class="glist">
+        <div class="gr"><label for="f-last">Фамилия</label><input id="f-last" data-f="last" autocomplete="family-name" value="${clEsc(p.last || '')}"></div>
+        <div class="gr"><label for="f-first">Имя</label><input id="f-first" data-f="first" autocomplete="given-name" value="${clEsc(p.first || '')}"></div>
+        <div class="gr"><label>Пол</label><div class="seg2">${opt('м', 'Мужской')}${opt('ж', 'Женский')}</div></div>
+        <div class="gr"><label for="f-born">Дата рождения</label><input id="f-born" type="date" data-f="born" max="${TODAY}" value="${clEsc(p.born || '')}"><span class="unit" id="age">${clEsc(clAge(p.born))}</span></div>
+        <div class="gr"><label for="f-h">Рост</label><input id="f-h" inputmode="decimal" data-f="h" value="${clEsc(p.h || '')}" placeholder="по желанию"><span class="unit">см</span></div>
+        <div class="gr"><label for="f-w">Вес</label><input id="f-w" inputmode="decimal" data-f="w" value="${clEsc(p.w || '')}" placeholder="по желанию"><span class="unit">кг</span></div>
+        <div class="gr"><label for="f-lvl">Уровень</label>
+          <select id="f-lvl" data-f="level" class="${p.level ? '' : 'ph'}"><option value=""${p.level ? '' : ' selected'} disabled>Выберите</option>
+            ${CL_LEVELS.map(l => `<option${p.level === l ? ' selected' : ''}>${clEsc(l)}</option>`).join('')}</select>${clI('down')}</div>
       </div>
-      <label class="lbl">Уровень подготовки</label>
-      <div class="grid2">${CL_LEVELS.map(l => opt('level', l, l)).join('')}</div>
     </div>
     <div class="foot"><button class="btn pri" id="next" data-go="@next" disabled>Дальше</button></div>`;
   },
 
-  /* W2. Создание аккаунта · цели */
+  /* W2. Создание аккаунта · цели — та же карточка строк: основная цель
+     выпадающим списком, дополнительная — текстом */
   'wiz-goals'() {
     return `<header class="top"><button class="ib" data-back aria-label="Назад">${CL_ICON.back}</button>${clDots(2, 1)}<span class="ib ghost"></span></header>
     <div class="pg form">
-      ${clHead('Ваша цель', 'Тренер увидит её в вашей карточке')}
-      <div class="goals">${CL_GOALS.map(g => `<button type="button" class="goal${clS.goal === g ? ' on' : ''}" data-goal="${clEsc(g)}"><i></i><span>${clEsc(g)}</span></button>`).join('')}</div>
-      <label class="lbl" for="goal2">Дополнительная цель <em>по желанию</em></label>
-      <textarea class="inp ta" id="goal2" rows="3" placeholder="Например: подтянуться 10 раз к лету">${clEsc(clS.goal2)}</textarea>
+      ${clHead('Ваша цель')}
+      <label class="lbl gcap" for="f-goal">Основная цель</label>
+      <div class="glist sel">
+        <div class="gr">
+          <select id="f-goal" class="${clS.goal ? '' : 'ph'}"><option value=""${clS.goal ? '' : ' selected'} disabled>Выберите цель</option>
+            ${CL_GOALS.map(g => `<option${clS.goal === g ? ' selected' : ''}>${clEsc(g)}</option>`).join('')}</select>${clI('down')}</div>
+      </div>
+      <label class="lbl gcap" for="goal2">Дополнительная цель <em>по желанию</em></label>
+      <div class="glist">
+        <div class="gr col"><textarea id="goal2" rows="3" placeholder="Например: подтянуться 10 раз к лету">${clEsc(clS.goal2)}</textarea></div>
+      </div>
     </div>
     <div class="foot"><button class="btn pri" id="done" data-go="@next" disabled>Готово</button></div>`;
   },
@@ -218,16 +263,15 @@ const CL_UI = {
     ];
     const nDone = tasks.filter(t => t[1]).length;
     const steps = nDone < tasks.length ? `<section class="card steps">
-      <div class="sth"><b>Первые шаги</b><span>${nDone} / ${tasks.length}</span></div>
+      <button class="sth" id="hidetasks" aria-expanded="${!clS.hideTasks}"><b>Первые шаги</b>${clI('down', clS.hideTasks ? '' : 'up')}<span>${nDone} / ${tasks.length}</span></button>
       <div class="prog"><i style="width:${nDone / tasks.length * 100}%"></i></div>
-      <button class="pill" id="hidetasks">${clS.hideTasks ? 'Показать задачи' : 'Скрыть задачи'}${clI('down', clS.hideTasks ? '' : 'up')}</button>
       ${clS.hideTasks ? '' : `<div class="tasks">${tasks.map(([t, ok, act, to]) => `<div class="task${ok ? ' ok' : ''}">
         <i class="ck">${ok ? clI('check') : ''}</i><span>${clEsc(t)}</span>
         ${!ok && act ? `<button class="go" data-go="${to}">${clEsc(act)} ${CL_ICON.next}</button>` : ''}</div>`).join('')}</div>`}
     </section>` : '';
     return `<header class="hhead">
       <div class="wmk">Тренерграм</div>
-      <div class="mon">${MONTHS_N[d.getMonth()]} ${d.getFullYear()} ${clI('cal')}</div>
+      <button class="mon" data-mcal aria-label="Выбрать дату">${MONTHS_N[d.getMonth()]} ${d.getFullYear()} ${clI('cal')}</button>
     </header>
     <div class="pg home">
       <section class="card week">
@@ -250,48 +294,70 @@ const CL_UI = {
       const bk = key + '#' + i, done = !!(clS.done[bk] || doneAll);
       const open = clS.open[bk] !== false;
       const exs = clBlockEx(b);
-      /* Подпись типа — только если название его не называет (как в кабинете) */
-      const tl = b.title ? typeNote(b) : '';
-      const fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null;
+      const last = clLastOf(b, clDate);
+      /* Одна строка из секций: заметка тренера, техника, результат клиента */
       const rows = [
-        b.note ? ['note', 'Заметка тренера', `<p class="cnote">${clEsc(b.note)}</p>`] : null,
-        exs.length ? ['tech', 'Техника', `<div class="demos">${exs.map(e => `<button class="demo" data-ex="${e.id}">
+        b.note ? ['note', 'Заметка', 'msg', `<p class="cnote">${clEsc(b.note)}</p>`] : null,
+        exs.length ? ['tech', 'Техника', 'video', `<div class="demos">${exs.map(e => `<button class="demo" data-ex="${e.id}">
             <span class="th">${e.gif ? `<img src="../${clEsc(e.gif)}-360.gif" alt="" loading="lazy">` : `<em>${clEsc(e.ru.slice(0, 1))}</em>`}<i>${clI('play')}</i></span>
             <span class="dn">${clEsc(e.ru)}</span></button>`).join('')}</div>`] : null,
-        ['notes', 'Результат и заметки', `<textarea class="inp ta" data-note="${bk}" rows="3" placeholder="Веса, повторы, время или как прошло…">${clEsc(clS.notes[bk] || '')}</textarea>`]
+        ['notes', 'Результат', 'pen', `${last.length ? `<div class="last"><s>В прошлый раз</s>${last.map(l => `<span>${l}</span>`).join('')}</div>` : ''}
+          ${(clS.sent[bk] || []).map(m => `<div class="sent"><p>${clEsc(m.tx)}</p><s>Отправлено тренеру · ${clEsc(m.at)}</s></div>`).join('')}
+          <div class="rin"><textarea class="inp ta" data-note="${bk}" rows="3" placeholder="Веса, повторы, время или как прошло…">${clEsc(clS.notes[bk] || '')}</textarea>
+            <button class="snd" data-send="${bk}" aria-label="Отправить тренеру"${(clS.notes[bk] || '').trim() ? '' : ' disabled'}>${clI('send')}</button></div>`]
       ].filter(Boolean);
+      const tab = rows.some(r => r[0] === clS.open[bk + ':tab']) ? clS.open[bk + ':tab'] : '';
+      const has = { notes: !!(clS.sent[bk] || []).length };
       return `<section class="blk${done ? ' done' : ''}">
         <div class="bh">
-          <div class="bt"><b>${clEsc(clBlockName(b))}</b>${tl ? `<s>${clEsc(tl)}</s>` : ''}</div>
+          <button class="bt" data-bopen="${bk}" aria-expanded="${open}"><b>${clEsc(clBlockName(b))}</b>${clI('down', open ? 'up' : '')}</button>
           <button class="ring${done ? ' on' : ''}" data-bdone="${bk}" aria-label="${done ? 'Снять отметку' : 'Отметить блок выполненным'}">${done ? clI('check') : ''}</button>
         </div>
-        <button class="det" data-bopen="${bk}">${clI('down', open ? '' : 'up')}${open ? 'Скрыть детали' : 'Показать детали'}</button>
         ${open ? `<div class="card bcard">
-          ${fmt ? `<div class="fmt"><b>${clEsc(fmtLabel(fmt))}</b><span>${clEsc(fmtDesc(fmt))}</span></div>` : ''}
-          <div class="xs">${clBlockBody(b, pm, clDate)}</div>
-          ${rows.map(([id, t, body]) => { const ok = clS.open[bk + ':' + id];
-            return `<div class="row${ok ? ' on' : ''}"><button class="rh" data-row="${bk}:${id}"><span>${t}</span>${clI(ok ? 'down' : 'right')}</button>${ok ? `<div class="rb">${body}</div>` : ''}</div>`; }).join('')}
+          <div class="segs">${clBlockBody(b, pm).map(h => `<div class="seg">${h}</div>`).join('')}</div>
+          <div class="sect" style="grid-template-columns:repeat(${rows.length},1fr)">${rows.map(([id, t, ic]) =>
+            `<button class="${tab === id ? 'on' : ''}" data-tab="${bk}:${id}" aria-expanded="${tab === id}">${clI(ic)}<span>${t}</span>${has[id] ? '<i class="dot"></i>' : ''}</button>`).join('')}</div>
+          ${tab ? `<div class="rb">${rows.find(r => r[0] === tab)[3]}</div>` : ''}
         </div>` : ''}
       </section>`;
     }).join('');
-    const head = `<header class="top"><button class="ib" data-back aria-label="Назад">${CL_ICON.back}</button><div class="t caps">${clEsc(x.title)}</div><span class="ib ghost"></span></header>`;
-    if (!x.blocks.length) return head + `<div class="pg wk"><p class="wdate">${clEsc(clDateLong(clDate))}</p>
-      <div class="card empty">${clI(x.comp ? 'trophy' : 'moon')}<b>${x.comp ? clEsc(x.title) : 'День отдыха'}</b>
+    const mon = addDays(clDate, -dowMon(clDate));
+    const cal = clCalOpen ? `<div class="card wcal">
+        <button class="ib sm" data-week="-7" aria-label="Прошлая неделя">${clI('left')}</button>
+        <div class="wcd">${Array.from({ length: 7 }, (_, k) => { const date = addDays(mon, k);
+          return `<button class="${date === clDate ? 'on' : ''}" data-date="${date}"><s>${RU[k]}</s><b>${D(date).getDate()}</b><i></i></button>`; }).join('')}</div>
+        <button class="ib sm" data-week="7" aria-label="Следующая неделя">${clI('right')}</button>
+      </div>` : '';
+    const head = `<header class="top"><button class="ib" data-back aria-label="Назад">${CL_ICON.back}</button><div class="t caps">${clEsc(x.title)}</div>
+      <button class="ib acc${clCalOpen ? ' on' : ''}" data-cal aria-label="Календарь" aria-expanded="${clCalOpen}">${clI('cal')}</button></header>`;
+    const dl = D(clDate), dateTx = dl.getDate() + ' ' + MONTHS[dl.getMonth()] + ' ' + dl.getFullYear();
+    if (!x.blocks.length) return head + `<div class="pg wk">${cal}<p class="wdate">${clEsc(dateTx)}</p>
+      <div class="card empty">${x.comp ? clI('trophy') : CL_REST_ICON}<b>${x.comp ? clEsc(x.title) : 'День отдыха'}</b>
       <span>${x.comp ? 'Соревнование — тренер не расписывал тренировку' : 'Тренировки нет — восстанавливайтесь'}</span></div></div>${clTabs('home')}`;
-    return head + `<div class="pg wk">
-      <p class="wdate">${clEsc(clDateLong(clDate))}</p>
-      ${msg ? `<div class="card cmsg"><div class="av">${clEsc(TRAINER.ini)}</div><div><b>${clEsc(TRAINER.n)}</b><p>${clEsc(msg)}</p></div></div>` : ''}
+    return head + `<div class="pg wk">${cal}
+      <p class="wdate">${clEsc(dateTx)}</p>
+      ${msg ? `<div class="card vrow${clS.open[key + ':msg'] ? ' on' : ''}"><button class="vh" data-row="${key}:msg">${clI(clS.open[key + ':msg'] ? 'down' : 'right')}<span>Сообщение тренера</span></button>
+        ${clS.open[key + ':msg'] ? `<div class="vb"><b>${clEsc(TRAINER.n)}</b><p>${clEsc(msg)}</p></div>` : ''}</div>` : ''}
       ${blocks}
-      <button class="btn ${doneAll ? 'okb' : 'pri'} big" id="dayDone">${doneAll ? clI('check') + 'Тренировка завершена' : 'Завершить тренировку'}</button>
+      <button class="cday${doneAll ? ' ok' : ''}" id="dayDone">${doneAll ? clI('check') + 'Тренировка завершена' : 'Завершить тренировку'}</button>
     </div>${clTabs('home')}`;
   }
 };
+
+/* P0. Профиль — пока заглушка, но это вкладка: внизу таб-бар, как на главной */
+CL_UI.profile = sc => `<header class="top"><span class="ib ghost"></span><div class="t">${clEsc(sc.title)}</div><span class="ib ghost"></span></header>
+  <div class="pg">
+    <div class="stub"><span class="cd">${clEsc(sc.code)}</span><h1>${clEsc(sc.title)}</h1>
+      <p>${clEsc((sc.desc || [])[0] || '')}</p><span class="tag">Заглушка — дизайн экрана ещё не сделан</span></div>
+    <div class="sk"><i></i><i></i><i></i><b></b></div>
+  </div>
+  ${clTabs('profile')}`;
 
 /* Карточка тренировки дня на главной — вместо курсов HWPO */
 function clDayCard(x) {
   const key = clDayKey(x.date), done = !!clS.dayDone[key];
   const when = x.date === TODAY ? 'Сегодня' : clDateLong(x.date);
-  if (x.rest) return `<section class="card dcard rest">${clI('moon')}<div><s>${clEsc(when)}</s><b>Отдых</b><span>Тренировки нет — восстанавливайтесь</span></div></section>`;
+  if (x.rest) return `<section class="card dcard rest">${CL_REST_ICON}<div><s>${clEsc(when)}</s><b>Отдых</b><span>Тренировки нет — восстанавливайтесь</span></div></section>`;
   if (!x.blocks.length) return `<button class="card dcard rest" data-go="workout">${clI('trophy')}<div><s>${clEsc(when)}</s><b>${clEsc(x.title)}</b><span>Соревнование</span></div></button>`;
   const n = x.blocks.reduce((a, b) => a + blockCount(b), 0);
   return `<button class="dcard hero${done ? ' done' : ''}" data-go="workout">
@@ -341,6 +407,7 @@ const CL_UI_MOUNT = {
       const f = e.target.dataset.f; if (!f) return;
       p[f] = e.target.value.trim();
       if (f === 'born') scr.querySelector('#age').textContent = clAge(p.born);
+      if (f === 'level') e.target.classList.toggle('ph', !p.level);
       clSave(); check();
     });
     scr.addEventListener('click', e => {
@@ -353,14 +420,9 @@ const CL_UI_MOUNT = {
   },
 
   'wiz-goals'(scr) {
-    const btn = scr.querySelector('#done');
+    const btn = scr.querySelector('#done'), sel = scr.querySelector('#f-goal');
     const check = () => { btn.disabled = !clS.goal; };
-    scr.addEventListener('click', e => {
-      const g = e.target.closest('.goal'); if (!g) return;
-      clS.goal = g.dataset.goal;
-      scr.querySelectorAll('.goal').forEach(x => x.classList.toggle('on', x === g));
-      clSave(); check();
-    });
+    sel.addEventListener('input', () => { clS.goal = sel.value; sel.classList.toggle('ph', !clS.goal); clSave(); check(); });
     scr.querySelector('#goal2').addEventListener('input', e => { clS.goal2 = e.target.value; clSave(); });
     check();
   },
@@ -372,6 +434,7 @@ const CL_UI_MOUNT = {
       const w = e.target.closest('[data-week]');
       if (w) { clDate = addDays(clDate, +w.dataset.week); clRepaint(scr, 'home'); return; }
       if (e.target.closest('#hidetasks')) { clS.hideTasks = !clS.hideTasks; clSave(); clRepaint(scr, 'home'); }
+      if (e.target.closest('[data-mcal]')) clMonthCal(date => { clDate = date; clRepaint(scr, 'home'); });
     });
   },
 
@@ -382,15 +445,28 @@ const CL_UI_MOUNT = {
       if (t) { const k = t.dataset.bdone; clS.done[k] = !clS.done[k]; if (!clS.done[k]) delete clS.dayDone[key]; clSave(); clRepaint(scr, 'workout'); return; }
       const o = e.target.closest('[data-bopen]');
       if (o) { const k = o.dataset.bopen; clS.open[k] = clS.open[k] === false; clSave(); clRepaint(scr, 'workout'); return; }
+      if (e.target.closest('[data-cal]')) { clCalOpen = !clCalOpen; clRepaint(scr, 'workout'); return; }
+      const dd = e.target.closest('[data-date]');
+      if (dd) { clDate = dd.dataset.date; clRepaint(scr, 'workout'); scr.scrollTop = 0; return; }
+      const wk = e.target.closest('[data-week]');
+      if (wk) { clDate = addDays(clDate, +wk.dataset.week); clRepaint(scr, 'workout'); scr.scrollTop = 0; return; }
+      const sd = e.target.closest('[data-send]');
+      if (sd) { const k = sd.dataset.send, tx = (clS.notes[k] || '').trim(); if (!tx) return;
+        const n = new Date(); (clS.sent[k] ||= []).push({ tx, at: String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') });
+        clS.notes[k] = ''; clSave(); clRepaint(scr, 'workout'); return; }
+      const tb = e.target.closest('[data-tab]');
+      if (tb) { const [b, id] = tb.dataset.tab.split(':'); const k = b + ':tab'; clS.open[k] = clS.open[k] === id ? '' : id; clSave(); clRepaint(scr, 'workout'); return; }
       const r = e.target.closest('[data-row]');
       if (r) { const k = r.dataset.row; clS.open[k] = !clS.open[k]; clSave(); clRepaint(scr, 'workout'); return; }
       const x = e.target.closest('[data-ex]');
       if (x) { clTech(byId(x.dataset.ex)); return; }
       if (e.target.closest('#dayDone')) { clS.dayDone[key] = !clS.dayDone[key]; clSave(); clRepaint(scr, 'workout'); }
     });
+    /* Пока не отправлено — черновик; кнопка «Отправить» активна, когда есть текст */
     scr.addEventListener('input', e => {
       const n = e.target.dataset.note; if (n == null) return;
       clS.notes[n] = e.target.value; clSave();
+      const b = e.target.parentElement.querySelector('[data-send]'); if (b) b.disabled = !e.target.value.trim();
     });
   }
 };
@@ -417,3 +493,116 @@ function clTech(e) {
   w.addEventListener('click', ev => { if (ev.target.closest('[data-x]')) { w.classList.add('out'); setTimeout(() => w.remove(), 220); } });
   document.getElementById('dev').appendChild(w);
 }
+
+/* ═══ Выбор даты — окно с месяцем, как «Select Date» у HWPO ═══
+   Плитка дня, точка статуса в углу: запланирована (кольцо), выполнена
+   (сплошная), пропущена (серая), отдых (тёмная). Неделя — с понедельника. */
+const CL_DAYST = { plan: 'Запланирована', done: 'Выполнена', skip: 'Пропущена', rest: 'Отдых' };
+function clDayStatus(date) {
+  const x = clDayAt(date);
+  if (x.rest) return 'rest';
+  if (clS.dayDone[clDayKey(date)]) return 'done';
+  return date < TODAY ? 'skip' : 'plan';
+}
+function clMonthCal(onPick) {
+  let m = D(clDate); m.setDate(1);
+  const w = document.createElement('div');
+  w.className = 'calw';
+  const draw = () => {
+    const y = m.getFullYear(), mo = m.getMonth();
+    const first = iso(new Date(y, mo, 1)), n = new Date(y, mo + 1, 0).getDate();
+    const lead = dowMon(first);
+    const cells = Array.from({ length: lead }, () => '<i></i>').join('') +
+      Array.from({ length: n }, (_, k) => { const date = iso(new Date(y, mo, k + 1)), st = clDayStatus(date);
+        return `<button class="${date === clDate ? 'on' : ''}${date === TODAY ? ' today' : ''}" data-d="${date}" aria-label="${k + 1} ${MONTHS[mo]}, ${CL_DAYST[st].toLowerCase()}">
+          <span>${k + 1}</span><i class="${st}"></i></button>`; }).join('');
+    w.innerHTML = `<div class="calbg" data-x></div>
+      <div class="cal" role="dialog" aria-label="Выберите дату">
+        <div class="calh"><b>Выберите дату</b><button class="calx" data-x aria-label="Закрыть">${clI('x')}</button></div>
+        <div class="calm"><button class="caln" data-m="-1" aria-label="Прошлый месяц">${clI('left')}</button>
+          <div><b>${MONTHS_N[mo]}</b><s>${y}</s></div>
+          <button class="caln" data-m="1" aria-label="Следующий месяц">${clI('right')}</button></div>
+        <div class="calwd">${RU.map(d => `<span>${d}</span>`).join('')}</div>
+        <div class="calg">${cells}</div>
+        <div class="call">${Object.entries(CL_DAYST).map(([k, t]) => `<span><i class="${k}"></i>${t}</span>`).join('')}</div>
+        <div class="calb"><button class="btn sec" data-today>Сегодня</button><button class="btn sec" data-x>Закрыть</button></div>
+      </div>`;
+  };
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 180); };
+  w.addEventListener('click', e => {
+    const mm = e.target.closest('[data-m]'); if (mm) { m.setMonth(m.getMonth() + +mm.dataset.m); draw(); return; }
+    const d = e.target.closest('[data-d]'); if (d) { onPick(d.dataset.d); close(); return; }
+    if (e.target.closest('[data-today]')) { onPick(TODAY); close(); return; }
+    if (e.target.closest('[data-x]')) close();
+  });
+  draw();
+  document.getElementById('dev').appendChild(w);
+}
+
+/* ═══ E0. Лента событий — уведомления клиента ═══
+   Как лента тренера на дашборде: события по дням, у каждого тип и переход.
+   Источники — данные кабинета: опубликованные тренировки, сообщения тренера
+   к тренировке (COM-4), ответы на комментарии (COM-3), новый максимум (PRO-4).
+   Момента публикации в данных нет — в демо новая тренировка приходит накануне. */
+const CL_EVT = {
+  plan:  { icon: 'cal',    tag: 'Новая тренировка' },
+  msg:   { icon: 'msg',    tag: 'Сообщение тренера' },
+  reply: { icon: 'msg',    tag: 'Ответ тренера' },
+  pr:    { icon: 'trophy', tag: 'Новый максимум' }
+};
+function clEvents() {
+  const c = client(CL_ME), ev = [];
+  for (let k = -6; k <= 3; k++) {
+    const date = addDays(TODAY, k), x = clDayAt(date);
+    if (x.rest || !x.blocks.length) continue;
+    const d = addDays(date, -1);
+    if (d > TODAY) continue;
+    ev.push({ k: 'plan@' + date, t: 'plan', d, date, go: 'workout', title: x.title, text: 'Тренировка на ' + clDateLong(date) + ' · ' + x.blocks.length + ' ' + plural3(x.blocks.length, 'блок', 'блока', 'блоков') });
+  }
+  Object.keys(TALK.workout).filter(k => k.startsWith(CL_ME + '@')).forEach(key => {
+    const date = key.split('@')[1], m = (TALK.workout[key] || []).find(x => x.who === 'trainer');
+    if (!m || !m.text) return;
+    const tm = (String(m.at || '').match(/\d{1,2}:\d{2}/) || [''])[0];
+    const d = /вчера/.test(m.at || '') ? addDays(date, -1) : date;
+    if (d <= TODAY) ev.push({ k: 'msg@' + key, t: 'msg', d, time: tm, date, go: 'workout', title: TRAINER.n, text: m.text, quote: 'к тренировке на ' + clDateLong(date) });
+  });
+  (c.comments || []).filter(x => x.reply).forEach((x, i) => ev.push({ k: 'reply@' + x.d + i, t: 'reply', d: x.d, date: x.d, go: 'workout',
+    title: TRAINER.n, text: x.reply, quote: 'Вы: «' + x.tx + '»' }));
+  if (c.pr) {
+    const e = byId(c.pr.ex), d = shiftDate(c.pr.at);
+    if (d <= TODAY) ev.push({ k: 'pr@' + c.pr.ex + c.pr.v, t: 'pr', d, go: 'profile', title: (PMNAMES[c.pr.ex] || (e && e.ru) || '') + ' — ' + fmtNum(c.pr.v) + '\u00a0кг',
+      text: 'Тренер записал новый максимум' + (c.pr.prev ? ', было ' + fmtNum(c.pr.prev) + '\u00a0кг' : '') + '. Рабочие веса в тренировках пересчитаны.' });
+  }
+  const ord = { msg: 0, reply: 1, pr: 2, plan: 3 };
+  return ev.sort((a, b) => b.d.localeCompare(a.d) || ord[a.t] - ord[b.t]);
+}
+const clDayLabel = d => (d === TODAY ? 'Сегодня · ' : d === addDays(TODAY, -1) ? 'Вчера · ' : '') + D(d).getDate() + ' ' + MONTHS[D(d).getMonth()];
+
+CL_UI.feed = () => {
+  const ev = clEvents();
+  let day = null, html = '';
+  ev.forEach(e => {
+    if (e.d !== day) { if (day) html += '</div>'; day = e.d; html += `<div class="evday">${clEsc(clDayLabel(e.d))}</div><div class="glist evs">`; }
+    const m = CL_EVT[e.t];
+    html += `<button class="ev${clS.read[e.k] ? '' : ' new'}" data-ev="${clEsc(e.k)}">
+      <span class="evi t-${e.t}">${clI(m.icon)}</span>
+      <span class="evc"><span class="evh"><s>${m.tag}</s><time>${clEsc(e.time || '')}</time></span>
+        <b>${clEsc(e.title)}</b><span class="evt">${clEsc(e.text)}</span>${e.quote ? `<em>${clEsc(e.quote)}</em>` : ''}</span>
+    </button>`;
+  });
+  if (day) html += '</div>';
+  return `<header class="hhead"><div class="wmk">Лента</div></header>
+    <div class="pg feed">${html || '<div class="card empty">' + clI('bell') + '<b>Тихо</b><span>Новых событий нет</span></div>'}</div>
+    ${clTabs('feed')}`;
+};
+CL_UI_MOUNT.feed = scr => {
+  const ev = clEvents();
+  scr.addEventListener('click', e => {
+    const b = e.target.closest('[data-ev]'); if (!b) return;
+    const x = ev.find(v => v.k === b.dataset.ev); if (!x) return;
+    if (x.date) clDate = x.date;
+    clGo(x.go);
+  });
+  /* Открыл ленту — всё прочитано: точки уйдут при следующем входе */
+  ev.forEach(x => { clS.read[x.k] = true; }); clSave();
+};

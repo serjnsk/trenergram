@@ -46,67 +46,120 @@ const CL_MOUNT = Object.assign({
    Цикл повторяется, пока не загрузились данные (минимум 3 с — решено).
    Наклейки задаём шириной от левого края: размер не зависит от того,
    успела ли картинка загрузиться к моменту раскладки.
-   Фото HWPO — временные, только для локального прототипа. */
-const CL_SLIDES = {
-  dir: 'ref/slides/',
-  cycles: [
-    { full: 'full.jpg', panels: ['band1.jpg', 'band2.jpg', 'band3.jpg'],
-      stickers: [
-        { src: 'st-sandbag.png',  css: 'left:-6%;bottom:-3%;width:58%', r: -4 },
-        { src: 'st-dumbbell.png', css: 'left:50%;bottom:6%;width:58%', r: 5 }
-      ] },
-    { full: 'band3.jpg', panels: ['full.jpg', 'band1.jpg', 'band2.jpg'],
-      stickers: [
-        { src: 'st-hang.png', css: 'left:-8%;bottom:-8%;width:56%', r: 4 },
-        { src: 'st-bend.png', css: 'left:40%;bottom:-2%;width:70%', r: -6 }
-      ] }
-  ],
-  logo: 850,     /* сколько держится чистый логотип */
-  cycle: 2400    /* длина одного круга */
+   Фото — свои (слайды в client/slides/: фон и панели — JPEG, наклейки —
+   вырезанные фигуры в WebP с прозрачностью). */
+/* Формы кусков: clip — многоугольник в долях экрана, box — рамка, в которую
+   вписывается фото (левый, верхний край, ширина, высота в %). Края косые —
+   тот же язык, что срез 45° в логотипе. */
+const CL_SHAPES = {
+  full: { clip: 'polygon(0 0,100% 0,100% 100%,0 100%)', box: [0, 0, 100, 100] },
+  /* три полосы */
+  b1: { clip: 'polygon(0 0,100% 0,100% 28.6%,0 36.6%)', box: [0, 0, 100, 37] },
+  b2: { clip: 'polygon(0 37.5%,100% 29.5%,100% 62.5%,0 69.5%)', box: [0, 29, 100, 41] },
+  b3: { clip: 'polygon(0 70.5%,100% 63.5%,100% 100%,0 100%)', box: [0, 63, 100, 37] },
+  /* две колонки с косым разрезом */
+  cL: { clip: 'polygon(0 0,57% 0,41% 100%,0 100%)', box: [0, 0, 57, 100] },
+  cR: { clip: 'polygon(59% 0,100% 0,100% 100%,43% 100%)', box: [43, 0, 57, 100] },
+  /* большой сверху и два снизу */
+  gT: { clip: 'polygon(0 0,100% 0,100% 50%,0 58%)', box: [0, 0, 100, 58] },
+  gL: { clip: 'polygon(0 59.6%,48.6% 55.6%,44.6% 100%,0 100%)', box: [0, 55, 49, 45] },
+  gR: { clip: 'polygon(50.6% 55.4%,100% 51.6%,100% 100%,46.6% 100%)', box: [46, 51, 54, 49] },
+  /* наклонённая карточка в центре */
+  fr: { clip: 'polygon(9% 22%,91% 17%,93% 68%,7% 74%)', box: [7, 17, 86, 57] },
+  /* углы */
+  kT: { clip: 'polygon(26% 0,100% 0,100% 50%)', box: [26, 0, 74, 50] },
+  kB: { clip: 'polygon(0 48%,74% 100%,0 100%)', box: [0, 48, 74, 52] }
 };
+
+/* Поток кадров: t — когда кусок ложится (мс от начала слайдшоу), from —
+   откуда въезжает (l, r, t, b — край, z — из глубины). Кадры только
+   наслаиваются: ничего не убирается, к финалу собирается коллаж. */
+const CL_SLIDES = {
+  dir: 'slides/',
+  seq: [
+    { t: 0,    img: 'full-p04.jpg', pos: '50% 30%', shape: 'full', from: 'z' },
+    { t: 320,  img: 'pan-p11.jpg', shape: 'b1', from: 'l' },
+    { t: 500,  img: 'pan-p12.jpg', pos: '50% 40%', shape: 'b2', from: 'r' },
+    { t: 680,  img: 'pan-p14.jpg', shape: 'b3', from: 'b' },
+    { t: 900,  st: 'st-p01.webp', css: 'left:-3%;bottom:-3%;width:40%', r: -3 },
+    { t: 1080, st: 'st-p03.webp', css: 'left:40%;bottom:12%;width:64%', r: 5 },
+    { t: 1380, img: 'full-p08.jpg', pos: '50% 30%', shape: 'cL', from: 't' },
+    { t: 1560, img: 'pan-p02.jpg', shape: 'cR', from: 'b' },
+    { t: 1780, st: 'st-p05.webp', css: 'left:-7%;bottom:-3%;width:58%', r: -4 },
+    { t: 2020, img: 'pan-p07.jpg', pos: '50% 32%', shape: 'fr', from: 'z' },
+    { t: 2240, st: 'st-p16.webp', css: 'left:57%;bottom:6%;width:44%', r: 4 },
+    { t: 2540, img: 'pan-p13.jpg', pos: '50% 28%', shape: 'gT', from: 't' },
+    { t: 2720, img: 'pan-p11.jpg', shape: 'gL', from: 'l' },
+    { t: 2900, img: 'full-p10.jpg', pos: '50% 35%', shape: 'gR', from: 'r' },
+    { t: 3140, st: 'st-p06.webp', css: 'left:-12%;top:14%;width:70%', r: -5 },
+    { t: 3340, st: 'st-p09.webp', css: 'left:42%;bottom:-4%;width:62%', r: 4 },
+    { t: 3620, img: 'pan-p14.jpg', shape: 'kT', from: 'r' },
+    { t: 3800, img: 'pan-p12.jpg', pos: '50% 40%', shape: 'kB', from: 'l' },
+    { t: 4040, st: 'st-p15.webp', css: 'left:-8%;bottom:1%;width:62%', r: -3 }
+  ],
+  /* Вся заставка — 7 с: логотип, раскол, поток кадров, плашка по центру.
+     Грузится дольше — поток идёт дальше поверх, без сброса. */
+  logo: 900,     /* чистый логотип */
+  final: 5400,   /* плашка «Тренерграм» по центру */
+  total: 7000,
+  keep: 34       /* сколько кусков держать в DOM — старые давно закрыты новыми */
+};
+
 
 function clSlideshow(root) {
   const ss = root.querySelector('.ss');
   const T = [];
   const at = (ms, fn) => T.push(setTimeout(fn, ms));
   const src = f => CL_SLIDES.dir + f;
-  /* Удар: короткая тряска страницы при каждом приземлении кадра */
-  const hit = () => { ss.classList.remove('shake'); void ss.offsetWidth; ss.classList.add('shake'); };
-  const add = (layer, cls, html, style) => {
+  const add = (cls, html, style) => {
     const el = document.createElement('div');
     el.className = cls;
     if (style) el.style.cssText = style;
     el.innerHTML = html;
-    layer.appendChild(el);
+    ss.appendChild(el);
+    /* Старые куски давно закрыты новыми — не копим их в DOM */
+    const all = ss.querySelectorAll('.pc,.stk');
+    if (all.length > CL_SLIDES.keep) all[0].remove();
     return el;
   };
-  const photo = f => `<img src="${src(f)}" alt=""><i class="ht"></i>`;
+  /* Кусок фото: обёртка рисует оранжевую обводку по контуру формы
+     (drop-shadow повторяет срез), внутри — фото, вписанное в рамку формы */
+  const piece = x => {
+    const sh = CL_SHAPES[x.shape], [l, t, w, h] = sh.box;
+    add('pc' + (x.shape === 'full' ? ' full' : '') + ' from-' + (x.from || 'z'),
+      `<div class="pcc" style="clip-path:${sh.clip}"><img src="${src(x.img)}" alt="" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%${x.pos ? ';object-position:' + x.pos : ''}"><i class="ht"></i></div>`);
+  };
+  const sticker = x => add('stk', `<img src="${src(x.st)}" alt="">`, x.css + ';--r:' + x.r + 'deg');
 
-  /* Картинки — заранее, чтобы первый удар не пришёлся на пустоту. Набора нет
-     (в публикации кадров HWPO нет, своих фото ещё нет) — остаётся логотип */
-  const files = [...new Set(CL_SLIDES.cycles.flatMap(c => [c.full, ...c.panels, ...c.stickers.map(x => x.src)]))];
+  /* Картинки — заранее, чтобы кадр не лёг пустым. Набора нет — остаётся логотип */
+  const files = [...new Set(CL_SLIDES.seq.map(x => x.img || x.st))];
   let missing = false;
   files.forEach(f => { const im = new Image(); im.onerror = () => { missing = true; }; im.src = src(f); });
 
-  let prev = null;
-  function cycle(k) {
-    const c = CL_SLIDES.cycles[k % CL_SLIDES.cycles.length];
-    const layer = add(ss, 'lay', '');
-    add(layer, 'full', photo(c.full)); hit();
-    if (prev) { const old = prev; at(420, () => old.remove()); }
-    prev = layer;
-    c.panels.forEach((f, i) => at(300 + i * 220, () => {
-      add(layer, 'pn p' + (i + 1), photo(f)); hit();
-      /* оранжевый просвет — над панелью, которая легла второй и третьей */
-      if (i) add(layer, 'gut g' + i, '');
-    }));
-    c.stickers.forEach((x, i) => at(1020 + i * 260, () =>
-      add(layer, 'stk', `<img src="${src(x.src)}" alt="">`, x.css + ';--r:' + x.r + 'deg')));
-    at(1650, () => { add(layer, 'cap', '<span>Тренерграм</span>'); hit(); });
-    at(CL_SLIDES.cycle, () => cycle(k + 1));
+  /* Прогон потока. Повтор — без кадра во весь экран: поток продолжает
+     наслаиваться поверх, плашка плавно уходит */
+  function run(first) {
+    const seq = first ? CL_SLIDES.seq : CL_SLIDES.seq.slice(1);
+    const shift = first ? 0 : seq[0].t - 200;
+    if (!first) ss.querySelectorAll('.dim,.cap').forEach(el => { el.classList.add('out'); setTimeout(() => el.remove(), 400); });
+    seq.forEach(x => at(x.t - shift, () => (x.st ? sticker(x) : piece(x))));
+    const span = CL_SLIDES.final - CL_SLIDES.logo;
+    at(span, () => { add('dim', ''); add('cap', '<span>Тренерграм</span>'); });
+    at(CL_SLIDES.total - CL_SLIDES.logo, () => run(false));
   }
 
-  at(CL_SLIDES.logo, () => { if (missing) return; root.classList.add('go'); cycle(0); });
+  at(CL_SLIDES.logo, () => {
+    if (missing) return;
+    /* Переход: оранжевый экран раскалывается по диагонали — срез 45°, как
+       в логотипе, — половины разъезжаются, под ними уже первое фото */
+    const split = document.createElement('div');
+    split.className = 'split';
+    split.innerHTML = '<i class="sa"></i><i class="sb"></i>';
+    root.appendChild(split);
+    root.classList.add('go');
+    setTimeout(() => split.remove(), 900);
+    run(true);
+  });
   return () => T.forEach(clearTimeout);
 }
 

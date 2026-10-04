@@ -125,6 +125,11 @@ a{color:var(--acc-d)}
   margin:26px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
 .info p{margin:0 0 8px;color:var(--tx2);font-size:14.5px;line-height:1.55}
 .info ul{margin:0;padding-left:18px;color:var(--tx2);font-size:14.5px}
+.info h4{margin:18px 0 6px;font:700 14.5px/1.3 var(--ui);color:var(--ink)}
+.info ul.dl{margin:0 0 4px;padding-left:18px;color:var(--tx1);font-size:14.5px;line-height:1.5}
+.info ul.dl li{margin-bottom:4px}
+.info ul.dl li::marker{color:var(--tx4)}
+.info p b,.info li b{font-weight:700;color:var(--ink)}
 .info li{margin-bottom:6px}
 /* Виды экрана: выбор — плашкой с обводкой акцентом, как выбранный день в кабинете */
 .views{display:flex;flex-direction:column;gap:8px}
@@ -354,7 +359,11 @@ const lkRow = l => {
   return `<button data-to="${l.to}" class="${clInFlow(l.to, st.p) ? '' : 'oth'}">
     <span class="lb">${esc(l.label)} ${tags(l)}</span>${ARR}<span class="to"><span class="cd">${esc(t.code)}</span>${esc(t.title)}</span></button>`;
 };
-const paras = a => (a || []).map(x => `<p>${esc(x)}</p>`).join('');
+/* Описание: строка — абзац, { h, li } — раздел с жирным заголовком и списком;
+   **текст** внутри — жирным */
+const rich = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+const paras = a => (a || []).map(x => typeof x === 'string' ? `<p>${rich(x)}</p>`
+  : `<h4>${rich(x.h)}</h4><ul class="dl">${x.li.map(t => `<li>${rich(t)}</li>`).join('')}</ul>`).join('');
 /* Скриншоты HWPO лежат только в локальной копии — в публикации их нет */
 function refGone(img) {
   const box = img.closest('.refs'); img.closest('button').remove();
