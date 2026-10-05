@@ -269,9 +269,13 @@ function openDatePicker(btn, curDate, onPick){
 (function(){
   let tipEl = null, timer = null, cur = null;
   const box = () => tipEl || (tipEl = Object.assign(document.body.appendChild(document.createElement('div')), {className:'tip'}));
+  /* Справка «?» — карточкой: заголовок, объяснение, пример записи (data-tip-h, data-tip-ex). */
   const show = (t, text) => {
     if(!t.isConnected) return;
-    const b = box(); b.textContent = text; b.classList.add('on');
+    const b = box(), hd = t.dataset.tipH, ex = t.dataset.tipEx;
+    if(hd){ b.innerHTML = `<b>${esc(hd)}</b><span>${esc(text)}</span>${ex ? `<code>${esc(ex)}</code>` : ''}`; b.className = 'tip rich' }
+    else { b.textContent = text; b.className = 'tip' }
+    b.classList.add('on');
     const r = t.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight;
     let x = r.left + r.width/2 - w/2, y = r.bottom + 8;
     if(y + h > innerHeight - 8) y = r.top - h - 8;
@@ -285,8 +289,11 @@ function openDatePicker(btn, curDate, onPick){
     hide(); cur = t;
     if(t.hasAttribute('title')){ t.dataset.tip = t.getAttribute('title'); t.removeAttribute('title') }
     const text = (t.dataset.tip || '').trim(); if(!text) return;
-    timer = setTimeout(() => show(t, text), 120);
+    timer = setTimeout(() => show(t, text), t.dataset.tipH ? 60 : 120);
   });
+  /* «?» открывается и с клавиатуры, и касанием */
+  document.addEventListener('focusin', e => { const t = e.target.closest && e.target.closest('.qh[data-tip]'); if(t){ cur = t; show(t, t.dataset.tip) } });
+  document.addEventListener('focusout', e => { if(e.target.closest && e.target.closest('.qh')) hide() });
   document.addEventListener('mouseout', e => { if(cur && !(e.relatedTarget && cur.contains(e.relatedTarget))) hide() });
   document.addEventListener('mousedown', hide, true);
   addEventListener('scroll', hide, true);

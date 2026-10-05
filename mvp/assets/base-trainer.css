@@ -1535,3 +1535,14 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .doc.quick .ssg > .addl.in{margin-left:26px;width:auto}
 .doc.quick .ssg .line:not(.raw) > .txt{width:calc(var(--nmw) - 26px)}
 .app .doc.quick .ssg .line:hover{background:var(--bg)}
+
+/* ═══ Справка «?» у вида строки и карточка-подсказка ═══ */
+.kind .qh{display:inline-grid;place-items:center;align-self:center;width:16px;height:16px;margin:0 6px 0 -4px;border-radius:50%;
+  box-shadow:inset 0 0 0 1.3px var(--tx4);color:var(--tx3);font-size:10.5px;font-weight:700;line-height:1;cursor:help;flex:none}
+.kind .qh:hover,.kind .qh:focus-visible{box-shadow:none;background:var(--acc-a);color:var(--acc-d);outline:0}
+.tip.rich{max-width:300px;padding:12px 14px;border-radius:var(--rad-l);background:var(--bg);color:var(--tx2);
+  border:1px solid var(--line);box-shadow:0 12px 32px -8px rgba(20,20,20,.22),0 2px 6px rgba(20,20,20,.06);font-size:13.5px;line-height:1.45}
+.tip.rich b{display:block;margin-bottom:4px;font-size:14.5px;font-weight:700;color:var(--ink)}
+.tip.rich span{display:block}
+.tip.rich code{display:block;margin-top:8px;padding:6px 9px;border-radius:var(--rad-s);background:var(--acc-a);color:var(--acc-d);
+  font:600 12.5px/1.4 var(--ui);white-space:normal}

@@ -96,7 +96,7 @@ const S = { cid: Q.get('group') || Q.get('client') || 'c1', pid:'p1', i:0, date:
    с курсором — печатают упражнение или вставляют текст; копирование — из
    правой панели; без подсказки
    клавиш под строкой и в блоке текстом, без ленты дней (календаря) над тренировкой, без отметки «соревнование» в шапке
-   дня и без настройки комплекса (AMRAP, EMOM…) в типе блока; в пустом
+   дня; настройка комплекса (AMRAP, EMOM…) в типе блока — как в прежнем; в пустом
    названии — «Новая тренировка» (дата и так в заголовке страницы).
    Прежний вид (шапка со всеми действиями, четыре способа начать, пустой
    блок) — только для сравнения, по ссылке ?start=classic; не запоминается. */
@@ -404,7 +404,7 @@ function lineHTML(it){
      строки и ручной выбор из базы. */
   if(!ex) return `<div class="line raw" data-item="${it.id}">
     <span class="gr">${ICON.grip}</span>
-    <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"${QUICK ? ` data-ph="${it.sub ? 'упражнение суперсета' : 'упражнение'}"` : ''}>${esc(it.raw||'')}</span>
+    <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"${QUICK ? ` data-ph="${it.sub ? 'упражнение сета' : 'упражнение'}"` : ''}>${esc(it.raw||'')}</span>
     ${QUICK && !String(it.raw||'').trim() ? kindHTML(it, 'ex') : ''}
     ${String(it.raw||'').trim() ? `<button class="pick" data-pickfor="${it.id}" tabindex="-1">Выбрать упражнение</button>
     ${aiBtn('ailine', it.id, 'Разобрать строку: ИИ найдёт упражнение в базе, схему и нагрузку', true)}` : ''}
@@ -440,16 +440,16 @@ function ssHTML(h, mem){
   const r = Math.max(1, +h.rounds || 1);
   return `<div class="ssg" data-ss="${h.id}">
     <div class="line ssh" data-item="${h.id}">
-      <span class="gr" title="Перетащить суперсет">${ICON.grip}</span>
-      <span class="nm ssb">Суперсет</span>
+      <span class="gr" title="Перетащить сет">${ICON.grip}</span>
+      <span class="nm ssb">Сет</span>
       <label class="ssf"><input class="ssn" data-ssf="rounds" data-ss-id="${h.id}" value="${r}" inputmode="numeric" maxlength="2"><s data-ss-rl="${h.id}">${plural(r,'круг','круга','кругов')}</s></label>
       <label class="ssf"><s>отдых</s><input class="ssrest" data-ssf="rest" data-ss-id="${h.id}" value="${esc(h.rest||'')}" placeholder="без отдыха"></label>
       <span class="sp"></span>
       <button class="x" data-ssungroup="${h.id}" title="Разгруппировать — упражнения останутся в блоке">${ICON.ungroup}</button>
-      <button class="x" data-delss="${h.id}" title="Удалить суперсет вместе с упражнениями">${ICON.x}</button>
+      <button class="x" data-delss="${h.id}" title="Удалить сет вместе с упражнениями">${ICON.x}</button>
     </div>
     ${mem.map(lineHTML).join('')}
-    <button class="addl in" data-addin="${h.id}">${ICON.plus} ${QUICK ? 'в суперсет' : 'упражнение'}</button>
+    <button class="addl in" data-addin="${h.id}">${ICON.plus} ${QUICK ? 'в сет' : 'упражнение'}</button>
   </div>`;
 }
 /* Блок текстом устроен как любой блок — та же шапка, тип, заметка, закладка,
@@ -491,7 +491,7 @@ function blockHTML(b, k){
       </div>` : `${itemsHTML(b)}
     <div class="addrow">
       <button class="addl" data-add="${b.id}">${ICON.plus} упражнение</button>
-      ${QUICK ? '' : `<button class="addl" data-addss="${b.id}">${ICON.plus} суперсет</button>
+      ${QUICK ? '' : `<button class="addl" data-addss="${b.id}">${ICON.plus} сет</button>
       <button class="addl" data-addch="${b.id}" title="Несколько упражнений подряд одной строкой">${ICON.plus} связка</button>`}
     </div>`}
   </div>`;
@@ -584,9 +584,15 @@ function quickAdd(bid, kind, ssId){
    Суперсет: строка становится его первым упражнением (вторая — следом, без
    двух суперсет не держится). Связка: строка становится связкой. Как только
    в строке появился текст, переключатель пропадает — вид определился. */
-const KINDS = [['ex', 'Упражнение'], ['ss', 'Суперсет'], ['ch', 'Связка']];
+const KINDS = [['ex', 'Упражнение'], ['ss', 'Сет'], ['ch', 'Связка']];
+/* Справка к виду строки — по «?» рядом с названием */
+const KIND_HELP = {
+  ss: ['Сет', 'Несколько упражнений по кругу: выполнили все подряд — отдых — следующий круг. У сета задаются круги и отдых между ними, у упражнения — нагрузка на один круг.', '3 круга, отдых 90 сек: жим лёжа 8 + подтягивания 8'],
+  ch: ['Связка', 'Несколько упражнений подряд без отдыха и без смены веса — это один подход. Вес и подходы общие на всю связку, у упражнений — только повторы.', 'Взятие на грудь + Фронтальный присед + Толчок: 80 % — 3×(1+1+1)'],
+};
+const qhHTML = k => { const [h, t, ex] = KIND_HELP[k]; return `<span class="qh" tabindex="0" role="button" aria-label="Что такое «${h}»" data-tip="${esc(t)}" data-tip-h="${esc(h)}" data-tip-ex="${esc(ex)}">?</span>` };
 const kindHTML = (it, cur) => `<span class="kind">${KINDS.filter(([k]) => !(k === 'ss' && it.sub))
-  .map(([k, n]) => `<button data-kind="${k}" data-for="${it.id}" tabindex="-1" class="${k === cur ? 'on' : ''}">${n}</button>`).join('')}</span>`;
+  .map(([k, n]) => `<button data-kind="${k}" data-for="${it.id}" tabindex="-1" class="${k === cur ? 'on' : ''}">${n}</button>${KIND_HELP[k] ? qhHTML(k) : ''}`).join('')}</span>`;
 function setKind(id, k){
   flushRaw();
   const {b, i} = findItem(id); if(!b || !i) return;
@@ -857,7 +863,7 @@ function csrcBlockHTML(b, bi){
   while(k < b.items.length){
     const it = b.items[k];
     if(it.ss){ const j = ssEnd(b.items, k);
-      rows.push(`<div class="csi ssl" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(ssLabel(it))}</span><button class="add" data-ciadd="${bi}:${k}" title="Добавить суперсет в тренировку">${ICON.plus}</button></div>`);
+      rows.push(`<div class="csi ssl" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(ssLabel(it))}</span><button class="add" data-ciadd="${bi}:${k}" title="Добавить сет в тренировку">${ICON.plus}</button></div>`);
       for(let m = k + 1; m < j; m++) rows.push(csrcItemHTML(b.items[m], bi, m, true));
       k = j; continue }
     if(it.exId || it.raw) rows.push(csrcItemHTML(it, bi, k, false));
@@ -1330,7 +1336,7 @@ async function aiLine(id){
     b.items.splice(b.items.indexOf(i), 1, h, ...mem);
     render(); flash(h.id);
     const ok = mem.filter(x => x.exId).length;
-    toast('ИИ собрал суперсет · ' + ok + ' из ' + mem.length + ' ' + plural(mem.length, 'упражнения', 'упражнений', 'упражнений') + ' из базы', 'Вернуть текст', undo);
+    toast('ИИ собрал сет · ' + ok + ' из ' + mem.length + ' ' + plural(mem.length, 'упражнения', 'упражнений', 'упражнений') + ' из базы', 'Вернуть текст', undo);
     return;
   }
   const p = parseLine(text);
@@ -2044,7 +2050,8 @@ document.addEventListener('keydown', e => {
 
 /* ═══════════ ТИП БЛОКА ═══════════
    Панель под меткой типа: сверху тип блока, у комплекса ниже — его настройка
-   (AMRAP, EMOM, на время…) с параметрами; в быстром старте настройки нет. Меняется на лету, метка в шапке
+   (AMRAP, EMOM, на время…) с параметрами — в обоих видах конструктора: по ней
+   клиент видит логику комплекса. Меняется на лету, метка в шапке
    блока обновляется без перерисовки документа. */
 function openFtype(btn){
   closeSug();
@@ -2080,7 +2087,7 @@ function openFtype(btn){
     box.innerHTML = `
       <div class="st-head"><b>Тип блока</b></div>
       <div class="ft-list">${BLOCK_TYPES.map(t=>`<button data-bt-k="${t.k||''}" class="${(b.kind||null)===t.k?'on':''}">${t.n}</button>`).join('')}</div>
-      ${b.kind === 'complex' && !QUICK ? `<div class="st-head cx"><b>Настройка комплекса</b><s class="st-desc">${b.fmt ? esc(fmtDesc(b.fmt)) : ''}</s></div>
+      ${b.kind === 'complex' ? `<div class="st-head cx"><b>Настройка комплекса</b><s class="st-desc">${b.fmt ? esc(fmtDesc(b.fmt)) : ''}</s></div>
       <div class="ft-list">${FMT_TYPES.map(t=>`<button data-ft-k="${t.k||''}" class="${(b.fmt?b.fmt.k:null)===t.k?'on':''}">${t.n}</button>`).join('')}</div>
       ${b.fmt && b.fmt.k!=='NFT' ? `<div class="st-grid">${params()}</div>` : ''}` : ''}
       <div class="st-foot"><span class="sp"></span><button class="btn sm" data-st-ok>Готово ↵</button></div>`;
@@ -2454,7 +2461,7 @@ document.addEventListener('click', e=>{
     const {b} = findItem(dss.dataset.delss); if(!b) return;
     const k = b.items.findIndex(x=>x.id===dss.dataset.delss), removed = b.items.splice(k, ssEnd(b.items, k) - k);
     render();
-    toast('Суперсет удалён', 'Отменить', () => { b.items.splice(k, 0, ...removed); render() });
+    toast('Сет удалён', 'Отменить', () => { b.items.splice(k, 0, ...removed); render() });
     return;
   }
   /* Кнопка AI — в углу блока текстом и строки текстом (CON-5). Пока ИИ

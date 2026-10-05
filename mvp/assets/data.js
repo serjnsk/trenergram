@@ -550,7 +550,7 @@ function normSS(b){
   b.items = out;
   return b;
 }
-const ssLabel = h => 'Суперсет · ' + h.rounds + ' ' + plural3(+h.rounds, 'круг', 'круга', 'кругов') + (h.rest ? ' · отдых ' + h.rest : '');
+const ssLabel = h => 'Сет · ' + h.rounds + ' ' + plural3(+h.rounds, 'круг', 'круга', 'кругов') + (h.rest ? ' · отдых ' + h.rest : '');
 /* Заголовок суперсета в тексте: «Суперсет 3 круга», «3 круга:», «3 раза», «Суперсет ×4, отдых 90 сек»,
    перечень — в той же строке после двоеточия или следующими строками. «3 раунда на время», AMRAP,
    EMOM и табата — это настройки комплекса, не суперсет. */
@@ -564,8 +564,8 @@ function parseSSHead(text){
   const mr = L.match(/[,;]?\s*отдых\s*(?:между\s*круг[а-яё]*\s*)?(\d+:\d{2}|\d+(?:[.,]\d+)?\s*(?:сек|мин|с|м)[а-яё]*\.?)\s*$/i);
   if(mr){ rest = mr[1].trim(); L = L.slice(0, mr.index).trim() }
   L = L.replace(/[,;.\s]+$/, '');
-  const m = L.match(/^(?:суперсет\s*[x×х]?\s*)?(\d{1,2})\s*(?:раза?|круг[а-яё]*|раунд[а-яё]*)$/i)
-         || L.match(/^суперсет(?:\s*[x×х]\s*(\d{1,2}))?$/i);
+  const m = L.match(/^(?:(?:супер)?сет\s*[x×х]?\s*)?(\d{1,2})\s*(?:раза?|круг[а-яё]*|раунд[а-яё]*)$/i)
+         || L.match(/^(?:супер)?сет(?:\s*[x×х]\s*(\d{1,2}))?$/i);
   if(!m) return null;
   const items = list ? list.split(/\s*;\s*|,\s+/).map(t => t.replace(/^[-–—•*]\s*/, '').trim()).filter(Boolean) : [];
   return {rounds: m[1] ? +m[1] : 3, rest, list: items};
@@ -1336,7 +1336,7 @@ CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0
       [CH_TAG,[['0648','1'],['0042','1'],['own_jerk','1']],{n:3,p:75}],
       [CH_TAG,[['0648','1'],['own_jerk','2']],{n:2,p:80,p2:85,of:'0648'}],
       ['own_snatch','5×2',null,'кг','50-55']]],
-    ['accessory','Подкачка · суперсет','',null,[
+    ['accessory','Подкачка · сет','',null,[
       [SS_TAG,4,'90 сек'],
       sub(['0025','8',70]),
       sub(['0652','8']),
