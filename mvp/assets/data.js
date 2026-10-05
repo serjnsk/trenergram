@@ -20,10 +20,13 @@ const TODAY = iso(new Date());
 const SHIFT = daysBetween(ANCHOR, TODAY);
 const shiftDate = d => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? addDays(d, SHIFT) : d;
 
-/* ─── Тренер и его рабочее пространство (REG-3) ─── */
+/* ─── Тренер и его рабочее пространство (REG-3) ───
+   invite — ссылка-приглашение (REG-1): одна на всех клиентов и без срока.
+   Код случайный, не из фамилии: «Новая ссылка» в профиле выпускает другую,
+   прежняя сразу перестаёт работать. Выпущенная лежит в STATE.profile.invite. */
 const TRAINER = {
   n:'Сергей Ковальчук', ini:'СК', workspace:'CrossFit Ладья',
-  invite:'https://trenergram.app/j/kovalchuk',
+  invite:'https://trenergram.app/j/K7F2QX',
   first:'Сергей', last:'Ковальчук', phone:'+7 921 400-18-22', email:'kovalchuk@ladya.fit',
   city:'Санкт-Петербург', tz:'Europe/Moscow', sports:['Кроссфит','Тяжёлая атлетика'],
   about:'Тренирую кроссфит и силовые с 2016 года. Готовлю к соревнованиям и возвращаю после травм — аккуратно и по плану.',

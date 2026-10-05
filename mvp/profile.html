@@ -35,6 +35,9 @@
    живёт здесь же — это свойство аккаунта тренера. */
 const P = (STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF)));
 const T = TRAINER;
+if(P.invite) T.invite = P.invite;
+/* Новая ссылка-приглашение: случайный код без похожих букв и цифр (0/O, 1/I) */
+const newInvite = () => 'https://trenergram.app/j/' + Array.from({length:6}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
 const save = msg => { saveState(); if(msg) toast(msg) };
 const plan = () => PLANS.find(x=>x.id===P.sub.plan) || PLANS[1];
 const rub = n => n.toLocaleString('ru-RU') + ' ₽';
@@ -114,8 +117,9 @@ function render(){
       </div>
       <div class="card cb">
         <div class="sechead" style="margin:0 0 10px"><span class="t">Приглашение клиентов</span></div>
-        <div class="copyfield"><code>${esc(T.invite)}</code><button class="btn gh sm" id="btnCopy">Скопировать</button></div>
-        <div class="hint">Клиент открывает ссылку, входит по номеру телефона и сразу привязан к вам. Список — в «Клиентах».</div>
+        <div class="copyfield"><code title="${esc(T.invite)}"><span>${esc(T.invite.replace(/^https?:\/\//,'').replace(/[^/]+$/,''))}</span><b>${esc(T.invite.split('/').pop())}</b></code><button class="btn gh sm" id="btnCopy">Скопировать</button></div>
+        <div class="hint">Одна ссылка для всех клиентов, без срока. Клиент открывает её, входит по номеру телефона и сразу привязан к вам. Список — в «Клиентах».</div>
+        <button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>
       </div>
     </div>
   </div>`;
@@ -126,6 +130,8 @@ function render(){
   $$('[data-n]').forEach(b=>b.onclick=()=>{ P.notify[b.dataset.n]=!P.notify[b.dataset.n]; save(); render() });
   $('#btnPhoto').onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы');
   $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); toast('Ссылка скопирована') };
+  $('#btnNewLink').onclick=()=>openModal({title:'Новая ссылка', body:`<p class="lead">Прежняя ссылка сразу перестанет работать: кто откроет её, увидит «Ссылка устарела» и просьбу запросить новую у тренера. Клиенты, которые уже пришли, останутся с вами.</p>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" data-close id="mdNewLink">Выпустить</button>`});
   $('#btnPass').onclick=()=>openModal({title:'Сменить пароль', body:`
       <div class="formfld" style="margin-bottom:10px"><span class="k">Текущий пароль</span><input class="inp" type="password"></div>
       <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password"></div>
@@ -143,6 +149,7 @@ document.addEventListener('click', e=>{
   const pl = e.target.closest('[data-plan]'); if(pl){ P.sub.plan=pl.dataset.plan; save('Тариф изменён — с ' + dlong(P.sub.until)); closeModal(); render() }
   if(e.target.closest('#mdPass')){ closeModal(); toast('Пароль изменён') }
   if(e.target.closest('#mdCancel')) toast('Подписка отменена — доступ до ' + dlong(P.sub.until));
+  if(e.target.closest('#mdNewLink')){ P.invite = T.invite = newInvite(); save('Новая ссылка готова — прежняя больше не работает'); render() }
 });
 render();
 initShell({page:'profile.html', title:'Профиль'});

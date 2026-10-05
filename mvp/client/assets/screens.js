@@ -192,7 +192,7 @@ const CL_UI = {
         <div class="av">${clEsc(TRAINER.ini)}</div>
         <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться · ${clEsc(TRAINER.workspace)}</s></div>
       </div>`
-      /* Ссылка живёт 7 дней (REG-1): после — только просьба запросить новую */
+      /* Тренер выпустил новую ссылку (REG-1): по прежней — только просьба запросить новую */
       : v === 'expired' ? `<div class="invc exp" role="alert">
         <div class="av">${clI('link')}</div>
         <div><b>Ссылка устарела</b><s>Пожалуйста, запросите новую ссылку у тренера</s></div>
