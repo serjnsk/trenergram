@@ -1540,9 +1540,38 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .kind .qh{display:inline-grid;place-items:center;align-self:center;width:16px;height:16px;margin:0 6px 0 -4px;border-radius:50%;
   box-shadow:inset 0 0 0 1.3px var(--tx4);color:var(--tx3);font-size:10.5px;font-weight:700;line-height:1;cursor:help;flex:none}
 .kind .qh:hover,.kind .qh:focus-visible{box-shadow:none;background:var(--acc-a);color:var(--acc-d);outline:0}
-.tip.rich{max-width:300px;padding:12px 14px;border-radius:var(--rad-l);background:var(--bg);color:var(--tx2);
-  border:1px solid var(--line);box-shadow:0 12px 32px -8px rgba(20,20,20,.22),0 2px 6px rgba(20,20,20,.06);font-size:13.5px;line-height:1.45}
-.tip.rich b{display:block;margin-bottom:4px;font-size:14.5px;font-weight:700;color:var(--ink)}
-.tip.rich span{display:block}
-.tip.rich code{display:block;margin-top:8px;padding:6px 9px;border-radius:var(--rad-s);background:var(--acc-a);color:var(--acc-d);
-  font:600 12.5px/1.4 var(--ui);white-space:normal}
+.tip.rich{width:320px;max-width:calc(100vw - 16px);padding:14px 16px 13px;border-radius:var(--rad-l);background:var(--bg);color:var(--tx2);
+  border:1px solid var(--line);box-shadow:0 14px 34px -10px rgba(20,20,20,.25),0 2px 6px rgba(20,20,20,.06);font-size:13.5px;line-height:1.45}
+.tip.rich > b{display:block;font-size:15px;font-weight:700;color:var(--ink)}
+.tip.rich .lead{margin:2px 0 0;color:var(--tx1)}
+.tip.rich s{display:block;margin-bottom:4px;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+.tip.rich .hs{margin-top:11px}
+.tip.rich ol,.tip.rich ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.tip.rich ol{counter-reset:st}
+.tip.rich ol li{counter-increment:st;display:flex;gap:8px}
+.tip.rich ol li::before{content:counter(st);flex:none;display:grid;place-items:center;width:17px;height:17px;margin-top:1px;border-radius:50%;
+  background:var(--s1);color:var(--tx2);font-size:10.5px;font-weight:700}
+.tip.rich ul li{position:relative;padding-left:13px}
+.tip.rich ul li::before{content:"";position:absolute;left:2px;top:8px;width:4px;height:4px;border-radius:50%;background:var(--acc)}
+.tip.rich em{font-style:normal;font-weight:600;color:var(--ink)}
+.tip.rich .hx{margin-top:11px;padding:9px 11px;border-radius:var(--rad-m);background:var(--acc-a)}
+.tip.rich .hx s{color:var(--acc-d)}
+.tip.rich pre{margin:0;font:600 13px/1.45 var(--ui);color:var(--ink);white-space:pre-wrap}
+.tip.rich .hx i{display:block;margin-top:4px;font-style:normal;font-size:12.5px;color:var(--tx2)}
+
+/* ═══ Дата тренировки в заголовке конструктора — кнопка с месяцем ═══ */
+.topbar .ptitle button.ptd{display:inline-flex;align-items:center;gap:4px;height:34px;margin:0 0 0 -6px;padding:0 6px;border-radius:var(--rad-m);
+  font:inherit;font-weight:500;color:var(--tx3);letter-spacing:-.01em;cursor:pointer}
+.topbar .ptitle button.ptd::before{margin-right:9px}
+.topbar .ptitle button.ptd svg{width:16px;height:16px;flex:none}
+.topbar .ptitle button.ptd:hover{background:var(--s1);color:var(--ink)}
+.sug.dpk{width:300px;padding:6px 12px 10px}
+.dpk .mcal{margin-top:4px}
+.dpk .mcal-g button{color:var(--tx2);cursor:pointer}
+.dpk .mcal-g button:hover{background:var(--s1)}
+.dpk .mcal-g button.on,.dpk .mcal-g button.on:hover{background:var(--acc);color:#fff}
+.dpk-f{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;color:var(--tx3)}
+.dpk-f span{display:inline-flex;align-items:center;gap:5px}
+.dpk-f i{width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.dpk-f i.draft{background:var(--tx3)}
+.tsplit.one .btn:first-child{border-radius:var(--rad-m)}

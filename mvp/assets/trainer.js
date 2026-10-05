@@ -219,7 +219,7 @@ function renderTop(){
      Крошки, выбор клиента и «Назначить» переехали в рабочую зону — они
      относятся к тренировке, а не к приложению. */
   $('#topbar').innerHTML = `
-    <h1 class="ptitle">Создать тренировку<span class="ptd" id="ptd"></span></h1>
+    <h1 class="ptitle">Создать тренировку<button class="ptd" id="ptd" title="Выбрать дату тренировки"></button></h1>
     <span class="sp"></span>
     ${topButton()}`;
   bindTopButton();
@@ -585,12 +585,25 @@ function quickAdd(bid, kind, ssId){
    двух суперсет не держится). Связка: строка становится связкой. Как только
    в строке появился текст, переключатель пропадает — вид определился. */
 const KINDS = [['ex', 'Упражнение'], ['ss', 'Сет'], ['ch', 'Связка']];
-/* Справка к виду строки — по «?» рядом с названием */
-const KIND_HELP = {
-  ss: ['Сет', 'Несколько упражнений по кругу: выполнили все подряд — отдых — следующий круг. У сета задаются круги и отдых между ними, у упражнения — нагрузка на один круг.', '3 круга, отдых 90 сек: жим лёжа 8 + подтягивания 8'],
-  ch: ['Связка', 'Несколько упражнений подряд без отдыха и без смены веса — это один подход. Вес и подходы общие на всю связку, у упражнений — только повторы.', 'Взятие на грудь + Фронтальный присед + Толчок: 80 % — 3×(1+1+1)'],
+/* Справка к виду строки — по «?» рядом с названием. Одна схема у обеих:
+   что это одной фразой → как выполняется → что задаёт тренер → пример с
+   расшифровкой. */
+const helpCard = (h, lead, steps, sets, ex, exNote) => `<b>${h}</b><p class="lead">${lead}</p>
+  <div class="hs"><s>Как выполняется</s><ol>${steps.map(x => `<li>${x}</li>`).join('')}</ol></div>
+  <div class="hs"><s>Что задаёте</s><ul>${sets.map(x => `<li>${x}</li>`).join('')}</ul></div>
+  <div class="hx"><s>Пример</s><pre>${ex}</pre><i>${exNote}</i></div>`;
+const TIP_CARDS = {
+  ss: helpCard('Сет', 'Несколько упражнений по кругу с отдыхом между кругами.',
+    ['Упражнения подряд, одно за другим — это один круг', 'Отдых', 'Следующий круг'],
+    ['<em>На весь сет:</em> число кругов и отдых', '<em>У каждого упражнения:</em> повторы и вес на один круг'],
+    '3 круга, отдых 90 сек\nЖим лёжа 8 × 70 %\nПодтягивания 8', '3 раза подряд: жим, подтягивания, отдых 90 сек'),
+  ch: helpCard('Связка', 'Несколько упражнений без отдыха и без смены веса — один подход.',
+    ['Упражнения подряд, одно за другим, не меняя вес', 'Всё вместе — это один подход', 'Отдых и следующий подход'],
+    ['<em>На всю связку:</em> подходы и вес', '<em>У каждого упражнения:</em> только повторы', '<em>Процент:</em> от 1ПМ самого слабого упражнения — можно выбрать другое'],
+    'Взятие на грудь + Фронт. присед + Толчок\n80 % — 3×(1+1+1)', '3 подхода; в каждом — 1 взятие, 1 присед, 1 толчок'),
 };
-const qhHTML = k => { const [h, t, ex] = KIND_HELP[k]; return `<span class="qh" tabindex="0" role="button" aria-label="Что такое «${h}»" data-tip="${esc(t)}" data-tip-h="${esc(h)}" data-tip-ex="${esc(ex)}">?</span>` };
+const KIND_HELP = {ss: ['Сет', 'Несколько упражнений по кругу с отдыхом между кругами'], ch: ['Связка', 'Несколько упражнений без отдыха и без смены веса — один подход']};
+const qhHTML = k => { const [h, t] = KIND_HELP[k]; return `<span class="qh" tabindex="0" role="button" aria-label="Что такое «${h}»" data-tip="${esc(t)}" data-tip-card="${k}">?</span>` };
 const kindHTML = (it, cur) => `<span class="kind">${KINDS.filter(([k]) => !(k === 'ss' && it.sub))
   .map(([k, n]) => `<button data-kind="${k}" data-for="${it.id}" tabindex="-1" class="${k === cur ? 'on' : ''}">${n}</button>${KIND_HELP[k] ? qhHTML(k) : ''}`).join('')}</span>`;
 function setKind(id, k){
@@ -1014,7 +1027,7 @@ const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHei
 /* «Пятница, 19 сентября» — дата открытого дня в заголовке страницы; год — если не текущий. */
 const fullDate = date => { const t = D(date), y = t.getFullYear(); return DOW[dowMon(date)] + ', ' + t.getDate() + ' ' + MONTHS[t.getMonth()] + (y !== new Date().getFullYear() ? ' ' + y : '') };
 function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur) autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
-  const pt = $('#ptd'); if(pt && cur) pt.textContent = fullDate(cur.date);
+  const pt = $('#ptd'); if(pt && cur) pt.innerHTML = esc(fullDate(cur.date)) + '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>';
   if(QUICK) freshFocus() }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
@@ -2126,6 +2139,43 @@ function openFtype(btn){
   draw();
 }
 
+/* ═══════════ ДАТА ТРЕНИРОВКИ ═══════════
+   Дата в заголовке — кнопка: месяц открытого клиента или группы. Точка —
+   в этот день уже есть тренировка (серая — черновик): выбор откроет её на
+   правку; пустой день — новая тренировка. По умолчанию «Создать тренировку»
+   встаёт на первый ещё не составленный день. */
+function openDatePick(btn){
+  closeSug();
+  const box = document.createElement('div'); box.className = 'sug dpk';
+  document.body.appendChild(box); SUG = box;
+  let month = S.date.slice(0, 7);
+  const draw = () => {
+    const [y, m] = month.split('-').map(Number), lead = dowMon(month + '-01'), n = new Date(y, m, 0).getDate();
+    const has = new Map(); planOf(S.pid).forEach(x => { if(x.date.slice(0, 7) === month && dayHas(x)) has.set(x.date, isDraft(x) ? 'draft' : 'pub') });
+    const cells = Array.from({length: lead}, () => '<span class="pad"></span>');
+    for(let dd = 1; dd <= n; dd++){
+      const date = month + '-' + String(dd).padStart(2, '0'), st = has.get(date);
+      cells.push(`<button class="${[st ? 'has ' + st : '', date === S.date ? 'on' : '', date === TODAY ? 'today' : ''].filter(Boolean).join(' ')}" data-dpk="${date}">${dd}${st ? '<i></i>' : ''}</button>`);
+    }
+    box.innerHTML = `<div class="mcal">
+        <div class="mcal-h"><button data-dpm="-1" title="Предыдущий месяц">‹</button><b>${MONTHS_N[m - 1]} ${y}</b><button data-dpm="1" title="Следующий месяц">›</button></div>
+        <div class="mcal-g">${RU.map(w => `<s>${w}</s>`).join('')}${cells.join('')}</div>
+      </div>
+      <div class="dpk-f"><span><i class="pub"></i>опубликована</span><span><i class="draft"></i>черновик</span><span class="sp"></span><span>с точкой — откроется на правку</span></div>`;
+    const r = btn.getBoundingClientRect();
+    box.style.left = Math.max(12, Math.min(r.left, document.documentElement.clientWidth - box.offsetWidth - 12)) + 'px';
+    box.style.top = (window.scrollY + r.bottom + 6) + 'px';
+  };
+  box.addEventListener('click', e => {
+    e.stopPropagation();
+    const mv = e.target.closest('[data-dpm]');
+    if(mv){ const [y, m] = month.split('-').map(Number), dt = new Date(y, m - 1 + (+mv.dataset.dpm), 1); month = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); draw(); return }
+    const d = e.target.closest('[data-dpk]');
+    if(d){ closeSug(); if(bindClient(S.cid, d.dataset.dpk)){ csrcReset(CSRC.cid || S.cid); render() } }
+  });
+  draw();
+}
+
 /* ─── вставка из панели источников ─── */
 /* Последний блок со строками. Блок текстом упражнений не принимает — если
    день кончается им, под ним заводится новый блок. */
@@ -2530,6 +2580,7 @@ document.addEventListener('click', e=>{
   const dl = e.target.closest('[data-del]');
   if(dl){ const {b} = findItem(dl.dataset.del); b.items = b.items.filter(x=>x.id!==dl.dataset.del); render(); return }
   const ft = e.target.closest('[data-ftype]'); if(ft){ openFtype(ft); return }
+  const ptd = e.target.closest('#ptd'); if(ptd){ if(SUG && SUG.classList.contains('dpk')) closeSug(); else openDatePick(ptd); return }
   const pf = e.target.closest('[data-pickfor]');
   if(pf){ pickFor(pf.dataset.pickfor); return }
 

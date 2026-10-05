@@ -78,19 +78,12 @@ addEventListener('DOMContentLoaded', ()=>{
 });
 
 
-/* ═══════════ ГЛАВНАЯ КНОПКА ШАПКИ — С РАСКРЫВАЮЩИМСЯ СПИСКОМ ═══════════
-   Основной клик создаёт тренировку; стрелка справа открывает дополнительные
-   действия. Пока одно — «Создать несколько тренировок» (визард массового
-   копирования, CON-4). На конструкторе визард открывается на месте, с других
-   страниц — переходом на конструктор с ?wizard=1. */
+/* ═══════════ ГЛАВНАЯ КНОПКА ШАПКИ ═══════════
+   Одно действие — создать тренировку. Мастер «Создать несколько тренировок»
+   (массовое копирование, CON-4) из шапки убран, но остаётся доступен по
+   ссылке constructor.html?wizard=1. */
 function topButton(){
-  return `<span class="tsplit">
-    <a class="btn" href="constructor.html">Создать тренировку</a>
-    <button class="btn arrow" id="topmore" title="Ещё действия" aria-label="Ещё действия"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg></button>
-    <div class="dd" id="topdd">
-      <a class="dd-i" href="constructor.html?wizard=1" data-wizard>${ICON.copy}<span><b>Создать несколько тренировок</b><s>Выбрать из шаблонов или существующих и скопировать клиенту в нужные дни</s></span></a>
-    </div>
-  </span>`;
+  return `<span class="tsplit one"><a class="btn" href="constructor.html">Создать тренировку</a></span>`;
 }
 function bindTopButton(){
   const b = document.getElementById('topmore'), dd = document.getElementById('topdd');
@@ -269,11 +262,12 @@ function openDatePicker(btn, curDate, onPick){
 (function(){
   let tipEl = null, timer = null, cur = null;
   const box = () => tipEl || (tipEl = Object.assign(document.body.appendChild(document.createElement('div')), {className:'tip'}));
-  /* Справка «?» — карточкой: заголовок, объяснение, пример записи (data-tip-h, data-tip-ex). */
+  /* Справка «?» — карточкой со своей разметкой: data-tip-card — ключ в TIP_CARDS
+     (их заводит страница); data-tip остаётся текстом для чтения с экрана. */
   const show = (t, text) => {
     if(!t.isConnected) return;
-    const b = box(), hd = t.dataset.tipH, ex = t.dataset.tipEx;
-    if(hd){ b.innerHTML = `<b>${esc(hd)}</b><span>${esc(text)}</span>${ex ? `<code>${esc(ex)}</code>` : ''}`; b.className = 'tip rich' }
+    const b = box(), card = t.dataset.tipCard && typeof TIP_CARDS === 'object' ? TIP_CARDS[t.dataset.tipCard] : null;
+    if(card){ b.innerHTML = card; b.className = 'tip rich' }
     else { b.textContent = text; b.className = 'tip' }
     b.classList.add('on');
     const r = t.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight;
@@ -289,7 +283,7 @@ function openDatePicker(btn, curDate, onPick){
     hide(); cur = t;
     if(t.hasAttribute('title')){ t.dataset.tip = t.getAttribute('title'); t.removeAttribute('title') }
     const text = (t.dataset.tip || '').trim(); if(!text) return;
-    timer = setTimeout(() => show(t, text), t.dataset.tipH ? 60 : 120);
+    timer = setTimeout(() => show(t, text), t.dataset.tipCard ? 60 : 120);
   });
   /* «?» открывается и с клавиатуры, и касанием */
   document.addEventListener('focusin', e => { const t = e.target.closest && e.target.closest('.qh[data-tip]'); if(t){ cur = t; show(t, t.dataset.tip) } });
