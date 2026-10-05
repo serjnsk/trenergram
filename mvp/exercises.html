@@ -17,27 +17,24 @@
   <div class="main">
     <header class="topbar" id="topbar"></header>
     <div class="page">
-      <div class="cons">
+      <!-- Без боковой панели: клик по строке открывает страницу элемента -->
+      <div class="cons one">
         <main><section class="pane" id="page"></section></main>
-        <aside class="rail" data-min="Упражнение">
-          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
-          <div class="railhead"><div class="railttl" id="railttl">Упражнение</div></div>
-          <div class="railbody" id="railbody"></div>
-          <div class="railfoot" id="railfoot"></div>
-        </aside>
       </div>
     </div>
   </div>
 </div>
 <div class="ov" id="ov"></div>
 <script src="assets/exdb.js"></script>
-<script src="assets/exdb-steps.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
 <script>
-/* ═══════════ БАЗА УПРАЖНЕНИЙ (EX-1, EX-2, EX-3) ═══════════ */
-const V = { q:'', eq:'', own:false, g:'Все', sel:null };
+/* ═══════════ БАЗА УПРАЖНЕНИЙ (EX-1, EX-2, EX-3) ═══════════
+   Только список: клик по строке открывает страницу упражнения, там его
+   смотрят и правят. «Добавить упражнение» — пустая страница своего. */
+const V = { q:'', eq:'', own:false, g:'Все' };
 
 function matchEX(e){
   if(V.g!=='Все' && e.g!==V.g) return false;
@@ -71,9 +68,8 @@ const EX_COLS = [
 ];
 
 function render(){
-  const list = EX.filter(matchEX);
-  if(!list.some(e=>e.id===V.sel)) V.sel = list.length ? list[0].id : null;
-  $('#page').innerHTML = paneHead('Упражнения', EX.length, `
+  const all = exLive(), list = all.filter(matchEX);
+  $('#page').innerHTML = paneHead('Упражнения', all.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск упражнения…" value="${esc(V.q)}"></label>
       <select class="inp" id="g" style="width:190px">
         ${GROUPS.map(g=>`<option value="${esc(g)}" ${V.g===g?'selected':''}>${g==='Все'?'Все группы':esc(g)}</option>`).join('')}
@@ -84,72 +80,20 @@ function render(){
       </select>
       <label class="chk"><input type="checkbox" id="own" ${V.own?'checked':''}> Только свои</label>
       <span class="sp"></span>
-      <button class="btn" id="btnAdd">${ICON.plus} Добавить упражнение</button>`)
+      <a class="btn" id="btnAdd" href="exercise.html?new=1">${ICON.plus} Добавить упражнение</a>`)
     + (list.length ? dataTable('ex', EX_COLS, list) : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
-  bindTable('ex', render, id=>{ V.sel = id; markRow('ex', id); renderRail() });
-  markRow('ex', V.sel);
+  bindTable('ex', render, id=>{ listSave('exercises.html', V); location.href = 'exercise.html?id=' + encodeURIComponent(id) });
   $('#g').onchange=e=>{ V.g=e.target.value; render() };
   $('#eq').onchange=e=>{ V.eq=e.target.value; render() };
   $('#own').onchange=e=>{ V.own=e.target.checked; render() };
   $('#q').oninput=e=>{ V.q=e.target.value; render() };
-  $('#btnAdd').onclick=openAddModal;
+  $('#btnAdd').onclick=()=>listSave('exercises.html', V);
   const qEl=$('#q'); qEl.focus({preventScroll:true}); qEl.setSelectionRange(V.q.length,V.q.length);
-  renderRail();
 }
-/* Правая панель — карточка выбранного упражнения: только его данные, по полкам. */
-function renderRail(){
-  const e = byId(V.sel), d = edbOf(e);
-  if(!e){ railSet({title:'Упражнение', body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
-  /* Похожие и замены — ссылки на соседние упражнения базы: клик открывает их карточку. */
-  const rel = list => `<div class="rrel">${list.map(x=>`<div class="it" data-rel="${x.id}" style="cursor:pointer"><b>${esc(x.ru)}</b><span class="tt"><span class="chip">${esc(x.eq)}</span></span></div>`).join('')}</div>`;
-  const sec = (title, html) => `<div class="rhead" style="padding-left:0">${title}</div>${html}`;
-  railSet({title:'Упражнение', body:`
-    <div class="rprev">
-      <div class="avrow"><span class="thumb ${e.m==='pending'?'pending':''}" style="width:44px;height:44px;font-size:13.5px;border-radius:var(--rad-m)">${e.img?`<img src="${e.img}" alt="">`:e.m==='pending'?'':initials(e)}</span>
-        <span class="av-t"><b>${esc(e.ru)}</b><s>${esc(e.en)}</s></span></div>
-      ${e.gif?`<img class="rgif" src="${e.gif}" alt="${esc(e.ru)} — демонстрация">`:''}
-      <div class="kv">
-        <s>Группа</s><b>${esc(e.g)}</b>
-        <s>Оснащение</s><b>${esc(e.eq)}</b>
-        ${d ? `<s>Часть тела</s><b>${esc(d.bodyPart)}</b>
-        <s>Целевая мышца</s><b>${esc(d.target)}</b>
-        ${d.secondary.length ? `<s>Вспомогательные</s><b>${d.secondary.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</b>` : ''}` : ''}
-        <s>Единицы</s><b>${e.u.map(u=>`<span class="chip">${esc(u)}</span>`).join('')}</b>
-        <s>От максимума</s><b>${e.pm ? `${esc(PMNAMES[e.pm]||e.pm)}` : '<span style="color:var(--tx3)">нет</span>'}</b>
-        <s>Видео</s><b>${e.gif ? '<span class="chip ok">GIF</span>' : e.m==='ok' ? 'есть' : '<span class="chip warn">ожидает</span>'}</b>
-        <s>Источник</s><b>${e.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
-        ${d ? `<s>ID в базе</s><b>${esc(d.id)}</b>` : ''}
-      </div>
-      ${d && d.instructions.length ? sec('Техника', `<ol class="rsteps">${d.instructions.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`) : ''}
-      ${TECH[e.id]?sec('Акценты тренера', `<div class="rtext">${esc(TECH[e.id])}</div>`):''}
-      ${d && d.similar.length ? sec(`Похожие · ${d.similar.length}`, rel(d.similar)) : ''}
-      ${d && d.subs.length ? sec(`Замены · ${d.subs.length}`, rel(d.subs)) : ''}
-      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} В тренировку</a>${e.own?'<button class="btn gh sm" id="rEdit">Изменить</button>':''}</div>
-    </div>`, foot: d ? 'Похожие — та же целевая мышца и оснащение, замены — та же мышца с другим оснащением.' : ''});
-  $$('[data-rel]').forEach(x => x.onclick = () => { V.sel = x.dataset.rel; if(!EX.filter(matchEX).some(y => y.id === V.sel)){ V.q = ''; V.g = 'Все'; V.eq = ''; V.own = false; render() } else { markRow('ex', V.sel); renderRail() } });
-  const ed = $('#rEdit'); if(ed) ed.onclick = () => toast('Редактирование своего упражнения — в следующей итерации');
-}
-function openAddModal(){
-  openModal({title:'Добавить упражнение', wide:false, body:`
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div class="formfld"><span class="k">Название (рус.)</span><input class="inp" id="nRu"></div>
-      <div class="formfld"><span class="k">Название (англ.)</span><input class="inp" id="nEn"></div>
-      <div class="cols2">
-        <div class="formfld"><span class="k">Группа</span><select class="inp" id="nG">${GROUPS.filter(g=>g!=='Все').map(g=>`<option>${esc(g)}</option>`).join('')}</select></div>
-        <div class="formfld"><span class="k">Оснащение</span><select class="inp" id="nEq">${EQUIP.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>
-      </div>
-    </div>`,
-    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nSave">Добавить</button>`});
-  $('#nSave').onclick=()=>{
-    const ru=$('#nRu').value.trim(), en=$('#nEn').value.trim();
-    if(!ru) return toast('Укажите название упражнения');
-    addOwnEx({ru, en:en||ru, g:$('#nG').value, eq:$('#nEq').value, u:['кг','повт']});
-    closeModal(); toast('Упражнение добавлено в вашу базу'); render();
-  };
-}
+const Y0 = listLoad('exercises.html', V);
 render();
 initShell({page:'exercises.html'});
-initRail();
+listScroll(Y0);
 </script>
 </body>
 </html>

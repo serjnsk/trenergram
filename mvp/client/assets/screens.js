@@ -41,6 +41,8 @@ const CL_SVG = {
   send: '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/>',
   gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  wallet: '<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 15h2"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
 /* Отдых — та же иконка, что в календаре кабинета тренера (из брифа) */
@@ -297,6 +299,7 @@ const CL_UI = {
       <button class="mon" data-mcal aria-label="Выбрать дату">${MONTHS_N[d.getMonth()]} ${d.getFullYear()} ${clI('cal')}</button>
     </header>
     <div class="pg home">
+      ${clFeeBar()}
       <section class="card week">
         <button class="ib sm" data-week="-7" aria-label="Прошлая неделя">${clI('left')}</button>
         <div class="wds">${week}</div>
@@ -363,6 +366,7 @@ const CL_UI = {
     const head = `<header class="top"><button class="ib" data-back aria-label="Назад">${CL_ICON.back}</button><div class="t caps">${clEsc(x.title)}</div>
       <button class="ib acc${clCalOpen ? ' on' : ''}" data-cal aria-label="Календарь" aria-expanded="${clCalOpen}">${clI('cal')}</button></header>`;
     const dl = D(clDate), dateTx = dl.getDate() + ' ' + MONTHS[dl.getMonth()] + ' ' + dl.getFullYear();
+    if (x.blocks.length && feeLocked(clFeeC(), clDate)) return head + `<div class="pg wk">${cal}<p class="wdate">${clEsc(dateTx)}</p>${clFeeLock()}</div>${clTabs('home')}`;
     if (!x.blocks.length) return head + `<div class="pg wk">${cal}<p class="wdate">${clEsc(dateTx)}</p>
       <div class="card empty">${x.comp ? clI('trophy') : CL_REST_ICON}<b>${x.comp ? clEsc(x.title) : 'День отдыха'}</b>
       <span>${x.comp ? 'Соревнование — тренер не расписывал тренировку' : 'Тренировки нет — восстанавливайтесь'}</span></div></div>${clTabs('home')}`;
@@ -390,7 +394,7 @@ function clDayCard(x) {
     <b>${clEsc(x.title)}</b>
     <span>${x.blocks.length} ${plural3(x.blocks.length, 'блок', 'блока', 'блоков')} · ${n} ${plural3(n, 'упражнение', 'упражнения', 'упражнений')}</span>
     <ol>${x.blocks.map(b => `<li>${clEsc(clBlockName(b))}${b.title && b.fmt && typeof b.fmt === 'object' ? ' · ' + clEsc(fmtLabel(b.fmt)) : ''}</li>`).join('')}</ol>
-    <em>${done ? clI('check') + 'Выполнено' : 'Открыть тренировку'} ${CL_ICON.next}</em>
+    <em>${done ? clI('check') + 'Выполнено' : feeLocked(clFeeC(), x.date) ? clI('lock') + 'Оплата не внесена' : 'Открыть тренировку'} ${CL_ICON.next}</em>
   </button>`;
 }
 
@@ -524,7 +528,7 @@ function clRepaint(scr, id) {
 
 /* Техника упражнения — лист снизу: демонстрация, акценты тренера и шаги из
    базы. Шаги — в exdb-steps.js; у своих упражнений тренера их нет. */
-const clSteps = e => (typeof EXDB_STEPS !== 'undefined' && EXDB_STEPS[e.id]) || [];
+const clSteps = e => (typeof EXDB_STEPS !== 'undefined' && EXDB_STEPS[e.id]) || e.steps || [];   /* у своего упражнения шаги пишет тренер */
 function clTech(e) {
   if (!e) return;
   const w = document.createElement('div');
@@ -586,6 +590,75 @@ function clMonthCal(onPick) {
   document.getElementById('dev').appendChild(w);
 }
 
+/* ═══ Оплата занятий (PAY-9) ═══
+   Деньги клиент переводит тренеру сам, сервис ведёт только срок — его ставит
+   тренер в карточке клиента. За день до конца и в последний день на главной
+   полоса «пора платить» с суммой и «Как оплатить» из профиля тренера. Срок
+   кончился — со следующего дня новые тренировки закрыты: в списке и на неделе
+   они видны, а при открытии — «Оплата не внесена»; прошлые открываются.
+   Тренер отметил оплату — всё открывается сразу. Срок не задан — оплаты
+   у клиента нет нигде. На стенде состояние можно задать параметром «Оплата». */
+function clFeeC() {
+  const c = clMe(), m = typeof clP !== 'undefined' ? clP.pay : '';
+  if (m === 'none') return Object.assign({}, c, { paidUntil: null });
+  const k = { tomorrow: 1, today: 0, closed: -3 }[m];
+  return k == null ? c : Object.assign({}, c, { paidUntil: addDays(TODAY, k) });
+}
+/* Срок строкой: «до 6 октября» · «сегодня последний день» · «новые тренировки закрыты» */
+const clFeeWhen = f => ({ tomorrow: 'до ' + D(f.paidUntil).getDate() + ' ' + MONTHS[D(f.paidUntil).getMonth()], today: 'сегодня последний день',
+  closed: 'тренировки закрыты' })[feeState(f)] || '';
+const clFeeTitle = f => 'Оплатите тренеру' + (f.feeAmt ? ' ' + rubs(f.feeAmt) : '');
+/* Полоса на главной — действие и сумма, срок одной строкой, одна кнопка.
+   Цвет — фирменный оранжевый во всех состояниях: это просьба, а не ошибка. */
+function clFeeBar() {
+  const f = clFeeC(), st = feeState(f);
+  if (!['tomorrow', 'today', 'closed'].includes(st)) return '';
+  return `<section class="card feebar" role="status">
+    <span class="fi">${clI(st === 'closed' ? 'lock' : 'wallet')}</span>
+    <div><b>Оплатите тренеру</b><span>${f.feeAmt ? `<em>${rubs(f.feeAmt)}</em> · ` : ''}${clFeeWhen(f)}</span>
+      <button class="fbtn" data-payhow>Как оплатить ${CL_ICON.next}</button></div>
+  </section>`;
+}
+function clFeeLock() {
+  const f = clFeeC();
+  return `<div class="card feelock">${clI('lock')}<b>${clFeeTitle(f)}</b>
+    <span>Тренировка откроется, когда тренер отметит оплату</span>
+    <button class="btn pri" data-payhow>Как оплатить</button>
+  </div>`;
+}
+function clFeeCard() {
+  const f = clFeeC(), st = feeState(f);
+  if (st === 'none') return '';
+  const r = daysBetween(TODAY, f.paidUntil);
+  const left = st === 'closed' ? 'новые тренировки закрыты' : st === 'today' ? 'последний день' : st === 'tomorrow' ? 'завтра последний день'
+    : 'ещё ' + r + ' ' + plural3(r, 'день', 'дня', 'дней');
+  return `<section class="card fcardp"><s>Оплата занятий</s>
+    <div class="pgrid"><div class="pf"><s>Сумма</s><b>${f.feeAmt ? rubs(f.feeAmt) : '—'}</b></div>
+      <div class="pf"><s>Оплачено до</s><b>${clFullDate(f.paidUntil)}</b><i class="fst ${st === 'ok' ? 'ok' : 'warn'}">${left}</i></div></div>
+    ${payHow() ? '<button class="fbtn" data-payhow>Как оплатить</button>' : ''}
+  </section>`;
+}
+/* «Как оплатить» — лист снизу: сумма, срок, реквизиты тренера и «Скопировать» */
+function clPaySheet() {
+  const f = clFeeC(), how = payHow(), w = document.createElement('div');
+  w.className = 'shw';
+  w.innerHTML = `<div class="shbg" data-x></div>
+    <div class="sheet paysh" role="dialog" aria-label="Как оплатить"><i class="grab"></i>
+      <h2>Как оплатить</h2>
+      ${f.feeAmt ? `<div class="psum"><b>${rubs(f.feeAmt)}</b><span>${clEsc(clFeeWhen(f) || 'оплачено до ' + clShortDate(f.paidUntil))}</span></div>` : ''}
+      <div class="phow"><s>Тренер · ${clEsc(TRAINER.n)}</s>${clEsc(how || 'Тренер не указал реквизиты — уточните у него')}</div>
+      <p class="tag">Деньги переводите тренеру напрямую. Он отметит оплату — тренировки откроются.</p>
+      <div class="acts">${how ? '<button class="btn pri" data-copy>Скопировать реквизиты</button>' : ''}<button class="btn sec" data-x>Закрыть</button></div>
+    </div>`;
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 220); };
+  w.addEventListener('click', e => {
+    if (e.target.closest('[data-copy]')) { navigator.clipboard?.writeText(how); close(); clToast('Реквизиты скопированы'); }
+    else if (e.target.closest('[data-x]')) close();
+  });
+  document.getElementById('dev').appendChild(w);
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-payhow]'); if (!b) return; e.stopPropagation(); clPaySheet(); }, true);
+
 /* ═══ E0. Лента событий — уведомления клиента ═══
    Как лента тренера на дашборде: события по дням, у каждого тип и переход.
    Источники — данные кабинета: опубликованные тренировки, сообщения тренера
@@ -595,7 +668,8 @@ const CL_EVT = {
   plan:  { icon: 'cal',    tag: 'Новая тренировка' },
   msg:   { icon: 'msg',    tag: 'Сообщение тренера' },
   reply: { icon: 'msg',    tag: 'Ответ тренера' },
-  pr:    { icon: 'trophy', tag: 'Новый максимум' }
+  pr:    { icon: 'trophy', tag: 'Новый максимум' },
+  fee:   { icon: 'wallet', tag: 'Оплата' }
 };
 function clEvents() {
   const c = client(CL_ME), ev = [];
@@ -620,7 +694,17 @@ function clEvents() {
     if (d <= TODAY) ev.push({ k: 'pr@' + c.pr.ex + c.pr.v, t: 'pr', d, go: 'profile', title: (PMNAMES[c.pr.ex] || (e && e.ru) || '') + ' — ' + fmtNum(c.pr.v) + '\u00a0кг',
       text: 'Тренер записал новый максимум' + (c.pr.prev ? ', было ' + fmtNum(c.pr.prev) + '\u00a0кг' : '') + '. Рабочие веса в тренировках пересчитаны.' });
   }
-  const ord = { msg: 0, reply: 1, pr: 2, plan: 3 };
+  /* Оплата занятий (PAY-9): за день до конца, в последний день и на следующий —
+     доступ закрыт. Пушей в MVP нет — напоминание живёт в ленте и на главной. */
+  const f = clFeeC(), st = feeState(f);
+  if (st !== 'none' && daysBetween(TODAY, f.paidUntil) <= 1) {
+    const sum = f.feeAmt ? rubs(f.feeAmt) + ' — ' : '';
+    [[-1, 'Оплата заканчивается завтра', sum + 'переведите тренеру до ' + D(f.paidUntil).getDate() + ' ' + MONTHS[D(f.paidUntil).getMonth()]],
+     [0, 'Сегодня последний оплаченный день', sum + 'переведите тренеру сегодня, чтобы тренировки не закрылись'],
+     [1, 'Оплата не внесена', 'Новые тренировки откроются, когда тренер отметит оплату' + (f.feeAmt ? ' · ' + rubs(f.feeAmt) : '')]]
+      .forEach(([k, title, text]) => { const d = addDays(f.paidUntil, k); if (d <= TODAY) ev.push({ k: 'fee@' + d, t: 'fee', d, go: 'profile', title, text }); });
+  }
+  const ord = { fee: 0, msg: 1, reply: 2, pr: 3, plan: 4 };
   return ev.sort((a, b) => b.d.localeCompare(a.d) || ord[a.t] - ord[b.t]);
 }
 const clDayLabel = d => (d === TODAY ? 'Сегодня · ' : d === addDays(TODAY, -1) ? 'Вчера · ' : '') + D(d).getDate() + ' ' + MONTHS[D(d).getMonth()];
@@ -774,6 +858,7 @@ CL_UI.profile = (sc, v) => {
       <div class="pgoal"><div><s>Основная цель</s><b>${clEsc(p.goal)}</b></div>${p.goal2 ? `<div><s>Дополнительная цель</s><b>${clEsc(p.goal2)}</b></div>` : ''}</div>
     </section>
     <section class="card ptr"><span class="pav sm">${clEsc(TRAINER.ini)}</span><div><s>Тренер</s><b>${clEsc(TRAINER.n)}</b><span>${clEsc(TRAINER.workspace)} · с ${clFullDate(c.since)}</span></div></section>
+    ${clFeeCard()}
     <nav class="ptabs" role="tablist"><button role="tab" class="${tab === 'pr' ? 'on' : ''}" data-ptab="pr">Рекорды</button><button role="tab" class="${tab === 'meas' ? 'on' : ''}" data-ptab="meas">Замеры</button></nav>
     <div class="ptab">${tab === 'pr' ? clPrTab() : clMeasTab()}</div>
   </div>

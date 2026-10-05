@@ -87,6 +87,21 @@ const REST_TITLES = new Set(['Отдых','—','']);
    открывается пустой конструктор с выбором даты и клиента (режим new);
    ?client=&date= ведёт сразу в редактор нужного дня. */
 const Q = new URLSearchParams(location.search);
+/* ═══ РЕЖИМ ШАБЛОНА — страница блока или тренировки из базы (TPL-1, TPL-2) ═══
+   ?tpl=<id> открывает шаблон, ?tpl=new&lvl=block|workout создаёт новый. Тот же
+   редактор, что у дня, но без клиента, даты, ленты дней и публикации: сверху
+   шапка элемента базы, правки пишутся в шаблон сами (tplPut). Общий шаблон из
+   базы сервиса только смотрят — правят копию («Сохранить как своё»).
+   Тренировка в базе ссылается на блоки базы. Блок, который в ней не меняли,
+   так ссылкой и остаётся; изменённый становится её собственным (inline) —
+   блок в базе и другие тренировки, где он стоит, правка не трогает. */
+const TQ = Q.get('tpl');
+let TT = TQ && TQ !== 'new' ? tplById(TQ) : null;
+if(TT && (TT.del || !['блок','тренировка'].includes(TT.lvl))) TT = null;
+const TPLM = !TQ ? null : TT ? TT.lvl : Q.get('lvl') === 'workout' ? 'тренировка' : 'блок';
+const TMISS = !!TQ && TQ !== 'new' && !TT;         /* шаблона нет в базе (удалён, неверный адрес) */
+const TRO = !!TT && !TT.own;                       /* общий из базы сервиса — только смотреть */
+let TDAYS = null, TSIG = null, TFOLDER = null;
 /* Открыть можно и группу (?group=): у неё свой контейнер дней, и конструктор
    работает с ним так же, как с календарём клиента (GRP-2). */
 const S = { cid: Q.get('group') || Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
@@ -123,7 +138,7 @@ const planOf = pid => PCACHE[pid] ||= (b => {
     else if(u) delete bag[i];
   });
   return b })(buildPlan(pid));
-const plan = () => planOf(S.pid);
+const plan = () => TDAYS || planOf(S.pid);
 /* Переход на дату раньше старта: сбрасываем правки в STATE, сдвигаем старт и
    пересобираем план — индексы всех дней меняются на величину сдвига. */
 function shiftTo(date){
@@ -156,11 +171,27 @@ if(!Q.get('date')){
   const n = composedDays(S.pid);
   extendPlan(n); S.i = n; S.date = plan()[n].date;
 }
+/* Блок шаблона в редакторе помнит, из какого блока базы пришёл (src) и каким
+   был (srcSig): не изменился — тренировка так и ссылается на блок базы. */
+function tplBlockOf(t){
+  const b = isTextBlock(t) ? {...textBlock(t.text, t.title), kind: t.kind || null, fmt: fmtCopy(t.fmt)}
+    : blockOf(t.title, (t.items || []).map(tplLine), '', t.kind || null, fmtCopy(t.fmt));
+  b.src = t.id; b.srcSig = blockSig(b);
+  return b;
+}
+function tplDayOf(t){
+  const d = {date: TODAY, title: t && t.lvl === 'тренировка' ? t.title : '', comp: false, draft: true,
+    blocks: !t ? [] : t.lvl === 'блок' ? [tplBlockOf(t)] : (t.blocks || []).map(tplById).filter(Boolean).map(tplBlockOf)};
+  if(!d.blocks.length) d.blocks = [blockOf('', [rawItem('')], '', null, null)];
+  d.saved = serializeDay(d);
+  return d;
+}
+if(TPLM){ TDAYS = [tplDayOf(TT)]; S.i = 0; S.date = TODAY; S.src = 'tpl'; if(TPLM === 'блок') S.tab = 'ex'; TSIG = TDAYS[0].saved }
 const day  = () => plan()[S.i];
 /* Группа открыта — своих максимумов у неё нет: проценты считаются каждому
    участнику от его 1ПМ, в строке килограммов не показываем. */
 const G_   = () => isGrp(S.cid) ? grp(S.cid) : null;
-const PM   = () => G_() ? {} : pmOf(S.cid);
+const PM   = () => TPLM || G_() ? {} : pmOf(S.cid);
 
 /* LOGO живёт в assets/nav.js — общий для обеих оболочек. */
 
@@ -215,6 +246,10 @@ const aiBtn = (attr, id, title, sm, dim) =>
 /* renderNav живёт в assets/nav.js — общий для обеих оболочек. */
 
 function renderTop(){
+  if(TPLM){
+    $('#topbar').innerHTML = `<h1 class="ptitle">${TMISS ? 'Шаблон' : TPLM === 'блок' ? (TT ? 'Блок' : 'Новый блок') : (TT ? 'Тренировка' : 'Новая тренировка')}</h1><span class="sp"></span>${topButton()}`;
+    bindTopButton(); return;
+  }
   /* Шапка одинакова на всех страницах и несёт только главное действие.
      Крошки, выбор клиента и «Назначить» переехали в рабочую зону — они
      относятся к тренировке, а не к приложению. */
@@ -274,7 +309,47 @@ function rangeLabel(a, b){
   if(da.getMonth() !== db.getMonth()) return `${da.getDate()} ${MONTHS[da.getMonth()]} – ${db.getDate()} ${MONTHS[db.getMonth()]} ${db.getFullYear()}`;
   return `${da.getDate()} – ${db.getDate()} ${MONTHS[db.getMonth()]} ${db.getFullYear()}`;
 }
+/* ─── шапка шаблона: путь к базе, название, действия, папка, где используется ─── */
+const TBASE = () => TPLM === 'блок' ? ['blocks.html', 'Блоки'] : ['workouts.html', 'Тренировки'];
+function renderTplHead(){
+  if(TMISS){ $('#wk').innerHTML = ''; return }
+  const d = day(), isB = TPLM === 'блок', b = d.blocks[0], own = !TRO, base = TBASE();
+  const name = isB ? (b && b.title) || '' : d.title || '';
+  const nb = d.blocks.filter(blockHas).length, n = dayCount(d);
+  const uses = TT ? usesOf(TPLM, TT.id) : [];
+  const folder = TT ? TT.folder : TFOLDER || FOLDER_OF(b || {});
+  /* Перерисовка не должна выбивать курсор из шапки: название, папка, кнопки. */
+  const a = document.activeElement, keepId = a && a.id && a.closest && a.closest('#wk') ? a.id : null,
+        keep = keepId === 't-name' ? [a.selectionStart, a.selectionEnd] : null;
+  $('#wk').className = 'wk tplh';
+  $('#wk').innerHTML = `<div class="ehead">
+    <nav class="crumb"><a href="${base[0]}">${base[1]}</a><span class="sep">/</span><span class="cur">${esc(name || (isB ? 'Новый блок' : 'Новая тренировка'))}</span></nav>
+    <div class="ehead-top">
+      <span class="thumb eth">${isB ? ICON.folder : ICON.tpl}</span>
+      <div class="eid">
+        ${own ? `<input class="enm" id="t-name" value="${esc(name)}" placeholder="${isB ? 'Название блока' : 'Название тренировки'}" aria-label="Название" autocomplete="off">` : `<div class="enm">${esc(name)}</div>`}
+        <div class="esub">${own ? '<span class="chip ok">своё</span>' : '<span class="chip ghost">общая база</span>'}${isB && b && b.kind ? `<span>${esc(blockTypeLabel(b))}</span>` : ''}<span>${isB ? '' : nb + ' ' + plural(nb, 'блок', 'блока', 'блоков') + ' · '}${n} ${plural(n, 'упражнение', 'упражнения', 'упражнений')}</span></div>
+      </div>
+      <div class="eacts">
+        ${TT ? `<a class="btn" href="constructor.html?addtpl=${TT.id}">${ICON.build} В тренировку</a>` : ''}
+        ${TT && own ? `<button class="btn gh" id="t-dup">${ICON.copy} Дублировать</button><button class="btn gh" id="t-del">Удалить</button>` : ''}
+        ${TT && !own ? `<button class="btn" id="t-own">Сохранить как своё</button>` : ''}
+      </div>
+    </div>
+    <div class="eprops">
+      ${isB ? `<span class="ep"><s>Папка</s>${own ? `<select class="inp" id="t-folder">${TPL_FOLDERS.map(f => `<option ${f === folder ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select>` : `<b>${esc(folder || '—')}</b>`}</span>` : ''}
+      <span class="ep"><s>Использован</s><b>${TT && TT.used ? TT.used + '×' : '—'}</b></span>
+      <span class="ep"><s>${isB ? 'В тренировках' : 'В программах'}</s>${uses.length ? `<span class="uses-in">${uses.map(t => `<a href="${elHref(t)}">${esc(t.title)}</a>`).join(', ')}</span>` : '<b class="none">нигде</b>'}</span>
+      ${own ? '<span class="ep auto">Правки сохраняются сами</span>' : ''}
+    </div>
+  </div>
+  ${TRO ? `<div class="ebar"><span><b>${isB ? 'Блок' : 'Тренировка'} из общей базы</b><s>Правится только своё (TPL-2). Нажмите «Сохранить как своё» — появится ваша копия, её и правьте.</s></span></div>` : ''}
+  ${!TT ? `<div class="ebar"><span><b>${isB ? 'Новый блок' : 'Новая тренировка'}</b><s>Появится в вашей базе, как только в ${isB ? 'нём' : 'ней'} будет название или упражнение. Состав — как в конструкторе, справа база ${isB ? 'упражнений' : 'упражнений и блоков'}.</s></span></div>` : ''}`;
+  const back = keepId && document.getElementById(keepId);
+  if(back){ back.focus({preventScroll:true}); if(keep) back.setSelectionRange(keep[0], keep[1]) }
+}
 function renderStrip(){
+  if(TPLM) return renderTplHead();
   const d = plan(), p = program(S.pid), cur = d[S.i];
   /* Лента — две недели: текущая и следующая. Тренер обычно на этой неделе
      пишет тренировки на следующую, и обе должны быть перед глазами. Неделя
@@ -342,6 +417,8 @@ const tmSub = f => fmtDesc(f);
 /* Нагрузка в поле: число или диапазон «70–80» (CON-24). */
 const ldVal = it => it.pct != null ? fmtN(it.pct) + (it.pct2 != null ? RNG + fmtN(it.pct2) : '') : fmtN(it.val || '') + (it.val2 ? RNG + fmtN(it.val2) : '');
 const hasRange = it => it.pct2 != null || !!it.val2;
+/* Процент без килограммов: у группы — от 1ПМ каждого участника, в шаблоне — от 1ПМ того, кому его поставят. */
+const pctNote = it => it.pct == null ? '' : G_() ? 'от 1ПМ каждого' : TPLM ? 'от 1ПМ клиента' : '';
 const fw = (v, min, pad) => `calc(${Math.max(String(v).length, min)}ch + ${pad}px)`;
 /* Поля схемы и нагрузки — общие у строки и у упражнения внутри связки. */
 function prmHTML(it, schPh){
@@ -350,8 +427,8 @@ function prmHTML(it, schPh){
   return `<input class="pf sch" data-pf="sch" data-for="${it.id}" value="${esc(sch)}" placeholder="${schPh}" autocomplete="off" spellcheck="false" style="width:${fw(sch, schPh.length > 3 ? 4 : 3, 20)}">
       ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
       <button class="rng ${hasRange(it) ? 'on' : ''}" data-rng="${it.id}" tabindex="-1" title="${hasRange(it) ? 'Убрать диапазон — оставить одно число' : 'Диапазон «от–до»: 70–80 % или 60–70 кг. Можно и набрать через дефис'}">от–до</button>` : ''}
-      <span class="kg">${kg != null ? '→ ' + kg + ' кг' : G_() && it.pct != null ? 'от 1ПМ каждого' : ''}</span>
-      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}`;
+      <span class="kg">${kg != null ? '→ ' + kg + ' кг' : pctNote(it)}</span>
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() && !TPLM ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}`;
 }
 /* ─── СВЯЗКА В СТРОКЕ (CON-23) ───
    «Взятие на грудь + Фронтальный присед + Толчок  80 % · 90 кг — 3×(1+1+1)».
@@ -378,9 +455,9 @@ function chainPrmHTML(it){
       <span class="pf sets"><input data-pf="sets" data-for="${it.id}" value="${esc(sets)}" placeholder="1" inputmode="numeric" autocomplete="off" style="width:${fw(sets, 2, 4)}"><u>подх.</u></span>
       ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
       <button class="rng ${hasRange(it) ? 'on' : ''}" data-rng="${it.id}" tabindex="-1" title="${hasRange(it) ? 'Убрать диапазон — оставить одно число' : 'Диапазон «от–до»: 70–80 % или 60–70 кг. Можно и набрать через дефис'}">от–до</button>` : ''}
-      ${L.weighted && chainWeighted(it).length > 1 ? `<span class="cof ${L.cur === '%' ? '' : 'off'}">от 1ПМ <select data-cof="${it.id}" tabindex="-1" title="От 1ПМ какого упражнения считать процент">${cofOpts(it)}</select></span>` : ''}
-      <span class="kg">${kg != null ? '→ ' + kg + ' кг' : G_() && it.pct != null ? 'от 1ПМ каждого' : ''}</span>
-      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}</span>`;
+      ${L.weighted && chainWeighted(it).length > 1 ? `<span class="cof ${L.cur === '%' ? '' : 'off'}">от 1ПМ <select data-cof="${it.id}" data-nosearch tabindex="-1" title="От 1ПМ какого упражнения считать процент">${cofOpts(it)}</select></span>` : ''}
+      <span class="kg">${kg != null ? '→ ' + kg + ' кг' : pctNote(it)}</span>
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() && !TPLM ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}</span>`;
 }
 function chainLineHTML(it){
   const ps = it.parts || [];
@@ -644,7 +721,7 @@ function autoTitles(d){
 /* Название по умолчанию выделяется целиком при входе в поле — печать сразу его заменяет. */
 document.addEventListener('focusin', e => { const t = QUICK && e.target.closest && e.target.closest('#doc .bt'); if(t && AUTO_TITLE.test(t.value)) setTimeout(() => t.select(), 0) });
 document.addEventListener('focusout', e => {
-  const t = QUICK && e.target.closest && e.target.closest('#doc .bt'); if(!t || t.value.trim()) return;
+  const t = QUICK && TPLM !== 'блок' && e.target.closest && e.target.closest('#doc .bt'); if(!t || t.value.trim()) return;
   const d = day(), b = d.blocks.find(x => x.id === t.closest('[data-blk]').dataset.blk); if(!b) return;
   b.title = 'Блок 1'; autoTitles(d); t.value = b.title; commitSoft();
 });
@@ -656,7 +733,24 @@ function freshFocus(){
   const a = document.activeElement;
   if(!a || a === document.body) ed.focus({preventScroll:true});
 }
+/* Документ шаблона: блоки без шапки дня, публикации и групп. У блока одна
+   карточка, его название — в шапке страницы. Общий — только для чтения. */
+function renderTplDoc(){
+  const d = day(), doc = $('#doc');
+  doc.classList.add('quick'); doc.classList.remove('fresh');
+  doc.classList.toggle('tplblk', TPLM === 'блок'); doc.classList.toggle('ro', TRO);
+  if(TMISS){ const base = TBASE(); doc.innerHTML = `<div class="empty"><b>Шаблона нет в базе</b><span>Его удалили или адрес неверный. <a href="${base[0]}">Вернуться: ${base[1]}</a></span></div>`; return }
+  if(!d.blocks.length) d.blocks.push(mkBlock(null,'','',null,[]));
+  doc.innerHTML = d.blocks.map((b, k) => blockHTML(b, k)).join('')
+    + (TRO || TPLM === 'блок' ? '' : `<div class="addbrow">
+      <button class="addb" id="add-blk">${ICON.plus} Блок</button>
+      <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>
+    </div>`);
+  if(TRO) $$('#doc input, #doc textarea').forEach(i => { i.readOnly = true; i.tabIndex = -1 });
+  if(TRO) $$('#doc [contenteditable]').forEach(e => e.contentEditable = 'false');
+}
 function renderDoc(){
+  if(TPLM) return renderTplDoc();
   /* Клиент сверх лимита тарифа (TRN-2): пока тренер не изменит лимит,
      тренировки ему не составляются — вместо редактора алерт. */
   if(isOver(S.cid)){ $('#doc').innerHTML = limitAlertHTML(S.cid); return; }
@@ -755,7 +849,7 @@ function grpRibbonHTML(d){
 /* Полоса и панель обновляются на месте — без перерисовки документа, которая
    сбила бы фокус в поле. */
 function refreshGrp(){
-  const d = day(); if(!d) return;
+  const d = day(); if(!d || TPLM) return;
   const box = $('#doc .gpanel, #doc .gribbon'), html = G_() ? grpPanelHTML(d) : grpRibbonHTML(d);
   if(box) box.outerHTML = html; else if(html){ const h = $('#doc .doch'); if(h) h.insertAdjacentHTML('afterend', html) }
 }
@@ -834,6 +928,12 @@ function mcalHTML(){
 }
 function renderRailHead(){
   const h = $('#railhead'); if(!h) return;
+  /* Шаблон собирают из баз: у блока — только упражнения, у тренировки — ещё блоки. */
+  if(TPLM){
+    h.innerHTML = `<div class="tabs" id="tabs"><button data-tab="ex" class="${S.tab === 'ex' ? 'on' : ''}">Упражнения</button>${TPLM === 'тренировка' ? `<button data-tab="blk" class="${S.tab === 'blk' ? 'on' : ''}">Блоки</button>` : ''}</div>`
+      + `<label class="search">${ICON.search}<input id="q" placeholder="${TPLM === 'блок' ? 'Поиск упражнения…' : 'Поиск…'}" autocomplete="off" value="${esc(S.q)}"></label>`;
+    return;
+  }
   const sw = `<div class="srcsw">
       <button data-srcsw="cal" class="${S.src === 'cal' ? 'on' : ''}">${ICON.cal}<span>Календарь</span></button>
       <button data-srcsw="tpl" class="${S.src === 'tpl' ? 'on' : ''}">${ICON.tpl}<span>Базы шаблонов</span></button>
@@ -909,7 +1009,7 @@ function renderSrc(){
   if(S.src === 'cal'){ renderCalSrc(); return }
   const q = norm(S.q), box = $('#src');
   if(S.tab === 'ex'){
-    const list = EX.filter(e=>!q || norm(e.ru).includes(q) || norm(e.en).includes(q) ||
+    const list = EX.filter(e=>!e.del).filter(e=>!q || norm(e.ru).includes(q) || norm(e.en).includes(q) ||
                               norm(e.eq).includes(q) || (ALIAS[e.id]||[]).some(a=>norm(a).includes(q)));
     const g = {}; list.forEach(e => (g[e.g] ||= []).push(e));
     const gi = k => (i => i < 0 ? 99 : i)(GROUPS.indexOf(k));
@@ -927,7 +1027,7 @@ function renderSrc(){
     TPL.filter(t=>t.lvl==='блок').forEach(normFmt);        /* формат — в тип, название чистое */
     /* inline — записи, созданные ради ссылок внутри недели. Они не выбор
        тренера, а внутренняя кухня, и в источниках им не место. */
-    const list = TPL.filter(t => t.lvl===lvl && !t.inline &&
+    const list = TPL.filter(t => t.lvl===lvl && !t.inline && !t.del &&
       (!q || norm(t.title).includes(q) || norm(t.folder||'').includes(q)));
     box.innerHTML = list.map(t=>`
       <div class="tplc" draggable="true" data-tpl="${t.id}">
@@ -962,7 +1062,42 @@ const isDirty = x => !!x && serializeDay(x) !== x.saved;
 const dirtyIdx = () => plan().map((x, i) => isDirty(x) ? i : -1).filter(i => i >= 0);
 /* Несохранённые правки — в STATE.unsaved вместе со слепком, поверх которого
    они сделаны (base): изменится день под ними — они не лягут обратно. */
+/* Шаблон из редактора — в базу. Новый попадает туда, как только в нём есть
+   название или содержимое; до этого его нет нигде. */
+const blockRec = b => ({kind: b.kind || null,
+  title: b.title || blockTypeLabel(b) || (isTextBlock(b) ? firstTextLine(b.text) : '') || 'Блок без названия', fmt: b.fmt ? {...b.fmt} : null,
+  ...(isTextBlock(b) ? {text: b.text, items: []}
+    : {items: normSS({items: b.items.filter(i => itemHas(i) || i.ss).map(i => ({...i}))}).items.map(i => i.ss ? [SS_TAG, i.rounds, i.rest || ''] : tplArr(i))})});
+const tplMeta = (lvl, extra) => TT ? {id: TT.id, lvl, own: true, at: TT.at, used: TT.used || 0, ...extra} : {id: freshId('u'), lvl, own: true, at: TODAY, used: 0, ...extra};
+function tplPersist(){
+  if(!TPLM || TRO || TMISS) return;
+  const d = day(), sig = serializeDay(d);
+  if(sig === TSIG) return;
+  const isNew = !TT;
+  if(TPLM === 'блок'){
+    const b = d.blocks[0]; if(!b) return;
+    if(isNew && !blockHas(b) && !ownTitle(b)) return;
+    TT = {...tplMeta('блок', {folder: TT ? TT.folder : TFOLDER || FOLDER_OF(b)}), ...blockRec(b)};
+  } else {
+    if(isNew && !dayHas(d) && !(d.title || '').trim()) return;
+    const wid = TT ? TT.id : freshId('u');
+    const ids = d.blocks.filter(b => blockHas(b) || ownTitle(b) || b.note).map(b => {
+      const src = b.src && tplById(b.src);
+      if(src && blockSig(b) === b.srcSig) return src.id;
+      const t = src && src.inline && src.owner === wid
+        ? {...src, ...blockRec(b)}
+        : {id: freshId('u'), lvl: 'блок', own: true, inline: true, owner: wid, at: TODAY, used: 0, folder: FOLDER_OF(b), ...blockRec(b)};
+      if(!isTextBlock(b)) delete t.text;
+      tplPut(t); b.src = t.id; b.srcSig = blockSig(b);
+      return t.id;
+    });
+    TT = {...tplMeta('тренировка'), id: wid, title: (d.title || '').trim() || 'Тренировка без названия', blocks: ids};
+  }
+  tplPut(TT); TSIG = sig;
+  if(isNew){ history.replaceState(null, '', 'constructor.html?tpl=' + TT.id); renderTop(); toast(TPLM === 'блок' ? 'Блок добавлен в вашу базу' : 'Тренировка добавлена в вашу базу') }
+}
 function persist(){
+  if(TPLM) return tplPersist();
   const bag = ((STATE.unsaved ||= {})[S.pid] ||= {});
   plan().forEach((x, i) => { const c = serializeDay(x); if(c !== x.saved) bag[i] = {c, base: x.saved}; else delete bag[i] });
   saveState();
@@ -1000,6 +1135,7 @@ function pubMsg(on){
 }
 /* «Сохранить» (Ctrl/⌘+S) — все изменённые дни, каждый со своим статусом. */
 function saveAll(){
+  if(TPLM){ persist(); if(!TMISS) toast(TRO ? 'Общий шаблон не правится — сохраните копию как своё' : TT ? 'Сохранено' : 'Пустой шаблон не сохраняется'); return }
   const idx = dirtyIdx(); if(!idx.length) return;
   const d = day(), one = idx.length === 1 && idx[0] === S.i;
   commitDays(idx, {}, ok => { if(!ok) return toast('Не сохранено — публикация отменена');
@@ -1026,7 +1162,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist(
 const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
 /* «Пятница, 19 сентября» — дата открытого дня в заголовке страницы; год — если не текущий. */
 const fullDate = date => { const t = D(date), y = t.getFullYear(); return DOW[dowMon(date)] + ', ' + t.getDate() + ' ' + MONTHS[t.getMonth()] + (y !== new Date().getFullYear() ? ' ' + y : '') };
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur) autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur && TPLM !== 'блок') autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
   const pt = $('#ptd'); if(pt && cur) pt.innerHTML = esc(fullDate(cur.date)) + '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>';
   if(QUICK) freshFocus() }
 
@@ -1054,7 +1190,7 @@ function wizardHTML(){
   if(WZ.step===1){
     const src = who(WZ.src);
     const list = WZ.tab==='tpl'
-      ? TPL.filter(t=>t.lvl==='тренировка' && !t.inline).map(t=>({kind:'tpl', id:t.id, title:t.title, sub:(t.own?'своё':'общая база')+' · '+tplStats(t).blocks+' '+plural(tplStats(t).blocks,'блок','блока','блоков')}))
+      ? TPL.filter(t=>t.lvl==='тренировка' && !t.inline && !t.del).map(t=>({kind:'tpl', id:t.id, title:t.title, sub:(t.own?'своё':'общая база')+' · '+tplStats(t).blocks+' '+plural(tplStats(t).blocks,'блок','блока','блоков')}))
       : (src && src.prog ? planOf(src.prog).filter(x=>!x.rest && x.blocks.some(b=>b.items.length)).map(x=>({kind:'day', pid:src.prog, i:x.i, title:x.title, sub:x.w+' '+dm(x.date)+' · '+x.blocks.length+' '+plural(x.blocks.length,'блок','блока','блоков')})) : []);
     body = `
       <div class="wz-tabs">
@@ -1163,7 +1299,7 @@ if(Q.get('wizard')) addEventListener('load', openWizard);
    Две кнопки в строке дорожки. Составление «с нуля» отдельной кнопки не
    требует: пустой день уже есть, блоки накидываются из панели или текстом. */
 function pickTemplate(){
-  const list = TPL.filter(t=>t.lvl==='тренировка');
+  const list = tplLive('тренировка');
   openPick('Скопировать из шаблона', list.map(t=>`
     <button class="pk" data-tpl="${t.id}"><b>${esc(t.title)}</b>
       <s>${t.own?'своё':'общая база'} · ${tplStats(t).blocks} ${plural(tplStats(t).blocks,'блок','блока','блоков')}</s></button>`).join(''),
@@ -1771,7 +1907,7 @@ function syncLoads(){
     const {i} = findItem(l.dataset.item); if(!i || !(i.exId || i.chain)) return;
     const L = loadInfo(i), kg = kgText(i, PM());
     l.classList.toggle('txtmode', !!i.txt);
-    const k = l.querySelector('.kg'); if(k) k.textContent = kg != null ? '→ ' + kg + ' кг' : G_() && i.pct != null ? 'от 1ПМ каждого' : '';
+    const k = l.querySelector('.kg'); if(k) k.textContent = kg != null ? '→ ' + kg + ' кг' : pctNote(i);
     const rg = l.querySelector('[data-rng]'); if(rg) rg.classList.toggle('on', hasRange(i));
     /* У связки — параметры текстом, которые видны вне правки, и выбор «от 1ПМ». */
     if(i.chain){ const pr = l.querySelector('.cprm'); if(pr){ const t = chainSumm(i); let pt = pr.querySelector('.cpt');
@@ -1779,7 +1915,7 @@ function syncLoads(){
       const cf = l.querySelector('.cof'); if(cf){ cf.classList.toggle('off', L.cur !== '%'); const sel = cf.querySelector('select'); if(sel) sel.options[0].textContent = cofOpts(i).match(/^<option value="">(.*?)<\/option>/)[1].replace(/&amp;/g, '&') } }
     const u = l.querySelector('[data-pfu]'); if(u){ u.textContent = L.cur; u.parentElement.classList.toggle('empty', !u.parentElement.querySelector('input').value.trim()) }
     const pm = l.querySelector('.pmf');
-    if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key] && !G_()));
+    if(pm && document.activeElement !== pm.querySelector('input')) pm.classList.toggle('off', !(L.weighted && L.cur === '%' && !PM()[L.key] && !G_() && !TPLM));
   });
 }
 /* Поле покинули — привести запись к виду: «5x3» → 5×3, суффикс единицы уходит в подпись. */
@@ -2231,7 +2367,8 @@ function blockToTpl(b, folder){
     ...(isTextBlock(b) ? {text: b.text} : {}),
     items: normSS({items: b.items.filter(i=>itemHas(i) || i.ss).map(i=>({...i}))}).items.map(i => i.ss ? [SS_TAG, i.rounds, i.rest||''] : tplArr(i)),
   };
-  TPL.unshift(t);
+  t.id = freshId('u'); t.own = true; t.at = TODAY;
+  tplPut(t);                                   /* база живёт в STATE: блок виден на странице базы и после перезагрузки */
   return t.id;
 }
 function saveBlock(id, folder){
@@ -2246,8 +2383,8 @@ function saveWorkout(){
   const blocks = d.blocks.filter(blockHas);
   if(!blocks.length) return toast('В этом дне нечего сохранять');
   const ids = blocks.map(b => blockToTpl(b));
-  TPL.unshift({id:nid('t'), lvl:'тренировка', used:0,
-               title: d.title || 'Тренировка без названия', blocks: ids});
+  tplPut({id:freshId('u'), lvl:'тренировка', own:true, at:TODAY, used:0,
+          title: d.title || 'Тренировка без названия', blocks: ids});
   S.tplSaved[d.date] = serializeDay(d);
   toast('Тренировка и ' + blocks.length + ' ' +
         plural(blocks.length,'блок','блока','блоков') + ' — в базе');
@@ -2297,7 +2434,7 @@ function toast(text, actionLabel, onAction){
 function addTplRaw(t){
   const d = day();
   if(t.lvl === 'блок'){
-    d.blocks.push(isTextBlock(t) ? {...textBlock(t.text, t.title), kind: t.kind || null, fmt: fmtCopy(t.fmt)}
+    d.blocks.push(TPLM ? tplBlockOf(t) : isTextBlock(t) ? {...textBlock(t.text, t.title), kind: t.kind || null, fmt: fmtCopy(t.fmt)}
                                  : blockOf(t.title, t.items.map(tplLine), '', t.kind, fmtCopy(t.fmt)));
   } else {
     const w = tplToWorkout(t);
@@ -3017,7 +3154,56 @@ bulkInit({
   beforeOp: () => persist(),
   afterOp: () => { const date = (plan()[S.i] || {}).date || S.date; Object.keys(PCACHE).forEach(k => delete PCACHE[k]); bindClient(S.cid, date); render() },
 });
-renderNav('constructor.html'); renderTop(); csrcReset(S.cid); renderRailHead(); render();
+renderNav(TPLM ? TBASE()[0] : 'constructor.html'); renderTop(); csrcReset(S.cid); renderRailHead(); render();
+if(TPLM){
+  document.title = (TPLM === 'блок' ? 'Блок' : 'Тренировка') + ' · Тренерграм';
+  document.body.classList.toggle('tplro', TRO || TMISS);           /* общий шаблон не собирают — панель источников не нужна */
+  if(!TT && !TMISS){ const t = $('#t-name'); if(t) t.focus() }
+}
+/* «В тренировку» со страницы элемента базы: конструктор открывается на новом
+   дне, и упражнение или шаблон сразу в нём (?addex=, ?addtpl=). */
+if(!TPLM && (Q.get('addex') || Q.get('addtpl'))){
+  const ex = Q.get('addex') && byId(Q.get('addex')), t = Q.get('addtpl') && tplById(Q.get('addtpl'));
+  const d = day(), lb = structBlock(d);
+  if(ex){ if(lb) lb.items = lb.items.filter(i => !blankLine(i)); addEx(ex.id); toast('«' + ex.ru + '» — в тренировке') }
+  if(t){ addTplRaw(t); d.blocks = d.blocks.filter(x => !blankBlock(x)); render(); toast((t.lvl === 'блок' ? 'Блок' : 'Тренировка') + ' «' + t.title + '» — в тренировке') }
+  history.replaceState(null, '', `constructor.html?${subjQ(S.cid)}&date=${d.date}${CLASSIC_Q}`);
+}
+
+/* ─── шапка шаблона: название, папка, действия ─── */
+document.addEventListener('input', e => {
+  if(!TPLM || e.target.id !== 't-name') return;
+  const d = day(), v = e.target.value;
+  if(TPLM === 'блок'){ if(d.blocks[0]) d.blocks[0].title = v } else d.title = v;
+  const c = $('.ehead .crumb .cur'); if(c) c.textContent = v || (TPLM === 'блок' ? 'Новый блок' : 'Новая тренировка');
+});
+document.addEventListener('change', e => {
+  if(!TPLM) return;
+  if(e.target.id === 't-name') setTimeout(() => { persist(); renderStrip() }, 0);   /* после того, как курсор уйдёт в следующее поле */
+  if(e.target.id === 't-folder'){ TFOLDER = e.target.value; if(TT){ TT = {...TT, folder: TFOLDER}; tplPut(TT) } toast('Папка «' + TFOLDER + '»') }
+});
+document.addEventListener('keydown', e => { if(TPLM && e.key === 'Enter' && e.target.id === 't-name') e.target.blur() });
+document.addEventListener('click', e => {
+  if(!TPLM) return;
+  if(e.target.closest('#t-dup')){ persist(); const c = tplClone(TT, TT.title + ' — копия'); location.href = 'constructor.html?tpl=' + c.id; return }
+  if(e.target.closest('#t-own')){ const c = tplClone(TT); location.href = 'constructor.html?tpl=' + c.id; return }
+  if(e.target.closest('#t-del')){
+    const isB = TPLM === 'блок', uses = usesOf(TPLM, TT.id).length;
+    const ov = document.createElement('div');
+    ov.className = 'ov on';
+    ov.innerHTML = `<div class="md ask">
+      <div class="mdh"><span class="dot"></span><h2>Удалить ${isB ? 'блок' : 'тренировку'}</h2><button class="cls">✕</button></div>
+      <div class="mdb"><p class="lead">«${esc(TT.title)}» уйдёт из вашей базы.</p>
+        <div class="foot-note">${uses ? (isB ? 'В тренировках базы' : 'В программах базы') + ', где ' + (isB ? 'он стоит' : 'она стоит') + ' (' + uses + '), ' + (isB ? 'блок останется' : 'тренировка останется') + '. ' : ''}Клиентам, у кого ${isB ? 'он уже стоит' : 'она уже стоит'} в календаре, ничего не изменится.</div></div>
+      <div class="mdf"><span class="sp"></span><button class="btn gh cls">Отмена</button><button class="btn rm" id="t-del-ok">Удалить</button></div>
+    </div>`;
+    ov.addEventListener('click', ev => {
+      if(ev.target === ov || ev.target.closest('.cls')){ ov.remove(); return }
+      if(ev.target.closest('#t-del-ok')){ tplDrop(TT); location.href = TBASE()[0] }
+    });
+    document.body.appendChild(ov);
+  }
+});
 
 /* Сворачивание панели источников — состояние переживает перезагрузку,
    как и у левого меню. */

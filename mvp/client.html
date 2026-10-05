@@ -26,6 +26,7 @@
 <script src="assets/exdb.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ КАРТОЧКА КЛИЕНТА ═══════════
@@ -33,13 +34,13 @@
    имя, пол и возраст, действия) → сетка подписанных полей (телефон, Telegram,
    Max ссылками; с нами с; оплачено до; последняя активность — точка-статус) →
    заметка тренера строкой на всю ширину. Ниже липкие табы-якоря:
-   Календарь (две недели) · События · Замеры (в динамике) · Максимумы (1ПМ/3ПМ
-   с динамикой). Один экран без переходов. */
+   Календарь (две недели) · События · Оплата (PAY-9) · Замеры (в динамике) ·
+   Максимумы (1ПМ/3ПМ с динамикой). Один экран без переходов. */
 const CID = new URLSearchParams(location.search).get('id') || STATE.curClient || 'c1';
 const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
 const V = { metric: Object.keys(C.hist||{})[0] || 'squat', meas:'w' };
-const SECTIONS = [['cal','Календарь'],['events','События'],['meas','Замеры'],['pm','Максимумы']];
+const SECTIONS = [['cal','Календарь'],['events','События'],['pay','Оплата'],['meas','Замеры'],['pm','Максимумы']];
 const MEAS = [['w','Вес','кг'],['waist','Талия','см'],['chest','Грудь','см'],['hips','Бёдра','см'],['fat','Жир','%']];
 const pmLabel = k => PMNAMES[k] || (EX.find(e=>e.id===k)||{}).ru || k;
 const CI = {
@@ -49,8 +50,36 @@ const CI = {
 };
 const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear() };
 const dshort = iso => dm(iso)+'.'+iso.slice(0,4);
-const paidKV = () => { if(!C.paidUntil) return '<span class="v"><i class="dot"></i>не внесена</span>'; const r = daysBetween(TODAY, C.paidUntil);
-  return r < 0 ? `<span class="v rm"><i class="dot"></i>${dshort(C.paidUntil)} <s>· просрочена</s></span>` : `<span class="v ${r<=7?'warn':'ok'}"><i class="dot"></i>${dshort(C.paidUntil)} <s>· ещё ${r} ${plural(r,'день','дня','дней')}</s></span>` };
+/* «Оплачено до» в шапке — ссылкой на раздел оплаты. */
+const paidKV = () => { const st = feeState(C);
+  if(st === 'none') return '<a class="v" href="#pay" data-sec-go="pay"><i class="dot"></i>не ведётся</a>';
+  const r = daysBetween(TODAY, C.paidUntil), left = `ещё ${r} ${plural(r,'день','дня','дней')}`;
+  const [cls, tx] = {closed:['rm','доступ закрыт'], today:['warn','последний день'], tomorrow:['warn','завтра'], soon:['warn',left], ok:['ok',left]}[st];
+  return `<a class="v ${cls}" href="#pay" data-sec-go="pay"><i class="dot"></i>${dshort(C.paidUntil)} <s>· ${tx}</s></a>` };
+/* Оплата занятий (PAY-9): сумма, срок, доступ, кнопки и история платежей.
+   Не ведётся — клиент тренируется без ограничений, кнопка «Задать оплату». */
+function payHTML(){
+  const st = feeState(C);
+  if(st === 'none') return `<div class="card"><div class="empty"><div class="t">Оплата не ведётся</div>
+    <div class="d">Клиент тренируется без ограничений. Задайте сумму и срок — клиент увидит их в профиле, за день до конца получит напоминание, а без оплаты новые тренировки у него закроются.</div>
+    <button class="btn sm" data-fee="${C.id}" data-fee-mode="edit" style="margin-top:12px">${ICON.plus} Задать оплату</button></div></div>`;
+  const r = daysBetween(TODAY, C.paidUntil), hist = C.feeHist || [];
+  const left = st === 'closed' ? 'истекла' : st === 'today' ? 'последний день' : st === 'tomorrow' ? 'завтра последний день' : `ещё ${r} ${plural(r,'день','дня','дней')}`;
+  return `<div class="card">
+    <div class="mhead">
+      <span class="mh"><s>Сумма</s><b>${rubs(C.feeAmt || 0)}</b></span>
+      <span class="mh"><s>Оплачено до</s><b class="fee-${st}">${dlong(C.paidUntil)} <i>· ${left}</i></b></span>
+      <span class="mh"><s>Доступ к тренировкам</s><b class="fee-${st === 'closed' ? 'closed' : 'ok'}">${st === 'closed' ? 'закрыт с ' + humanDate(addDays(C.paidUntil, 1)) : 'открыт'}</b></span>
+      <span class="sp"></span>
+      <button class="btn gh sm" data-fee="${C.id}" data-fee-mode="edit">Изменить</button>
+      <button class="btn sm" data-fee="${C.id}">${ICON.chk} Получил оплату</button>
+    </div>
+    ${st === 'closed' ? `<div class="feenote">Клиент видит прошлые тренировки и что пришли новые, но открыть новые не может — видит «Оплата не внесена», сумму и как оплатить. Отметьте оплату, и тренировки откроются сразу.</div>` : ''}
+    <div class="tblwrap"><table class="tbl ctbl"><thead><tr><th>Платёж получен</th><th class="r">Сумма</th><th>Оплачено до</th></tr></thead><tbody>
+      ${hist.length ? hist.map(h=>`<tr><td>${dlong(h.d)}</td><td class="r"><b>${rubs(h.amt)}</b></td><td>${dlong(h.until)}</td></tr>`).join('') : '<tr><td colspan="3" class="mut">Платежей пока нет</td></tr>'}
+    </tbody></table></div>
+  </div>`;
+}
 const actKV = () => !C.last ? '<span class="v"><i class="dot"></i>ещё не заходил</span>' : `<span class="v ${daysBetween(C.last,TODAY)>=3?'warn':'ok'}"><i class="dot"></i>${ago(C.last)}</span>`;
 
 /* Две недели — текущая и следующая — теми же карточками, что в календаре. */
@@ -165,6 +194,11 @@ function render(){
       <div class="card cb flush"><div class="feed1" style="margin:0">${feedHTML(events(C.id))}</div></div>
     </section>
 
+    <section class="csec" id="pay">
+      <div class="sechead"><span class="t">Оплата занятий</span><span class="ln"></span><span class="n">деньги клиент переводит вам сам — здесь срок и отметки</span></div>
+      ${payHTML()}
+    </section>
+
     <section class="csec" id="meas">
       <div class="sechead"><span class="t">Замеры</span><span class="ln"></span></div>
       ${measHTML()}
@@ -200,6 +234,7 @@ function render(){
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
   const HEAD = 58 + 52;
+  $$('[data-sec-go]').forEach(a=>a.onclick=e=>{ e.preventDefault(); $('#ctabs a[data-sec="'+a.dataset.secGo+'"]').click() });
   $$('#ctabs a').forEach(a=>a.onclick=e=>{ e.preventDefault(); const el=$('#'+a.dataset.sec); window.scrollTo({top: el.getBoundingClientRect().top + scrollY - HEAD, behavior:'smooth'}); history.replaceState(null,'','#'+a.dataset.sec) });
   const io = new IntersectionObserver(es=>{ es.forEach(en=>{ if(en.isIntersecting){ $$('#ctabs a').forEach(a=>a.classList.toggle('on', a.dataset.sec===en.target.id)) } }) }, {rootMargin:'-120px 0px -70% 0px'});
   $$('.csec').forEach(s=>io.observe(s));

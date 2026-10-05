@@ -930,6 +930,7 @@ body.bk-on .pubbar{bottom:76px}
 .fev.t-miss .ico{background:#FBF1DE;color:var(--warn)}
 .fev.t-prog .ico{background:var(--rm-a);color:var(--rm)}
 .fev.t-new .ico,.fev.t-done .ico{background:var(--ok-a);color:var(--ok)}
+.fev.t-fee .ico{background:#FBF1DE;color:var(--warn)}
 .fev .c{flex:1;min-width:0}
 .fev .h{display:flex;gap:8px;align-items:baseline}
 .fev .h b{font-size:14.5px;font-weight:600}
@@ -976,6 +977,7 @@ body.bk-on .pubbar{bottom:76px}
 .tchip.t-miss{background:#FBF1DE;color:var(--warn)}
 .tchip.t-prog{background:var(--rm-a);color:var(--rm)}
 .tchip.t-new,.tchip.t-done{background:var(--ok-a);color:var(--ok)}
+.tchip.t-fee{background:#FBF1DE;color:var(--warn)}
 /* крестик удаления сообщения клиенту — в тон полосы */
 .wmsg .x{width:26px;height:26px;border-radius:var(--rad-s);display:grid;place-items:center;color:var(--acc-d);flex:none}
 .wmsg .x:hover{background:var(--rm-a);color:var(--rm)}
@@ -1249,7 +1251,8 @@ body.bk-on .toast{bottom:96px}
 .tplc .ty{font-size:13px;font-weight:600;color:var(--acc-d);margin:-3px 0 5px}
 
 /* ═══════════ список клиентов: оплата ═══════════ */
-.paycell{display:flex;flex-direction:column;align-items:flex-start;gap:3px;white-space:nowrap}
+.paycell{display:flex;align-items:center;gap:14px;white-space:nowrap}
+.paycell > div{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:118px}   /* кнопки «Получил оплату» — одной колонкой */
 .paycell .pd{font-size:13.5px;color:var(--tx2);font-variant-numeric:tabular-nums;padding-left:2px}
 
 /* ═══════════ конструктор: как создать тренировку ═══════════ */
@@ -1575,3 +1578,130 @@ body:not(.railmin) .cons.cwide{grid-template-columns:minmax(0,1fr) 352px}
 .dpk-f i{width:6px;height:6px;border-radius:50%;background:var(--acc)}
 .dpk-f i.draft{background:var(--tx3)}
 .tsplit.one .btn:first-child{border-radius:var(--rad-m)}
+
+/* ═══════════ СТРАНИЦА ЭЛЕМЕНТА БАЗЫ: упражнение, блок, тренировка, программа ═══════════
+   Сюда ведёт строка базы. Шапка — путь к базе, название (у своего — поле),
+   пометка «своё / общая база» и действия; ниже — всё об элементе. Блок и
+   тренировка открываются в конструкторе (режим шаблона), шапка у них та же. */
+.ehead{background:var(--bg);border-radius:var(--rad-l);padding:14px 22px 16px;margin-bottom:14px}
+.ehead .crumb{margin-bottom:10px}
+.ehead .crumb .cur{overflow:hidden;text-overflow:ellipsis}
+.ehead-top{display:flex;align-items:center;gap:16px}
+.ehead .eth{width:56px;height:56px;flex:none;display:grid;place-items:center;border-radius:var(--rad-m);font-size:15px;font-weight:700;background:var(--s1);color:var(--tx2)}
+/* Конструктор не подключает pages.css — чипы и кнопки-ссылки шапки описаны здесь. */
+.ehead .chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:var(--rad-s);background:var(--s1);font-size:13px;font-weight:500;color:var(--tx2);white-space:nowrap}
+.ehead .chip.ok{background:var(--ok-a);color:var(--ok)}
+.ehead .chip.ghost{background:none;color:var(--tx3);padding:0}
+.ehead a.btn{text-decoration:none}
+.ehead .eth svg{width:24px;height:24px}
+.ehead .eid{flex:1;min-width:0}
+.ehead .enm{display:block;width:100%;font-family:var(--disp);font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.2;
+  color:var(--ink);background:none;border:0;border-radius:var(--rad-m);padding:2px 6px;margin-left:-6px}
+.ehead input.enm:hover{background:var(--s2)}
+.ehead input.enm:focus{outline:0;background:var(--s1)}
+.ehead input.enm::placeholder{color:var(--tx4)}
+.ehead .esub{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:5px;font-size:14.5px;color:var(--tx2)}
+.ehead .eacts{display:flex;align-items:center;gap:8px;flex:none}
+.ehead .eprops{display:flex;align-items:center;flex-wrap:wrap;gap:10px 22px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14.5px}
+.ehead .eprops .ep{display:flex;align-items:center;gap:8px}
+.ehead .eprops .ep > s{text-decoration:none;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+.ehead .eprops .ep > b{font-weight:600}
+.ehead .eprops select.inp{height:32px;width:auto;min-width:150px}
+.ehead .eprops .uses-in{display:inline;line-height:1.5}
+.ehead .eprops .uses-in a{font-size:14px;color:var(--acc-d);text-decoration:none}
+.ehead .eprops .uses-in a:hover{text-decoration:underline}
+/* Полоса-пояснение под шапкой: общее из базы сервиса, новое. */
+.ebar{display:flex;align-items:center;gap:14px;background:var(--bg);border-left:3px solid var(--line2);border-radius:var(--rad-m);padding:11px 16px;margin-bottom:14px}
+.ebar span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ebar b{font-weight:600;font-size:14.5px}
+.ebar s{text-decoration:none;font-size:14px;color:var(--tx2);line-height:1.4}
+.egrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+.egrid .side{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px}
+.ecard{border:1px solid var(--line)}
+.ecard textarea.inp{height:auto;min-height:84px;padding:9px 11px;resize:vertical;line-height:1.45;font-family:inherit;width:100%}
+.egif{display:block;width:100%;border-radius:var(--rad-m);background:var(--s1)}
+.enomedia{display:grid;place-items:center;aspect-ratio:4/3;border-radius:var(--rad-m);border:1.5px dashed var(--line2);color:var(--tx3);font-size:14px}
+/* Ссылки на соседние элементы: похожие, замены, где используется. */
+.uses{display:flex;flex-direction:column}
+.uses a{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.uses a:first-child{padding-top:0}
+.uses a:last-child{border-bottom:0;padding-bottom:0}
+.uses a b{flex:1;min-width:0;font-weight:600;font-size:14.5px}
+.uses a s{text-decoration:none;font-size:13.5px;color:var(--tx3);white-space:nowrap}
+.uses a:hover b{color:var(--acc-d)}
+/* Цикл программы: день — строка, порядок перетаскиванием. */
+.cycs{display:flex;flex-direction:column}
+.cyc{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.cyc:first-child{padding-top:0}
+.cyc:last-child{border-bottom:0}
+.cyc .gr{width:16px;height:16px;color:var(--tx4);cursor:grab;flex:none}
+.cyc .gr svg{width:16px;height:16px}
+.cyc .cn{width:62px;flex:none;font-size:13.5px;font-weight:700;color:var(--tx3);font-variant-numeric:tabular-nums}
+.cyc select.inp{flex:1;min-width:0;max-width:420px;height:34px}
+.cyc.rest select.inp{color:var(--tx3)}
+.cyc .cw{flex:1;min-width:0;font-weight:600;color:var(--ink);text-decoration:none}
+.cyc a.cw:hover{color:var(--acc-d)}
+.cyc.rest .cw{font-weight:500;color:var(--tx3)}
+.cyc .cmeta{flex:1;font-size:13.5px;color:var(--tx3);white-space:nowrap}
+.cyc .lnk{width:64px;font-size:14px;color:var(--acc-d);text-decoration:none;text-align:right}
+.cyc .lnk:hover{text-decoration:underline}
+.cyc.drag{opacity:.45}
+.cyc.over{box-shadow:inset 0 2px 0 var(--acc)}
+.cycadd{display:flex;gap:8px;margin-top:12px}
+/* Конструктор в режиме шаблона (?tpl=): вместо ленты дней — шапка элемента базы. */
+.wk.tplh{background:none;padding:0;margin-bottom:0}
+.ehead .eprops .none{font-weight:500;color:var(--tx3)}
+.ehead .eprops .uses-in span{color:var(--tx3)}
+.ehead .eprops .ep.auto{margin-left:auto;font-size:13.5px;color:var(--tx3)}
+/* Блок-шаблон — одна карточка: название в шапке страницы, удалять и класть в базу нечего. */
+#doc.tplblk .blkh > .gr, #doc.tplblk .blkh .bt, #doc.tplblk .blkh [data-savblk], #doc.tplblk .blkh [data-delblk]{display:none}
+#doc.tplblk .blkh{min-height:34px}
+/* Общий шаблон — только смотреть: без ручек, крестиков, добавления и панели источников. */
+#doc.ro .blk{pointer-events:none}
+#doc.ro .gr, #doc.ro .x, #doc.ro .addrow, #doc.ro .addl, #doc.ro .kind, #doc.ro .aib, #doc.ro .rng, #doc.ro .pick, #doc.ro .tbar, #doc.ro .cpx, #doc.ro .caddw{display:none}
+body.tplro .rail{display:none}
+body.tplro .cons{grid-template-columns:minmax(0,1fr)}
+#doc .empty b{display:block;font-size:16px;margin-bottom:4px}
+
+/* ═══════════ ВЫПАДАЮЩИЙ СПИСОК (assets/dsel.js) ═══════════
+   Кнопка вместо системного <select> и список под ней: поиск в длинных
+   списках, галочка у выбранного, подпись справа, группы. Сам <select> прячем —
+   он остаётся источником значения и событий для страницы. */
+select[data-dsel]{display:none !important}
+.dsel{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 10px 0 11px;border-radius:var(--rad-m);
+  background:var(--s1);border:1.5px solid transparent;font:inherit;font-size:14.5px;color:var(--ink);text-align:left;
+  cursor:pointer;min-width:0;max-width:100%;vertical-align:midsle}
+.dsel:hover{background:var(--s2)}
+.dsel:focus-visible,.dsel.open{outline:0;background:var(--bg);border-color:var(--acc)}
+.dsel:disabled{opacity:.5;cursor:default}
+.dsel .dselv{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsel .dselv s{text-decoration:none;color:var(--tx3);margin-left:8px}
+.dsel.ph .dselv{color:var(--tx3)}
+.dsel > svg{width:14px;height:14px;color:var(--tx3);flex:none;transition:transform .15s}
+.dsel.open > svg{transform:rotate(180deg);color:var(--acc)}
+.dsel.dsel-inp{width:100%}
+.ehead .eprops .dsel{height:32px;min-width:150px}
+.cyc .dsel{flex:1;max-width:420px}
+.line.chain .cof .dsel{height:30px;border-radius:7px;border-color:var(--line2);background:var(--bg);padding:0 7px 0 8px;font-size:14px;font-weight:600;max-width:320px}
+.line.chain .cof .dsel:focus-visible,.line.chain .cof .dsel.open{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
+.line.chain .cof.off .dsel{pointer-events:none}
+.pk-src .dsel{height:32px;font-weight:600}
+.wz-f .dsel{width:100%;height:36px;border:1px solid var(--line2);background:var(--bg);font-size:15px}
+.nx-f .dsel{width:100%;height:38px;background:var(--s2);font-size:15px}
+
+.sug.dsl{z-index:120;min-width:240px;max-width:min(480px,calc(100vw - 16px));padding:6px}
+.dsl .dsel-s{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:var(--rad-m);background:var(--s1);margin-bottom:6px;cursor:text}
+.dsl .dsel-s svg{width:14px;height:14px;color:var(--tx3);flex:none}
+.dsl .dsel-s input{flex:1;min-width:0;height:100%;font:inherit;font-size:14.5px;color:var(--ink);border:0;outline:0;background:none;padding:0}
+.dsl .dsel-s:focus-within{background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.dsl .dsel-s:focus-within svg{color:var(--acc)}
+.dsl .dsel-list{max-height:320px;overflow:auto;overscroll-behavior:contain}
+.dsl .row{padding:7px 10px;font-size:14.5px;line-height:1.3;color:var(--ink);cursor:pointer}
+.dsl .row .dsel-t{flex:1;min-width:0}
+.dsl .row s{text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap}
+.dsl .row.cur .dsel-t{color:var(--acc-d);font-weight:600}
+.dsl .row > svg{width:14px;height:14px;color:var(--acc);flex:none}
+.dsl .row[disabled]{opacity:.45;cursor:default;background:none}
+.dsl .dsel-cap{padding:8px 10px 4px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+.dsl .dsel-cap:first-child{padding-top:2px}
+.dsl .dsel-none{padding:10px;font-size:14px;color:var(--tx3)}

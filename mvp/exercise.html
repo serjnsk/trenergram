@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Упражнение · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css">
+<link rel="stylesheet" href="assets/theme-01-strava.css">
+<link rel="stylesheet" href="assets/pages.css">
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap wide"><div id="page"></div></div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/exdb.js"></script>
+<script src="assets/exdb-steps.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+/* ═══════════ СТРАНИЦА УПРАЖНЕНИЯ (EX-1, EX-2, EX-3) ═══════════
+   Всё об упражнении на одной странице, сюда ведёт строка базы. Своё правится
+   целиком и сохраняется само. Общее из базы сервиса не меняется никак — его
+   только смотрят (EX-2). Новое — та же страница пустой: в базе оно появляется,
+   как только у него есть название. */
+const Q = new URLSearchParams(location.search);
+const EX_UNITS = ['кг','повт','сек','м','кал','темп','скорость','мощность','высота','пульс','RPE'];
+let E = Q.get('new') ? null : byId(Q.get('id'));
+if(E && E.del) E = null;
+const DRAFT = {ru:'', en:'', g:'', eq:'—', u:['кг','повт'], pm:null, mus:'', mus2:'', steps:[], tech:''};
+const isNew = () => !E && !!Q.get('new');
+
+const thumbHTML = x => `<span class="thumb eth ${x.m==='pending'?'pending':''}">${x.img?`<img src="${x.img}" alt="">`:x.ru?esc(initials(x)):ICON.dumb}</span>`;
+const usesHTML = list => list.length
+  ? `<div class="uses">${list.map(t=>`<a href="${elHref(t)}"><b>${esc(t.title)}</b><s>${esc(t.folder || '')}${t.own ? '' : ' · общая база'}</s></a>`).join('')}</div>`
+  : `<div class="hint">Пока нет ни в одном блоке базы.</div>`;
+const relHTML = list => `<div class="uses">${list.map(x=>`<a href="exercise.html?id=${encodeURIComponent(x.id)}"><b>${esc(x.ru)}</b><s>${esc(x.eq)}</s></a>`).join('')}</div>`;
+
+/* Поле сохраняется при уходе из него: change приходит раньше, чем курсор
+   переедет в следующее поле, — перерисовываем после переезда и возвращаем его. */
+const later = () => setTimeout(render, 0);
+function render(){
+  const a = document.activeElement, fk = a && (a.dataset.f ? `[data-f="${a.dataset.f}"]` : a.id ? '#' + a.id : null);
+  draw();
+  const back = fk && $(fk); if(back && back !== document.activeElement) back.focus({preventScroll:true});
+}
+function draw(){
+  if(!E && !isNew()){
+    setTopTitle('Упражнение');
+    $('#page').innerHTML = `<div class="empty"><div class="t">Упражнения нет в базе</div><div class="d"><a href="exercises.html">Вернуться к упражнениям</a></div></div>`;
+    return;
+  }
+  const x = E || DRAFT, own = !E || E.own, d = E ? edbOf(E) : null;
+  const steps = d ? d.instructions : (x.steps || []);
+  const tech = E ? (TECH[E.id] || '') : DRAFT.tech;
+  setTopTitle(isNew() ? 'Новое упражнение' : 'Упражнение');
+  const kvRow = (k, v) => v ? `<s>${k}</s><b>${v}</b>` : '';
+  const chips = arr => arr.map(u=>`<span class="chip">${esc(u)}</span>`).join(' ');
+
+  $('#page').innerHTML = `
+  <div class="ehead">
+    <nav class="crumb"><a href="exercises.html">Упражнения</a><span class="sep">/</span><span class="cur">${esc(x.ru || 'Новое упражнение')}</span></nav>
+    <div class="ehead-top">
+      ${thumbHTML(x)}
+      <div class="eid">
+        ${own ? `<input class="enm" data-f="ru" value="${esc(x.ru)}" placeholder="Название упражнения" aria-label="Название упражнения">` : `<div class="enm">${esc(x.ru)}</div>`}
+        <div class="esub">${own ? '<span class="chip ok">своё</span>' : '<span class="chip ghost">общая база</span>'}${x.en ? `<span>${esc(x.en)}</span>` : ''}${x.g ? `<span>${esc(x.g)}</span>` : ''}${x.eq && x.eq !== '—' ? `<span>${esc(x.eq)}</span>` : ''}</div>
+      </div>
+      <div class="eacts">
+        ${E ? `<a class="btn" href="constructor.html?addex=${encodeURIComponent(E.id)}">${ICON.build} В тренировку</a>` : ''}
+        ${E && own ? `<button class="btn gh" id="eDel">Удалить</button>` : ''}
+      </div>
+    </div>
+  </div>
+  ${own ? '' : `<div class="ebar"><span><b>Упражнение из общей базы</b><s>Не меняется — только смотреть. Менять можно свои упражнения: «Добавить упражнение» в базе.</s></span></div>`}
+  ${isNew() ? `<div class="ebar"><span><b>Новое упражнение</b><s>Появится в вашей базе, как только вы дадите ему название. Остальное — по желанию, всё сохраняется само.</s></span></div>` : ''}
+
+  <div class="egrid">
+    <div>
+      <div class="sechead"><span class="t">Основное</span><span class="ln"></span></div>
+      <div class="card cb ecard">
+        ${own ? `
+        <div class="cols2" style="margin-bottom:12px">
+          <div class="formfld"><span class="k">Название по-английски</span><input class="inp" data-f="en" value="${esc(x.en)}" placeholder="Например: Back Squat"></div>
+          <div class="formfld"><span class="k">Группа</span><select class="inp" data-f="g">
+            <option value="" ${x.g?'':'selected'}>Без группы</option>
+            ${GROUPS.filter(g=>g!=='Все').map(g=>`<option ${x.g===g?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
+        </div>
+        <div class="cols2" style="margin-bottom:12px">
+          <div class="formfld"><span class="k">Оснащение</span><select class="inp" data-f="eq">
+            <option value="—" ${x.eq==='—'?'selected':''}>Без оснащения</option>
+            ${EQUIP.filter(q=>q!=='—').map(q=>`<option ${x.eq===q?'selected':''}>${esc(q)}</option>`).join('')}</select></div>
+          <div class="formfld"><span class="k">Целевые мышцы</span><input class="inp" data-f="mus" value="${esc(x.mus||'')}" placeholder="Например: квадрицепсы, ягодичные"></div>
+        </div>
+        <div class="formfld"><span class="k">Вспомогательные мышцы</span><input class="inp" data-f="mus2" value="${esc(x.mus2||'')}" placeholder="Например: мышцы кора"></div>`
+        : `<div class="kv" style="margin-top:0">
+          ${kvRow('Название по-английски', esc(x.en))}
+          ${kvRow('Группа', esc(x.g))}
+          ${kvRow('Оснащение', esc(x.eq))}
+          ${d ? kvRow('Часть тела', esc(d.bodyPart)) + kvRow('Целевая мышца', esc(d.target)) + (d.secondary.length ? kvRow('Вспомогательные', chips(d.secondary)) : '') : ''}
+        </div>`}
+      </div>
+
+      <div class="sechead"><span class="t">Показатели</span><span class="ln"></span></div>
+      <div class="card cb ecard">
+        ${own ? `<div class="tags">${EX_UNITS.map(u=>`<button data-u="${esc(u)}" class="${(x.u||[]).includes(u)?'on':''}">${esc(u)}</button>`).join('')}</div>`
+          : `<div>${chips(x.u||[])}</div>`}
+        <div class="hint">В этих единицах вы задаёте нагрузку в тренировке, а клиент записывает результат (EX-3).</div>
+        <div class="setrow" style="margin-top:12px"><span class="t"><b>Расчёт от максимума</b><s>Процент в тренировке считается от 1ПМ этого движения</s></span>
+          ${own ? `<select class="inp" id="ePm" style="width:220px"><option value="">Нет</option>${Object.entries(PMNAMES).map(([k,n])=>`<option value="${k}" ${x.pm===k?'selected':''}>${esc(n)}</option>`).join('')}</select>`
+            : `<b>${x.pm ? esc(PMNAMES[x.pm] || x.pm) : '<span style="color:var(--tx3);font-weight:500">нет</span>'}</b>`}</div>
+      </div>
+
+      <div class="sechead"><span class="t">Техника</span><span class="ln"></span></div>
+      <div class="card cb ecard">
+        ${own ? `<textarea class="inp" id="eSteps" rows="5" placeholder="Каждый шаг — с новой строки">${esc((x.steps||[]).join('\n'))}</textarea>
+          <div class="hint">Клиент видит шаги в тренировке, по кнопке техники у упражнения.</div>`
+          : steps.length ? `<ol class="rsteps">${steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>` : `<div class="hint" style="margin-top:0">В базе нет описания техники.</div>`}
+      </div>
+
+      ${own ? `<div class="sechead"><span class="t">Акценты тренера</span><span class="ln"></span></div>
+      <div class="card cb ecard">
+        <textarea class="inp" id="eTech" rows="3" placeholder="На что смотреть в технике: ваши подсказки поверх шагов">${esc(tech)}</textarea>
+        <div class="hint">Клиент видит их над шагами техники.</div>
+      </div>` : ''}
+
+      ${d && d.similar.length ? `<div class="sechead"><span class="t">Похожие</span><span class="ln"></span><span class="n">та же мышца и оснащение · ${d.similar.length}</span></div>
+        <div class="card cb ecard">${relHTML(d.similar)}</div>` : ''}
+      ${d && d.subs.length ? `<div class="sechead"><span class="t">Замены</span><span class="ln"></span><span class="n">та же мышца, другое оснащение · ${d.subs.length}</span></div>
+        <div class="card cb ecard">${relHTML(d.subs)}</div>` : ''}
+
+      ${E ? `<div class="sechead"><span class="t">Где используется</span><span class="ln"></span><span class="n">блоки базы</span></div>
+        <div class="card cb ecard">${usesHTML(usesOf('упражнение', E.id))}</div>` : ''}
+    </div>
+
+    <div class="side">
+      ${x.gif ? `<div class="card cb ecard">
+        <div class="sechead" style="margin:0 0 10px"><span class="t">Демонстрация</span></div>
+        <img class="egif" src="${x.gif}" alt="${esc(x.ru)} — демонстрация">
+      </div>` : ''}
+      <div class="card cb ecard">
+        <div class="kv" style="margin-top:0">
+          <s>Источник</s><b>${own ? 'ваша база' : 'общая база сервиса'}</b>
+          ${E ? `<s>В блоках</s><b>${usesOf('упражнение', E.id).length}</b>` : ''}
+          ${d ? `<s>ID в базе</s><b>${esc(d.id)}</b>` : ''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+  bind();
+}
+
+/* Своё новое — черновик, пока нет названия; с названием — запись в базе. */
+function setField(k, v){
+  if(E){ exPut(E, {[k]: v}); toast('Сохранено'); later(); return }
+  DRAFT[k] = v;
+  if(k === 'ru' && v){
+    E = addOwnEx(DRAFT);
+    exPut(E, {pm:DRAFT.pm, mus:DRAFT.mus, mus2:DRAFT.mus2, steps:DRAFT.steps});
+    if(DRAFT.tech) techPut(E.id, DRAFT.tech);
+    history.replaceState(null, '', 'exercise.html?id=' + encodeURIComponent(E.id));
+    toast('Упражнение добавлено в вашу базу');
+  }
+  later();
+}
+function bind(){
+  $$('[data-f]').forEach(i => i.onchange = () => setField(i.dataset.f, i.value.trim()));
+  $$('[data-u]').forEach(b => b.onclick = () => {
+    const x = E || DRAFT, u = b.dataset.u, cur = x.u || [];
+    const next = cur.includes(u) ? cur.filter(v => v !== u) : [...cur, u];
+    if(!next.length) return toast('Нужен хотя бы один показатель');
+    setField('u', next);
+  });
+  const pm = $('#ePm'); if(pm) pm.onchange = () => setField('pm', pm.value || null);
+  const st = $('#eSteps'); if(st) st.onchange = () => setField('steps', st.value.split('\n').map(s => s.trim()).filter(Boolean));
+  const tc = $('#eTech'); if(tc) tc.onchange = () => { const t = tc.value.trim(); if(E){ techPut(E.id, t); toast('Сохранено') } else DRAFT.tech = t };
+  const del = $('#eDel'); if(del) del.onclick = () => openModal({title:'Удалить упражнение', body:`<p class="lead">«${esc(E.ru)}» уйдёт из вашей базы. В блоках и тренировках, где оно уже стоит, упражнение останется.</p>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn rm" id="eDelOk">Удалить</button>`});
+}
+document.addEventListener('click', e => {
+  if(e.target.closest('#eDelOk')){ exDrop(E); location.href = 'exercises.html' }
+});
+render();
+initShell({page:'exercises.html'});
+</script>
+</body>
+</html>

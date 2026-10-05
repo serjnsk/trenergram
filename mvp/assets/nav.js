@@ -13,10 +13,10 @@ const NAV = [
  /* Четыре базы по уровням сущностей из документации: упражнение → блок →
     тренировка → программа (недели живут вкладкой внутри базы программ).
     В каждой — и общая база сервиса, и сохранённое тренером, личное с пометкой. */
- {h:'exercises.html',  k:'dumb',  n:'Упражнения',             a:'Упраж',  c:()=>EX.length},
- {h:'blocks.html',     k:'folder',n:'Блоки'                  , a:'Блоки',  c:()=>TPL.filter(t=>t.lvl==='блок').length},
- {h:'workouts.html',   k:'tpl',   n:'Тренировки',             a:'Трен',   c:()=>TPL.filter(t=>t.lvl==='тренировка').length},
- {h:'programs.html',   k:'prog',  n:'Программы',              a:'Прогр',  c:()=>TPL.filter(t=>t.lvl==='программа').length},
+ {h:'exercises.html',  k:'dumb',  n:'Упражнения',             a:'Упраж',  c:()=>exLive().length},
+ {h:'blocks.html',     k:'folder',n:'Блоки'                  , a:'Блоки',  c:()=>tplLive('блок').length},
+ {h:'workouts.html',   k:'tpl',   n:'Тренировки',             a:'Трен',   c:()=>tplLive('тренировка').length},
+ {h:'programs.html',   k:'prog',  n:'Программы',              a:'Прогр',  c:()=>tplLive('программа').length},
 ];
 
 

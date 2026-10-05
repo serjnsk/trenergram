@@ -334,7 +334,8 @@ addEventListener('hashchange', clRender);
 addEventListener('message', e => {
   const m = e.data || {};
   if (m.cl === 'go') { if (m.p) clP = clNorm(m.p); clGo(m.id, m.v, m.replace); }
-  if (m.cl === 'params') clP = clNorm(m.p);
+  /* Оплата со стенда меняет вид текущего экрана — перерисовываем его */
+  if (m.cl === 'params') { const was = clP.pay; clP = clNorm(m.p); if (clP.pay !== was && clDev.querySelector('.scr')) { clCur = ''; clRender(); } }
   /* Тема со стенда: перерисовываем текущий экран — в настройках виден выбор */
   if (m.cl === 'theme' && m.t && clInFrame) { clS.set.theme = m.t; clSave(); clApplyTheme(); clCur = ''; clRender(); parent.postMessage({ cl: 'theme' }, '*'); }
   if (m.cl === 'back' && clStack.length > 1) history.back();

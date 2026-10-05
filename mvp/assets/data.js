@@ -16,6 +16,9 @@ const dm = s => { const d=D(s); return String(d.getDate()).padStart(2,'0')+'.'+S
 const addDays = (s,n) => { const d=D(s); d.setDate(d.getDate()+n); return iso(d) };
 const dowMon = s => (D(s).getDay()+6)%7;    /* 0 = понедельник */
 const daysBetween = (a,b) => Math.round((D(b)-D(a))/86400000);
+/* Месяц вперёд с тем же числом; 31-е в коротком месяце — его последний день. */
+const addMonths = (s,n) => { const d=D(s), day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n);
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth()+1, 0).getDate())); return iso(d) };
 const TODAY = iso(new Date());
 const SHIFT = daysBetween(ANCHOR, TODAY);
 const shiftDate = d => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? addDays(d, SHIFT) : d;
@@ -28,7 +31,7 @@ const TRAINER = {
   n:'Сергей Ковальчук', ini:'СК', workspace:'CrossFit Ладья',
   invite:'https://trenergram.app/j/K7F2QX',
   first:'Сергей', last:'Ковальчук', phone:'+7 921 400-18-22', email:'kovalchuk@ladya.fit',
-  city:'Санкт-Петербург', tz:'Europe/Moscow', sports:['Кроссфит','Тяжёлая атлетика'],
+  city:'Санкт-Петербург',
   about:'Тренирую кроссфит и силовые с 2016 года. Готовлю к соревнованиям и возвращаю после травм — аккуратно и по плану.',
   brand:{ title:'Ковальчук · Strength & Conditioning', color:'#D7FF3F', bg:'#0B0D0F', logo:'СК' }
 };
@@ -39,11 +42,12 @@ const PLANS = [
   {id:'pro',    n:'Тренер', limit:50,  price:2990, d:'Персональный тренер с полной базой'},
   {id:'studio', n:'Студия', limit:200, price:7990, d:'Несколько тренеров, до 200 клиентов'},
 ];
+/* Виды спорта — у клиентов (карточка, список). В профиле тренера их больше нет. */
 const SPORTS = ['Кроссфит','Тренажёрный зал','Тяжёлая атлетика','Функциональный тренинг','Бег','Плавание','Единоборства','Реабилитация'];
 const PROFILE_DEF = {
   sub:{plan:'pro', until:'2026-10-12', card:'Visa •••• 4242', since:'2025-03-12'},
   prefs:{units:'кг', lang:'ru', weekStart:'пн'},
-  notify:{results:true, comments:true, missed:true, programEnd:true, newClient:true, push:true, email:false},
+  notify:{results:true, comments:true, missed:true, programEnd:true, newClient:true},
 };
 
 /* ─── База упражнений (EX-1) · гибкие показатели (EX-3) ───
@@ -118,22 +122,9 @@ EX.push(
  {id:'own_hipthrust', ru:'Ягодичный мост',              en:'Hip Thrust',       g:'Ноги',    eq:'Штанга',   pm:null,     u:['повт','кг'],              m:'ok',      own:true},
  {id:'own_facepull',  ru:'Тяга к лицу',                 en:'Face Pull',        g:'Спина',   eq:'Блок',     pm:null,     u:['повт','кг'],              m:'ok',      own:true},
 );
-/* Акценты тренера — его заметки к упражнению поверх техники из базы. */
+/* Акценты тренера — его заметки поверх техники. Есть только у своих упражнений:
+   общие из базы сервиса тренер не меняет никак (EX-2). */
 const TECH = {
- '0043':'Штанга на трапеции, стопы чуть шире плеч, носки развёрнуты. Колени идут в сторону носков, спина нейтральна. Опускаться до параллели бедра с полом или ниже.',
- '0032':'Гриф над серединой стопы, лопатки над грифом. Спина прямая от начала до конца, таз и плечи поднимаются одновременно. В верхней точке не отклоняться назад.',
- '0025':'Лопатки сведены и прижаты, стопы упёрты в пол. Гриф опускается к низу груди, локти под углом 45° к корпусу.',
- '1457':'Гриф на передних дельтах, локти под грифом. Корпус жёсткий, ягодицы напряжены. Голова уходит назад, гриф идёт по прямой вверх.',
- '0648':'Старт как в становой. Разгон бёдрами, затем быстрый подсед под штангу. Локти выходят вперёд, гриф ложится на дельты.',
- '0652':'Хват чуть шире плеч, в нижней точке руки полностью выпрямлены. Подтягиваться до касания подбородком уровня перекладины.',
- '0471':'Стойка на руках у стены, ладони чуть шире плеч. Опускаться до касания головой пола, затем выжимать в исходное.',
- '0336':'Шаг вперёд, колено задней ноги почти касается пола. Корпус вертикально, гантели вдоль тела.',
- '3305':'Фронтальный присед и жим одним движением. Штанга выходит вверх на разгибании ног.',
- '1160':'Грудь касается пола, в верхней точке полное выпрямление с прыжком.',
- '0549':'Разгон гирей за счёт таза, а не рук. Спина прямая, гиря выходит на уровень глаз или выше.',
- '0042':'Гриф на передних дельтах, локти высоко. Корпус максимально вертикально, колени вперёд.',
- '0685':'Ровный темп, дыхание в ритм. Приземление под центр тяжести.',
- '0680':'Захват каната ногами, подъём за счёт ног. Спуск подконтрольный, не скользить ладонями.',
  own_snatch:'Широкий хват, гриф над серединой стопы. Плавный съём, ускорение от бедра, глубокий подсед. Штанга фиксируется на прямых руках над головой.',
  own_ttb:'Вис на прямых руках, плечи активны. Носки касаются перекладины, обратно опускаться подконтрольно, не раскачиваясь.',
  own_ring:'Кольца прижаты к корпусу, плечи ниже локтей в нижней точке. В верхней — полное выпрямление рук с разворотом колец.',
@@ -1278,12 +1269,19 @@ const isOver = cid => overLimit().some(c => c.id === cid);
 const translit = w => w.toLowerCase().replace(/[а-яё]/g, ch => ({а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'})[ch] ?? ch);
 CLIENTS.forEach((c,i)=>{ const h = translit(c.n.split(' ').pop()) + (i % 3 === 0 ? '' : '_' + (80 + i % 19)); c.tg ||= '@' + h; c.max ||= '@' + h; });
 
-/* Оплата и замеры — демо: до какого числа внесена оплата, история веса и
-   объёмов раз в 3–5 недель. Замеры в координатах ANCHOR, сдвигаются. */
+/* Оплата занятий и замеры — демо. Оплата (PAY-9): сумма за месяц, «оплачено до»
+   и прошлые платежи; у Марии и Ильи Гордеева срок кончается завтра и сегодня, у части
+   клиентов уже кончился, у новых — не задан. Замеры — история веса и объёмов
+   раз в 3–5 недель. Всё в координатах ANCHOR, сдвигается. */
 (function seedBilling(){
   let seed = 7; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 };
   CLIENTS.forEach((c,i)=>{
-    c.paidUntil ||= addDays(ANCHOR, i % 9 === 4 ? -Math.floor(rnd()*6) - 1 : Math.floor(rnd()*40) + 3);
+    /* Илья пришёл сегодня — тренер ещё не задал ему оплату и замеров нет */
+    if(c.id === 'c7') return;
+    c.paidUntil ||= addDays(ANCHOR, i % 9 === 4 ? -Math.floor(rnd()*6) - 1 : i === 1 ? 1 : i === 2 ? 0 : Math.floor(rnd()*28) + 3);
+    c.feeAmt ||= [6000, 5000, 8000, 4500, 7000][i % 5];
+    c.feeHist ||= [0, 1, 2].map(k => { const until = addMonths(c.paidUntil, -k);
+      return {d: addDays(addMonths(until, -1), -(i + k) % 3), amt: c.feeAmt, until} });
     if(!c.meas){ const w0 = c.w || 75, n = 5; c.meas = Array.from({length:n}, (_,k)=>{ const t = n-1-k; const w = Math.round((w0 + t*(rnd()*1.2-0.3))*10)/10;
       return {date: addDays(ANCHOR, -t*28 - Math.floor(rnd()*6)), w, waist: Math.round(w*0.98 + 3 + t*0.6), chest: Math.round(w*1.15 + 8 - t*0.3), hips: Math.round(w*1.1 + 6), fat: Math.round((14 + t*0.7 + rnd())*10)/10} }); }
   });
@@ -1489,6 +1487,40 @@ function saveState(){ STATE.wmsg = wmsgOf(); try{ localStorage.setItem('trenergr
   Object.values(TALK.workout).forEach(arr => { const i = arr.findIndex(m => m.who === 'trainer'); if(i >= 0) arr.splice(i, 1) });
   Object.entries(STATE.wmsg).forEach(([k, text]) => (TALK.workout[k] ||= []).unshift({who:'trainer', text, at:''}));
 })();
+/* ─── Оплата занятий (PAY-9) ───
+   Деньги клиент переводит тренеру сам, сервис только ведёт срок. Тренер задаёт
+   сумму и «оплачено до», отмечает «Получил оплату» — срок продлевается на месяц
+   (дату можно поправить). Платил вовремя — новый срок идёт от старой даты без
+   дыр; доступ уже был закрыт — от дня оплаты. «Оплачено до 21-го»: 21-го всё
+   открыто, с 22-го новые тренировки у клиента закрыты, прошлые открываются.
+   Срок не задан — клиент тренируется без ограничений. Правки тренера лежат
+   в STATE.fee поверх демо; их же видит приложение клиента. */
+(function restoreFee(){
+  Object.entries(STATE.fee || {}).forEach(([cid, f]) => { const c = CLIENTS.find(x => x.id === cid); if(c) Object.assign(c, f) });
+})();
+function feeSave(c){ (STATE.fee ||= {})[c.id] = {paidUntil:c.paidUntil || null, feeAmt:c.feeAmt || null, feeHist:c.feeHist || []}; saveState() }
+/* none — не задана · ok · soon — неделя и меньше · tomorrow · today — последний день · closed — доступ закрыт */
+function feeState(c){
+  if(!c || !c.paidUntil) return 'none';
+  const r = daysBetween(TODAY, c.paidUntil);
+  return r < 0 ? 'closed' : r === 0 ? 'today' : r === 1 ? 'tomorrow' : r <= 7 ? 'soon' : 'ok';
+}
+/* Закрыта ли тренировка этого дня: доступ закрыт, а день — после оплаченного срока. */
+const feeLocked = (c, date) => feeState(c) === 'closed' && date > c.paidUntil;
+/* Срок, который даст «Получил оплату» сегодня: месяц от старой даты или от сегодня. */
+function feeNext(c){
+  const from = c.paidUntil && c.paidUntil >= TODAY ? addDays(c.paidUntil, 1) : TODAY;
+  return {from, until: addDays(addMonths(from, 1), -1)};
+}
+function feeReceive(c, amt, until){
+  (c.feeHist ||= []).unshift({d:TODAY, amt, until});
+  c.feeAmt = amt; c.paidUntil = until; feeSave(c);
+}
+const rubs = n => Math.round(n).toLocaleString('ru-RU') + '\u00a0₽';
+/* «Как оплатить» — текст тренера из профиля, клиент видит его, когда пора платить. */
+const PAY_HOW_DEF = 'Перевод по номеру +7 921 400-18-22 — Т-Банк или Сбер, получатель Сергей К.';
+const payHow = () => { const p = STATE.profile; return p && p.payHow != null ? p.payHow : PAY_HOW_DEF };
+
 /* Упражнения, которые тренер добавил в свою базу (из конструктора или со страницы
    базы). Лежат в STATE: без этого после перезагрузки строки дня ссылались бы
    на исчезнувшее упражнение и показывались пустыми. */
@@ -1500,6 +1532,63 @@ function addOwnEx({ru, en, g, eq, u}){
 }
 (STATE.ownEx || []).forEach(e => { if(!byId(e.id)){ EX.push(e); CAND.push({e, c:[e.ru, e.en].map(norm).filter(Boolean)}) } });
 const pmOf = cid => (STATE.pm[cid] ||= {...(client(cid)?.pm||{})});
+
+/* ═══════════ ПРАВКИ БАЗ НА СТРАНИЦЕ ЭЛЕМЕНТА (EX-2, TPL-2) ═══════════
+   Упражнение, блок, тренировка и программа правятся каждый на своей странице.
+   Правки — в STATE поверх демо-данных: упражнение — набором полей (exEd),
+   шаблон — целиком (tplEd), акценты своего упражнения — в STATE.tech. Общее
+   упражнение из базы сервиса не меняется никак. Удаление мягкое (del): элемент
+   уходит из базы, но тренировки, блоки и программы, где он стоит, его не теряют. */
+const freshId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);   /* nid() считает с нуля на каждой странице — для сохраняемого не годится */
+(function restoreEdits(){
+  Object.entries(STATE.exEd || {}).forEach(([id, patch]) => { const e = byId(id); if(e && e.own) Object.assign(e, patch) });
+  for(let k = CAND.length - 1; k >= 0; k--) if(CAND[k].e.del) CAND.splice(k, 1);   /* удалённое не подбирается из текста */
+  Object.entries(STATE.tech || {}).forEach(([id, text]) => { if(!(byId(id) || {}).own) return; if(text) TECH[id] = text; else delete TECH[id] });
+  Object.values(STATE.tplEd || {}).forEach(t => { const k = TPL.findIndex(x => x.id === t.id); if(k >= 0) TPL[k] = t; else TPL.unshift(t) });
+})();
+/* В базе видно только живое: без удалённого и без блоков, которые тренировка завела под себя. */
+const exLive = () => EX.filter(e => !e.del);
+const tplLive = lvl => TPL.filter(t => t.lvl === lvl && !t.del && !t.inline);
+function exPut(e, patch){
+  if(!e || !e.own) return;                     /* общее из базы сервиса не меняется */
+  Object.assign(e, patch);
+  const own = (STATE.ownEx || []).find(x => x.id === e.id);
+  if(own) Object.assign(own, patch); else Object.assign((STATE.exEd ||= {})[e.id] ||= {}, patch);
+  const c = CAND.find(x => x.e === e); if(c) c.c = [e.ru, e.en, ...(ALIAS[e.id] || [])].map(norm).filter(Boolean);
+  saveState();
+}
+function exDrop(e){
+  exPut(e, {del:true});
+  const k = CAND.findIndex(x => x.e === e); if(k >= 0) CAND.splice(k, 1);
+}
+function techPut(id, text){ if(!(byId(id) || {}).own) return; if(text) TECH[id] = text; else delete TECH[id]; (STATE.tech ||= {})[id] = text; saveState() }
+function tplPut(t){
+  const k = TPL.findIndex(x => x.id === t.id); if(k >= 0) TPL[k] = t; else TPL.unshift(t);
+  (STATE.tplEd ||= {})[t.id] = t; saveState();
+}
+const tplDrop = t => tplPut({...t, del:true});
+/* Копия шаблона — своя: общее правят только так (TPL-2). Тренировка ссылается
+   на блоки, программа — на тренировки; ссылки копия сохраняет. */
+function tplClone(t, title){
+  const c = JSON.parse(JSON.stringify(t));
+  Object.assign(c, {id:freshId('u'), own:true, at:TODAY, used:0, title: title || t.title}); delete c.inline;
+  tplPut(c); return c;
+}
+/* Где используется: упражнение — в блоках, блок — в тренировках, тренировка —
+   в программах. inline — блоки, которые тренировка завела под себя. */
+const tplHasEx = (t, id) => (t.items || []).some(x => x[0] === id || (x[0] === CH_TAG && (x[1] || []).some(p => p[0] === id)));
+function usesOf(lvl, id){
+  if(lvl === 'упражнение') return tplLive('блок').filter(t => tplHasEx(t, id));
+  if(lvl === 'блок') return tplLive('тренировка').filter(t => (t.blocks || []).includes(id));
+  if(lvl === 'тренировка') return tplLive('программа').filter(t => (t.seq || []).includes(id));
+  return [];
+}
+/* Адрес страницы элемента: блок и тренировка открываются в конструкторе
+   (режим шаблона), упражнение и программа — на своих страницах. */
+const elHref = t => t.lvl === 'программа' ? 'program.html?id=' + t.id
+  : t.lvl === 'блок' || t.lvl === 'тренировка' ? 'constructor.html?tpl=' + t.id
+  : 'exercise.html?id=' + t.id;
+const LVL_BASE = {'блок':['blocks.html','Блоки'], 'тренировка':['workouts.html','Тренировки'], 'программа':['programs.html','Программы']};
 
 /* ═══════════ ГРУППЫ: СОСТОЯНИЕ И РАЗДАЧА ТРЕНИРОВОК (GRP) ═══════════ */
 /* Название, время и состав групп живут в STATE.grps. Новая группа заводит свой

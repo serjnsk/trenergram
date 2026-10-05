@@ -358,11 +358,24 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
 .switch.on{background:var(--acc)}
 .switch.on::after{left:19px}
-.chan{display:flex;gap:6px;flex-wrap:wrap}
-.chan button{height:26px;padding:0 10px;border-radius:20px;font-size:13.5px;font-weight:600;background:var(--s1);color:var(--tx2)}
-.chan button.on{background:var(--acc-a);color:var(--acc-d)}
-.subhead{display:flex;align-items:baseline;gap:8px}
-.subhead .pl{font-family:var(--disp);font-size:21px;font-weight:700;letter-spacing:-.02em}
+/* Подписка в профиле: тариф, статус и цена — шапкой; лимит клиентов полосой;
+   даты и карта — строками «подпись слева, значение справа», без переносов;
+   действия во всю ширину, отмена — отдельно внизу. */
+.subc-h{display:flex;align-items:center;gap:8px}
+.subc-h .pl{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em}
+.subc-h .pr{margin-left:auto;font-size:15px;font-weight:700;white-space:nowrap}
+.subc-h .pr s{text-decoration:none;font-size:13.5px;font-weight:500;color:var(--tx3)}
+.subc .usage{margin-top:14px}
+.subc .uwarn{margin-top:6px;font-size:13px;color:var(--rm)}
+.subc-rows{margin-top:14px;border-top:1px solid var(--line)}
+.subc-rows .r{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.subc-rows s{text-decoration:none;color:var(--tx3);white-space:nowrap}
+.subc-rows b{font-weight:600;white-space:nowrap;text-align:right}
+.subc-rows b i{font-style:normal;font-weight:500;color:var(--tx3)}
+.subc-acts{display:grid;gap:8px;margin-top:14px}
+.subc-acts .btn{width:100%;justify-content:center}
+.subc-foot{margin-top:12px;text-align:center}
+.subc-foot .lnk-rm{margin-top:0;font-size:13.5px}
 .usage{margin-top:12px}
 .usage .bar{height:6px;border-radius:3px;background:var(--s1);overflow:hidden;margin-top:6px}
 .usage .bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
@@ -478,3 +491,10 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .gchip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
 .gchip svg{width:13px;height:13px}
 a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
+/* В колонке профиля карточки идут через gap — заголовок к своей карточке так же близко, как в основной колонке. */
+.prof .side > .sechead{margin-bottom:-2px}
+/* Оплата занятий в карточке клиента (PAY-9) */
+.mh b i{font-style:normal;font-weight:500;color:var(--tx3)}
+.mh b.fee-closed{color:var(--rm)} .mh b.fee-today,.mh b.fee-tomorrow,.mh b.fee-soon{color:var(--warn)} .mh b.fee-ok{color:var(--ok)}
+.feenote{padding:10px 16px;font-size:14px;line-height:1.45;color:var(--rm-d);background:var(--rm-a);border-bottom:1px solid var(--line)}
+.mdf .lnk-rm{margin-top:0}

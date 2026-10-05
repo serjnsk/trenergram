@@ -17,14 +17,9 @@
   <div class="main">
     <header class="topbar" id="topbar"></header>
     <div class="page">
-      <div class="cons">
+      <!-- Без боковой панели: клик по строке открывает страницу элемента -->
+      <div class="cons one">
         <main><section class="pane" id="page"></section></main>
-        <aside class="rail" data-min="Тренировка">
-          <button class="railtog" id="railtog" title="Свернуть панель" aria-label="Свернуть панель"></button>
-          <div class="railhead"><div class="railttl" id="railttl">Тренировка</div></div>
-          <div class="railbody" id="railbody"></div>
-          <div class="railfoot" id="railfoot"></div>
-        </aside>
       </div>
     </div>
   </div>
@@ -33,14 +28,13 @@
 <script src="assets/exdb.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ БАЗА ТРЕНИРОВОК (TPL-2) ═══════════
-   Уровень выше блока: тренировка — набор блоков на один день. */
-const cfg = { level:'тренировка', title:'Тренировки', railTitle:'Тренировка', ph:'Поиск тренировки…', add:'Сохранить тренировку' };
-renderLib(cfg);
-initShell({page:'workouts.html'});
-initRail();
+   Уровень выше блока: тренировка — набор блоков на один день. Открывается и
+   создаётся в конструкторе в режиме шаблона. */
+initLib({ level:'тренировка', page:'workouts.html', title:'Тренировки', ph:'Поиск тренировки…', add:'Создать тренировку', newHref:'constructor.html?tpl=new&lvl=workout' });
 </script>
 </body>
 </html>

@@ -28,12 +28,15 @@
 <script src="assets/exdb.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ КЛИЕНТЫ — рабочий список тренера ═══════════
-   Таблица во всю ширину, справа — карточка выбранного клиента: программа,
-   докуда составлено, активность, максимумы, переходы в конструктор и календарь. */
-const CS = {k:null, dir:1};
+   Таблица во всю ширину: программа и группа — разными колонками, докуда
+   составлено, оплата занятий (PAY-9), активность. По умолчанию сверху те,
+   кому платить раньше всех: доступ закрыт, потом по дате «оплачено до»;
+   у кого пора платить — «Получил оплату» прямо в строке. */
+const CS = {k:'pay', dir:1};
 const V = {q:'', f:'all'};
 const unreadOf = c => c.comments.filter((cm,i)=>!cm.reply && !STATE.replied[c.id+':'+i]).length;
 const needsAttention = c => unreadOf(c)>0 || (c.prog && c.last && daysBetween(c.last,TODAY)>=3);
@@ -44,18 +47,23 @@ const runwayChip = c => { const r = runway(c);
   if(r === 0) return '<span class="chip warn">сегодня</span>';
   return `<span class="chip ${r<=7?'warn':'ghost'}">${r} ${plural(r,'день','дня','дней')}</span>`; };
 
-/* Оплата: статус по дате «оплачено до» — просрочена, заканчивается (неделя и
-   меньше), оплачено; даты нет — не внесена. Год пишем, только если не текущий. */
-const payState = c => { if(!c.paidUntil) return 'none'; const r = daysBetween(TODAY, c.paidUntil); return r < 0 ? 'late' : r <= 7 ? 'soon' : 'ok' };
-const payCell = c => { const d = c.paidUntil, st = payState(c), r = d ? daysBetween(TODAY, d) : 0;
-  const [cls, t] = {none:['ghost','не внесена'], late:['rm','просрочена'], soon:['warn', r === 0 ? 'последний день' : 'ещё ' + r + ' ' + plural(r,'день','дня','дней')], ok:['ok','оплачено']}[st];
+/* Оплата занятий (PAY-9): статус по дате «оплачено до» — доступ закрыт,
+   заканчивается (неделя и меньше), оплачено; даты нет — не ведётся, клиент
+   без ограничений. Год пишем, только если не текущий. */
+const payCell = c => { const d = c.paidUntil, st = feeState(c), r = d ? daysBetween(TODAY, d) : 0;
+  const [cls, t] = {none:['ghost','не ведётся'], closed:['rm','доступ закрыт'], today:['warn','последний день'], tomorrow:['warn','завтра'],
+    soon:['warn', 'ещё ' + r + ' ' + plural(r,'день','дня','дней')], ok:['ok','оплачено']}[st];
   const date = d ? dm(d) + (d.slice(0,4) !== TODAY.slice(0,4) ? '.' + d.slice(0,4) : '') : '';
-  return `<div class="paycell"><span class="chip ${cls}">${t}</span>${d ? `<span class="pd">${st === 'late' ? 'истекла' : 'до'} ${date}</span>` : ''}</div>` };
+  const btn = ['tomorrow','today','closed'].includes(st) ? `<button class="btn gh sm" data-fee="${c.id}">Получил оплату</button>` : '';
+  return `<div class="paycell"><div><span class="chip ${cls}">${t}</span>${d ? `<span class="pd">${st === 'closed' ? 'истекла' : 'до'} ${date}</span>` : ''}</div>${btn}</div>` };
 
 /* Группы клиента — чипами-ссылками. Личный контейнер участника («Тренировки»)
    не называем: его тренировки и есть тренировки группы. */
 const grpChips = c => { const g = groupOf(c.id); return g ? `<span class="gchips"><a class="gchip" href="groups.html?id=${g.id}" title="Группа «${esc(g.n)}» — открыть">${GRPICON}${esc(g.n)}</a></span>` : '' };
-const progLabel = c => { const p = program(c.prog), g = groupOf(c.id); return [p && !(p.personal && g) ? p.title : '', g ? g.n : ''].filter(Boolean).join(' · ') };
+/* Программа — своя у клиента; у участника группы личный контейнер «Тренировки»
+   программой не считаем: он тренируется по календарю группы. */
+const progName = c => { const p = program(c.prog); return p && !(p.personal && groupOf(c.id)) ? p.title : '' };
+const progCell = c => progName(c) ? esc(progName(c)) : `<span style="color:var(--tx3)">${groupOf(c.id) ? 'по календарю группы' : 'без программы'}</span>`;
 function match(c){
   if(V.f==='noprog' && c.prog) return false;
   if(V.f==='grp' && !groupOf(c.id)) return false;
@@ -67,7 +75,8 @@ function render(){
   let list = CLIENTS.filter(match);
   const SORTS = {
     n:    (a,b)=>a.n.localeCompare(b.n),
-    prog: (a,b)=>progLabel(a).localeCompare(progLabel(b)),
+    prog: (a,b)=>(progName(a)||'яя').localeCompare(progName(b)||'яя'),
+    grp:  (a,b)=>((groupOf(a.id)||{}).n||'яя').localeCompare((groupOf(b.id)||{}).n||'яя'),
     run:  (a,b)=>(runway(a) ?? 9999)-(runway(b) ?? 9999),
     done: (a,b)=>(a.done/a.plan||0)-(b.done/b.plan||0),
     last: (a,b)=>String(a.last||'').localeCompare(String(b.last||'')),
@@ -81,12 +90,11 @@ function render(){
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск по имени…" value="${esc(V.q)}"></label>
       <div class="filters">${FILTERS.map(([k,n])=>`<button data-f="${k}" class="${V.f===k?'on':''}">${esc(n)}</button>`).join('')}</div>`)
     + (list.length ? `<div class="tblwrap"><table class="tbl" data-tbl="cli"><thead><tr>
-        ${th('n','Клиент')}${th('prog','Программа')}${th('run','Составлено на')}${th('pay','Оплата')}${th('done','Прогресс')}${th('last','Последняя активность')}${th(null,'Динамика приседа')}
+        ${th('n','Клиент')}${th('prog','Программа')}${th('grp','Группа')}${th('run','Составлено на')}${th('pay','Оплата')}${th('last','Последняя активность')}
       </tr></thead><tbody>
         ${list.map(c=>{
-          const u = unreadOf(c), pr = program(c.prog);
+          const u = unreadOf(c);
           const idle = c.last && daysBetween(c.last,TODAY)>=3;
-          const sq = c.hist && c.hist.squat;
           return `<tr class="click" data-row="${c.id}">
             <td><div class="cellname">
               <span class="av m">${esc(c.ini)}</span>
@@ -95,12 +103,11 @@ function render(){
                 <div class="s">${age(c.born)} лет · ${esc(c.sport)} · ${esc(c.level)}</div>
               </div>
             </div></td>
-            <td>${pr && !(pr.personal && groupOf(c.id)) ? `<div>${esc(pr.title)}</div>` : ''}${grpChips(c)}${!pr && !groupOf(c.id) ? `<span style="color:var(--tx3)">без программы</span>` : ''}</td>
+            <td>${progCell(c)}</td>
+            <td>${grpChips(c) || '<span style="color:var(--tx3)">—</span>'}</td>
             <td>${runwayChip(c)}</td>
             <td>${payCell(c)}</td>
-            <td>${c.plan?`<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:64px"><i style="width:${Math.round(c.done/c.plan*100)}%"></i></div><span style="font-size:13.5px;color:var(--tx3)">${c.done}/${c.plan}</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>
             <td>${c.last?`<span class="chip ${idle?'warn':'ok'}">${ago(c.last)}</span>`:`<span class="chip ghost">не заходил</span>`}</td>
-            <td>${sq?`<div style="display:flex;align-items:center;gap:9px">${sparkline(sq.map(h=>h[1]),56,20)}<span style="font-size:14px;font-weight:600">${fmtNum(c.pm.squat)} кг</span></div>`:'<span style="color:var(--tx3)">—</span>'}</td>
           </tr>`;
         }).join('')}
       </tbody></table></div>` : `<div class="empty"><div class="t">Никого не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
@@ -110,7 +117,7 @@ function render(){
     render();
   });
   /* Строка — ссылка на карточку клиента; ссылки внутри строки (группа) работают сами */
-  $$('tr[data-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('a')) return; location.href='client.html?id='+r.dataset.row });
+  $$('tr[data-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('a,[data-fee]')) return; location.href='client.html?id='+r.dataset.row });
   $$('.filters button').forEach(b=>b.onclick=()=>{ V.f=b.dataset.f; render() });
   $('#q').oninput=e=>{ V.q=e.target.value; render() };
   $('#q').focus({preventScroll:true}); $('#q').setSelectionRange(V.q.length,V.q.length);

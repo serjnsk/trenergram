@@ -53,6 +53,10 @@ body{background:var(--bg);color:var(--tx1);font:400 14px/1.55 var(--ui)}
 .d-tp .spec{font-size:13px;color:var(--tx3);font-family:var(--mono);flex:1;min-width:0}
 .d-tp .name{font-size:14.5px;min-width:160px}
 .d-rad{display:flex;gap:14px;flex-wrap:wrap}
+.d-dd{display:flex;flex-wrap:wrap;gap:14px}
+.d-dd > div{flex:1 1 260px;border:1px solid var(--line);border-radius:var(--rad-m);padding:16px}
+.d-dd b{display:block;font-size:13.5px;font-weight:600;margin-top:12px}
+.d-dd s{display:block;font-size:13px;color:var(--tx3);text-decoration:none}
 .d-rad div{text-align:center}
 .d-rad i{display:block;width:72px;height:52px;background:var(--s1);border:1px solid var(--line2)}
 .d-rad s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);
@@ -167,6 +171,17 @@ body{background:var(--bg);color:var(--tx1);font:400 14px/1.55 var(--ui)}
 <p>Единственное место, где цвет выходит за палитру: радужное кольцо медленно вращается — так кнопку ИИ узнают без подписи. Звёздочки и буквы — чернилами: радужный текст на белом не читается. Кнопка стоит в углу блока текстом и строки текстом и переводит текст в структуру только по нажатию (CON-5). Образ — по <a href="https://dribbble.com/shots/25854034-AI-button">референсу</a>.</p>
 <div class="d-ai" id="ai"></div>
 
+<h2>Выпадающий список</h2>
+<p>Один на весь кабинет — <code>assets/dd.js</code>. Страница пишет обычный <code>&lt;select&gt;</code>, а вместо системного списка браузера открывается этот: одинаковый в Chrome и Safari, с галочкой у выбранного, подписью справа (<code>data-sub</code> у пункта) и группами. Поиск появляется, когда пунктов больше пяти. Клавиатура: стрелки, Enter, Esc.</p>
+<div class="d-dd">
+  <div><select class="inp"><option>Разминки</option><option selected>Силовые блоки</option><option>Комплексы</option><option>Заминки</option></select>
+    <b>Короткий список</b><s>До пяти пунктов — без поиска</s></div>
+  <div><select class="inp"><option value="">Отдых</option><option selected>Силовой день · присед + жим</option><option>День ТА + метком</option><option>Становая + гимнастика</option><option data-sub="общая база">Базовый силовой день</option><option data-sub="общая база">Кроссфит · классический метком</option><option data-sub="общая база">Смешанный день · сила + Helen</option></select>
+    <b>С поиском и подписью</b><s>Больше пяти пунктов; «общая база» — подпись пункта</s></div>
+  <div><select class="inp"><optgroup label="Ноги"><option>Приседания со штангой</option><option>Фронтальный присед</option><option>Выпады с гантелями</option></optgroup><optgroup label="Спина"><option>Становая тяга</option><option>Подтягивания</option><option>Тяга штанги в наклоне</option></optgroup></select>
+    <b>С группами</b><s>&lt;optgroup&gt; — подписи групп в списке</s></div>
+</div>
+
 <h2>Бренд в контексте</h2>
 <p>Название выбрано — Тренерграм. Логотип — сплошной wordmark со срезом 45°. Ниже он и производный от него знак в местах, где бренд реально живёт: заставка, иконка среди чужих иконок, пуш, витрина стора и шапка веб-версии.</p>
 <div class="d-mocks" id="mocks"></div>
@@ -179,6 +194,7 @@ body{background:var(--bg);color:var(--tx1);font:400 14px/1.55 var(--ui)}
 
 </div>
 <div id="probe"></div>
+<script src="assets/dd.js"></script>
 <script>
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const cs  = getComputedStyle(document.documentElement);

@@ -53,6 +53,7 @@ const ICON = {
  folder:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M1.8 4.2a1.4 1.4 0 0 1 1.4-1.4h2.4l1.2 1.6h5.4a1.4 1.4 0 0 1 1.4 1.4v6a1.4 1.4 0 0 1-1.4 1.4H3.2a1.4 1.4 0 0 1-1.4-1.4v-7.6z"/></svg>',
  star:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3.5 2.8h9v10.4L8 10.2l-4.5 3V2.8z"/></svg>',
  clock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.8"/><path d="M8 4.8V8l2.2 1.4"/></svg>',
+ wallet:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1.8"/><path d="M2 6.5h12M10.5 10h1.5"/></svg>',
  chk:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>',
  search:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>',
 };
@@ -178,7 +179,7 @@ document.addEventListener('keydown', e=>{
 
    В каждой базе рядом лежит своё и общее (как у упражнений, EX-2):
    личное помечено чипом и всегда выше, внутри личного — новое первым. */
-const LIB = { q:'', own:false, folder:'Все', type:'all', tab:0, sel:null };
+const LIB = { q:'', own:false, folder:'Все', type:'all' };
 
 const libSort = (a,b) =>
   a.own !== b.own ? (a.own ? -1 : 1)                       /* своё выше общего */
@@ -240,31 +241,30 @@ function libCols(level){
 }
 
 /* ═══════════ ОБЩИЙ КАРКАС СПИСКОВ ═══════════
-   Карточка во всю рабочую зону (шапка с поиском липкая) + правая панель
-   контекста: фильтры и предпросмотр выбранной строки. Тот же скелет, что у
-   конструктора и календаря, — страница адаптируется под любую ширину. */
-const railSet = ({title, body, foot}) => {
-  const t = $('#railttl'), bd = $('#railbody'), f = $('#railfoot');
-  if(t && title != null) t.textContent = title;
-  if(bd) bd.innerHTML = body || '';
-  if(f) f.innerHTML = foot || '';
-};
+   Карточка во всю рабочую зону, шапка с поиском и фильтрами липкая. Правой
+   панели у списков нет: строка ведёт на страницу элемента или клиента. */
 const paneHead = (title, count, controls) => { setTopTitle(title, count); return `
   <div class="pane-h">
     ${controls || ''}
   </div>` };
-/* Подсветка выбранной строки без перерисовки таблицы — иначе теряется прокрутка. */
-function markRow(tblId, id){
-  $$(`[data-tbl="${tblId}"] tr[data-row]`).forEach(tr => tr.classList.toggle('on', tr.dataset.row === String(id)));
-}
-const rlist = (items, cur, attr) => `<div class="rlist">${items.map(([k, n, c]) =>
-  `<button data-${attr}="${esc(k)}" class="${cur===k?'on':''}"><span>${esc(n)}</span>${c != null ? `<s>${c}</s>` : ''}</button>`).join('')}</div>`;
 
-/* cfg: {level, title, ph, add} */
+/* Поиск, фильтры, сортировка и прокрутка списка переживают уход на страницу
+   элемента: вернулись — список там же, где его оставили. */
+const listKey = page => 'tg.list.' + page;
+function listSave(page, st){ try{ sessionStorage.setItem(listKey(page), JSON.stringify({st, sort:TSORT, y:scrollY})) }catch(_){} }
+/* Браузер после загрузки сам ставит прокрутку в начало — возвращаем её и после load. */
+function listScroll(y){ if(!y) return; const go = () => scrollTo(0, y); requestAnimationFrame(go); addEventListener('load', go, {once:true}) }
+function listLoad(page, st){
+  try{ const r = JSON.parse(sessionStorage.getItem(listKey(page)) || 'null'); if(!r) return 0;
+       Object.assign(st, r.st || {}); Object.assign(TSORT, r.sort || {}); return r.y || 0 }catch(_){ return 0 }
+}
+/* Список базы во всю ширину, без правой панели: клик по строке открывает
+   страницу элемента, там его смотрят и правят (TPL-2).
+   cfg: {level, page, title, ph, add, newHref} */
 function renderLib(cfg){
   const level = cfg.level;
   TPL.filter(t=>t.lvl==='блок').forEach(normFmt);     /* формат из названия — в тип, название чистое */
-  const all = TPL.filter(t=>t.lvl===level);
+  const all = tplLive(level);
   const withFolders = level==='блок';
   const list = all.filter(t=>{
     if(LIB.own && !t.own) return false;
@@ -273,7 +273,6 @@ function renderLib(cfg){
     if(LIB.q && norm(t.title).indexOf(norm(LIB.q))<0) return false;
     return true;
   }).sort(libSort);
-  if(!list.some(t=>t.id===LIB.sel)) LIB.sel = list.length ? list[0].id : null;
 
   const cols = libCols(level);
   $('#page').innerHTML = paneHead(cfg.title, all.length, `
@@ -282,7 +281,7 @@ function renderLib(cfg){
         <select class="inp" id="btype" style="width:160px">${[['all','Все типы'], ...BLOCK_TYPES.map(t=>[t.k||'none', t.k ? t.n : 'Без типа'])].map(([v,n])=>`<option value="${v}" ${LIB.type===v?'selected':''}>${esc(n)}</option>`).join('')}</select>` : ''}
       <label class="chk"><input type="checkbox" id="own" ${LIB.own?'checked':''}> Только свои</label>
       <span class="sp"></span>
-      <button class="btn gh" id="btnAdd">${ICON.plus} ${esc(cfg.add)}</button>`)
+      <a class="btn" id="btnAdd" href="${cfg.newHref}">${ICON.plus} ${esc(cfg.add)}</a>`)
     + (list.length ? dataTable('lib-'+level, cols, list)
        : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
 
@@ -290,36 +289,16 @@ function renderLib(cfg){
   const ts = $('#btype'); if(ts) ts.onchange=e=>{ LIB.type=e.target.value; renderLib(cfg) };
   $('#own').onchange=e=>{ LIB.own=e.target.checked; renderLib(cfg) };
   $('#q').oninput=e=>{ LIB.q=e.target.value; renderLib(cfg) };
-  $('#btnAdd').onclick=()=> cfg.onAdd ? cfg.onAdd(()=>renderLib(cfg)) : toast('В конструкторе: соберите и нажмите «Сохранить в библиотеку»');
-  bindTable('lib-'+level, ()=>renderLib(cfg), id=>{ LIB.sel = id; markRow('lib-'+level, id); renderLibRail(cfg) });
-  markRow('lib-'+level, LIB.sel);
-  renderLibRail(cfg);
+  $('#btnAdd').onclick=()=>listSave(cfg.page, LIB);
+  bindTable('lib-'+level, ()=>renderLib(cfg), id=>{ listSave(cfg.page, LIB); location.href = elHref(tplById(id)) });
   const qEl=$('#q'); if(qEl){ qEl.focus({preventScroll:true}); qEl.setSelectionRange(LIB.q.length,LIB.q.length) }
 }
-function renderLibRail(cfg){
-  const level = cfg.level, t = tplById(LIB.sel);
-  const kind = {'блок':'Блок','тренировка':'Тренировка','программа':'Программа'}[level];
-  if(!t){ railSet({title:kind, body:'<div class="rprev"><div class="hint">Выберите строку — здесь появится карточка.</div></div>', foot:''}); return }
-  const st = tplStats(t);
-  const facts = level==='блок'
-    ? `<s>Тип</s><b>${t.kind ? esc(typeName(t.kind)) : '<span style="color:var(--tx3)">без типа</span>'}</b>${t.kind==='complex' ? `<s>Настройка</s><b>${t.fmt ? esc(fmtLabel(t.fmt)) : '<span style="color:var(--tx3)">без настройки</span>'}</b>` : ''}<s>Папка</s><b>${esc(t.folder||'—')}</b><s>Упражнений</s><b>${st.n}</b>`
-    : level==='тренировка'
-    ? `<s>Блоков</s><b>${st.blocks}</b><s>Упражнений</s><b>${st.n}</b>`
-    : `<s>Дней</s><b>${t.days}</b><s>Цикл</s><b>${st.cycle} дн.</b><s>Тренировок</s><b>${st.workouts}</b>`;
-  railSet({title:kind, body:`
-    <div class="rprev">
-      <b class="rt">${esc(t.title)}</b>
-      <div class="kv">${facts}
-        <s>Источник</s><b>${t.own ? '<span class="chip ok">своё</span>' : 'общая база'}</b>
-        <s>Использован</s><b>${t.used ? t.used + '×' : '—'}</b>
-      </div>
-      <div class="rhead" style="padding-left:0">${level==='программа' ? 'Цель и цикл' : 'Состав'}</div>
-      <div class="rlines">${libLines(t)}</div>
-      <div class="acts"><a class="btn sm" href="constructor.html">${ICON.build} Вставить в тренировку</a>${t.own ? '<button class="btn gh sm" id="rEdit">Изменить</button>' : ''}</div>
-    </div>`, foot: t.own ? '' : 'Шаблон из общей базы: изменить нельзя — вставьте в тренировку и сохраните как свой.'});
-  const ed = $('#rEdit'); if(ed) ed.onclick = () => toast('Редактирование шаблона — в конструкторе: вставьте, измените и сохраните');
+function initLib(cfg){
+  const y = listLoad(cfg.page, LIB);
+  renderLib(cfg);
+  initShell({page:cfg.page});
+  listScroll(y);
 }
-function libDetail(t){ if(t){ LIB.sel = t.id } }
 
 /* ═══════════ ТАЙМЛАЙН ДНЯ — общий для дашборда и дня календаря ═══════════
    Строка — занятие, а не клиент (см. sessionsOn в data.js). Держим в одном
@@ -410,8 +389,8 @@ const byNum = f => (a,b) => (f(a)||0) - (f(b)||0);
 const unread = () => { const out=[]; CLIENTS.forEach(c=>c.comments.forEach((cm,i)=>{ if(!cm.reply && !STATE.replied[c.id+':'+i]) out.push({c,cm,key:c.id+':'+i}) })); return out };
 const idle = () => CLIENTS.filter(c=>c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 const noProg = () => CLIENTS.filter(c=>!c.prog);
-const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', new:'Новые клиенты', done:'Результаты', pay:'Подписка'};
-const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, new:ICON.users, done:ICON.chk, pay:ICON.folder};
+const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', done:'Результаты', pay:'Подписка'};
+const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:ICON.wallet, new:ICON.users, done:ICON.chk, pay:ICON.folder};
 
 /* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
 function events(cid){
@@ -425,10 +404,16 @@ function events(cid){
     const who = G ? `участники группы (${G.members.length}) без тренировок` : 'клиент без тренировок';
     const lbl = x.runway<0 ? `Программа «${x.p.title}» кончилась ${-x.runway} ${plural(-x.runway,'день','дня','дней')} назад — ${who}` : x.runway===0 ? `Сегодня последняя написанная тренировка «${x.p.title}»` : `Написанные тренировки «${x.p.title}» кончаются через ${x.runway} ${plural(x.runway,'день','дня','дней')}`;
     ev.push({t:'prog', d: x.runway<0 ? x.lastDay : TODAY, c, title: G ? 'Группа «' + G.n + '»' : c.n, tx:lbl, act:'Составить', href:`constructor.html?${subjQ(c.id)}&date=${addDays(x.lastDay,1)}`}) });
+  /* Оплата занятий (PAY-9): за день до конца, в последний день и когда доступ закрыт.
+     Пушей в MVP нет — тренер узнаёт об этом из ленты. */
+  CLIENTS.forEach(c=>{ const st = feeState(c), sum = c.feeAmt ? ' · ' + rubs(c.feeAmt) : '';
+    const tx = {tomorrow:'Оплата заканчивается завтра' + sum, today:'Сегодня последний оплаченный день' + sum + '. С завтра новые тренировки клиенту закроются',
+      closed:'Оплата закончилась ' + humanDate(c.paidUntil) + ' — новые тренировки клиенту закрыты' + sum}[st];
+    if(tx) ev.push({t:'fee', d: st === 'closed' ? addDays(c.paidUntil, 1) : TODAY, c, fee:c.id, title:c.n, tx, act:'Получил оплату', href:'client.html?id='+c.id+'#pay'}) });
   noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
   CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
   ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});
-  const order = {q:0, prog:1, pr:2, miss:3, new:4, done:5, pay:6};
+  const order = {q:0, fee:1, prog:2, pr:3, miss:4, new:5, done:6, pay:7};
   const list = cid ? ev.filter(e=>e.c && e.c.id===cid) : ev;
   return list.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
 }
@@ -436,7 +421,7 @@ const dayLabel = d => d===TODAY ? 'Сегодня' : d===addDays(TODAY,-1) ? 'В
 const evHTML = (e, mini) => `<div class="fev t-${e.t}${mini?' mini':''}" data-key="${e.key||''}">
     <span class="ico">${e.c && !mini ? esc(e.c.ini) : TICON[e.t]}</span>
     <div class="c"><div class="h"><b>${esc(e.title)}</b><span class="tchip t-${e.t}">${TLABEL[e.t]}</span>${mini?'':`<time>${dayLabel(e.d)}</time>`}</div><div class="tx">${e.tx}</div></div>
-    ${mini ? '' : `<a class="btn gh sm" href="${e.href}">${e.act}</a>`}
+    ${mini ? '' : e.fee ? `<button class="btn gh sm" data-fee="${e.fee}">${e.act}</button>` : `<a class="btn gh sm" href="${e.href}">${e.act}</a>`}
   </div>`;
 function feedHTML(list, withDays=true){
   if(!list.length) return '<div class="empty"><div class="t">Тихо</div><div class="d">Новых событий нет</div></div>';
@@ -445,4 +430,34 @@ function feedHTML(list, withDays=true){
   return out;
 }
 
-const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', new:'Новый клиент', done:'Результат', pay:'Подписка'};
+const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', fee:'Оплата', new:'Новый клиент', done:'Результат', pay:'Подписка'};
+
+/* ═══════════ ОПЛАТА ЗАНЯТИЙ (PAY-9) — окно тренера ═══════════
+   pay — «Получил оплату»: сумма и новая дата «оплачено до», по умолчанию месяц
+   (feeNext), дату можно поправить; платёж уходит в историю.
+   edit — задать или поменять сумму и срок без платежа, или перестать вести
+   оплату. После сохранения страница перерисовывается своим render(). */
+function feeModal(cid, mode){
+  const c = client(cid); if(!c) return;
+  const pay = mode === 'pay', nx = feeNext(c), st = feeState(c);
+  const until = pay ? nx.until : c.paidUntil || addDays(addMonths(TODAY, 1), -1);
+  const hint = pay
+    ? (st === 'closed' ? `Доступ был закрыт — новый срок считается со дня оплаты, ${humanDate(TODAY)}.` : `Новый срок идёт с ${humanDate(nx.from)}, без перерыва.`) + ' По умолчанию — месяц, дату можно поменять. Тренировки у клиента откроются сразу.'
+    : 'Клиент видит сумму и дату в своём профиле. За день до конца и в последний день он получит напоминание, а со следующего дня новые тренировки у него закроются, пока вы не отметите оплату.';
+  openModal({title: pay ? 'Получил оплату · ' + c.n : (c.paidUntil ? 'Оплата занятий · ' + c.n : 'Задать оплату · ' + c.n), body:`
+    <div class="cols2"><div class="formfld"><span class="k">Сумма, ₽</span><input class="inp" id="feeAmt" inputmode="numeric" value="${c.feeAmt || ''}" placeholder="Например: 6000"></div>
+      <div class="formfld"><span class="k">Оплачено до</span><input class="inp" id="feeUntil" type="date" value="${until}"></div></div>
+    <div class="hint">${hint}</div>`,
+    foot:`${!pay && c.paidUntil ? '<button class="lnk-rm" id="feeOff">Не вести оплату</button>' : ''}<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="feeOk">${pay ? 'Получил оплату' : 'Сохранить'}</button>`});
+  const redraw = () => { closeModal(); if(typeof render === 'function') render() };
+  $('#feeOk').onclick = () => {
+    const amt = parseFloat(String($('#feeAmt').value).replace(/\s/g,'').replace(',','.')), u = $('#feeUntil').value;
+    if(!isFinite(amt) || amt <= 0){ toast('Укажите сумму'); return }
+    if(!u || (pay && u < TODAY)){ toast('Укажите дату «оплачено до»'); return }
+    if(pay){ feeReceive(c, amt, u); toast('Оплата записана — оплачено до ' + humanDate(u)) }
+    else { c.feeAmt = amt; c.paidUntil = u; feeSave(c); toast('Оплата сохранена') }
+    redraw();
+  };
+  const off = $('#feeOff'); if(off) off.onclick = () => { c.paidUntil = null; feeSave(c); toast('Оплата не ведётся — клиент тренируется без ограничений'); redraw() };
+}
+document.addEventListener('click', e=>{ const b = e.target.closest('[data-fee]'); if(!b) return; e.preventDefault(); e.stopPropagation(); feeModal(b.dataset.fee, b.dataset.feeMode || 'pay') });

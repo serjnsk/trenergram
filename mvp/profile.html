@@ -26,13 +26,15 @@
 <script src="assets/exdb.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ ПРОФИЛЬ ТРЕНЕРА ═══════════
    Настройки аккаунта, а не витрина бренда (BRD-1 — за пределами MVP):
-   основные данные, подписка и лимит клиентов, рабочие настройки,
-   уведомления одним блоком, безопасность. Приглашение клиентов (REG-1)
-   живёт здесь же — это свойство аккаунта тренера. */
+   основные данные, подписка и лимит клиентов, уведомления одним блоком,
+   безопасность. Виды спорта, часовой пояс и каналы уведомлений убраны. Приглашение клиентов (REG-1)
+   живёт здесь же — это свойство аккаунта тренера. «Как оплатить» — текст для
+   оплаты занятий (PAY-9): клиент видит его, когда пора платить. */
 const P = (STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF)));
 const T = TRAINER;
 if(P.invite) T.invite = P.invite;
@@ -45,7 +47,6 @@ const MONG = ['января','февраля','марта','апреля','ма�
 const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()]+' '+d.getFullYear() };
 const dshort = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()].slice(0,3)+' '+d.getFullYear() };
 const daysLeft = iso => daysBetween(TODAY, iso);
-const TZS = ['Europe/Kaliningrad','Europe/Moscow','Europe/Samara','Asia/Yekaterinburg','Asia/Omsk','Asia/Novosibirsk','Asia/Krasnoyarsk','Asia/Irkutsk','Asia/Yakutsk','Asia/Vladivostok'];
 const NOTIFY = [
   ['results',    'Результаты клиентов',        'Записал тренировку, поставил рекорд'],
   ['comments',   'Комментарии и вопросы',      'Клиент написал под тренировкой'],
@@ -55,7 +56,7 @@ const NOTIFY = [
 ];
 
 function render(){
-  const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until);
+  const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until), over = used > pl.limit;
   $('#page').innerHTML = `
   <div class="prof">
     <div>
@@ -78,23 +79,27 @@ function render(){
         <div class="cols2" style="margin-bottom:12px">
           <div class="formfld"><span class="k">Город</span><input class="inp" data-t="city" value="${esc(T.city)}"></div>
         </div>
-        <div class="formfld" style="margin-bottom:12px"><span class="k">Виды спорта</span>
-          <div class="tags">${SPORTS.map(x=>`<button data-sport="${esc(x)}" class="${T.sports.includes(x)?'on':''}">${esc(x)}</button>`).join('')}</div></div>
         <div class="formfld"><span class="k">О себе — видят клиенты</span>
           <textarea class="inp" data-t="about" rows="3">${esc(T.about)}</textarea></div>
       </div>
 
-      <div class="sechead"><span class="t">Настройки работы</span><span class="ln"></span></div>
+      <div class="sechead"><span class="t">Приглашение клиентов</span><span class="ln"></span></div>
       <div class="card cb">
-        <div class="setrow"><span class="t"><b>Часовой пояс</b><s>Время занятий в таймлайне и уведомлениях</s></span>
-          <select class="inp" id="tz" style="width:240px">${TZS.map(z=>`<option ${T.tz===z?'selected':''}>${z}</option>`).join('')}</select></div>
+        <div class="copyfield"><code title="${esc(T.invite)}"><span>${esc(T.invite.replace(/[^/]+$/,''))}</span><b>${esc(T.invite.split('/').pop())}</b></code><button class="btn gh sm" id="btnCopy">Скопировать</button></div>
+        <div class="hint">Одна ссылка для всех клиентов, без срока. Клиент открывает её, входит по номеру телефона и сразу привязан к вам. Список — в «Клиентах».</div>
+        <button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>
+      </div>
+
+      <div class="sechead"><span class="t">Оплата занятий</span><span class="ln"></span></div>
+      <div class="card cb">
+        <div class="formfld"><span class="k">Как оплатить — видят клиенты</span>
+          <textarea class="inp" id="payHow" rows="2" placeholder="Например: перевод по номеру телефона, банк, получатель">${esc(payHow())}</textarea></div>
+        <div class="hint">Клиент видит этот текст, когда пора платить: за день до конца оплаты, в последний день и когда доступ к новым тренировкам закрыт. Сумму и срок каждому клиенту задаёте в его карточке.</div>
       </div>
 
       <div class="sechead"><span class="t">Уведомления</span><span class="ln"></span></div>
       <div class="card cb">
         ${NOTIFY.map(([k,n,d])=>`<div class="setrow"><span class="t"><b>${n}</b><s>${d}</s></span><button class="switch ${P.notify[k]?'on':''}" data-n="${k}" aria-label="${n}"></button></div>`).join('')}
-        <div class="setrow"><span class="t"><b>Каналы</b><s>Куда приходят уведомления</s></span>
-          <span class="chan"><button data-n="push" class="${P.notify.push?'on':''}">Push</button><button data-n="email" class="${P.notify.email?'on':''}">Email</button></span></div>
       </div>
 
       <div class="sechead"><span class="t">Безопасность</span><span class="ln"></span></div>
@@ -104,29 +109,27 @@ function render(){
     </div>
 
     <div class="side">
-      <div class="card cb">
-        <div class="subhead"><span class="pl">${esc(pl.n)}</span><span class="chip ${left>0?'ok':'rm'}">${left>0?'активна':'истекла'}</span></div>
-        <div class="usage${used>pl.limit?' over':''}"><div class="l"><span>Клиентов</span><b>${used} из ${pl.limit}${used>pl.limit?' · перерасход':''}</b></div><div class="bar"><i style="width:${Math.min(100,used/pl.limit*100)}%"></i></div></div>
-        <div class="kv">
-          <s>Оплачено до</s><b>${dshort(P.sub.until)}${left>0?` · ${left} ${plural(left,'день','дня','дней')}`:''}</b>
-          <s>Следующий платёж</s><b>${rub(pl.price)} · ${dshort(P.sub.until)}</b>
-          <s>Способ оплаты</s><b>${esc(P.sub.card)}</b>
+      <div class="sechead"><span class="t">Подписка</span><span class="ln"></span></div>
+      <div class="card cb subc">
+        <div class="subc-h">
+          <span class="pl">${esc(pl.n)}</span><span class="chip ${left>0?'ok':'rm'}">${left>0?'активна':'истекла'}</span>
+          <span class="pr">${rub(pl.price)}<s> / мес</s></span>
         </div>
-        <div class="acts"><button class="btn sm" id="btnPlan">Сменить тариф</button><button class="btn gh sm" id="btnHist">История платежей</button></div>
-        <button class="lnk-rm" id="btnCancel" style="font-size:13.5px">Отменить подписку</button>
-      </div>
-      <div class="card cb">
-        <div class="sechead" style="margin:0 0 10px"><span class="t">Приглашение клиентов</span></div>
-        <div class="copyfield"><code title="${esc(T.invite)}"><span>${esc(T.invite.replace(/^https?:\/\//,'').replace(/[^/]+$/,''))}</span><b>${esc(T.invite.split('/').pop())}</b></code><button class="btn gh sm" id="btnCopy">Скопировать</button></div>
-        <div class="hint">Одна ссылка для всех клиентов, без срока. Клиент открывает её, входит по номеру телефона и сразу привязан к вам. Список — в «Клиентах».</div>
-        <button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>
+        <div class="usage${over?' over':''}"><div class="l"><span>Клиентов</span><b>${used} из ${pl.limit}</b></div><div class="bar"><i style="width:${Math.min(100,used/pl.limit*100)}%"></i></div>
+          ${over?`<div class="uwarn">Перерасход: ${used-pl.limit} ${plural(used-pl.limit,'клиент','клиента','клиентов')} сверх лимита</div>`:''}</div>
+        <div class="subc-rows">
+          <div class="r"><s>Оплачено до</s><b>${dshort(P.sub.until)}${left>0?` <i>· ${left} ${plural(left,'день','дня','дней')}</i>`:''}</b></div>
+          <div class="r"><s>Следующий платёж</s><b>${dshort(P.sub.until)}</b></div>
+          <div class="r"><s>Способ оплаты</s><b>${esc(P.sub.card)}</b></div>
+        </div>
+        <div class="subc-acts"><button class="btn" id="btnPlan">Сменить тариф</button><button class="btn gh" id="btnHist">История платежей</button></div>
+        <div class="subc-foot"><button class="lnk-rm" id="btnCancel">Отменить подписку</button></div>
       </div>
     </div>
   </div>`;
 
   $$('[data-t]').forEach(i=>i.onchange=e=>{ T[i.dataset.t]=e.target.value.trim(); if(i.dataset.t==='first'||i.dataset.t==='last'){ T.n=(T.first+' '+T.last).trim(); T.ini=(T.first[0]||'')+(T.last[0]||''); renderNav('profile.html') } save('Сохранено'); if(i.dataset.t!=='about') render() });
-  $$('[data-sport]').forEach(b=>b.onclick=()=>{ const x=b.dataset.sport; T.sports = T.sports.includes(x) ? T.sports.filter(y=>y!==x) : [...T.sports,x]; save(); render() });
-  $('#tz').onchange=e=>{ T.tz=e.target.value; save('Часовой пояс сохранён') };
+  $('#payHow').onchange=e=>{ P.payHow=e.target.value.trim(); save('Сохранено') };
   $$('[data-n]').forEach(b=>b.onclick=()=>{ P.notify[b.dataset.n]=!P.notify[b.dataset.n]; save(); render() });
   $('#btnPhoto').onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы');
   $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); toast('Ссылка скопирована') };
