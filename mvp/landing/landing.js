@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
-   Лендинг: сценарии пяти вариантов hero, вкладки возможностей,
-   тарифы. Каждый hero — асинхронный сценарий; переключение варианта
-   увеличивает RUN, и прежний сценарий останавливается на ближайшей
-   паузе (wait бросает 'stop').
+   Лендинг: сцены (hero «день → час» и моушен в фичах), меню фич слева,
+   тарифы. Каждая сцена — асинхронный сценарий; она запускается, когда
+   блок в кадре, и останавливается на ближайшей паузе (wait бросает
+   'stop'), когда уходит из кадра или перезапускается.
    ═══════════════════════════════════════════════════════════════ */
 (() => {
 const $  = (s, r = document) => r.querySelector(s);
@@ -13,8 +13,10 @@ const IMG = id => `../assets/ex/img/${id}.jpg`;
 const kg = v => (Math.round(v / 2.5) * 2.5).toLocaleString('ru-RU');
 const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; };
 
-let RUN = 0;
-const alive = id => id === RUN;
+/* У каждой сцены свой счётчик запусков: id = { k, n }. Сцена жива, пока
+   её n не сменился — повторный запуск или уход из кадра её останавливает. */
+const RUNS = {};
+const alive = id => RUNS[id.k] === id.n;
 const wait = (ms, id) => new Promise((ok, no) => setTimeout(() => alive(id) ? ok() : no('stop'), ms));
 const frame = () => new Promise(r => requestAnimationFrame(r));
 
@@ -26,7 +28,7 @@ function pointTo(cur, el, host, dx = .5, dy = .5){
 }
 async function press(el, id){ el.classList.add('press'); await wait(160, id); el.classList.remove('press'); }
 
-/* ═══════════ A · текст → тренировка ═══════════ */
+/* ═══════════ фича «Ввод текстом и AI»: текст → тренировка ═══════════ */
 const A_TEXT = `Разминка
 Гребля 500 м
 
@@ -113,65 +115,9 @@ async function heroA(id){
   await wait(6000, id);
   return heroA(id);
 }
-$('#haReplay').addEventListener('click', () => { RUN++; heroA(RUN).catch(() => {}); });
+$('#haReplay').addEventListener('click', () => play('a'));
 
-/* ═══════════ B · шторка до/после ═══════════ */
-(function buildCal(){
-  // Октябрь 2026: 1-е — четверг, сетка с понедельника 28 сентября. Сегодня — 5 октября.
-  const W = [
-    ['Сила · присед', '5×5 · AMRAP 12'], null, ['Гимнастика', 'подтягивания, стойка'], null,
-    ['Тяга + EMOM', '3×3 · EMOM 12'], ['Метком', 'на время 20 мин'], null];
-  const names = [
-    ['Сила · присед', 'Жим + AMRAP', 'Фронт + Табата', 'Присед · тест'],
-    ['Тяга + EMOM', 'Рывок · техника', 'Тяга · 3ПМ', 'Толчок + метком']];
-  let html = '';
-  for (let i = 0; i < 35; i++){
-    const dt = new Date(2026, 8, 28 + i), d = dt.getDate(), out = dt.getMonth() !== 9, wd = i % 7, wk = i / 7 | 0;
-    let w = W[wd];
-    if (w && wd === 0) w = [names[0][wk % 4], w[1]];
-    if (w && wd === 4) w = [names[1][wk % 4], w[1]];
-    const cls = !w ? 'rest' : i < 7 ? 'w dn' : i < 21 ? 'w' : 'w dr';
-    html += `<div class="d ${cls}${out ? ' out' : ''}"><span class="n">${d}</span>${w ? `<b>${w[0]}</b><i>${w[1]}</i>` : '<i>отдых</i>'}</div>`;
-  }
-  $('#hbGrid').innerHTML = html;
-})();
-
-const hb = $('#hb'), hbH = $('#hbHandle');
-let hbTouched = false;
-function hbSet(p){
-  p = Math.max(4, Math.min(96, p));
-  hb.style.setProperty('--x', p + '%'); hbH.setAttribute('aria-valuenow', Math.round(p));
-}
-function hbFromEvent(e){ const r = hb.getBoundingClientRect(); hbSet((e.clientX - r.left) / r.width * 100); }
-hb.addEventListener('pointerdown', e => {
-  hbTouched = true; hb.classList.add('drag'); hb.setPointerCapture(e.pointerId); hbFromEvent(e);
-});
-hb.addEventListener('pointermove', e => { if (hb.classList.contains('drag')) hbFromEvent(e); });
-hb.addEventListener('pointerup', () => hb.classList.remove('drag'));
-hb.addEventListener('pointercancel', () => hb.classList.remove('drag'));
-hbH.addEventListener('keydown', e => {
-  const v = parseFloat(hb.style.getPropertyValue('--x')) || 50;
-  if (e.key === 'ArrowLeft'){ hbTouched = true; hbSet(v - 5); e.preventDefault(); }
-  if (e.key === 'ArrowRight'){ hbTouched = true; hbSet(v + 5); e.preventDefault(); }
-});
-async function heroB(id){
-  hbTouched = false; hbSet(50);
-  if (RM) return;
-  // подсказка: шторка сама качнётся туда-обратно, пока её не тронули
-  await wait(900, id);
-  const keys = [[50, 0], [22, 900], [78, 1900], [50, 2700]];
-  const t0 = performance.now();
-  while (!hbTouched){
-    await frame(); if (!alive(id)) return;
-    const t = performance.now() - t0;
-    if (t >= 2700){ hbSet(50); break; }
-    let i = 0; while (keys[i + 1][1] < t) i++;
-    const [a, ta] = keys[i], [b, tb] = keys[i + 1], k = (t - ta) / (tb - ta), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-    hbSet(a + (b - a) * e);
-  }
-}
-
-/* ═══════════ C · одна тренировка — двадцать атлетов ═══════════ */
+/* ═══════════ фича «Массовое добавление»: двадцать атлетов ═══════════ */
 const ATH = [
   ['Иван Петров', 190], ['Мария Соколова', 85], ['Олег Руденко', 160], ['Аня Ким', 70], ['Дима Лебедев', 145],
   ['Катя Власова', 95], ['Саша Титов', 130], ['Никита Белов', 175], ['Лена Морозова', 80], ['Артём Гусев', 150],
@@ -231,7 +177,7 @@ async function heroC(id){
   }
 }
 
-/* ═══════════ D · без связи ═══════════ */
+/* ═══════════ фича «Без связи» ═══════════ */
 const hdSets = $('#hdSets'), hdTgl = $('#hdTgl'), hdPh = $('#hdPh'), hdVis = $('#hd');
 hdSets.innerHTML = [1, 2, 3, 4, 5].map(n =>
   `<div class="p-row" data-n="${n}"><span class="ck"><svg><use href="#i-check"/></svg></span><span class="t">Подход ${n} · 5 × 132,5 кг<span class="q">ждёт сети</span></span></div>`).join('');
@@ -281,63 +227,137 @@ async function heroD(id){
   hdNet(true);
 }
 
-/* ═══════════ E · меловая доска ═══════════ */
-async function heroE(id){
-  const lines = $$('#heChalk > div'), board = $('#heBoard'), scan = $('#heScan'), ph = $('#hePh'), t1 = $('#heTag1'), t2 = $('#heTag2');
-  const reset = () => {
-    lines.forEach(l => { l.style.transition = 'none'; l.classList.remove('w'); });
-    void board.offsetWidth; lines.forEach(l => l.style.transition = '');
-    board.classList.remove('dig'); scan.classList.remove('go'); ph.classList.remove('in'); t1.classList.remove('in'); t2.classList.remove('in');
-  };
-  reset();
-  if (RM){ lines.forEach(l => l.classList.add('w')); ph.classList.add('in'); t1.classList.add('in'); t2.classList.add('in'); return; }
-  await wait(600, id);
-  for (const l of lines){
-    l.classList.add('w');
-    await wait(parseFloat(l.style.getPropertyValue('--d')) * 1000 + 160, id);
+/* ═══════════ hero · день → час ═══════════
+   Два потока идут одновременно. Шкала у обоих одна — рабочий день, 480 мин:
+   поток Тренерграма кончается на 52 минутах, старый тянется до 8 часов. */
+const HF_DAY = 480;
+const HF_TXT = 'Пн: присед 5×5 75%\nжим лёжа 4×6 70%\nAMRAP 12: 10 подтяг…';
+const hfFmt = m => { m = Math.round(m); if (m < 60) return m + ' мин'; const h = m / 60 | 0, r = m % 60; return r ? `${h} ч ${String(r).padStart(2, '0')} мин` : `${h} ч`; };
+$$('#hf .hf-sheet i').forEach((c, i) => c.style.animationDelay = (i * .16) + 's');
+/* часы и полоска: от a до b минут за ms; each(k) — для своих счётчиков шага */
+async function hfTick(clk, bar, a, b, ms, id, each){
+  const t0 = performance.now();
+  while (true){
+    await frame(); if (!alive(id)) throw 'stop';
+    const k = Math.min(1, (performance.now() - t0) / ms), m = a + (b - a) * k;
+    clk.textContent = hfFmt(m); bar.style.width = (m / HF_DAY * 100) + '%';
+    if (each) each(k);
+    if (k === 1) return;
   }
+}
+async function hfOld(id){
+  const st = $$('#hf .hf-lane.old .hf-st'), clk = $('#hfClkOld'), bar = $('#hfBarOld');
+  const steps = [[0, 180, 3400], [180, 270, 1900], [270, 390, 2600], [390, 480, 1900]];
+  for (let i = 0; i < 4; i++){
+    const [a, b, ms] = steps[i];
+    st[i].classList.add('act');
+    await hfTick(clk, bar, a, b, ms, id, i === 2 ? k => {
+      $('#hfSent').textContent = Math.round(20 * k); $('#hfSentBar').style.width = (k * 100) + '%';
+    } : null);
+    st[i].classList.replace('act', 'done');
+  }
+  $('#hf .hf-lane.old').classList.add('over');
+}
+async function hfNew(id){
+  const lane = $('#hf .hf-lane.new'), st = $$('.hf-st', lane), clk = $('#hfClkNew'), bar = $('#hfBarNew');
+  // 1 — текст печатается, пока набегают 40 минут
+  st[0].classList.add('act');
+  const tx = $('#hfTx');
+  await hfTick(clk, bar, 0, 40, 2200, id, k => {
+    const n = Math.round(HF_TXT.length * k);
+    tx.innerHTML = HF_TXT.slice(0, n) + (k < 1 ? '<span class="caret"></span>' : '');
+  });
+  st[0].classList.replace('act', 'done');
+  // 2 — AI разбирает, тренер проверяет
+  st[1].classList.add('act');
+  const ai = $('#hfAi'); ai.classList.add('busy');
+  await hfTick(clk, bar, 40, 52, 1300, id, k => { if (k > .45){ ai.classList.remove('busy'); ai.closest('.hf-ai').classList.add('ok'); } });
+  st[1].classList.replace('act', 'done');
+  // 3 — веса у каждого, время не идёт
+  st[2].classList.add('act');
+  for (const r of $$('.hf-k', lane)){ await wait(220, id); r.classList.add('on'); }
+  await wait(250, id);
+  st[2].classList.replace('act', 'done');
+  // 4 — клиенты получают
+  st[3].classList.add('act');
+  const push = $$('.hf-push', lane), got = $('#hfGot');
+  for (let i = 1; i <= 20; i++){
+    if (i % 7 === 1) push[i / 7 | 0].classList.add('on');
+    got.textContent = i; await wait(45, id);
+  }
+  st[3].classList.replace('act', 'done');
+  lane.classList.add('over'); $('#hfNewS').textContent = 'Готово ✓ всё у клиентов';
+}
+function hfReset(){
+  $$('#hf .hf-st').forEach(s => s.classList.remove('act', 'done'));
+  $$('#hf .hf-lane').forEach(l => l.classList.remove('over'));
+  ['#hfClkOld', '#hfClkNew'].forEach(s => $(s).textContent = '0 мин');
+  ['#hfBarOld', '#hfBarNew', '#hfSentBar'].forEach(s => $(s).style.width = '0');
+  $('#hfSent').textContent = '0'; $('#hfGot').textContent = '0';
+  $('#hfTx').innerHTML = '<span class="caret"></span>';
+  $('#hfAi').classList.remove('busy'); $('#hf .hf-ai').classList.remove('ok');
+  $$('#hf .hf-k, #hf .hf-push').forEach(e => e.classList.remove('on'));
+  $('#hfNewS').textContent = 'те же 20 клиентов';
+  $('#hfRes').classList.remove('in');
+}
+function hfFinal(){
+  $$('#hf .hf-st').forEach(s => s.classList.add('done'));
+  $$('#hf .hf-lane').forEach(l => l.classList.add('over'));
+  $('#hfClkOld').textContent = '8 ч'; $('#hfBarOld').style.width = '100%';
+  $('#hfClkNew').textContent = '52 мин'; $('#hfBarNew').style.width = (52 / HF_DAY * 100) + '%';
+  $('#hfSent').textContent = '20'; $('#hfSentBar').style.width = '100%'; $('#hfGot').textContent = '20';
+  $('#hfTx').textContent = HF_TXT; $('#hf .hf-ai').classList.add('ok');
+  $$('#hf .hf-k, #hf .hf-push').forEach(e => e.classList.add('on'));
+  $('#hfNewS').textContent = 'Готово ✓ всё у клиентов'; $('#hfRes').classList.add('in');
+}
+async function heroF(id){
+  hfReset();
+  if (RM){ hfFinal(); return; }
   await wait(600, id);
-  scan.classList.add('go');
-  await wait(800, id);
-  board.classList.add('dig'); ph.classList.add('in');
-  await wait(700, id); t1.classList.add('in');
-  await wait(350, id); t2.classList.add('in');
+  await Promise.all([hfOld(id), hfNew(id)]);
+  $('#hfRes').classList.add('in');
   await wait(7000, id);
-  return heroE(id);
+  return heroF(id);
+}
+$('#hfReplay').addEventListener('click', () => play('f'));
+
+/* ═══════════ расчёт весов: новый рекорд пересчитывает вес ═══════════ */
+async function kgScene(id){
+  const rm = $('#kgRm'), chg = $('#kgChg'), w = $('#kgKg');
+  const set = (r, rec) => {
+    rm.textContent = r + ' кг'; chg.style.visibility = rec ? 'visible' : 'hidden';
+    w.textContent = kg(r * .8) + ' кг'; w.classList.remove('flash'); void w.offsetWidth; if (rec) w.classList.add('flash');
+  };
+  set(180, false);
+  if (RM){ set(185, true); return; }
+  await wait(1600, id); set(185, true);
+  await wait(4200, id);
+  return kgScene(id);
 }
 
-/* ═══════════ переключение вариантов ═══════════ */
-const HEROES = { a: heroA, b: heroB, c: heroC, d: heroD, e: heroE };
-let CUR = 'a';
-function show(v){
-  if (!HEROES[v]) v = 'a';
-  CUR = v; RUN++;
-  $$('.hero').forEach(h => h.classList.toggle('on', h.dataset.hero === v));
-  $$('#hsw button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-selected', b.dataset.v === v); });
-  const u = new URL(location.href); u.searchParams.set('hero', v); history.replaceState(null, '', u);
-  onScroll();
-  HEROES[v](RUN).catch(() => {});
+/* ═══════════ сцены: запуск, когда блок в кадре ═══════════ */
+const SCENES = { f: [heroF, '#hf'], a: [heroA, '#ha'], kg: [kgScene, '#kgx'], c: [heroC, '#hc'], d: [heroD, '#hd'] };
+const live = {};
+function play(k){ RUNS[k] = (RUNS[k] || 0) + 1; SCENES[k][0]({ k, n: RUNS[k] }).catch(() => {}); }
+function scenes(){
+  for (const k in SCENES){
+    const r = $(SCENES[k][1]).getBoundingClientRect();
+    const vis = r.top < innerHeight * .85 && r.bottom > innerHeight * .15;
+    if (vis && !live[k]){ live[k] = true; play(k); }
+    else if (!vis && live[k]){ live[k] = false; RUNS[k]++; }
+  }
 }
-$('#hsw').addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.v); });
-document.addEventListener('keydown', e => {
-  if (e.target.closest('input,textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
-  const v = { 1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e' }[e.key];
-  if (v) show(v);
-});
 
-/* шапка: линия после прокрутки, тёмная поверх hero E */
+/* шапка: линия после прокрутки */
 const top = $('#top');
-function onScroll(){
-  top.classList.toggle('scrolled', scrollY > 4);
-  const he = $('.hero.he');
-  document.body.classList.toggle('dark-top', CUR === 'e' && scrollY < he.offsetHeight - 64);
-}
+function onScroll(){ top.classList.toggle('scrolled', scrollY > 4); scenes(); }
 addEventListener('scroll', onScroll, { passive: true });
+addEventListener('resize', scenes);
 
-/* ═══════════ возможности: вкладки категорий ═══════════ */
-const tabs = $$('#ftabs a');
-/* Активна та категория, чей заголовок прошёл 40 % высоты экрана */
-const grps = $$('.fgrp');
+/* ═══════════ возможности: меню слева ═══════════ */
+const tabs = $$('#fxnav a[href^="#"]');
+/* Активна та фича, чей заголовок прошёл 40 % высоты экрана */
+const grps = $$('.fx');
 let spyCur = '';
 function spy(){
   let id = grps[0].id;
@@ -347,13 +367,6 @@ function spy(){
   tabs.forEach(t => {
     const on = t.getAttribute('href') === '#' + id;
     t.classList.toggle('on', on);
-    /* Только горизонтально внутри полоски: scrollIntoView двигал и страницу,
-       и прокрутка колесом дёргалась назад на каждой смене категории */
-    if (on){
-      const bar = t.parentElement, l = t.offsetLeft, r = l + t.offsetWidth;
-      if (l < bar.scrollLeft) bar.scrollLeft = l - 8;
-      else if (r > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = r - bar.clientWidth + 8;
-    }
   });
 }
 addEventListener('scroll', spy, { passive: true });
@@ -403,5 +416,5 @@ const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting
   { threshold: .12, rootMargin: '0px 0px -40px 0px' });
 $$('.rv-in').forEach(el => rv.observe(el));
 
-show(new URLSearchParams(location.search).get('hero') || 'a');
+onScroll();
 })();

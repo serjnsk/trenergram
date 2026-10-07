@@ -60,25 +60,143 @@
 
 <main>
 
-<!-- ════════════════ HERO A · ТЕКСТ → ТРЕНИРОВКА ════════════════ -->
-<section class="hero" data-hero="a" aria-label="Первый экран, вариант A">
+<!-- ════════════════ HERO · ДЕНЬ → ЧАС ════════════════
+     Заголовок — из B (экономия времени), подача — флоу из A: два потока
+     наперегонки, у каждого свои часы на общей шкале рабочего дня. -->
+<section class="hero on" aria-label="Первый экран">
   <div class="wrap">
     <div class="cen">
       <a class="badge" href="#pricing"><i>14 дней</i>Полный доступ бесплатно, без карты</a>
-      <h1 class="h1">Пишите тренировки как в заметках. <em>Остальное сделаем мы</em></h1>
-      <p class="lede">Тренерграм разберёт текст в структуру, пересчитает проценты в килограммы под каждого клиента и отправит тренировку ему в телефон. Месяц программ — за вечер меньше.</p>
+      <h1 class="h1">Неделя программ — за час, <em>а не за целый день в таблицах</em></h1>
+      <p class="lede">Таблицы, калькулятор, рассылка по чатам и ответы «скинь ещё раз» съедают у тренера рабочий день в неделю. В Тренерграме вы пишете тренировки текстом — веса и отправку он делает сам.</p>
       <div class="cta">
         <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
         <a class="lb lg gh" href="#features">Посмотреть возможности</a>
       </div>
-      <div class="trust">
-        <span><svg><use href="#i-check"/></svg>Клиентам — бесплатно</span>
-        <span><svg><use href="#i-check"/></svg>Перенос из TRNR и Google Таблиц</span>
-        <span><svg><use href="#i-check"/></svg>Данные хранятся в РФ</span>
-      </div>
     </div>
 
-    <div class="stage ha-stage" id="ha">
+    <div class="stage hf" id="hf">
+      <!-- как сейчас -->
+      <div class="hf-lane old">
+        <div class="hf-who">
+          <span class="cap">Как сейчас</span>
+          <b class="hf-clk num" id="hfClkOld">0 мин</b>
+          <div class="hf-bar"><i id="hfBarOld"></i></div>
+          <s>20 клиентов, неделя программ</s>
+        </div>
+        <div class="hf-steps">
+          <div class="hf-st" data-m="180">
+            <div class="hf-m hf-sheet"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="hf-t"><b>Таблица</b><em>+3 ч</em></div>
+            <p>Копируете неделю 20 раз и правите руками</p>
+          </div>
+          <div class="hf-st" data-m="90">
+            <div class="hf-m hf-calc"><div>190 × 0,75 = 142,5</div><div>85 × 0,75 = 63,75 ≈ ?</div><div>160 × 0,75 = 120</div><div class="mut">ещё 17 человек…</div></div>
+            <div class="hf-t"><b>Калькулятор</b><em>+1 ч 30 мин</em></div>
+            <p>Считаете проценты от максимума каждому</p>
+          </div>
+          <div class="hf-st" data-m="120">
+            <div class="hf-m hf-send"><div class="r">Отправлено <b class="num" id="hfSent">0</b> из 20</div><div class="hf-pg"><i id="hfSentBar"></i></div><div class="mut">копировать → в чат → вставить</div></div>
+            <div class="hf-t"><b>Рассылка</b><em>+2 ч</em></div>
+            <p>Отправляете каждому в мессенджер</p>
+          </div>
+          <div class="hf-st" data-m="90">
+            <div class="hf-m hf-chat"><span>Сколько мне вешать?</span><span>Скинь таблицу ещё раз 🙏</span><span>В зале не открывается</span><i class="num">14</i></div>
+            <div class="hf-t"><b>Переписка</b><em>+1 ч 30 мин</em></div>
+            <p>Отвечаете «а сколько мне вешать?»</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- в Тренерграме -->
+      <div class="hf-lane new">
+        <div class="hf-who">
+          <span class="cap">В Тренерграме</span>
+          <b class="hf-clk num" id="hfClkNew">0 мин</b>
+          <div class="hf-bar"><i id="hfBarNew"></i></div>
+          <s id="hfNewS">те же 20 клиентов</s>
+        </div>
+        <div class="hf-steps">
+          <div class="hf-st">
+            <div class="hf-m hf-ed"><div class="hf-tx" id="hfTx"></div></div>
+            <div class="hf-t"><b>Пишете текстом</b><em>+40 мин</em></div>
+            <p>Как в заметках, неделю целиком</p>
+          </div>
+          <div class="hf-st">
+            <div class="hf-m hf-ai">
+              <button class="aib sm" id="hfAi" tabindex="-1" aria-hidden="true"><svg class="aim" viewBox="0 0 16 16" fill="currentColor"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg><span>AI</span></button>
+              <div class="hf-rw"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span>Присед</span><b>5×5</b><em>75 %</em></div>
+              <div class="hf-rw"><img src="../assets/ex/img/0025-EIeI8Vf.jpg" alt=""><span>Жим лёжа</span><b>4×6</b><em>70 %</em></div>
+              <div class="hf-rw"><img src="../assets/ex/img/0652-lBDjFxJ.jpg" alt=""><span>AMRAP 12 · 3 упр.</span><b></b><em></em></div>
+            </div>
+            <div class="hf-t"><b>AI разбирает</b><em>+12 мин</em></div>
+            <p>Вы только проверяете и жмёте «Принять»</p>
+          </div>
+          <div class="hf-st">
+            <div class="hf-m hf-kg">
+              <div class="hf-k"><span>Иван</span><s>1ПМ 190</s><b>142,5 кг</b></div>
+              <div class="hf-k"><span>Мария</span><s>1ПМ 85</s><b>65 кг</b></div>
+              <div class="hf-k"><span>Олег</span><s>1ПМ 160</s><b>120 кг</b></div>
+              <div class="mut">и ещё 17 — сами</div>
+            </div>
+            <div class="hf-t"><b>Веса считаются</b><em class="z">+0 мин</em></div>
+            <p>Проценты → килограммы у каждого</p>
+          </div>
+          <div class="hf-st">
+            <div class="hf-m hf-ph">
+              <div class="hf-push"><span class="ico">ТМ</span><b>Тренировка на вторник</b></div>
+              <div class="hf-push"><span class="ico">ТМ</span><b>Тренировка на вторник</b></div>
+              <div class="hf-push"><span class="ico">ТМ</span><b>Тренировка на вторник</b></div>
+              <div class="hf-got"><b class="num" id="hfGot">0</b> из 20 получили</div>
+            </div>
+            <div class="hf-t"><b>Клиенты получают</b><em class="z">+0 мин</em></div>
+            <p>Сразу в приложение, с весами</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="hf-foot">
+        <div class="hf-res" id="hfRes">Свободно <b>7 часов в неделю</b> — на тренировки, а не на таблицы</div>
+        <button class="ha-replay" id="hfReplay"><svg><use href="#i-replay"/></svg>Повторить</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ ВОЗМОЖНОСТИ ════════════════
+     Плоский список фич, слева липкое меню. Сцены из прежних вариантов hero
+     (A — текст → тренировка, C — 20 атлетов, D — без связи) живут здесь и
+     запускаются, когда фича в кадре (landing.js, SCENES). -->
+<section class="sec" id="features">
+  <div class="wrap wide">
+    <div class="sh rv-in">
+      <span class="kick">Возможности</span>
+      <h2 class="h2">Всё, на что тренер тратит неделю, — в одном кабинете</h2>
+      <p class="sub">Составить, назначить, вести клиентов и получать от них результаты. Без таблиц, копий в мессенджерах и пересчёта процентов на калькуляторе.</p>
+    </div>
+    <div class="fx-wrap">
+      <nav class="fx-nav" id="fxnav" aria-label="Возможности">
+        <a href="#fx-ai" class="on"><span class="n">01</span>Ввод текстом и AI</a>
+        <a href="#fx-kg"><span class="n">02</span>Расчёт весов</a>
+        <a href="#fx-group"><span class="n">03</span>Массовое добавление</a>
+        <a href="#fx-off"><span class="n">04</span>Без связи</a>
+        <a href="#fx-feed"><span class="n">05</span>Лента событий</a>
+        <a href="#fx-app"><span class="n">06</span>Приложение клиента</a>
+        <a href="#fx-pay"><span class="n">07</span>Оплаты <s>скоро</s></a>
+        <a href="#fx-more"><span class="n">08</span>Ещё возможности</a>
+        <a class="lb sm fx-cta" href="../">Начать бесплатно</a>
+      </nav>
+      <div class="fx-list">
+      <article class="fx" id="fx-ai">
+        <div class="fx-row">
+          <div class="ft rv-in"><span class="kick">Ввод текстом и кнопка AI</span><h3>Пишите как привыкли — в структуру переведёт AI</h3><p>Наберите тренировку целиком с клавиатуры или вставьте из заметок. По кнопке AI текст разложится на блоки, упражнения из базы, подходы и проценты — и после публикации окажется у клиента в телефоне уже в килограммах.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Понимает «5×5 70%», «EMOM 12», «3 круга», сеты и связки</li>
+            <li><svg><use href="#i-check"/></svg>Результат на проверку: «Принять» или «Вернуть текст»</li>
+            <li><svg><use href="#i-check"/></svg>Что не узнали — остаётся вашим текстом, ничего не подменяется</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="stage ha-stage" id="ha">
       <div class="ha-ed">
         <div class="ha-bar">
           <span class="dots"><i></i><i></i><i></i></span>
@@ -130,97 +248,52 @@
       </div>
       <button class="ha-replay" id="haReplay"><svg><use href="#i-replay"/></svg>Повторить</button>
     </div>
-  </div>
-</section>
-
-<!-- ════════════════ HERO B · ШТОРКА ДО/ПОСЛЕ ════════════════ -->
-<section class="hero" data-hero="b" aria-label="Первый экран, вариант B">
-  <div class="wrap">
-    <div class="cen">
-      <a class="badge" href="#pricing"><i>14 дней</i>Полный доступ бесплатно, без карты</a>
-      <h1 class="h1">Месяц программ — за минуты, <em>а не за вечер в таблицах</em></h1>
-      <p class="lede">Таблицы, переписка и заметки на холодильнике — в одном кабинете. Тренировки, веса и вопросы клиентов там, где вы их ищете.</p>
-      <div class="cta">
-        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
-        <a class="lb lg gh" href="#features">Посмотреть возможности</a>
-      </div>
-      <div class="hb-cnt">
-        <div class="v old"><b class="num">3 ч 40 мин</b><span>таблицы и мессенджеры</span></div>
-        <span class="ar">→</span>
-        <div class="v new"><b class="num">12 мин</b><span>в Тренерграме</span></div>
-      </div>
-    </div>
-
-    <div class="stage hb-stage" id="hb" style="--x:50%">
-      <!-- до -->
-      <div class="hb-layer hb-before" aria-hidden="true">
-        <span class="hb-lbl">Как сейчас</span>
-        <div class="hb-sheet">
-          <div class="tb"><i></i>Программы клиентов (копия 3) — финал.xlsx</div>
-          <table>
-            <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr>
-            <tr><th>1</th><td><b>Дата</b></td><td><b>Клиент</b></td><td><b>Упражнение</b></td><td><b>Схема</b></td><td><b>Вес</b></td></tr>
-            <tr><th>2</th><td>14.10</td><td>Иван</td><td>Присед</td><td>5х5</td><td class="y">70% от ??</td></tr>
-            <tr><th>3</th><td></td><td>Иван</td><td>Жим</td><td>4х6</td><td class="r">уточнить ПМ!!</td></tr>
-            <tr><th>4</th><td>14.10</td><td>Маша</td><td>Присед</td><td>5х5</td><td>52,5</td></tr>
-            <tr><th>5</th><td>15.10</td><td>все</td><td>метком</td><td>AMRAP 12</td><td>см. чат</td></tr>
-            <tr><th>6</th><td>16.10</td><td>Петя</td><td class="r">колено!!</td><td>без прыжков</td><td></td></tr>
-            <tr><th>7</th><td>16.10</td><td>Олег</td><td>Тяга</td><td>3х3</td><td class="er">#REF!</td></tr>
-            <tr><th>8</th><td class="g">17.10</td><td>Аня</td><td>Рывок</td><td>?</td><td class="y">спросить</td></tr>
-            <tr><th>9</th><td>17.10</td><td>Иван</td><td>Присед</td><td>5х3</td><td class="er">#VALUE!</td></tr>
-            <tr><th>10</th><td></td><td></td><td></td><td></td><td></td></tr>
-            <tr><th>11</th><td>18.10</td><td>Маша</td><td>Жим</td><td>4х8</td><td>30</td></tr>
-            <tr><th>12</th><td></td><td></td><td></td><td></td><td></td></tr>
-          </table>
-        </div>
-        <div class="hb-chat">
-          <div class="hd"><i></i>Клиенты<em>14</em></div>
-          <div class="ms">
-            <div class="m">Тренер, сколько мне вешать на присед?<s>08:12</s></div>
-            <div class="m me">70% от твоего максимума<s>08:40</s></div>
-            <div class="m">А какой у меня максимум? 😅<s>08:41</s></div>
-            <div class="m">Скинь ссылку на таблицу ещё раз 🙏<s>09:03</s></div>
-            <div class="m">В зале нет связи, не открывается<s>09:15</s></div>
           </div>
         </div>
-        <div class="hb-note n1">Петя — колено! Никаких прыжков</div>
-        <div class="hb-note n2">Пересчитать % всем после теста ПМ</div>
-        <div class="hb-note n3">Маше план на ноябрь до пятницы</div>
-      </div>
-      <!-- после -->
-      <div class="hb-layer hb-after" aria-hidden="true">
-        <span class="hb-lbl">В Тренерграме</span>
-        <div class="hb-cal">
-          <div class="hd"><span class="av">ИП</span><b>Иван Петров</b><s>Октябрь 2026</s><span class="sp"></span><span class="pill">Неделя</span><span class="pill a">Месяц</span></div>
-          <div class="wd"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div>
-          <div class="gr" id="hbGrid"></div>
+      </article>
+      <article class="fx" id="fx-kg">
+        <div class="fx-row rev">
+          <div class="ft rv-in"><span class="kick">Продвинутый расчёт весов</span><h3>Вы пишете «80&nbsp;%», каждый видит свои килограммы</h3><p>Нагрузку задаёте от максимума — 1ПМ, 3ПМ или рекорда. Клиенту приходит готовый вес, округлённый до блинов. Поставил новый рекорд — веса в следующих тренировках пересчитаются сами.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Проценты от 1ПМ, 3ПМ и рекордов из карточки клиента</li>
+            <li><svg><use href="#i-check"/></svg>В связке — от упражнения, которое выберете вы</li>
+            <li><svg><use href="#i-check"/></svg>Клиент не видит проценты — только килограммы</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="fm kgx" id="kgx">
+          <div class="card m-kg">
+            <div class="hd"><img src="../assets/ex/img/0032-ila4NZS.jpg" alt=""><span><b>Становая тяга</b><s>3 × 3 · тренировка группы</s></span><span class="pc">80 %</span></div>
+            <table>
+              <tr><th>Атлет</th><th>1ПМ</th><th>Вес</th></tr>
+              <tr><td><span class="who"><i style="background:var(--acc)">ИП</i>Иван П.</span></td><td class="num">210 кг</td><td class="kg num">167,5 кг</td></tr>
+              <tr><td><span class="who"><i style="background:var(--ink)">МС</i>Мария С.</span></td><td class="num">125 кг</td><td class="kg num">100 кг</td></tr>
+              <tr><td><span class="who"><i style="background:var(--tx3)">ОР</i>Олег Р.</span></td><td class="num"><span id="kgRm">180 кг</span> <span class="chg" id="kgChg">рекорд</span></td><td class="kg num" id="kgKg">145 кг</td></tr>
+              <tr><td><span class="who"><i style="background:var(--acc-d)">АК</i>Аня К.</span></td><td class="num">95 кг</td><td class="kg num">75 кг</td></tr>
+            </table>
+          </div>
+          <div class="card kgs">
+            <div class="cap">Как считаем</div>
+            <div class="r"><span>Нагрузка от</span><b>1ПМ, 3ПМ или рекорда</b></div>
+            <div class="r"><span>Округление</span><b>до 2,5 кг — как блины</b></div>
+            <div class="r"><span>В связке</span><b>от упражнения, которое выберете</b></div>
+            <div class="r"><span>Новый рекорд</span><b>веса пересчитаются сами</b></div>
+            <div class="r"><span>Клиент видит</span><b>только килограммы</b></div>
+          </div>
         </div>
-      </div>
-      <div class="hb-handle" role="slider" tabindex="0" aria-label="Сравнить: как сейчас и в Тренерграме" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" id="hbHandle">
-        <span class="k"><svg><use href="#i-lr"/></svg></span>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ════════════════ HERO C · ОДНА ТРЕНИРОВКА — ДВАДЦАТЬ АТЛЕТОВ ════════════════ -->
-<section class="hero" data-hero="c" aria-label="Первый экран, вариант C">
-  <div class="wrap split">
-    <div>
-      <a class="badge" href="#pricing"><i>14 дней</i>Полный доступ бесплатно, без карты</a>
-      <h1 class="h1">Одна тренировка на группу. <em>У каждого — свои веса</em></h1>
-      <p class="lede">Напишите тренировку один раз и отдайте её всей группе. Проценты от ПМ превратятся в килограммы для каждого атлета, а тому, у кого травма, вы поставите замену — остальных она не коснётся.</p>
-      <div class="cta">
-        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
-        <a class="lb lg gh" href="#features">Посмотреть возможности</a>
-      </div>
-      <div class="trust">
-        <span><svg><use href="#i-check"/></svg>Клиентам — бесплатно</span>
-        <span><svg><use href="#i-check"/></svg>Перенос из TRNR и Google Таблиц</span>
-        <span><svg><use href="#i-check"/></svg>Данные в РФ</span>
-      </div>
-    </div>
-    <div class="hc-vis" id="hc">
+          </div>
+        </div>
+      </article>
+      <article class="fx" id="fx-group">
+        <div class="fx-row">
+          <div class="ft rv-in"><span class="kick">Массовое добавление тренировок</span><h3>Одна тренировка — на всю группу за раз</h3><p>Напишите тренировку один раз и отдайте её группе в 20–30 человек. Каждый получит свои веса от своего максимума, а тому, у кого травма, вы поправите только его день — у остальных ничего не изменится.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Группа — свой календарь, как у клиента</li>
+            <li><svg><use href="#i-check"/></svg>Личная правка не трогает остальных участников</li>
+            <li><svg><use href="#i-check"/></svg>Копирование и перенос дней сразу на всю группу</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="hc-vis" id="hc">
       <div class="hc-tr">
         <div class="hd">
           <span class="gi"><svg><use href="#i-group"/></svg></span>
@@ -242,26 +315,20 @@
       <div class="hc-legend"><span><i></i>Своя версия: замена из-за травмы, у остальных без изменений</span></div>
       <div class="hc-tip" id="hcTip"></div>
     </div>
-  </div>
-</section>
-
-<!-- ════════════════ HERO D · БЕЗ СВЯЗИ ════════════════ -->
-<section class="hero hd" data-hero="d" aria-label="Первый экран, вариант D">
-  <div class="wrap split">
-    <div>
-      <a class="badge" href="#pricing"><i>14 дней</i>Полный доступ бесплатно, без карты</a>
-      <h1 class="h1">Тренировка открывается <em>даже в подвале зала</em></h1>
-      <p class="lede">Программа лежит у клиента в телефоне, а не в облаке. Пропала связь — он видит тренировку, отмечает подходы, а результаты уйдут вам сами, как только сеть вернётся.</p>
-      <div class="cta">
-        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
-        <a class="lb lg ln" href="#features">Посмотреть возможности</a>
-      </div>
-      <div class="hd-sum">
-        <div><b>0 сек</b><s>ждать загрузки в зале без сети</s></div>
-        <div><b>14 дней</b><s>программы и анимаций — на телефоне заранее</s></div>
-      </div>
-    </div>
-    <div class="hd-vis" id="hd">
+          </div>
+        </div>
+      </article>
+      <article class="fx" id="fx-off">
+        <div class="fx-row rev">
+          <div class="ft rv-in"><span class="kick">Без связи</span><h3>Тренировка открывается даже в подвале зала</h3><p>Программа лежит у клиента в телефоне, а не в облаке. Пропала связь — он видит тренировку, отмечает подходы, а результаты уйдут вам сами, как только сеть вернётся.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Программа и анимации на 14 дней — на телефоне заранее</li>
+            <li><svg><use href="#i-check"/></svg>Подходы и комментарии сохраняются без сети</li>
+            <li><svg><use href="#i-check"/></svg>Кабинет тренера тоже работает офлайн</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="fm warm fx-offm">
+          <div class="hd-vis" id="hd">
       <div class="hd-rings"><i></i><i></i><i></i></div>
       <div class="hd-net">
         <div class="r"><b>Связь в зале</b><span class="tgl on" id="hdTgl" role="switch" aria-checked="true" tabindex="0" aria-label="Связь в зале"></span></div>
@@ -289,214 +356,19 @@
         <div class="ok"><svg width="14" height="14"><use href="#i-check"/></svg>Пришло, как только появилась сеть</div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ════════════════ HERO E · МЕЛОВАЯ ДОСКА ════════════════ -->
-<section class="hero he" data-hero="e" aria-label="Первый экран, вариант E">
-  <div class="wrap split">
-    <div>
-      <a class="badge" href="#pricing"><i>14 дней</i>Полный доступ бесплатно, без карты</a>
-      <h1 class="he-h1">С доски —<br>в телефон <em>каждого</em> атлета</h1>
-      <p class="lede">Пишите тренировку так же, как мелом на доске. Тренерграм разберёт её, посчитает веса каждому по его максимуму и разошлёт в приложение — с таймером и анимацией упражнений.</p>
-      <div class="cta">
-        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
-        <a class="lb lg gh" href="#features">Посмотреть возможности</a>
-      </div>
-      <div class="trust">
-        <span><svg><use href="#i-check"/></svg>Клиентам — бесплатно</span>
-        <span><svg><use href="#i-check"/></svg>Работает без интернета</span>
-        <span><svg><use href="#i-check"/></svg>Данные в РФ</span>
-      </div>
-    </div>
-    <div class="he-vis" id="he">
-      <div class="he-board" id="heBoard">
-        <div class="he-chalk" id="heChalk">
-          <div class="t1" style="--d:.7s"><span class="ul">ВТ 14.10 — WOD</span></div>
-          <div style="--d:1s">Сила: присед 5×5 <span class="or">@70%</span></div>
-          <div style="--d:.8s">Жим лёжа 4×6 <span class="or">@75%</span></div>
-          <div style="--d:.6s">AMRAP 12:</div>
-          <div class="in1" style="--d:.7s">10 подтягиваний</div>
-          <div class="in1" style="--d:.8s">15 махов гирей 24/16</div>
-          <div class="in1" style="--d:.6s">бег 200 м</div>
         </div>
-        <div class="he-scan" id="heScan"></div>
-        <div class="tray"></div>
-      </div>
-      <div class="phone he-ph" id="hePh">
-        <div class="scr">
-          <i class="isl"></i>
-          <div class="sb"><span>7:02</span><span class="ic"><svg class="sig" viewBox="0 0 18 11"><use href="#i-sig"/></svg><svg viewBox="0 0 25 11"><use href="#i-bat"/></svg></span></div>
-          <div class="body">
-            <div class="p-day">Вторник, 14 октября</div>
-            <div class="p-tt">WOD</div>
-            <div class="p-blk"><h5>Силовая</h5>
-              <div class="p-row"><span class="t"><b>5×5</b> Присед со штангой</span><span class="kg">132,5 кг</span></div>
-              <div class="p-row"><span class="t"><b>4×6</b> Жим лёжа</span><span class="kg">90 кг</span></div></div>
-            <div class="p-blk"><h5>Комплекс <s>AMRAP 12</s></h5>
-              <div class="p-row"><span class="t">10 подтягиваний</span></div>
-              <div class="p-row"><span class="t">15 махов гирей</span><span class="kg">24 кг</span></div>
-              <div class="p-row"><span class="t">Бег 200 м</span></div></div>
-            <div class="p-btn">Запустить таймер · 12:00</div>
           </div>
         </div>
-      </div>
-      <span class="he-tag" id="heTag1" style="right:196px;bottom:400px">70 % → 132,5 кг</span>
-      <span class="he-tag" id="heTag2" style="right:196px;bottom:96px">AMRAP 12 → таймер</span>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════ ВОЗМОЖНОСТИ ════════════════ -->
-<section class="sec" id="features">
-  <div class="wrap">
-    <div class="sh rv-in">
-      <span class="kick">Возможности</span>
-      <h2 class="h2">Всё, на что тренер тратит неделю, — в одном кабинете</h2>
-      <p class="sub">Составить, назначить, вести клиентов и получать от них результаты. Без таблиц, копий в мессенджерах и пересчёта процентов на калькуляторе.</p>
-    </div>
-
-    <div class="ftabs"><div class="in" id="ftabs">
-      <a href="#f-make" class="on">Составлять</a>
-      <a href="#f-assign">Назначать</a>
-      <a href="#f-lead">Вести клиентов</a>
-      <a href="#f-client">Приложение клиента</a>
-      <a href="#f-money">Зарабатывать <s>скоро</s></a>
-    </div></div>
-
-    <!-- 01 составлять -->
-    <div class="fgrp" id="f-make">
-      <div class="fgh"><span class="n">01</span><b>Составлять</b><s>Месяц программ — за минуты</s></div>
-      <div class="feat rv-in">
-        <div class="ft">
-          <span class="kick">Ввод текстом и кнопка AI</span>
-          <h3>Пишите как привыкли — в структуру переведёт AI</h3>
-          <p>Наберите тренировку целиком с клавиатуры или вставьте из заметок. По кнопке AI текст разложится на блоки, упражнения из базы, подходы и проценты. Ничего не подменяется молча: что не узнали — остаётся вашим текстом.</p>
-          <ul>
-            <li><svg><use href="#i-check"/></svg>Понимает «5×5 70%», «EMOM 12», «3 круга», сеты и связки</li>
-            <li><svg><use href="#i-check"/></svg>Результат на проверку: «Принять» или «Вернуть текст»</li>
-            <li><svg><use href="#i-check"/></svg>Тренировка из одного текста — тоже тренировка</li>
-          </ul>
-        </div>
-        <div class="fm">
-          <div class="card m-ai">
-            <div class="tx">EMOM 12
-3 взятия на грудь 60%
-6 бёрпи через штангу<button class="aib" tabindex="-1" aria-hidden="true"><svg class="aim" viewBox="0 0 16 16" fill="currentColor"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg><span>AI</span></button></div>
-            <div class="arr"><svg><use href="#i-down"/></svg></div>
-            <div class="ha-band" style="margin-bottom:8px">Разобрано ИИ — проверьте<span class="sp"></span><button class="g">Вернуть текст</button><button>Принять</button></div>
-            <div class="pb in"><h6>Комплекс <i>EMOM 12</i></h6>
-              <div class="pr"><img src="../assets/ex/img/0028-SGY8Zui.jpg" alt=""><span class="nm">Взятие штанги на грудь</span><span class="sc">12×3</span><span class="pc">60 %</span></div>
-              <div class="pr"><img src="../assets/ex/img/1160-dK9394r.jpg" alt=""><span class="nm">Бёрпи через штангу</span><span class="sc">12×6</span><span class="pc"></span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="mini">
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-search">
-            <div class="q"><svg><use href="#i-search"/></svg>присед</div>
-            <div class="r"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span>Приседания со штангой</span></div>
-            <div class="r"><img src="../assets/ex/img/0042-zG0zs85.jpg" alt=""><span>Фронтальный присед</span></div>
-          </div></div>
-          <b>1 300 упражнений с анимацией</b>
-          <p>База на русском с превью и GIF: клиент видит технику, а вы не ищете ролики. Свои упражнения добавляются за секунду.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-cal">
-            <i class="w"></i><i></i><i class="w"></i><i></i><i class="w"></i><i class="w"></i><i></i>
-            <i class="s"></i><i></i><i class="s"></i><i></i><i class="s"></i><i class="s"></i><i></i>
-            <i class="c"></i><i></i><i class="c"></i><i></i><i class="c"></i><i class="c"></i><i></i>
-            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-          </div></div>
-          <b>Копируйте недели целиком</b>
-          <p>Выделите дни — скопируйте или перенесите их на другие даты, клиенту или группе. Раскладка по дням недели сохранится.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-imp">
-            <span class="f"><i style="background:#0F9D58"></i>Sheets</span>
-            <span class="f"><i style="background:#1D6F42"></i>Excel</span>
-            <span class="f"><i style="background:var(--ink)"></i>TRNR</span>
-            <span class="ar">→</span>
-            <span class="ok">ТМ</span>
-          </div></div>
-          <b>Перенос без перепечатки</b>
-          <p>Импортируйте программы из Google Таблиц, Excel, CSV или аккаунта TRNR. Готовые блоки и шаблоны — в вашей базе.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 02 назначать -->
-    <div class="fgrp" id="f-assign">
-      <div class="fgh"><span class="n">02</span><b>Назначать</b><s>Персонально и группам</s></div>
-      <div class="feat rev rv-in">
-        <div class="ft">
-          <span class="kick">Проценты от ПМ</span>
-          <h3>Вы пишете «70 %», клиент видит «132,5 кг»</h3>
-          <p>Нагрузку задаёте от максимума, а клиенту приходит готовый вес, округлённый до блинов. Поставил новый рекорд — веса в следующих тренировках пересчитаются сами.</p>
-          <ul>
-            <li><svg><use href="#i-check"/></svg>1ПМ, 3ПМ и рекорды хранятся в карточке клиента</li>
-            <li><svg><use href="#i-check"/></svg>Клиент не видит проценты — только килограммы</li>
-            <li><svg><use href="#i-check"/></svg>В связке — от упражнения, которое выберете вы</li>
-          </ul>
-        </div>
-        <div class="fm">
-          <div class="card m-kg">
-            <div class="hd"><img src="../assets/ex/img/0032-ila4NZS.jpg" alt=""><span><b>Становая тяга</b><s>3 × 3 · тренировка группы</s></span><span class="pc">80 %</span></div>
-            <table>
-              <tr><th>Атлет</th><th>1ПМ</th><th>Рабочий вес</th></tr>
-              <tr><td><span class="who"><i style="background:var(--acc)">ИП</i>Иван Петров</span></td><td class="num">210 кг</td><td class="kg num">167,5 кг</td></tr>
-              <tr><td><span class="who"><i style="background:var(--ink)">МС</i>Мария Соколова</span></td><td class="num">125 кг</td><td class="kg num">100 кг</td></tr>
-              <tr><td><span class="who"><i style="background:var(--tx3)">ОР</i>Олег Руденко</span></td><td class="num">185 кг <span class="chg">рекорд</span></td><td class="kg num">147,5 кг</td></tr>
-              <tr><td><span class="who"><i style="background:var(--acc-d)">АК</i>Аня Ким</span></td><td class="num">95 кг</td><td class="kg num">75 кг</td></tr>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="mini">
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-grp">
-            <div><i style="background:var(--acc)"></i><span>Иван Петров</span><em>132,5 кг</em></div>
-            <div class="x"><i style="background:var(--ink)"></i><span>Петя Жуков</span><em>Своя версия · колено</em></div>
-            <div><i style="background:var(--tx3)"></i><span>Мария Соколова</span><em>67,5 кг</em></div>
-          </div></div>
-          <b>Группа с личными правками</b>
-          <p>Одна тренировка на 20–30 человек. Тому, у кого травма, правите его день — у остальных ничего не меняется.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-st">
-            <div><span>Пн · Сила + AMRAP</span><em class="p">Опубликована</em></div>
-            <div><span>Ср · Гимнастика</span><em class="p">Опубликована</em></div>
-            <div><span>Пт · Тяга + EMOM</span><em class="d">Черновик</em></div>
-          </div></div>
-          <b>Черновик до публикации</b>
-          <p>Составляйте наперёд — клиент увидит тренировку, только когда вы её опубликуете.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-link">
-            <div class="u"><span>trenergram.app/j/K7F2QX</span><em>Копировать</em></div>
-            <div class="n">Одна ссылка для всех клиентов</div>
-          </div></div>
-          <b>Клиенты приходят по ссылке</b>
-          <p>Отправьте ссылку в чат или повесьте QR в зале. Клиент входит по номеру телефона — и он уже у вас в кабинете.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 03 вести -->
-    <div class="fgrp" id="f-lead">
-      <div class="fgh"><span class="n">03</span><b>Вести клиентов</b><s>Всё важное — в одной ленте</s></div>
-      <div class="feat rv-in">
-        <div class="ft">
-          <span class="kick">Лента событий</span>
-          <h3>Вопросы, рекорды и пропуски — в одной ленте</h3>
-          <p>Утром открываете кабинет и сразу видите, кому ответить, у кого рекорд, кто пропал на неделю и у кого кончается программа. На вопрос по тренировке отвечаете прямо из ленты.</p>
-          <ul>
+      </article>
+      <article class="fx" id="fx-feed">
+        <div class="fx-row">
+          <div class="ft rv-in"><span class="kick">Лента событий</span><h3>Вопросы, рекорды и пропуски — в одной ленте</h3><p>Утром открываете кабинет и сразу видите, кому ответить, у кого рекорд, кто пропал на неделю и у кого кончается программа. На вопрос по тренировке отвечаете прямо из ленты.</p>
+            <ul>
             <li><svg><use href="#i-check"/></svg>Фильтр по типу событий</li>
             <li><svg><use href="#i-check"/></svg>Комментарии клиента к упражнению и подходу</li>
             <li><svg><use href="#i-check"/></svg>Очередь: кому пора составить следующую неделю</li>
-          </ul>
-        </div>
+            </ul></div>
+          <div class="fx-m">
         <div class="fm">
           <div class="card m-feed">
             <div class="ch"><span class="on">Все</span><span>Вопросы 2</span><span>Рекорды</span><span>Пропуски</span></div>
@@ -506,51 +378,21 @@
             <div class="it"><span class="av" style="background:var(--tx3)">ОР</span><div class="b"><span class="tp" style="color:var(--tx3)">Пропуск</span><b>Олег Руденко</b><p>Не тренировался 5 дней</p></div><span class="tm">утром</span></div>
           </div>
         </div>
-      </div>
-      <div class="mini">
-        <div class="mc rv-in">
-          <div class="mv"><svg class="v-chart" viewBox="0 0 260 104" preserveAspectRatio="none">
-            <defs><linearGradient id="vg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FC5200" stop-opacity=".22"/><stop offset="1" stop-color="#FC5200" stop-opacity="0"/></linearGradient></defs>
-            <path class="ar" d="M8 86 L60 74 L112 70 L164 50 L216 40 L252 22 L252 104 L8 104Z"/>
-            <path class="ln" d="M8 86 L60 74 L112 70 L164 50 L216 40 L252 22"/>
-            <circle cx="252" cy="22" r="4.5"/><text x="208" y="16">195 кг</text>
-          </svg></div>
-          <b>Рекорды и замеры клиента</b>
-          <p>1ПМ, 3ПМ, вес и обхваты — в карточке клиента. Клиент вносит их сам, вы видите прогресс на графике.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-st">
-            <div><span>Аня Ким</span><em class="d">программа до пт</em></div>
-            <div><span>Олег Руденко</span><em class="d">нет недели</em></div>
-            <div><span>Маша Соколова</span><em class="p">до 2 ноября</em></div>
-          </div></div>
-          <b>Никого не забудете</b>
-          <p>Кабинет сам напомнит, у кого заканчивается программа, — и откроет конструктор на нужной дате.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-app"><span><svg><use href="#i-globe"/></svg>Веб</span><span><svg><use href="#i-apple"/></svg>iOS</span><span><svg><use href="#i-android"/></svg>Android</span></div></div>
-          <b>За компьютером и с телефона</b>
-          <p>Составлять удобнее за ноутбуком, отвечать клиентам — с телефона. Всё синхронно, и тоже без сети.</p>
-        </div>
-      </div>
-    </div>
 
-    <!-- 04 клиент -->
-    <div class="fgrp" id="f-client">
-      <div class="fgh"><span class="n">04</span><b>Приложение клиента</b><s>Бесплатно для ваших клиентов</s></div>
-      <div class="feat rev rv-in">
-        <div class="ft">
-          <span class="kick">Уровня лучших фитнес-приложений</span>
-          <h3>Клиенту не нужно спрашивать «что мне делать»</h3>
-          <p>Тренировка в телефоне с весами, анимацией упражнений и вашими заметками. Клиент отмечает подходы, пишет комментарии и видит свои рекорды — а вы получаете это в ленту.</p>
-          <ul>
-            <li><svg><use href="#i-check"/></svg>Работает в зале без интернета</li>
-            <li><svg><use href="#i-check"/></svg>Таймер собирается из текста: EMOM 12 → готовый таймер</li>
-            <li><svg><use href="#i-check"/></svg>iOS, Android и веб без установки</li>
-          </ul>
+          </div>
         </div>
-        <div class="fm warm" style="min-height:560px;padding-bottom:0;align-items:flex-end">
-          <div class="phone" style="--pw:290px;margin-bottom:-120px">
+      </article>
+      <article class="fx" id="fx-app">
+        <div class="fx-row rev">
+          <div class="ft rv-in"><span class="kick">Приложение клиента</span><h3>Клиенту не нужно спрашивать «что мне делать»</h3><p>Тренировка в телефоне с весами, анимацией упражнений и вашими заметками. Клиент отмечает подходы, пишет комментарии и видит свои рекорды — а вы получаете это в ленту. Для клиентов бесплатно.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Таймер собирается из текста: EMOM 12 → готовый таймер</li>
+            <li><svg><use href="#i-check"/></svg>Рекорды и прогресс клиента</li>
+            <li><svg><use href="#i-check"/></svg>iOS, Android и веб без установки</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="fm warm fx-app">
+          <div class="phone" style="--pw:290px">
             <div class="scr">
               <i class="isl"></i>
               <div class="sb"><span>18:20</span><span class="ic"><svg class="sig" viewBox="0 0 18 11"><use href="#i-sig"/></svg><svg viewBox="0 0 25 11"><use href="#i-bat"/></svg></span></div>
@@ -564,48 +406,28 @@
                 <div class="p-blk"><h5>Комплекс <s>EMOM 12</s></h5>
                   <div class="p-row"><span class="t">3 взятия на грудь</span><span class="kg">95 кг</span></div>
                   <div class="p-row"><span class="t">6 бёрпи через штангу</span></div></div>
+                <div class="p-btn">Запустить таймер · 12:00</div>
               </div>
             </div>
           </div>
+          <div class="fx-app-side">
+            <div class="card"><div class="v-tmr"><div class="ring"><div><b class="num">00:47</b><s>EMOM 7/12</s></div></div><div class="tx"><b>Таймер из текста</b><br>EMOM, AMRAP, Табата,<br>на время — без настройки</div></div></div>
+            <div class="card"><div class="v-rec"><span class="md"><svg><use href="#i-medal"/></svg></span><b>Новый рекорд!</b><s>Присед со штангой · 195 кг</s></div></div>
+          </div>
         </div>
-      </div>
-      <div class="mini">
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-tmr"><div class="ring"><div><b class="num">00:47</b><s>EMOM 7/12</s></div></div><div class="tx"><b>Таймер из текста</b><br>EMOM, AMRAP, Табата,<br>на время — без настройки</div></div></div>
-          <b>Таймер уже собран</b>
-          <p>Вы написали «EMOM 12» — клиент нажимает «Старт». Раунды и отдых считаются сами.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-rec"><span class="md"><svg><use href="#i-medal"/></svg></span><b>Новый рекорд!</b><s>Присед со штангой · 195 кг</s></div></div>
-          <b>Рекорды мотивируют</b>
-          <p>Клиент видит свой прогресс и рекорды, а вы — каждый новый максимум в ленте.</p>
-        </div>
-        <div class="mc rv-in">
-          <div class="mv"><div class="v-st">
-            <div><span>Программа на 14 дней</span><em class="p">на телефоне</em></div>
-            <div><span>Анимации упражнений</span><em class="p">скачаны</em></div>
-            <div><span>3 результата</span><em class="d">уйдут при сети</em></div>
-          </div></div>
-          <b>Без сети — без проблем</b>
-          <p>Программа и анимации на ближайшие две недели уже на телефоне. Результаты дождутся связи.</p>
-        </div>
-      </div>
-    </div>
 
-    <!-- 05 зарабатывать -->
-    <div class="fgrp" id="f-money">
-      <div class="fgh"><span class="n">05</span><b>Зарабатывать</b><s>Оплаты и курсы внутри приложения</s><span class="soon">Скоро</span></div>
-      <div class="feat rv-in">
-        <div class="ft">
-          <span class="kick">Следующий этап</span>
-          <h3>Клиенты платят в приложении — деньги приходят вам</h3>
-          <p>Подписка или разовые тренировки, автопродление, промокоды. Не оплатил — доступ к новым тренировкам закрывается сам, по вашей настройке. Больше никаких напоминаний «скинь за месяц».</p>
-          <ul>
+          </div>
+        </div>
+      </article>
+      <article class="fx" id="fx-pay">
+        <div class="fx-row">
+          <div class="ft rv-in"><span class="kick">Оплаты в приложении</span> <span class="soon">Скоро</span><h3>Клиенты платят в приложении — деньги приходят вам</h3><p>Подписка или разовые тренировки, автопродление, промокоды. Не оплатил — доступ к новым тренировкам закрывается сам, по вашей настройке.</p>
+            <ul>
             <li><svg><use href="#i-check"/></svg>Тарифы: онлайн, офлайн, группа</li>
             <li><svg><use href="#i-check"/></svg>Продление без оплаты по уважительной причине</li>
             <li><svg><use href="#i-check"/></svg>Своя страница тренера и продажа курсов</li>
-          </ul>
-        </div>
+            </ul></div>
+          <div class="fx-m">
         <div class="fm">
           <div class="card m-pay">
             <div class="tot"><div><s>Поступило в октябре</s><b class="num">148 500 ₽</b></div><em>+12 клиентов</em></div>
@@ -615,6 +437,25 @@
             <div class="r"><span class="av" style="background:var(--acc-d)">АК</span><span class="b">Аня Ким<s>Курс «Подтягивания с нуля»</s></span><span class="st wt">Ждёт оплаты</span></div>
           </div>
         </div>
+
+          </div>
+        </div>
+      </article>
+
+      <article class="fx" id="fx-more">
+        <div class="fx-h rv-in"><div class="ft"><span class="kick">И ещё</span><h3>Мелочи, из которых складывается скорость</h3></div></div>
+        <div class="mini">
+          <div class="mc rv-in"><div class="mv"><div class="v-search"><div class="q"><svg><use href="#i-search"/></svg>присед</div><div class="r"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span>Приседания со штангой</span></div><div class="r"><img src="../assets/ex/img/0042-zG0zs85.jpg" alt=""><span>Фронтальный присед</span></div></div></div><b>1 300 упражнений с анимацией</b><p>База на русском с превью и GIF: клиент видит технику, свои упражнения добавляются за секунду.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-cal"><i class="w"></i><i></i><i class="w"></i><i></i><i class="w"></i><i class="w"></i><i></i><i class="s"></i><i></i><i class="s"></i><i></i><i class="s"></i><i class="s"></i><i></i><i class="c"></i><i></i><i class="c"></i><i></i><i class="c"></i><i class="c"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><b>Копируйте недели целиком</b><p>Выделите дни — скопируйте или перенесите их клиенту или группе. Раскладка по дням сохранится.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-imp"><span class="f"><i style="background:#0F9D58"></i>Sheets</span><span class="f"><i style="background:#1D6F42"></i>Excel</span><span class="f"><i style="background:var(--ink)"></i>TRNR</span><span class="ar">→</span><span class="ok">ТМ</span></div></div><b>Перенос без перепечатки</b><p>Импорт из Google Таблиц, Excel, CSV или аккаунта TRNR.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-st"><div><span>Пн · Сила + AMRAP</span><em class="p">Опубликована</em></div><div><span>Ср · Гимнастика</span><em class="p">Опубликована</em></div><div><span>Пт · Тяга + EMOM</span><em class="d">Черновик</em></div></div></div><b>Черновик до публикации</b><p>Составляйте наперёд — клиент увидит тренировку, только когда вы её опубликуете.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-link"><div class="u"><span>trenergram.app/j/K7F2QX</span><em>Копировать</em></div><div class="n">Одна ссылка для всех клиентов</div></div></div><b>Клиенты приходят по ссылке</b><p>Отправьте ссылку в чат или повесьте QR в зале — клиент входит по номеру телефона.</p></div>
+          <div class="mc rv-in"><div class="mv"><svg class="v-chart" viewBox="0 0 260 104" preserveAspectRatio="none"><defs><linearGradient id="vg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FC5200" stop-opacity=".22"/><stop offset="1" stop-color="#FC5200" stop-opacity="0"/></linearGradient></defs><path class="ar" d="M8 86 L60 74 L112 70 L164 50 L216 40 L252 22 L252 104 L8 104Z"/><path class="ln" d="M8 86 L60 74 L112 70 L164 50 L216 40 L252 22"/><circle cx="252" cy="22" r="4.5"/><text x="208" y="16">195 кг</text></svg></div><b>Рекорды и замеры</b><p>1ПМ, 3ПМ, вес и обхваты в карточке клиента — прогресс на графике.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-st"><div><span>Аня Ким</span><em class="d">программа до пт</em></div><div><span>Олег Руденко</span><em class="d">нет недели</em></div><div><span>Маша Соколова</span><em class="p">до 2 ноября</em></div></div></div><b>Никого не забудете</b><p>Кабинет напомнит, у кого кончается программа, и откроет конструктор на нужной дате.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-app"><span><svg><use href="#i-globe"/></svg>Веб</span><span><svg><use href="#i-apple"/></svg>iOS</span><span><svg><use href="#i-android"/></svg>Android</span></div></div><b>За компьютером и с телефона</b><p>Составлять — за ноутбуком, отвечать клиентам — с телефона. Всё синхронно.</p></div>
+          <div class="mc rv-in"><div class="mv"><div class="v-tmr"><div class="ring"><div><b class="num">00:47</b><s>EMOM 7/12</s></div></div><div class="tx"><b>EMOM 12</b><br>→ готовый таймер</div></div></div><b>Таймер уже собран</b><p>Вы написали «EMOM 12» — клиент нажимает «Старт». Раунды и отдых считаются сами.</p></div>
+        </div>
+      </article>
       </div>
     </div>
   </div>
@@ -739,16 +580,6 @@
     <div class="col"><b>Документы</b><a href="../../docs/">Документация</a><a href="#">Политика конфиденциальности</a><a href="#">Оферта</a></div>
   </div>
 </footer>
-
-<!-- Служебное: выбор варианта hero. Уберём, когда выберем один. -->
-<div class="hsw" id="hsw" role="tablist" aria-label="Вариант первого экрана">
-  <span class="l">Вариант hero</span>
-  <button data-v="a">A<span>Текст → тренировка</span></button>
-  <button data-v="b">B<span>До / после</span></button>
-  <button data-v="c">C<span>20 атлетов</span></button>
-  <button data-v="d">D<span>Без связи</span></button>
-  <button data-v="e">E<span>Доска</span></button>
-</div>
 
 <script src="landing.js"></script>
 </body>
