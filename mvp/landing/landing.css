@@ -454,20 +454,24 @@ img{display:block;max-width:100%}
 /* ─── возможности: меню слева и плоский список фич ───
    Меню липкое, активный пункт — фича, чей заголовок прошёл 40 % экрана.
    Фича — как раньше: текст сбоку, мок рядом, стороны чередуются. Секция
-   шире остальных (1400), иначе сцены рядом с текстом не помещаются. */
-.wrap.wide{max-width:calc(1400px + var(--gut) * 2)}
-.fx-wrap{display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px;align-items:start}
-.fx-nav{position:sticky;top:100px;display:flex;flex-direction:column;border-left:2px solid var(--line)}
-.fx-nav a[href^="#"]{display:flex;align-items:baseline;gap:10px;padding:9px 0 9px 16px;margin-left:-2px;border-left:2px solid transparent;
-  text-decoration:none;color:var(--tx3);font-size:15px;font-weight:500;letter-spacing:-.01em;transition:color .15s,border-color .15s}
-.fx-nav a .n{font:900 11.5px/1 var(--head);color:var(--tx4);min-width:18px}
-.fx-nav a s{text-decoration:none;font-size:11px;font-weight:700;color:var(--acc-d);background:var(--acc-a);padding:1px 6px;border-radius:var(--rad-s)}
-.fx-nav a[href^="#"]:hover{color:var(--ink)}
-.fx-nav a.on{color:var(--ink);font-weight:600;border-left-color:var(--acc)}
-.fx-nav a.on .n{color:var(--acc)}
-.fx-nav .fx-cta{margin:20px 0 0 16px;align-self:flex-start}
+   шире остальных (1480), иначе сцены рядом с текстом не помещаются. */
+.wrap.wide{max-width:calc(1480px + var(--gut) * 2)}
+.fx-wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;align-items:start}
+/* как у partnerka.io: только текст, неактивные — светлые, у активного —
+   оранжевая стрелка; место под стрелку есть у всех, текст не прыгает */
+.fx-nav{position:sticky;top:110px;display:flex;flex-direction:column;gap:4px}
+.fx-nav a[href^="#"]{position:relative;display:flex;align-items:center;gap:8px;padding:9px 0 9px 32px;white-space:nowrap;
+  text-decoration:none;color:var(--tx4);font-size:19px;font-weight:500;letter-spacing:-.02em;line-height:1.2;transition:color .2s}
+.fx-nav a[href^="#"]::before{content:"→";position:absolute;left:0;top:50%;transform:translate(-8px,-52%);opacity:0;
+  color:var(--acc);font-weight:600;transition:opacity .2s,transform .25s}
+.fx-nav a s{text-decoration:none;font-size:11px;font-weight:700;letter-spacing:0;color:var(--acc-d);background:var(--acc-a);padding:2px 6px;border-radius:var(--rad-s)}
+.fx-nav a[href^="#"]:hover{color:var(--tx2)}
+.fx-nav a.on{color:var(--ink)}
+.fx-nav a.on::before{opacity:1;transform:translate(0,-52%)}
 .fx + .fx{margin-top:112px}
-.fx-row{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:56px;align-items:center}
+.fx-row{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:48px;align-items:start}
+.fx-row .ft .kick{display:block;line-height:1.2;margin-top:2px}
+.fx-row .ft .kick + .soon{margin:6px 0 0}
 .fx-row.rev{grid-template-columns:minmax(0,7fr) minmax(0,4fr)}
 .fx-row.rev .ft{order:2}
 .fx-h{margin-bottom:28px}
@@ -485,6 +489,7 @@ img{display:block;max-width:100%}
 .fx .ha-chip b{font-size:14px}
 .fx .ha-chip s::after{content:" →"}
 .fx .ha-doc .dh s{display:none}
+.fx .ha-bar .cr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .fx .ha-ph .p-tt{font-size:20px;margin-bottom:9px}
 .fx .ha-ph .p-blk{padding:9px 10px 2px;margin-bottom:6px}
 .fx .ha-ph .p-row{padding:5px 0;font-size:13px}
@@ -705,7 +710,7 @@ img{display:block;max-width:100%}
 .rv-in.in{opacity:1;transform:none}
 
 /* ═══════════ адаптив ═══════════ */
-@media (max-width:1360px){
+@media (max-width:1440px){
   .fx-wrap{grid-template-columns:minmax(0,1fr)}
   .fx-nav{display:none}
 }
