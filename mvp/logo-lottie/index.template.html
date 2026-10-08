@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Анимации логотипа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<style>
+/* Сгенерировано build.py из index.template.html — правьте шаблон, не index.html */
+:root{--bg:#F4F4F2;--card:#FFFFFF;--stage:#FFFFFF;--tx1:#16181D;--tx2:#4B505A;--tx3:#8A8F98;
+  --line:#E4E4E0;--acc:#FC5200;--chip:#F1F1EE}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1115;--card:#171A20;--stage:#1D2128;
+  --tx1:#F2F3F5;--tx2:#B4B8C0;--tx3:#7C818B;--line:#272B33;--chip:#22262E}}
+:root[data-theme="dark"]{--bg:#0F1115;--card:#171A20;--stage:#1D2128;--tx1:#F2F3F5;--tx2:#B4B8C0;
+  --tx3:#7C818B;--line:#272B33;--chip:#22262E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx1);font:400 15px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1500px;margin:0 auto;padding:40px 32px 80px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:28px}
+h1{margin:0 0 6px;font:900 30px/1 Montserrat,sans-serif;letter-spacing:-.035em;text-transform:uppercase}
+h1 b{color:var(--acc)}
+.lede{margin:0;color:var(--tx2);max-width:70ch}
+.seg{display:inline-flex;background:var(--chip);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--tx2);font:500 14px Inter,sans-serif;padding:7px 12px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--tx1);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tools{display:flex;gap:10px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.wrap{padding:24px 16px 60px}.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.stage{aspect-ratio:1;background:var(--stage);border-bottom:1px solid var(--line);position:relative;cursor:pointer}
+.stage.dark{background:#16181D}
+.stage > div{position:absolute;inset:0}
+.body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ttl{display:flex;align-items:baseline;gap:10px}
+.ttl b{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.ttl span{font:500 13px Inter;color:var(--tx3)}
+.num{font:900 13px Montserrat;color:var(--acc)}
+.desc{margin:0;color:var(--tx2)}
+.use{margin:0;font-size:13.5px;color:var(--tx3)}
+.ctl{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:8px}
+.ctl button,.ctl a{border:1px solid var(--line);background:var(--card);color:var(--tx1);height:32px;min-width:32px;
+  border-radius:8px;font:500 13px Inter;cursor:pointer;display:grid;place-items:center;padding:0 10px;text-decoration:none}
+.ctl input{flex:1;accent-color:var(--acc);min-width:0}
+.ctl .fr{font:500 12px ui-monospace,Menlo,monospace;color:var(--tx3);width:56px;text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><b>Т</b>ренергра<b>м</b> · Lottie</h1>
+      <p class="lede">Четыре варианта анимации знака. Все собраны из тех же векторов, что и <code>logo.svg</code>: высота буквы 40, штрих 10, срезы 45°. Клик по сцене — пауза, ползунок — покадровый просмотр.</p>
+    </div>
+    <div class="tools">
+      <div class="seg" id="bg">
+        <button aria-pressed="true" data-v="light">Светлый фон</button>
+        <button aria-pressed="false" data-v="dark">Тёмный фон</button>
+      </div>
+      <div class="seg" id="spd">
+        <button aria-pressed="false" data-v="0.25">0.25×</button>
+        <button aria-pressed="false" data-v="0.5">0.5×</button>
+        <button aria-pressed="true" data-v="1">1×</button>
+      </div>
+    </div>
+  </header>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+const DATA = /*DATA*/null;
+const META = /*META*/null;
+const players = [];
+const grid = document.getElementById('grid');
+META.forEach((m, i) => {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="stage"><div></div></div>
+    <div class="body">
+      <div class="ttl"><span class="num">0${i + 1}</span><b>${m.title}</b><span>${m.dur} с · цикл</span></div>
+      <p class="desc">${m.desc}</p>
+      <p class="use">Где: ${m.use}</p>
+      <div class="ctl">
+        <button class="pp" aria-label="Пауза">❚❚</button>
+        <input type="range" min="0" max="${DATA[m.key].op - 1}" value="0" aria-label="Кадр">
+        <span class="fr">0</span>
+        <a download="trenergram-${m.key}.json">JSON</a>
+      </div>
+    </div>`;
+  grid.appendChild(card);
+  const anim = lottie.loadAnimation({container: card.querySelector('.stage > div'), renderer: 'svg',
+    loop: true, autoplay: true, animationData: JSON.parse(JSON.stringify(DATA[m.key]))});
+  const pp = card.querySelector('.pp'), rng = card.querySelector('input'), fr = card.querySelector('.fr');
+  const set = playing => { pp.textContent = playing ? '❚❚' : '▶'; pp.setAttribute('aria-label', playing ? 'Пауза' : 'Играть'); };
+  const toggle = () => { anim.isPaused ? anim.play() : anim.pause(); set(!anim.isPaused); };
+  pp.onclick = toggle;
+  card.querySelector('.stage').onclick = toggle;
+  rng.oninput = () => { anim.goToAndStop(+rng.value, true); set(false); fr.textContent = rng.value; };
+  anim.addEventListener('enterFrame', () => { const f = Math.floor(anim.currentFrame); rng.value = f; fr.textContent = f; });
+  const a = card.querySelector('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(DATA[m.key])], {type: 'application/json'}));
+  players.push(anim);
+});
+function seg(id, fn) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    el.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    fn(b.dataset.v);
+  });
+}
+seg('bg', v => document.querySelectorAll('.stage').forEach(s => s.classList.toggle('dark', v === 'dark')));
+seg('spd', v => players.forEach(p => p.setSpeed(+v)));
+</script>
+</body>
+</html>
