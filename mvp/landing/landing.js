@@ -179,7 +179,7 @@ async function heroC(id){
   return heroC(id);
 }
 
-/* ═══════════ фича «Оффлайн режим работы» ═══════════ */
+/* ═══════════ фича «Офлайн режим работы» ═══════════ */
 const hdSets = $('#hdSets'), hdTgl = $('#hdTgl'), hdPh = $('#hdPh'), hdVis = $('#hd');
 hdSets.innerHTML = [1, 2, 3, 4, 5].map(n =>
   `<div class="p-row" data-n="${n}"><span class="ck"><svg><use href="#i-check"/></svg></span><span class="t">Подход ${n} · 5 × 132,5 кг<span class="q">ждёт сети</span></span></div>`).join('');
@@ -235,7 +235,7 @@ async function heroD(id){
 /* ═══════════ hero · день → час ═══════════
    Две полоски идут одновременно. Шкала у обеих одна — рабочий день, 480 мин:
    Тренерграм кончает на 52 минутах, старый способ тянется до 8 часов.
-   Семь шагов — семь колонок «как сейчас / в Тренерграме». */
+   Четыре шага — четыре колонки «как сейчас / в Тренерграме». */
 const HF_DAY = 480;
 const HF_TXT = 'присед 5×5 75%\nжим 4×6 70%\nподтяг 10';
 const hfFmt = m => { m = Math.round(m); if (m < 60) return m + ' мин'; const h = m / 60 | 0, r = m % 60; return r ? `${h} ч ${String(r).padStart(2, '0')} мин` : `${h} ч`; };
@@ -254,7 +254,7 @@ async function hfTick(clk, bar, a, b, ms, id, each){
 }
 async function hfOld(id){
   const st = $$('#hf .hf-lane.old .hf-st'), clk = $('#hfClkOld'), bar = $('#hfBarOld');
-  const steps = [[0, 60, 1400], [60, 140, 1600], [140, 220, 1600], [220, 330, 2100], [330, 410, 1600], [410, 440, 900], [440, 480, 1100]];
+  const steps = [[0, 120, 1700], [120, 240, 1900], [240, 330, 1600], [330, 480, 2400]];
   for (let i = 0; i < steps.length; i++){
     const [a, b, ms] = steps[i];
     st[i].classList.add('act');
@@ -270,30 +270,22 @@ async function hfNew(id){
   const step = async (i, a, b, ms, each) => { st[i].classList.add('act'); await hfTick(clk, bar, a, b, ms, id, each); st[i].classList.replace('act', 'done'); };
   // ведение — неделя в конструкторе
   const days = $$('#hfWk span');
-  await step(0, 0, 5, 900, k => days.forEach((d, i) => d.classList.toggle('on', i < Math.round(7 * k))));
-  // создание — набор текстом, затем AI раскладывает по упражнениям из базы
+  await step(0, 0, 10, 1000, k => days.forEach((d, i) => d.classList.toggle('on', i < Math.round(7 * k))));
+  // веса — считаются сами, время не идёт
+  st[1].classList.add('act');
+  for (const r of $$('.hf-k', lane)){ await wait(240, id); r.classList.add('on'); }
+  await wait(250, id); st[1].classList.replace('act', 'done');
+  // AI — набор текстом, затем разбор по упражнениям из базы
   const tx = $('#hfTx'), mix = $('#hf .hf-mix'), ai = $('#hfAi');
-  await step(1, 5, 35, 1800, k => {
+  await step(2, 10, 40, 2000, k => {
     const t = Math.min(1, k / .6);
     tx.innerHTML = HF_TXT.slice(0, Math.round(HF_TXT.length * t)) + (t < 1 ? '<span class="caret"></span>' : '');
     ai.classList.toggle('busy', k > .6 && k < .8);
     mix.classList.toggle('ok', k >= .8);
   });
-  // веса — сами, время не идёт
-  st[2].classList.add('act');
-  for (const r of $$('.hf-k', lane)){ await wait(200, id); r.classList.add('on'); }
-  await wait(200, id); st[2].classList.replace('act', 'done');
-  // группа — одна программа расходится на 20, у одного своя правка
+  // массовое копирование — одна программа расходится на 20, у одного своя правка
   const dots = $$('#hfDots i');
-  await step(3, 35, 45, 1000, k => dots.forEach((d, i) => d.classList.toggle('on', i < Math.round(20 * k))));
-  // работа с клиентами — вопрос и ответ прямо под упражнением
-  const [q, a] = $$('#hf .hf-cm span');
-  await step(4, 45, 50, 900, k => { q.classList.toggle('on', k > .2); a.classList.toggle('on', k > .65); });
-  // динамика — график рисуется сам
-  st[5].classList.add('act'); await wait(900, id); st[5].classList.replace('act', 'done');
-  // оплаты — сроки и доступ сами, тренер только отмечает оплату
-  const pays = $$('#hf .hf-pay .p');
-  await step(6, 50, 52, 800, k => pays.forEach((p, i) => p.classList.toggle('on', k > i * .3)));
+  await step(3, 40, 52, 1200, k => dots.forEach((d, i) => d.classList.toggle('on', i < Math.round(20 * k))));
   lane.classList.add('over'); $('#hfNewS').textContent = 'Готово ✓ всё у клиентов';
 }
 function hfReset(){
@@ -304,9 +296,8 @@ function hfReset(){
   $('#hfSent').textContent = '0';
   $('#hfTx').innerHTML = '<span class="caret"></span>';
   $('#hfAi').classList.remove('busy'); $('#hf .hf-mix').classList.remove('ok');
-  $$('#hf .hf-k, #hfDots i, #hfWk span, #hf .hf-cm span, #hf .hf-pay .p').forEach(e => e.classList.remove('on'));
-  $('#hfNewS').textContent = 'те же 20 клиентов';
-  $('#hfRes').classList.remove('in');
+  $$('#hf .hf-k, #hfDots i, #hfWk span').forEach(e => e.classList.remove('on'));
+  $('#hfNewS').textContent = '20 клиентов, неделя программ';
 }
 function hfFinal(){
   $$('#hf .hf-st').forEach(s => s.classList.add('done'));
@@ -315,15 +306,14 @@ function hfFinal(){
   $('#hfClkNew').textContent = '52 мин'; $('#hfBarNew').style.width = (52 / HF_DAY * 100) + '%';
   $('#hfSent').textContent = '20'; $('#hfSentBar').style.width = '100%';
   $('#hfTx').textContent = HF_TXT; $('#hf .hf-mix').classList.add('ok');
-  $$('#hf .hf-k, #hfDots i, #hfWk span, #hf .hf-cm span, #hf .hf-pay .p').forEach(e => e.classList.add('on'));
-  $('#hfNewS').textContent = 'Готово ✓ всё у клиентов'; $('#hfRes').classList.add('in');
+  $$('#hf .hf-k, #hfDots i, #hfWk span').forEach(e => e.classList.add('on'));
+  $('#hfNewS').textContent = 'Готово ✓ всё у клиентов';
 }
 async function heroF(id){
   hfReset();
   if (RM){ hfFinal(); return; }
   await wait(600, id);
   await Promise.all([hfOld(id), hfNew(id)]);
-  $('#hfRes').classList.add('in');
   await wait(6000, id);
   return heroF(id);
 }
@@ -379,44 +369,51 @@ function spy(){
 addEventListener('scroll', spy, { passive: true });
 spy();
 
-/* ═══════════ тарифы ═══════════ */
-/* Рыба: тарифная сетка не утверждена (OQ-8). Годовая — −20 %. */
-const CK = '<svg><use href="#i-check"/></svg>';
-const PLANS = [
-  { name: 'Старт', for: 'Попробовать на своих клиентах', m: 0, lim: 'до 3 клиентов', note: 'Бессрочно, без банковской карты',
-    btn: 'Начать бесплатно', cls: 'ln', head: 'Всё для старта:',
-    items: ['Конструктор с вводом текстом', 'База 1 300 упражнений с анимацией', 'Приложение для клиентов', 'Офлайн у клиента и тренера', 'Кнопка AI — 30 разборов в месяц'] },
-  { name: 'Тренер', for: 'Личное ведение', m: 990, lim: 'до 15 клиентов', note: '14 дней бесплатно, затем помесячно', pop: true,
-    btn: 'Попробовать 14 дней', cls: '', head: 'Всё из «Старт», плюс:',
-    items: ['Группы с личными правками', 'Проценты от ПМ → килограммы', 'Копирование и перенос дней', 'Импорт из TRNR, Excel и Google Таблиц', 'Кнопка AI без ограничений'] },
-  { name: 'Профи', for: 'Большая база клиентов', m: 1990, lim: 'до 50 клиентов', note: 'Помесячно, отмена в любой момент',
-    btn: 'Подключить «Профи»', cls: 'gh', head: 'Всё из «Тренер», плюс:',
-    items: ['Перенос клиентов силами менеджера', 'Шаблоны программ и блоков', 'Приоритетная поддержка в чате', 'Ранний доступ к оплатам от клиентов'] },
-  { name: 'Команда', for: 'Зал или команда', m: 3990, lim: 'до 150 клиентов', note: 'Помесячно, отмена в любой момент',
-    btn: 'Подключить «Команду»', cls: 'gh', head: 'Всё из «Профи», плюс:',
-    items: ['Лимит в 3 раза выше', 'Личный менеджер', 'Помощь с переносом программ', 'Страница тренера с вашим брендом — скоро'] }];
-const rub = n => n.toLocaleString('ru-RU').replace(/ /g, ' ');
-function renderPlans(per){
-  $('#plans').innerHTML = PLANS.map(p => {
-    const y = Math.round(p.m * .8 / 10) * 10, price = per === 'y' ? y : p.m;
-    return `<div class="pl${p.pop ? ' pop' : ''}">
-      ${p.pop ? '<span class="tag">Популярный</span>' : ''}
-      <h4>${p.name}</h4><div class="for">${p.for}</div>
-      <div class="pr"><b class="num">${rub(price)} ₽</b><s>/ мес</s></div>
-      <div class="old">${per === 'y' && p.m ? `${rub(p.m)} ₽ · ${rub(y * 12)} ₽ за год` : ''}</div>
-      <div class="lim"><span>${p.lim}</span></div>
-      <div class="note">${p.note}</div>
-      <a class="lb ${p.cls}" href="../">${p.btn}</a>
-      <ul><li class="h">${p.head}</li>${p.items.map(i => `<li>${CK}${i}</li>`).join('')}</ul>
-    </div>`;
-  }).join('');
+/* ═══════════ отзывы: слайдер ═══════════
+   Лента на scroll-snap; номер слайда — по прокрутке ленты, поэтому свайп,
+   стрелки и точки не расходятся. Сам листает раз в 7 с, пока отзывы на
+   экране и посетитель не навёл мышь и не листал сам. */
+const rsTrack = $('#rsTrack'), rsSlides = $$('.rs', rsTrack), rsDots = $('#rsDots');
+rsDots.innerHTML = rsSlides.map((_, i) => `<button aria-label="Отзыв ${i + 1}"></button>`).join('');
+const rsIdx = () => Math.round(rsTrack.scrollLeft / rsTrack.clientWidth);
+const rsGo = i => { i = (i + rsSlides.length) % rsSlides.length; rsTrack.scrollTo({ left: i * rsTrack.clientWidth, behavior: RM ? 'instant' : 'smooth' }); };
+function rsMark(){
+  const i = rsIdx();
+  $$('button', rsDots).forEach((b, k) => b.classList.toggle('on', k === i));
+  $('#rsCnt').textContent = `${i + 1} / ${rsSlides.length}`;
 }
-$('#per').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  $$('#per button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
-  renderPlans(b.dataset.per);
-});
-renderPlans('m');
+let rsHold = false, rsUser = 0;
+rsTrack.addEventListener('scroll', rsMark, { passive: true });
+$('#rsPrev').onclick = () => { rsUser = Date.now(); rsGo(rsIdx() - 1); };
+$('#rsNext').onclick = () => { rsUser = Date.now(); rsGo(rsIdx() + 1); };
+rsDots.onclick = e => { const b = e.target.closest('button'); if (b){ rsUser = Date.now(); rsGo($$('button', rsDots).indexOf(b)); } };
+$('#rsl').addEventListener('mouseenter', () => rsHold = true);
+$('#rsl').addEventListener('mouseleave', () => rsHold = false);
+rsTrack.addEventListener('touchstart', () => rsUser = Date.now(), { passive: true });
+setInterval(() => {
+  const r = rsTrack.getBoundingClientRect();
+  if (RM || rsHold || Date.now() - rsUser < 12000 || r.bottom < 0 || r.top > innerHeight) return;
+  rsGo(rsIdx() + 1);
+}, 7000);
+rsMark();
+
+/* ═══════════ тарифы: один тариф, цена от числа клиентов ═══════════
+   Сетка от заказчика (2026-10-08): ступень — [подпись на шкале, лимит, ₽ в месяц]. */
+const PRICE = [['10', 'до 10 клиентов', 990], ['20', '11–20 клиентов', 2000], ['50', '21–50 клиентов', 4000],
+  ['100', '51–100 клиентов', 8000], ['100+', 'больше 100 клиентов', 10000]];
+const rub = n => n.toLocaleString('ru-RU').replace(/\u00a0/g, ' ');
+const prRange = $('#prRange'), prTicks = $('#prTicks');
+prTicks.innerHTML = PRICE.map(([t], i) => `<button data-i="${i}">${t}</button>`).join('');
+function prSet(i, bump){
+  const [, lim, p] = PRICE[i];
+  prRange.value = i; prRange.style.setProperty('--p', i / (PRICE.length - 1) * 100 + '%');
+  $('#prPrice').textContent = rub(p) + ' ₽'; $('#prLim').textContent = lim;
+  $$('button', prTicks).forEach((b, k) => b.classList.toggle('on', k === i));
+  if (bump){ const b = $('#prPrice'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+}
+prRange.addEventListener('input', () => prSet(+prRange.value, true));
+prTicks.addEventListener('click', e => { const b = e.target.closest('button'); if (b) prSet(+b.dataset.i, true); });
+prSet(0);
 
 /* ═══════════ появление при прокрутке ═══════════ */
 const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); rv.unobserve(e.target); } }),

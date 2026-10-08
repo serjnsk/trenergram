@@ -52,20 +52,21 @@
       <a href="#pricing">Тарифы</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <span class="sp"></span>
-    <a class="in" href="../">Войти</a>
-    <a class="lb sm" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+    <div class="acts">
+      <a class="in" href="../">Войти</a>
+      <a class="lb sm" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+    </div>
   </div>
 </header>
 
 <main>
 
 <!-- ════════════════ HERO · ДЕНЬ → ЧАС ════════════════
-     Две полоски наперегонки — «как сейчас» и «в Тренерграме», у каждой свои
-     часы на общей шкале рабочего дня. Семь колонок — семь задач тренера под
-     тремя категориями, пара «до / после» стоит друг под другом. -->
+     Две полоски наперегонки — Тренерграм первым и с логотипом, под ним «как
+     сейчас»; у каждой свои часы на общей шкале рабочего дня. Четыре колонки —
+     четыре главные задачи тренера, пара «после / до» стоит друг под другом. -->
 <section class="hero on" aria-label="Первый экран">
-  <div class="wrap xwide">
+  <div class="wrap wide">
     <div class="cen">
       <a class="badge" href="#pricing"><i>14 дней</i>Полный доступ бесплатно, без карты</a>
       <h1 class="h1">Неделя программ для всех клиентов — <em>за один час</em></h1>
@@ -77,10 +78,29 @@
     </div>
 
     <div class="stage hf" id="hf">
-      <!-- шесть пар «как сейчас / в Тренерграме»; колонка — одна задача тренера -->
-      <div class="hf-cats" aria-hidden="true">
-        <span></span>
-        <div class="hf-cr"><span>Ведение клиентов</span><span class="c3">Создание тренировок</span><span class="c3">Работа с клиентами</span></div>
+      <!-- четыре пары «в Тренерграме / как сейчас»; колонка — одна задача тренера -->
+      <!-- в Тренерграме -->
+      <div class="hf-lane new">
+        <div class="hf-who">
+          <span class="logo hf-logo">Тренерграм</span>
+          <b class="hf-clk num" id="hfClkNew">0 мин</b>
+          <div class="hf-bar"><i id="hfBarNew"></i></div>
+          <s id="hfNewS">20 клиентов, неделя программ</s>
+        </div>
+        <div class="hf-steps">
+          <div class="hf-st"><div class="hf-m hf-wk" id="hfWk"><span>Пн<i></i><i></i></span><span>Вт</span><span>Ср<i></i><i></i></span><span>Чт</span><span>Пт<i></i><i></i></span><span>Сб<i></i></span><span>Вс</span></div>
+            <div class="hf-t"><b>Удобный конструктор</b></div>
+          </div>
+          <div class="hf-st"><div class="hf-m hf-kg"><div class="hf-k"><span>Иван</span><s>1ПМ 190</s><b>142,5 кг</b></div><div class="hf-k"><span>Мария</span><s>1ПМ 85</s><b>65 кг</b></div><div class="hf-k"><span>Олег</span><s>1ПМ 160</s><b>120 кг</b></div><div class="mut">и ещё 17 — сами</div></div>
+            <div class="hf-t"><b>Автокалькуляция весов</b></div>
+          </div>
+          <div class="hf-st"><div class="hf-m hf-mix"><div class="hf-tx" id="hfTx"></div><div class="hf-ai"><button class="aib sm" id="hfAi" tabindex="-1" aria-hidden="true"><svg class="aim" viewBox="0 0 16 16" fill="currentColor"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg><span>AI</span></button><div class="hf-rw"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span>Присед</span><b>5×5</b><em>75 %</em></div><div class="hf-rw"><img src="../assets/ex/img/0025-EIeI8Vf.jpg" alt=""><span>Жим лёжа</span><b>4×6</b><em>70 %</em></div><div class="hf-rw"><img src="../assets/ex/img/0652-lBDjFxJ.jpg" alt=""><span>Подтягивания</span><b>10</b><em></em></div></div></div>
+            <div class="hf-t"><b>AI-обработка текста</b></div>
+          </div>
+          <div class="hf-st"><div class="hf-m hf-grp"><div class="hf-dots" id="hfDots"></div><div class="mut">1 программа → 20 атлетов<br><span class="o">○</span> своя правка у одного</div></div>
+            <div class="hf-t"><b>Массовое копирование</b></div>
+          </div>
+        </div>
       </div>
 
       <!-- как сейчас -->
@@ -89,83 +109,24 @@
           <span class="cap">Как сейчас</span>
           <b class="hf-clk num" id="hfClkOld">0 мин</b>
           <div class="hf-bar"><i id="hfBarOld"></i></div>
-          <s>20 клиентов, неделя программ</s>
+          <s>те же 20 клиентов</s>
         </div>
         <div class="hf-steps">
-          <div class="hf-st"><i class="hf-c">Ведение клиентов</i>
-            <div class="hf-m hf-sheet"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="hf-st"><div class="hf-m hf-sheet"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
             <div class="hf-t"><b>Тетради и таблицы</b></div>
           </div>
-          <div class="hf-st"><i class="hf-c">Создание тренировок</i>
-            <div class="hf-m hf-note"><div>присед 5х5 70%</div><div>жим 4х6 — ?</div><div>амрап 12 мин…</div></div>
-            <div class="hf-t"><b>Текстом в заметках</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Создание тренировок</i>
-            <div class="hf-m hf-calc"><div>190 × 0,75 = 142,5</div><div>85 × 0,75 = 63,75 ≈ ?</div><div>160 × 0,75 = 120</div><div class="mut">ещё 17 человек…</div></div>
+          <div class="hf-st"><div class="hf-m hf-calc"><div>190 × 0,75 = 142,5</div><div>85 × 0,75 = 63,75 ≈ ?</div><div>160 × 0,75 = 120</div><div class="mut">ещё 17 человек…</div></div>
             <div class="hf-t"><b>Калькулятор</b></div>
           </div>
-          <div class="hf-st"><i class="hf-c">Создание тренировок</i>
-            <div class="hf-m hf-send"><div class="r">Скопировано <b class="num" id="hfSent">0</b> из 20</div><div class="hf-pg"><i id="hfSentBar"></i></div><div class="mut">по одной копии на каждого</div></div>
+          <div class="hf-st"><div class="hf-m hf-note"><div>присед 5х5 70%</div><div>жим 4х6 — ?</div><div>амрап 12 мин…</div></div>
+            <div class="hf-t"><b>Текстом в заметках</b></div>
+          </div>
+          <div class="hf-st"><div class="hf-m hf-send"><div class="r">Скопировано <b class="num" id="hfSent">0</b> из 20</div><div class="hf-pg"><i id="hfSentBar"></i></div><div class="mut">по одной копии на каждого</div></div>
             <div class="hf-t"><b>Копия каждому</b></div>
           </div>
-          <div class="hf-st"><i class="hf-c">Работа с клиентами</i>
-            <div class="hf-m hf-chat"><span>Сколько мне вешать?</span><span>Скинь таблицу ещё раз 🙏</span><span>Это какое упражнение?</span><i class="num">14</i></div>
-            <div class="hf-t"><b>Мессенджеры</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Работа с клиентами</i>
-            <div class="hf-m hf-note"><div>Иван присед 190? 195?</div><div>Маша вес 62 → ?</div><div>Олег — спросить</div></div>
-            <div class="hf-t"><b>Рекорды в заметках</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Работа с клиентами</i>
-            <div class="hf-m hf-note"><div>Маша — оплатила?</div><div>Олег долг 2 недели</div><div>напомнить всем!</div></div>
-            <div class="hf-t"><b>Напоминания вручную</b></div>
-          </div>
         </div>
       </div>
 
-      <!-- в Тренерграме -->
-      <div class="hf-lane new">
-        <div class="hf-who">
-          <span class="cap">В Тренерграме</span>
-          <b class="hf-clk num" id="hfClkNew">0 мин</b>
-          <div class="hf-bar"><i id="hfBarNew"></i></div>
-          <s id="hfNewS">те же 20 клиентов</s>
-        </div>
-        <div class="hf-steps">
-          <div class="hf-st"><i class="hf-c">Ведение клиентов</i>
-            <div class="hf-m hf-wk" id="hfWk"><span>Пн<i></i><i></i></span><span>Вт</span><span>Ср<i></i><i></i></span><span>Чт</span><span>Пт<i></i><i></i></span><span>Сб<i></i></span><span>Вс</span></div>
-            <div class="hf-t"><b>Конструктор</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Создание тренировок</i>
-            <div class="hf-m hf-mix"><div class="hf-tx" id="hfTx"></div><div class="hf-ai"><button class="aib sm" id="hfAi" tabindex="-1" aria-hidden="true"><svg class="aim" viewBox="0 0 16 16" fill="currentColor"><path class="s1" d="M4 1Q4.5 3.3 6.8 3.8Q4.5 4.3 4 6.6Q3.5 4.3 1.2 3.8Q3.5 3.3 4 1Z"/><path class="s2" d="M10.2 3.4Q11.2 8 15.8 9Q11.2 10 10.2 14.6Q9.2 10 4.6 9Q9.2 8 10.2 3.4Z"/><path class="s3" d="M4.2 10.8Q4.58 12.52 6.3 12.9Q4.58 13.28 4.2 15Q3.82 13.28 2.1 12.9Q3.82 12.52 4.2 10.8Z"/></svg><span>AI</span></button><div class="hf-rw"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span>Присед</span><b>5×5</b><em>75 %</em></div><div class="hf-rw"><img src="../assets/ex/img/0025-EIeI8Vf.jpg" alt=""><span>Жим лёжа</span><b>4×6</b><em>70 %</em></div><div class="hf-rw"><img src="../assets/ex/img/0652-lBDjFxJ.jpg" alt=""><span>Подтягивания</span><b>10</b><em></em></div></div></div>
-            <div class="hf-t"><b>AI-обработка</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Создание тренировок</i>
-            <div class="hf-m hf-kg"><div class="hf-k"><span>Иван</span><s>1ПМ 190</s><b>142,5 кг</b></div><div class="hf-k"><span>Мария</span><s>1ПМ 85</s><b>65 кг</b></div><div class="hf-k"><span>Олег</span><s>1ПМ 160</s><b>120 кг</b></div><div class="mut">и ещё 17 — сами</div></div>
-            <div class="hf-t"><b>Автокалькулирование весов</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Создание тренировок</i>
-            <div class="hf-m hf-grp"><div class="hf-dots" id="hfDots"></div><div class="mut">1 программа → 20 атлетов<br><span class="o">○</span> своя правка у одного</div></div>
-            <div class="hf-t"><b>Массовое копирование</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Работа с клиентами</i>
-            <div class="hf-m hf-cm"><div class="ex">Присед 5×5 · 142,5 кг</div><span class="q">Плечо тянет — снизить?</span><span class="a">Сними 5 кг, техника важнее</span></div>
-            <div class="hf-t"><b>Заметки к упражнениям</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Работа с клиентами</i>
-            <div class="hf-m hf-chart"><svg viewBox="0 0 160 56" preserveAspectRatio="none"><path class="ln" d="M4 48 L36 42 L68 38 L100 26 L132 20 L156 8"/><circle cx="156" cy="8" r="3.5"/></svg><b>Присед 195 кг ↑</b></div>
-            <div class="hf-t"><b>Динамика рекордов и замеров</b></div>
-          </div>
-          <div class="hf-st"><i class="hf-c">Работа с клиентами</i>
-            <div class="hf-m hf-pay"><div class="p"><span>Иван</span><em class="ok">оплачено</em></div><div class="p"><span>Мария</span><em class="wt">до пт</em></div><div class="p"><span>Олег</span><em class="lk">доступ закрыт</em></div></div>
-            <div class="hf-t"><b>Сроки оплаты и доступ</b></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hf-foot">
-        <div class="hf-res" id="hfRes">Свободно <b>7 часов в неделю</b> — на тренировки, а не на таблицы</div>
-      </div>
     </div>
   </div>
 </section>
@@ -178,24 +139,128 @@
   <div class="wrap wide">
     <div class="sh rv-in">
       <span class="kick">Возможности</span>
-      <h2 class="h2">Всё, на что тренер тратит неделю, — в одном кабинете</h2>
-      <p class="sub">Составить, назначить, вести клиентов и получать от них результаты. Без таблиц, копий в мессенджерах и пересчёта процентов на калькуляторе.</p>
+      <h2 class="h2">Весь тренерский процесс в одном сервисе</h2>
     </div>
     <div class="fx-wrap">
       <nav class="fx-nav" id="fxnav" aria-label="Возможности">
-        <a href="#fx-ai" class="on">Ввод текстом и AI</a>
-        <a href="#fx-kg">Расчёт весов</a>
+        <a href="#fx-con" class="on">Конструктор тренировок</a>
+        <a href="#fx-kg">Авторасчёт весов</a>
         <a href="#fx-group">Массовое добавление</a>
-        <a href="#fx-off">Оффлайн режим работы</a>
+        <a href="#fx-ai">Ввод текстом и AI</a>
+        <a href="#fx-off">Офлайн-режим работы</a>
         <a href="#fx-feed">Лента событий</a>
         <a href="#fx-app">Приложение клиента</a>
         <a href="#fx-pay">Оплаты <s>скоро</s></a>
         <a href="#fx-more">Ещё возможности</a>
       </nav>
       <div class="fx-list">
+      <article class="fx" id="fx-con">
+        <div class="fx-row rev">
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Конструктор тренировок</h3></div>
+          <div class="ft ft-b rv-in"><p>Неделя клиента на одном экране: дни, блоки, упражнения из базы. Добавляйте готовые блоки и шаблоны, меняйте порядок, копируйте дни — без таблиц и формул.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Готовые блоки и шаблоны тренировок</li>
+            <li><svg><use href="#i-check"/></svg>Сеты, связки и комплексы: AMRAP, EMOM, Табата</li>
+            <li><svg><use href="#i-check"/></svg>Черновик до публикации — клиент видит только готовое</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="fm m-con">
+          <div class="card mc-ed">
+            <div class="mc-bar"><span class="dots"><i></i><i></i><i></i></span><span class="cr">Клиенты / <b>Иван Петров</b></span><span class="sp"></span><span class="st">Черновик</span></div>
+            <div class="mc-wk">
+              <span class="d"><s>Пн</s><b>Сила</b></span><span class="d on"><s>Вт</s><b>Сила + AMRAP</b></span><span class="d"><s>Ср</s><b>Отдых</b></span>
+              <span class="d"><s>Чт</s><b>Тяга + EMOM</b></span><span class="d"><s>Пт</s><b>Гимнастика</b></span><span class="d"><s>Сб</s><b>Метком</b></span><span class="d"><s>Вс</s><b>Отдых</b></span>
+            </div>
+            <div class="mc-day">
+              <div class="mc-b"><h6>Разминка</h6><div class="pr"><span class="ph"></span><span class="nm">Гребля</span><span class="sc">500 м</span><span class="pc"></span></div></div>
+              <div class="mc-b"><h6>Силовая</h6><div class="pr"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span class="nm">Присед со штангой</span><span class="sc">5×5</span><span class="pc">70 %</span></div><div class="pr"><img src="../assets/ex/img/0025-EIeI8Vf.jpg" alt=""><span class="nm">Жим лёжа</span><span class="sc">4×6</span><span class="pc">75 %</span></div></div>
+              <div class="mc-b drop"><h6>Комплекс <i>AMRAP 12</i></h6><div class="pr"><img src="../assets/ex/img/0652-lBDjFxJ.jpg" alt=""><span class="nm">Подтягивания</span><span class="sc">10</span><span class="pc"></span></div><div class="pr"><img src="../assets/ex/img/0549-UHJlbu3.jpg" alt=""><span class="nm">Махи гирей</span><span class="sc">15</span><span class="pc">24 кг</span></div></div>
+            </div>
+          </div>
+          <div class="card mc-lib">
+            <div class="cap">Мои блоки</div>
+            <div class="it"><b>Разминка «Утро»</b><s>гребля, мобилити</s></div>
+            <div class="it on"><b>AMRAP 12 «Классика»</b><s>подтягивания, махи</s></div>
+            <div class="it"><b>Силовая · присед</b><s>5×5 от ПМ</s></div>
+            <div class="it"><b>Заминка</b><s>растяжка 10 мин</s></div>
+          </div>
+        </div>
+          </div>
+        </div>
+      </article>
+      <article class="fx" id="fx-kg">
+        <div class="fx-row">
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Авторасчёт весов</h3></div>
+          <div class="ft ft-b rv-in"><p>Нагрузку задаёте от максимума — 1ПМ, 3ПМ или рекорда. Клиенту приходит готовый вес, округлённый до блинов. Поставил новый рекорд — веса в следующих тренировках пересчитаются сами.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Проценты от 1ПМ, 3ПМ и рекордов из карточки клиента</li>
+            <li><svg><use href="#i-check"/></svg>В связке — от упражнения, которое выберете вы</li>
+            <li><svg><use href="#i-check"/></svg>Клиент не видит проценты — только килограммы</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="fm kgx" id="kgx">
+          <div class="card m-kg">
+            <div class="hd"><img src="../assets/ex/img/0032-ila4NZS.jpg" alt=""><span><b>Становая тяга</b><s>3 × 3 · тренировка группы</s></span><span class="pc">80 %</span></div>
+            <table>
+              <tr><th>Атлет</th><th>1ПМ</th><th>Вес</th></tr>
+              <tr><td><span class="who"><i style="background:var(--acc)">ИП</i>Иван П.</span></td><td class="num">210 кг</td><td class="kg num">167,5 кг</td></tr>
+              <tr><td><span class="who"><i style="background:var(--ink)">МС</i>Мария С.</span></td><td class="num">125 кг</td><td class="kg num">100 кг</td></tr>
+              <tr><td><span class="who"><i style="background:var(--tx3)">ОР</i>Олег Р.</span></td><td class="num"><span id="kgRm">180 кг</span> <span class="chg" id="kgChg">рекорд</span></td><td class="kg num" id="kgKg">145 кг</td></tr>
+              <tr><td><span class="who"><i style="background:var(--acc-d)">АК</i>Аня К.</span></td><td class="num">95 кг</td><td class="kg num">75 кг</td></tr>
+            </table>
+          </div>
+          <div class="card kgs">
+            <div class="cap">Как считаем</div>
+            <div class="r"><span>Нагрузка от</span><b>1ПМ, 3ПМ или рекорда</b></div>
+            <div class="r"><span>Округление</span><b>до 2,5 кг — как блины</b></div>
+            <div class="r"><span>В связке</span><b>от упражнения, которое выберете</b></div>
+            <div class="r"><span>Новый рекорд</span><b>веса пересчитаются сами</b></div>
+            <div class="r"><span>Клиент видит</span><b>только килограммы</b></div>
+          </div>
+        </div>
+
+          </div>
+        </div>
+      </article>
+      <article class="fx" id="fx-group">
+        <div class="fx-row rev">
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Массовое добавление программ</h3></div>
+          <div class="ft ft-b rv-in"><p>Напишите тренировку один раз и отдайте её группе в 20–30 человек. Каждый получит свои веса от своего максимума, а тому, у кого травма, вы поправите только его день — у остальных ничего не изменится.</p>
+            <ul>
+            <li><svg><use href="#i-check"/></svg>Группа — свой календарь, как у клиента</li>
+            <li><svg><use href="#i-check"/></svg>Личная правка не трогает остальных участников</li>
+            <li><svg><use href="#i-check"/></svg>Копирование и перенос дней сразу на всю группу</li>
+            </ul></div>
+          <div class="fx-m">
+        <div class="hc-vis" id="hc">
+      <div class="hc-tr">
+        <div class="hd">
+          <span class="gi"><svg><use href="#i-group"/></svg></span>
+          <span><b>Группа «Утро 7:00»</b><s>Тренировка группы · 20 атлетов · Вт, 14 октября</s></span>
+          <span class="sp"></span>
+        </div>
+        <div class="hc-ex">
+          <img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt="">
+          <span class="nm"><b>Присед со штангой</b><s>5 × 3 · от 1ПМ каждого атлета</s></span>
+        </div>
+        <div class="hc-pct">
+          <label for="hcPct">Нагрузка</label>
+          <input type="range" id="hcPct" min="50" max="95" step="5" value="75" aria-label="Процент от 1ПМ">
+          <output id="hcOut" class="num">75 %</output>
+        </div>
+        <div class="hc-hint"><i>↔</i>Потяните — веса пересчитаются у всех двадцати</div>
+      </div>
+      <div class="hc-grid" id="hcGrid"><span class="hc-wave" id="hcWave"></span></div>
+      <div class="hc-legend"><span><i></i>Своя версия: замена из-за травмы, у остальных без изменений</span></div>
+      <div class="hc-tip" id="hcTip"></div>
+    </div>
+          </div>
+        </div>
+      </article>
       <article class="fx" id="fx-ai">
         <div class="fx-row">
-          <div class="ft rv-in"><span class="kick">Ввод текстом и кнопка AI</span><h3>Пишите как привыкли — в структуру переведёт AI</h3><p>Наберите тренировку целиком с клавиатуры или вставьте из заметок. По кнопке AI текст разложится на блоки, упражнения из базы, подходы и проценты — и после публикации окажется у клиента в телефоне уже в килограммах.</p>
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Ввод текстом и AI</h3></div>
+          <div class="ft ft-b rv-in"><p>Наберите тренировку целиком с клавиатуры или вставьте из заметок. По кнопке AI текст разложится на блоки, упражнения из базы, подходы и проценты — и после публикации окажется у клиента в телефоне уже в килограммах.</p>
             <ul>
             <li><svg><use href="#i-check"/></svg>С 95&nbsp;% точностью правильно разбирает написанное по упражнениям</li>
             <li><svg><use href="#i-check"/></svg>Результат на проверку: «Принять» или «Вернуть текст»</li>
@@ -256,78 +321,12 @@
           </div>
         </div>
       </article>
-      <article class="fx" id="fx-kg">
-        <div class="fx-row rev">
-          <div class="ft rv-in"><span class="kick">Продвинутый расчёт весов</span><h3>Вы пишете «%&nbsp;от&nbsp;ПМ», каждый видит свои килограммы</h3><p>Нагрузку задаёте от максимума — 1ПМ, 3ПМ или рекорда. Клиенту приходит готовый вес, округлённый до блинов. Поставил новый рекорд — веса в следующих тренировках пересчитаются сами.</p>
-            <ul>
-            <li><svg><use href="#i-check"/></svg>Проценты от 1ПМ, 3ПМ и рекордов из карточки клиента</li>
-            <li><svg><use href="#i-check"/></svg>В связке — от упражнения, которое выберете вы</li>
-            <li><svg><use href="#i-check"/></svg>Клиент не видит проценты — только килограммы</li>
-            </ul></div>
-          <div class="fx-m">
-        <div class="fm kgx" id="kgx">
-          <div class="card m-kg">
-            <div class="hd"><img src="../assets/ex/img/0032-ila4NZS.jpg" alt=""><span><b>Становая тяга</b><s>3 × 3 · тренировка группы</s></span><span class="pc">80 %</span></div>
-            <table>
-              <tr><th>Атлет</th><th>1ПМ</th><th>Вес</th></tr>
-              <tr><td><span class="who"><i style="background:var(--acc)">ИП</i>Иван П.</span></td><td class="num">210 кг</td><td class="kg num">167,5 кг</td></tr>
-              <tr><td><span class="who"><i style="background:var(--ink)">МС</i>Мария С.</span></td><td class="num">125 кг</td><td class="kg num">100 кг</td></tr>
-              <tr><td><span class="who"><i style="background:var(--tx3)">ОР</i>Олег Р.</span></td><td class="num"><span id="kgRm">180 кг</span> <span class="chg" id="kgChg">рекорд</span></td><td class="kg num" id="kgKg">145 кг</td></tr>
-              <tr><td><span class="who"><i style="background:var(--acc-d)">АК</i>Аня К.</span></td><td class="num">95 кг</td><td class="kg num">75 кг</td></tr>
-            </table>
-          </div>
-          <div class="card kgs">
-            <div class="cap">Как считаем</div>
-            <div class="r"><span>Нагрузка от</span><b>1ПМ, 3ПМ или рекорда</b></div>
-            <div class="r"><span>Округление</span><b>до 2,5 кг — как блины</b></div>
-            <div class="r"><span>В связке</span><b>от упражнения, которое выберете</b></div>
-            <div class="r"><span>Новый рекорд</span><b>веса пересчитаются сами</b></div>
-            <div class="r"><span>Клиент видит</span><b>только килограммы</b></div>
-          </div>
-        </div>
-
-          </div>
-        </div>
-      </article>
-      <article class="fx" id="fx-group">
-        <div class="fx-row">
-          <div class="ft rv-in"><span class="kick">Массовое добавление тренировок</span><h3>Одна тренировка — на всю группу за раз</h3><p>Напишите тренировку один раз и отдайте её группе в 20–30 человек. Каждый получит свои веса от своего максимума, а тому, у кого травма, вы поправите только его день — у остальных ничего не изменится.</p>
-            <ul>
-            <li><svg><use href="#i-check"/></svg>Группа — свой календарь, как у клиента</li>
-            <li><svg><use href="#i-check"/></svg>Личная правка не трогает остальных участников</li>
-            <li><svg><use href="#i-check"/></svg>Копирование и перенос дней сразу на всю группу</li>
-            </ul></div>
-          <div class="fx-m">
-        <div class="hc-vis" id="hc">
-      <div class="hc-tr">
-        <div class="hd">
-          <span class="gi"><svg><use href="#i-group"/></svg></span>
-          <span><b>Группа «Утро 7:00»</b><s>Тренировка группы · 20 атлетов · Вт, 14 октября</s></span>
-          <span class="sp"></span>
-        </div>
-        <div class="hc-ex">
-          <img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt="">
-          <span class="nm"><b>Присед со штангой</b><s>5 × 3 · от 1ПМ каждого атлета</s></span>
-        </div>
-        <div class="hc-pct">
-          <label for="hcPct">Нагрузка</label>
-          <input type="range" id="hcPct" min="50" max="95" step="5" value="75" aria-label="Процент от 1ПМ">
-          <output id="hcOut" class="num">75 %</output>
-        </div>
-        <div class="hc-hint"><i>↔</i>Потяните — веса пересчитаются у всех двадцати</div>
-      </div>
-      <div class="hc-grid" id="hcGrid"><span class="hc-wave" id="hcWave"></span></div>
-      <div class="hc-legend"><span><i></i>Своя версия: замена из-за травмы, у остальных без изменений</span></div>
-      <div class="hc-tip" id="hcTip"></div>
-    </div>
-          </div>
-        </div>
-      </article>
       <article class="fx" id="fx-off">
         <div class="fx-row rev">
-          <div class="ft rv-in"><span class="kick">Оффлайн режим работы</span><h3>Тренировка открывается даже в подвале зала</h3><p>Программа лежит у клиента в телефоне, а не в облаке. Пропала связь — он видит тренировку, отмечает подходы, а результаты уйдут вам сами, как только сеть вернётся.</p>
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Офлайн-режим работы</h3></div>
+          <div class="ft ft-b rv-in"><p>Программа лежит у клиента в телефоне, а не в облаке. Пропала связь — он видит тренировку, отмечает подходы, а результаты уйдут вам сами, как только сеть вернётся.</p>
             <ul>
-            <li><svg><use href="#i-check"/></svg>Программа и анимации на 14 дней — на телефоне заранее</li>
+            <li><svg><use href="#i-check"/></svg>Программа — на телефоне заранее</li>
             <li><svg><use href="#i-check"/></svg>Подходы и комментарии сохраняются без сети</li>
             <li><svg><use href="#i-check"/></svg>Кабинет тренера тоже работает офлайн</li>
             </ul></div>
@@ -367,7 +366,8 @@
       </article>
       <article class="fx" id="fx-feed">
         <div class="fx-row">
-          <div class="ft rv-in"><span class="kick">Лента событий</span><h3>Вопросы, рекорды и пропуски — в одной ленте</h3><p>Утром открываете кабинет и сразу видите, кому ответить, у кого рекорд, кто пропал на неделю и у кого кончается программа. На вопрос по тренировке отвечаете прямо из ленты.</p>
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Лента событий</h3></div>
+          <div class="ft ft-b rv-in"><p>Утром открываете кабинет и сразу видите, кому ответить, у кого рекорд, кто пропал на неделю и у кого кончается программа. На вопрос по тренировке отвечаете прямо из ленты.</p>
             <ul>
             <li><svg><use href="#i-check"/></svg>Фильтр по типу событий</li>
             <li><svg><use href="#i-check"/></svg>Комментарии клиента к упражнению и подходу</li>
@@ -389,7 +389,8 @@
       </article>
       <article class="fx" id="fx-app">
         <div class="fx-row rev">
-          <div class="ft rv-in"><span class="kick">Приложение клиента</span><h3>Клиенту не нужно спрашивать «что мне делать»</h3><p>Тренировка в телефоне с весами, анимацией упражнений и вашими заметками. Клиент отмечает подходы, пишет комментарии и видит свои рекорды — а вы получаете это в ленту. Для клиентов бесплатно.</p>
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Приложение клиента</h3></div>
+          <div class="ft ft-b rv-in"><p>Тренировка в телефоне с весами, анимацией упражнений и вашими заметками. Клиент отмечает подходы, пишет комментарии и видит свои рекорды — а вы получаете это в ленту. Для клиентов бесплатно.</p>
             <ul>
             <li><svg><use href="#i-check"/></svg>Таймер собирается из текста: EMOM 12 → готовый таймер</li>
             <li><svg><use href="#i-check"/></svg>Рекорды и прогресс клиента</li>
@@ -426,7 +427,8 @@
       </article>
       <article class="fx" id="fx-pay">
         <div class="fx-row">
-          <div class="ft rv-in"><span class="kick">Оплаты в приложении</span> <span class="soon">Скоро</span><h3>Клиенты платят в приложении — деньги приходят вам</h3><p>Подписка или разовые тренировки, автопродление, промокоды. Не оплатил — доступ к новым тренировкам закрывается сам, по вашей настройке.</p>
+          <div class="ft ft-h rv-in"><h3 class="fx-ttl">Оплаты <span class="soon">Скоро</span></h3></div>
+          <div class="ft ft-b rv-in"><p>Подписка или разовые тренировки, автопродление, промокоды. Не оплатил — доступ к новым тренировкам закрывается сам, по вашей настройке.</p>
             <ul>
             <li><svg><use href="#i-check"/></svg>Тарифы: онлайн, офлайн, группа</li>
             <li><svg><use href="#i-check"/></svg>Продление без оплаты по уважительной причине</li>
@@ -446,9 +448,8 @@
           </div>
         </div>
       </article>
-
       <article class="fx" id="fx-more">
-        <div class="fx-h rv-in"><div class="ft"><span class="kick">И ещё</span><h3>Мелочи, из которых складывается скорость</h3></div></div>
+        <div class="fx-h rv-in"><div class="ft"><h3 class="fx-ttl">Ещё возможности</h3></div></div>
         <div class="mini">
           <div class="mc rv-in"><div class="mv"><div class="v-search"><div class="q"><svg><use href="#i-search"/></svg>присед</div><div class="r"><img src="../assets/ex/img/0043-qXTaZnJ.jpg" alt=""><span>Приседания со штангой</span></div><div class="r"><img src="../assets/ex/img/0042-zG0zs85.jpg" alt=""><span>Фронтальный присед</span></div></div></div><b>1 300 упражнений с анимацией</b><p>База на русском с превью и GIF: клиент видит технику, свои упражнения добавляются за секунду.</p></div>
           <div class="mc rv-in"><div class="mv"><div class="v-cal"><i class="w"></i><i></i><i class="w"></i><i></i><i class="w"></i><i class="w"></i><i></i><i class="s"></i><i></i><i class="s"></i><i></i><i class="s"></i><i class="s"></i><i></i><i class="c"></i><i></i><i class="c"></i><i></i><i class="c"></i><i class="c"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><b>Удобные массовые копирования любого количества тренировок любому количеству клиентов</b><p>Выделите дни — скопируйте или перенесите их клиенту или группе. Раскладка по дням сохранится.</p></div>
@@ -467,63 +468,123 @@
 </section>
 
 <!-- ════════════════ ОТЗЫВЫ ════════════════ -->
-<!-- Отзывы и цифры — демонстрационные, до бета-теста. Заменить реальными. -->
 <section class="sec gray" id="reviews">
+  <!-- Отзывы — слайдер: один отзыв на слайд, крупное фото тренера. Отзывы
+       демонстрационные; вместо фото — заглушки (силуэт и инициалы). Стоковые
+       фото реальных людей к выдуманным отзывам не ставим — только настоящие
+       фото бета-тестеров вместе с их отзывами. Ссылка на Instagram — место
+       под настоящий профиль: href и data-ig заполняются вместе с реальным
+       отзывом, выдуманных никнеймов не ставим. -->
   <div class="wrap">
     <div class="sh rv-in">
       <span class="kick">Отзывы</span>
       <h2 class="h2">Тренеры, которые ушли из таблиц</h2>
-      <p class="sub">Персональные тренеры, кроссфит-боксы и командные тренеры — о том, что изменилось в работе.</p>
     </div>
-    <div class="rstats rv-in">
-      <div><b class="num">−6 ч</b><s>в неделю на составлении программ</s></div>
-      <div><b class="num">30+</b><s>атлетов в одной группе с личными весами</s></div>
-      <div><b class="num">0</b><s>сообщений «скинь таблицу ещё раз»</s></div>
-      <div><b class="num">4,9</b><s>средняя оценка приложения клиентами</s></div>
+    <div class="rsl rv-in" id="rsl" aria-roledescription="карусель" aria-label="Отзывы тренеров">
+      <div class="rs-track" id="rsTrack">
+        <article class="rs" aria-roledescription="слайд" aria-label="1 из 6">
+          <div class="rs-ph ta" role="img" aria-label="Фото тренера: Алексей Волков"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>АВ</span></div>
+          <div class="rs-b">
+            <div class="rs-met"><b>−6 ч</b><s>в неделю на программы</s></div>
+            <q>Раньше воскресенье уходило на таблицы на 18 человек. Теперь пишу неделю текстом, как привык, жму AI — и через десять минут всё у ребят в телефонах с их весами.</q>
+            <div class="rs-who"><b>Алексей Волков</b><s>Кроссфит-бокс, Новосибирск</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+          </div>
+        </article>
+        <article class="rs" aria-roledescription="слайд" aria-label="2 из 6">
+          <div class="rs-ph tb" role="img" aria-label="Фото тренера: Екатерина Миронова"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ЕМ</span></div>
+          <div class="rs-b">
+            
+            <q>Самое ценное — проценты. Я больше не считаю каждому 75 % от максимума на калькуляторе. Обновился рекорд — веса пересчитались сами.</q>
+            <div class="rs-who"><b>Екатерина Миронова</b><s>Тяжёлая атлетика, Казань</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+          </div>
+        </article>
+        <article class="rs" aria-roledescription="слайд" aria-label="3 из 6">
+          <div class="rs-ph tc" role="img" aria-label="Фото тренера: Дмитрий Сергеев"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ДС</span></div>
+          <div class="rs-b">
+            <div class="rs-met"><b>28</b><s>человек в одной группе</s></div>
+            <q>У меня утренняя группа на 28 человек, у троих травмы. Пишу одну тренировку, этим троим правлю их день — остальных это не трогает. В TRNR так не получалось.</q>
+            <div class="rs-who"><b>Дмитрий Сергеев</b><s>Функциональный тренинг, Москва</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+          </div>
+        </article>
+        <article class="rs" aria-roledescription="слайд" aria-label="4 из 6">
+          <div class="rs-ph td" role="img" aria-label="Фото тренера: Ольга Никитина"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ОН</span></div>
+          <div class="rs-b">
+            
+            <q>В нашем зале в подвале нет связи вообще. Клиенты раньше скриншотили таблицу. Теперь просто открывают приложение — и всё работает.</q>
+            <div class="rs-who"><b>Ольга Никитина</b><s>Персональный тренер, Екатеринбург</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+          </div>
+        </article>
+        <article class="rs" aria-roledescription="слайд" aria-label="5 из 6">
+          <div class="rs-ph tb" role="img" aria-label="Фото тренера: Марина Ковальчук"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>МК</span></div>
+          <div class="rs-b">
+            <div class="rs-met"><b>1 вечер</b><s>на перенос всех программ</s></div>
+            <q>Перенесла программы за один вечер. Боялась, что придётся всё перепечатывать, — нет, вставила скриншоты и поправила пару строк.</q>
+            <div class="rs-who"><b>Марина Ковальчук</b><s>Онлайн-ведение, Санкт-Петербург</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+          </div>
+        </article>
+        <article class="rs" aria-roledescription="слайд" aria-label="6 из 6">
+          <div class="rs-ph ta" role="img" aria-label="Фото тренера: Роман Голубев"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>РГ</span></div>
+          <div class="rs-b">
+            
+            <q>Лента — моя утренняя планёрка. Вижу, кто задал вопрос, кто поставил рекорд и кто пропал. Отвечаю прямо оттуда, мессенджер больше не нужен для работы.</q>
+            <div class="rs-who"><b>Роман Голубев</b><s>Тренер по пауэрлифтингу, Краснодар</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+          </div>
+        </article>
+      </div>
+      <div class="rs-nav">
+        <button class="rs-btn" id="rsPrev" aria-label="Предыдущий отзыв"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4 3 8l4 4"/></svg></button>
+        <div class="rs-dots" id="rsDots"></div>
+        <span class="rs-cnt num" id="rsCnt">1 / 6</span>
+        <button class="rs-btn" id="rsNext" aria-label="Следующий отзыв"><svg><use href="#i-arr"/></svg></button>
+      </div>
     </div>
-    <div class="revs">
-      <div class="rv rv-in"><div class="met"><b>−6 ч</b><s>в неделю</s></div>
-        <q>Раньше воскресенье уходило на таблицы на 18 человек. Теперь пишу неделю текстом, как привык, жму AI — и через десять минут всё у ребят в телефонах с их весами.</q>
-        <div class="who"><i style="background:var(--acc)">АВ</i><span><b>Алексей Волков</b><s>Кроссфит-бокс, Новосибирск</s></span></div></div>
-      <div class="rv rv-in">
-        <q>Самое ценное — проценты. Я больше не считаю каждому 75 % от максимума на калькуляторе. Обновился рекорд — веса пересчитались сами.</q>
-        <div class="who"><i style="background:var(--ink)">ЕМ</i><span><b>Екатерина Миронова</b><s>Тяжёлая атлетика, Казань</s></span></div></div>
-      <div class="rv rv-in"><div class="met"><b>28</b><s>человек в группе</s></div>
-        <q>У меня утренняя группа на 28 человек, у троих травмы. Пишу одну тренировку, этим троим правлю их день — остальных это не трогает. В TRNR так не получалось.</q>
-        <div class="who"><i style="background:var(--tx3)">ДС</i><span><b>Дмитрий Сергеев</b><s>Функциональный тренинг, Москва</s></span></div></div>
-      <div class="rv rv-in">
-        <q>В нашем зале в подвале нет связи вообще. Клиенты раньше скриншотили таблицу. Теперь просто открывают приложение — и всё работает.</q>
-        <div class="who"><i style="background:var(--acc-d)">ОН</i><span><b>Ольга Никитина</b><s>Персональный тренер, Екатеринбург</s></span></div></div>
-      <div class="rv rv-in"><div class="met"><b>12 мин</b><s>на перенос</s></div>
-        <q>Перенесла программы из Google Таблиц за один вечер. Боялась, что придётся всё перепечатывать, — нет, загрузила файл и поправила пару строк.</q>
-        <div class="who"><i style="background:var(--ink)">МК</i><span><b>Марина Ковальчук</b><s>Онлайн-ведение, Санкт-Петербург</s></span></div></div>
-      <div class="rv rv-in">
-        <q>Лента — моя утренняя планёрка. Вижу, кто задал вопрос, кто поставил рекорд и кто пропал. Отвечаю прямо оттуда, мессенджер больше не нужен для работы.</q>
-        <div class="who"><i style="background:var(--acc)">РГ</i><span><b>Роман Голубев</b><s>Тренер по пауэрлифтингу, Краснодар</s></span></div></div>
-    </div>
-    <p class="demo-note">Демо-отзывы для прототипа — заменим реальными после бета-теста</p>
+    <p class="demo-note">Демо-отзывы для прототипа — заменим реальными с фото после бета-теста</p>
   </div>
 </section>
 
 <!-- ════════════════ ТАРИФЫ ════════════════ -->
-<!-- Цены — рыба: тарифная сетка не утверждена (OQ-8). Данные — в landing.js, PLANS. -->
+<!-- Один тариф, все возможности; цена зависит только от числа клиентов —
+     ступени в landing.js, PRICE (сетка от заказчика, 2026-10-08). -->
 <section class="sec" id="pricing">
   <div class="wrap">
     <div class="sh rv-in">
       <span class="kick">Тарифы</span>
-      <h2 class="h2">Платите за число клиентов, а не за функции</h2>
-      <p class="sub">Все инструменты составления есть уже на бесплатном тарифе. Платные отличаются лимитом клиентов и уровнем поддержки. Для клиентов приложение всегда бесплатно.</p>
-      <div class="per" id="per" role="tablist">
-        <button class="on" data-per="m" role="tab" aria-selected="true">В месяц</button>
-        <button data-per="y" role="tab" aria-selected="false">За год <s>−20 %</s></button>
+      <h2 class="h2">Один тариф — все возможности</h2>
+      <p class="sub">Стоимость зависит только от количества клиентов. 14 дней полного доступа бесплатно, без банковской карты.</p>
+    </div>
+    <div class="pr1 rv-in">
+      <div class="pr1-main">
+        <div class="pr1-top">
+          <div class="pr1-price"><b class="num" id="prPrice">990 ₽</b><s>/ месяц</s></div>
+          <div class="pr1-lim" id="prLim">до 10 клиентов</div>
+        </div>
+        <div class="pr1-sl">
+          <input type="range" id="prRange" min="0" max="4" step="1" value="0" aria-label="Количество клиентов">
+          <div class="pr1-ticks" id="prTicks"></div>
+        </div>
+        <a class="lb lg pr1-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+        <div class="pr1-note">Клиентам приложение бесплатно · отмена в любой момент</div>
+      </div>
+      <div class="pr1-inc">
+        <div class="cap">Всё включено</div>
+        <ul>
+          <li><svg><use href="#i-check"/></svg>Конструктор с вводом текстом и AI</li>
+          <li><svg><use href="#i-check"/></svg>База 1 300 упражнений с анимацией</li>
+          <li><svg><use href="#i-check"/></svg>Автоподсчёт весов от ПМ</li>
+          <li><svg><use href="#i-check"/></svg>Группы и массовое копирование</li>
+          <li><svg><use href="#i-check"/></svg>Бесплатное приложение для клиентов iOS и Android</li>
+          <li><svg><use href="#i-check"/></svg>Офлайн-режим у клиента и тренера</li>
+          <li><svg><use href="#i-check"/></svg>Лента событий, рекорды и замеры</li>
+          <li><svg><use href="#i-check"/></svg>Модуль оплат «Тренер — клиент»</li>
+          <li><svg><use href="#i-check"/></svg>Быстрая миграция со старого инструмента</li>
+          <li><svg><use href="#i-check"/></svg>Поддержка в чате</li>
+        </ul>
       </div>
     </div>
-    <div class="plans" id="plans"></div>
     <div class="pnote">
-      <div><b>Клиентов стало больше лимита?</b>Никого не выгоняем: у клиента приложение работает как обычно. Вы увидите напоминание, а составлять тренировки новым клиентам сможете после смены тарифа.</div>
+      <div><b>Клиентов стало больше лимита?</b>Никого не выгоняем: у клиента приложение работает как обычно. Вы увидите напоминание, а составлять тренировки новым клиентам сможете после увеличения лимита.</div>
       <div><b>Отмена в любой момент</b>Доступ сохраняется до конца оплаченного срока, потом кабинет остаётся открытым для чтения — программы и история клиентов никуда не денутся.</div>
     </div>
-    <p class="demo-note">Цены — черновик, тарифная сетка ещё не утверждена</p>
   </div>
 </section>
 
@@ -540,9 +601,9 @@
       <details open><summary>Сколько стоит приложение для моих клиентов?<i><svg><use href="#i-plus"/></svg></i></summary>
         <div class="a"><p>Нисколько. Клиент скачивает приложение бесплатно или открывает веб-версию по вашей ссылке. Платит только тренер — за число клиентов в кабинете.</p></div></details>
       <details><summary>Как перенести клиентов и программы из таблиц или TRNR?<i><svg><use href="#i-plus"/></svg></i></summary>
-        <div class="a"><p>Загрузите файл Google Таблиц, Excel или CSV — или подключите аккаунт TRNR. Программы разложатся по дням, упражнения сопоставятся с базой. Что не узнали — останется текстом, его можно поправить или разобрать кнопкой AI.</p><p>На тарифах «Профи» и «Команда» перенос сделает наш менеджер.</p></div></details>
+        <div class="a"><p>Загрузите файл Google Таблиц, Excel или CSV — или подключите аккаунт TRNR. Программы разложатся по дням, упражнения сопоставятся с базой. Что не узнали — останется текстом, его можно поправить или разобрать кнопкой AI.</p></div></details>
       <details><summary>Правда работает без интернета?<i><svg><use href="#i-plus"/></svg></i></summary>
-        <div class="a"><p>Да. Программа на ближайшие две недели и анимации упражнений хранятся на телефоне клиента. Он открывает тренировку, отмечает подходы и пишет комментарии без сети — всё уйдёт тренеру, когда связь появится. Кабинет тренера тоже работает офлайн.</p></div></details>
+        <div class="a"><p>Да. Программа хранится на телефоне клиента. Он открывает тренировку, отмечает подходы и пишет комментарии без сети — всё уйдёт тренеру, когда связь появится. Кабинет тренера тоже работает офлайн.</p></div></details>
       <details><summary>Что делает кнопка AI и куда уходят мои тексты?<i><svg><use href="#i-plus"/></svg></i></summary>
         <div class="a"><p>Кнопка AI переводит текст тренировки в структуру: блоки, упражнения из базы, подходы, проценты. Без нажатия ничего не разбирается — текст хранится как вы его написали. Разбор идёт на серверах в России, имена и данные клиентов в модель не передаются.</p></div></details>
       <details><summary>Можно вести группу, где у всех разные веса?<i><svg><use href="#i-plus"/></svg></i></summary>
@@ -559,13 +620,21 @@
 
 <!-- ════════════════ ФИНАЛ ════════════════ -->
 <section class="fin">
+  <!-- Финал повторяет обещание hero: рабочий день в неделю → меньше часа.
+       Справа — те же две полоски на шкале 8 часов, что в первом экране. -->
   <div class="wrap">
     <div class="box">
-      <h2>Составьте первую неделю за 10 минут</h2>
-      <p>Перенесите одного клиента и посмотрите, сколько времени останется на тренировки. 14 дней полного доступа, без карты.</p>
-      <div class="cta">
-        <a class="lb lg wh" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
-        <a class="lb lg ol" href="../">Открыть демо-кабинет</a>
+      <div class="fin-t">
+        <span class="kick">14 дней бесплатно</span>
+        <h2>Верните себе рабочий день в неделю</h2>
+        <p>Отдайте Тренерграму рутину — расчёт весов, рассылку и сбор результатов. Тратьте время на тренировки, а не на таблицы.</p>
+        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+        <div class="fin-ok"><span><svg><use href="#i-check"/></svg>Без банковской карты</span><span><svg><use href="#i-check"/></svg>Все возможности сразу</span><span><svg><use href="#i-check"/></svg>Отмена в любой момент</span></div>
+      </div>
+      <div class="fin-v" aria-hidden="true">
+        <div class="fin-r"><div class="l"><span>Как сейчас</span><b>8 ч</b></div><div class="bar"><i style="width:100%"></i></div></div>
+        <div class="fin-r me"><div class="l"><span>С Тренерграмом</span><b>52 мин</b></div><div class="bar"><i style="width:11%"></i></div></div>
+        <div class="fin-s"><b>−7 часов</b><span>в неделю на 20 клиентов</span></div>
       </div>
     </div>
   </div>
@@ -574,15 +643,18 @@
 </main>
 
 <footer class="foot">
+  <!-- Контакты — заглушки: email на своём домене, Telegram без адреса.
+       Подставить настоящие перед публикацией наружу. -->
   <div class="wrap">
     <div>
       <span class="logo">Тренерграм</span>
-      <div class="cp">© 2026 Тренерграм · trenergram.ru</div>
+      <div class="cp">© 2026 Тренерграм · <a href="#">Политика конфиденциальности</a></div>
     </div>
     <span class="sp"></span>
-    <div class="col"><b>Продукт</b><a href="#features">Возможности</a><a href="#pricing">Тарифы</a><a href="#faq">FAQ</a></div>
-    <div class="col"><b>Прототип</b><a href="../">Кабинет тренера</a><a href="../client/">Приложение клиента</a><a href="../design.html">Дизайн-система</a></div>
-    <div class="col"><b>Документы</b><a href="../../docs/">Документация</a><a href="#">Политика конфиденциальности</a><a href="#">Оферта</a></div>
+    <div class="col"><b>Контакты</b>
+      <a href="mailto:hello@trenergram.ru">hello@trenergram.ru</a>
+      <a href="#" class="tg"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.5 4.3 18.4 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.6 13 2.1 11.6c-1-.3-1-1 .2-1.5l17.6-6.8c.8-.3 1.5.2 1.6 1z"/></svg>Написать в Telegram</a>
+    </div>
   </div>
 </footer>
 
