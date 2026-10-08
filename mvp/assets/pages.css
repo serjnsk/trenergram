@@ -340,6 +340,14 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .avrow .av{width:64px;height:64px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);display:grid;place-items:center;font-family:var(--disp);font-size:23px;font-weight:700;flex:none}
 .avrow .av-t b{display:block;font-size:16.5px;font-weight:600}
 .avrow .av-t s{text-decoration:none;font-size:13.5px;color:var(--tx3)}
+/* аватар — он же кнопка загрузки фото: по наведению затемняется и показывает камеру */
+.avrow .av-up{position:relative;cursor:pointer;overflow:hidden}
+.avrow .av-up img{width:100%;height:100%;object-fit:cover;display:block}
+.avrow .av-cam{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,20,20,.45);color:#fff;opacity:0;transition:opacity .15s}
+.avrow .av-cam svg{width:22px;height:22px}
+.avrow .av-up:not(.has) .av-cam{background:rgba(252,82,0,.85)}
+.avrow .av-up:hover .av-cam,.avrow .av-up:focus-within .av-cam{opacity:1}
+.avrow .av-t s{display:block;margin-top:2px}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tags button{height:28px;padding:0 11px;border-radius:20px;font-size:14px;font-weight:500;background:var(--s1);color:var(--tx2)}
 .tags button:hover{background:var(--s2);color:var(--ink)}

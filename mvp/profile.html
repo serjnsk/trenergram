@@ -31,10 +31,12 @@
 <script>
 /* ═══════════ ПРОФИЛЬ ТРЕНЕРА ═══════════
    Настройки аккаунта, а не витрина бренда (BRD-1 — за пределами MVP):
-   основные данные, подписка и лимит клиентов, уведомления одним блоком,
-   безопасность. Виды спорта, часовой пояс и каналы уведомлений убраны. Приглашение клиентов (REG-1)
-   живёт здесь же — это свойство аккаунта тренера. «Как оплатить» — текст для
-   оплаты занятий (PAY-9): клиент видит его, когда пора платить. */
+   основные данные, подписка и лимит клиентов, безопасность. Виды спорта,
+   часовой пояс и уведомления убраны. Приглашение клиентов (REG-1) живёт здесь
+   же — это свойство аккаунта тренера. «Сообщение по оплате занятий» — текст
+   для оплаты занятий (PAY-9): клиент видит его, когда пора платить.
+   Фото загружается по нажатию на сам аватар; в прототипе — уменьшенная копия
+   в STATE.profile.photo, на бэкенде будет загрузка в хранилище. */
 const P = (STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF)));
 const T = TRAINER;
 if(P.invite) T.invite = P.invite;
@@ -47,13 +49,19 @@ const MONG = ['января','февраля','марта','апреля','ма�
 const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()]+' '+d.getFullYear() };
 const dshort = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()].slice(0,3)+' '+d.getFullYear() };
 const daysLeft = iso => daysBetween(TODAY, iso);
-const NOTIFY = [
-  ['results',    'Результаты клиентов',        'Записал тренировку, поставил рекорд'],
-  ['comments',   'Комментарии и вопросы',      'Клиент написал под тренировкой'],
-  ['missed',     'Пропущенные тренировки',     'Не отмечена в день занятия'],
-  ['programEnd', 'Программа заканчивается',    'За 7 дней до последнего составленного дня'],
-  ['newClient',  'Новый клиент',               'Кто-то перешёл по вашей ссылке'],
-];
+const CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+/* Фото — квадрат 160 px из середины кадра: в localStorage влезает, на аватаре 64 px резко */
+function photoFrom(file, done){
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.onload = () => {
+    const c = document.createElement('canvas'), n = 160, m = Math.min(img.width, img.height);
+    c.width = c.height = n;
+    c.getContext('2d').drawImage(img, (img.width-m)/2, (img.height-m)/2, m, m, 0, 0, n, n);
+    URL.revokeObjectURL(url); done(c.toDataURL('image/jpeg', .85));
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('Не получилось открыть файл — нужна картинка JPG или PNG') };
+  img.src = url;
+}
 
 function render(){
   const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until), over = used > pl.limit;
@@ -63,10 +71,10 @@ function render(){
       <div class="sechead"><span class="t">Основные данные</span><span class="ln"></span></div>
       <div class="card cb">
         <div class="avrow">
-          <span class="av">${esc(T.ini)}</span>
-          <span class="av-t"><b>${esc(T.first)} ${esc(T.last)}</b></span>
-          <span class="sp" style="flex:1"></span>
-          <button class="btn gh sm" id="btnPhoto">${ICON.plus} Загрузить фото</button>
+          <label class="av av-up${P.photo?' has':''}" title="${P.photo?'Сменить фото':'Загрузить фото'}">
+            ${P.photo?`<img src="${P.photo}" alt="">`:esc(T.ini)}<span class="av-cam">${CAMERA}</span>
+            <input type="file" id="inPhoto" accept="image/*" hidden></label>
+          <span class="av-t"><b>${esc(T.first)} ${esc(T.last)}</b><s>${P.photo?'Нажмите на фото, чтобы сменить':'Нажмите на кружок, чтобы загрузить фото'}</s></span>
         </div>
         <div class="cols2" style="margin-bottom:12px">
           <div class="formfld"><span class="k">Имя</span><input class="inp" data-t="first" value="${esc(T.first)}"></div>
@@ -90,16 +98,10 @@ function render(){
         <button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>
       </div>
 
-      <div class="sechead"><span class="t">Оплата занятий</span><span class="ln"></span></div>
+      <div class="sechead"><span class="t">Сообщение по оплате занятий для клиентов</span><span class="ln"></span></div>
       <div class="card cb">
-        <div class="formfld"><span class="k">Как оплатить — видят клиенты</span>
-          <textarea class="inp" id="payHow" rows="2" placeholder="Например: перевод по номеру телефона, банк, получатель">${esc(payHow())}</textarea></div>
+        <div class="formfld"><textarea class="inp" id="payHow" rows="2" aria-label="Сообщение по оплате занятий для клиентов" placeholder="Например: перевод по номеру телефона, банк, получатель">${esc(payHow())}</textarea></div>
         <div class="hint">Клиент видит этот текст, когда пора платить: за день до конца оплаты, в последний день и когда доступ к новым тренировкам закрыт. Сумму и срок каждому клиенту задаёте в его карточке.</div>
-      </div>
-
-      <div class="sechead"><span class="t">Уведомления</span><span class="ln"></span></div>
-      <div class="card cb">
-        ${NOTIFY.map(([k,n,d])=>`<div class="setrow"><span class="t"><b>${n}</b><s>${d}</s></span><button class="switch ${P.notify[k]?'on':''}" data-n="${k}" aria-label="${n}"></button></div>`).join('')}
       </div>
 
       <div class="sechead"><span class="t">Безопасность</span><span class="ln"></span></div>
@@ -130,8 +132,7 @@ function render(){
 
   $$('[data-t]').forEach(i=>i.onchange=e=>{ T[i.dataset.t]=e.target.value.trim(); if(i.dataset.t==='first'||i.dataset.t==='last'){ T.n=(T.first+' '+T.last).trim(); T.ini=(T.first[0]||'')+(T.last[0]||''); renderNav('profile.html') } save('Сохранено'); if(i.dataset.t!=='about') render() });
   $('#payHow').onchange=e=>{ P.payHow=e.target.value.trim(); save('Сохранено') };
-  $$('[data-n]').forEach(b=>b.onclick=()=>{ P.notify[b.dataset.n]=!P.notify[b.dataset.n]; save(); render() });
-  $('#btnPhoto').onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы');
+  $('#inPhoto').onchange=e=>{ const f=e.target.files[0]; if(f) photoFrom(f, url=>{ P.photo=url; save('Фото обновлено'); render() }) };
   $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); toast('Ссылка скопирована') };
   $('#btnNewLink').onclick=()=>openModal({title:'Новая ссылка', body:`<p class="lead">Прежняя ссылка сразу перестанет работать: кто откроет её, увидит «Ссылка устарела» и просьбу запросить новую у тренера. Клиенты, которые уже пришли, останутся с вами.</p>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" data-close id="mdNewLink">Выпустить</button>`});
