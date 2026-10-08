@@ -115,7 +115,6 @@ async function heroA(id){
   await wait(6000, id);
   return heroA(id);
 }
-$('#haReplay').addEventListener('click', () => play('a'));
 
 /* ═══════════ фича «Массовое добавление»: двадцать атлетов ═══════════ */
 const ATH = [
@@ -175,9 +174,12 @@ async function heroC(id){
     if (hcTouched) return;
     hcPct.value = v; hcRender(true); await wait(650, id);
   }
+  // по кругу — пока посетитель сам не взялся за ползунок
+  await wait(4000, id); if (hcTouched) return;
+  return heroC(id);
 }
 
-/* ═══════════ фича «Без связи» ═══════════ */
+/* ═══════════ фича «Оффлайн режим работы» ═══════════ */
 const hdSets = $('#hdSets'), hdTgl = $('#hdTgl'), hdPh = $('#hdPh'), hdVis = $('#hd');
 hdSets.innerHTML = [1, 2, 3, 4, 5].map(n =>
   `<div class="p-row" data-n="${n}"><span class="ck"><svg><use href="#i-check"/></svg></span><span class="t">Подход ${n} · 5 × 132,5 кг<span class="q">ждёт сети</span></span></div>`).join('');
@@ -225,15 +227,20 @@ async function heroD(id){
   }
   await wait(1500, id); if (hdUser) return;
   hdNet(true);
+  // по кругу — пока посетитель сам не взялся за переключатель или подходы
+  await wait(5000, id); if (hdUser) return;
+  return heroD(id);
 }
 
 /* ═══════════ hero · день → час ═══════════
-   Два потока идут одновременно. Шкала у обоих одна — рабочий день, 480 мин:
-   поток Тренерграма кончается на 52 минутах, старый тянется до 8 часов. */
+   Две полоски идут одновременно. Шкала у обеих одна — рабочий день, 480 мин:
+   Тренерграм кончает на 52 минутах, старый способ тянется до 8 часов.
+   Семь шагов — семь колонок «как сейчас / в Тренерграме». */
 const HF_DAY = 480;
-const HF_TXT = 'Пн: присед 5×5 75%\nжим лёжа 4×6 70%\nAMRAP 12: 10 подтяг…';
+const HF_TXT = 'присед 5×5 75%\nжим 4×6 70%\nподтяг 10';
 const hfFmt = m => { m = Math.round(m); if (m < 60) return m + ' мин'; const h = m / 60 | 0, r = m % 60; return r ? `${h} ч ${String(r).padStart(2, '0')} мин` : `${h} ч`; };
-$$('#hf .hf-sheet i').forEach((c, i) => c.style.animationDelay = (i * .16) + 's');
+$$('#hf .hf-sheet i').forEach((c, i) => c.style.animationDelay = (i * .07) + 's');
+$('#hfDots').innerHTML = Array.from({ length: 20 }, (_, i) => `<i${i === 13 ? ' class="alt"' : ''}></i>`).join('');
 /* часы и полоска: от a до b минут за ms; each(k) — для своих счётчиков шага */
 async function hfTick(clk, bar, a, b, ms, id, each){
   const t0 = performance.now();
@@ -247,11 +254,11 @@ async function hfTick(clk, bar, a, b, ms, id, each){
 }
 async function hfOld(id){
   const st = $$('#hf .hf-lane.old .hf-st'), clk = $('#hfClkOld'), bar = $('#hfBarOld');
-  const steps = [[0, 180, 3400], [180, 270, 1900], [270, 390, 2600], [390, 480, 1900]];
-  for (let i = 0; i < 4; i++){
+  const steps = [[0, 60, 1400], [60, 140, 1600], [140, 220, 1600], [220, 330, 2100], [330, 410, 1600], [410, 440, 900], [440, 480, 1100]];
+  for (let i = 0; i < steps.length; i++){
     const [a, b, ms] = steps[i];
     st[i].classList.add('act');
-    await hfTick(clk, bar, a, b, ms, id, i === 2 ? k => {
+    await hfTick(clk, bar, a, b, ms, id, i === 3 ? k => {
       $('#hfSent').textContent = Math.round(20 * k); $('#hfSentBar').style.width = (k * 100) + '%';
     } : null);
     st[i].classList.replace('act', 'done');
@@ -260,32 +267,33 @@ async function hfOld(id){
 }
 async function hfNew(id){
   const lane = $('#hf .hf-lane.new'), st = $$('.hf-st', lane), clk = $('#hfClkNew'), bar = $('#hfBarNew');
-  // 1 — текст печатается, пока набегают 40 минут
-  st[0].classList.add('act');
-  const tx = $('#hfTx');
-  await hfTick(clk, bar, 0, 40, 2200, id, k => {
-    const n = Math.round(HF_TXT.length * k);
-    tx.innerHTML = HF_TXT.slice(0, n) + (k < 1 ? '<span class="caret"></span>' : '');
+  const step = async (i, a, b, ms, each) => { st[i].classList.add('act'); await hfTick(clk, bar, a, b, ms, id, each); st[i].classList.replace('act', 'done'); };
+  // ведение — неделя в конструкторе
+  const days = $$('#hfWk span');
+  await step(0, 0, 5, 900, k => days.forEach((d, i) => d.classList.toggle('on', i < Math.round(7 * k))));
+  // создание — набор текстом, затем AI раскладывает по упражнениям из базы
+  const tx = $('#hfTx'), mix = $('#hf .hf-mix'), ai = $('#hfAi');
+  await step(1, 5, 35, 1800, k => {
+    const t = Math.min(1, k / .6);
+    tx.innerHTML = HF_TXT.slice(0, Math.round(HF_TXT.length * t)) + (t < 1 ? '<span class="caret"></span>' : '');
+    ai.classList.toggle('busy', k > .6 && k < .8);
+    mix.classList.toggle('ok', k >= .8);
   });
-  st[0].classList.replace('act', 'done');
-  // 2 — AI разбирает, тренер проверяет
-  st[1].classList.add('act');
-  const ai = $('#hfAi'); ai.classList.add('busy');
-  await hfTick(clk, bar, 40, 52, 1300, id, k => { if (k > .45){ ai.classList.remove('busy'); ai.closest('.hf-ai').classList.add('ok'); } });
-  st[1].classList.replace('act', 'done');
-  // 3 — веса у каждого, время не идёт
+  // веса — сами, время не идёт
   st[2].classList.add('act');
-  for (const r of $$('.hf-k', lane)){ await wait(220, id); r.classList.add('on'); }
-  await wait(250, id);
-  st[2].classList.replace('act', 'done');
-  // 4 — клиенты получают
-  st[3].classList.add('act');
-  const push = $$('.hf-push', lane), got = $('#hfGot');
-  for (let i = 1; i <= 20; i++){
-    if (i % 7 === 1) push[i / 7 | 0].classList.add('on');
-    got.textContent = i; await wait(45, id);
-  }
-  st[3].classList.replace('act', 'done');
+  for (const r of $$('.hf-k', lane)){ await wait(200, id); r.classList.add('on'); }
+  await wait(200, id); st[2].classList.replace('act', 'done');
+  // группа — одна программа расходится на 20, у одного своя правка
+  const dots = $$('#hfDots i');
+  await step(3, 35, 45, 1000, k => dots.forEach((d, i) => d.classList.toggle('on', i < Math.round(20 * k))));
+  // работа с клиентами — вопрос и ответ прямо под упражнением
+  const [q, a] = $$('#hf .hf-cm span');
+  await step(4, 45, 50, 900, k => { q.classList.toggle('on', k > .2); a.classList.toggle('on', k > .65); });
+  // динамика — график рисуется сам
+  st[5].classList.add('act'); await wait(900, id); st[5].classList.replace('act', 'done');
+  // оплаты — сроки и доступ сами, тренер только отмечает оплату
+  const pays = $$('#hf .hf-pay .p');
+  await step(6, 50, 52, 800, k => pays.forEach((p, i) => p.classList.toggle('on', k > i * .3)));
   lane.classList.add('over'); $('#hfNewS').textContent = 'Готово ✓ всё у клиентов';
 }
 function hfReset(){
@@ -293,10 +301,10 @@ function hfReset(){
   $$('#hf .hf-lane').forEach(l => l.classList.remove('over'));
   ['#hfClkOld', '#hfClkNew'].forEach(s => $(s).textContent = '0 мин');
   ['#hfBarOld', '#hfBarNew', '#hfSentBar'].forEach(s => $(s).style.width = '0');
-  $('#hfSent').textContent = '0'; $('#hfGot').textContent = '0';
+  $('#hfSent').textContent = '0';
   $('#hfTx').innerHTML = '<span class="caret"></span>';
-  $('#hfAi').classList.remove('busy'); $('#hf .hf-ai').classList.remove('ok');
-  $$('#hf .hf-k, #hf .hf-push').forEach(e => e.classList.remove('on'));
+  $('#hfAi').classList.remove('busy'); $('#hf .hf-mix').classList.remove('ok');
+  $$('#hf .hf-k, #hfDots i, #hfWk span, #hf .hf-cm span, #hf .hf-pay .p').forEach(e => e.classList.remove('on'));
   $('#hfNewS').textContent = 'те же 20 клиентов';
   $('#hfRes').classList.remove('in');
 }
@@ -305,9 +313,9 @@ function hfFinal(){
   $$('#hf .hf-lane').forEach(l => l.classList.add('over'));
   $('#hfClkOld').textContent = '8 ч'; $('#hfBarOld').style.width = '100%';
   $('#hfClkNew').textContent = '52 мин'; $('#hfBarNew').style.width = (52 / HF_DAY * 100) + '%';
-  $('#hfSent').textContent = '20'; $('#hfSentBar').style.width = '100%'; $('#hfGot').textContent = '20';
-  $('#hfTx').textContent = HF_TXT; $('#hf .hf-ai').classList.add('ok');
-  $$('#hf .hf-k, #hf .hf-push').forEach(e => e.classList.add('on'));
+  $('#hfSent').textContent = '20'; $('#hfSentBar').style.width = '100%';
+  $('#hfTx').textContent = HF_TXT; $('#hf .hf-mix').classList.add('ok');
+  $$('#hf .hf-k, #hfDots i, #hfWk span, #hf .hf-cm span, #hf .hf-pay .p').forEach(e => e.classList.add('on'));
   $('#hfNewS').textContent = 'Готово ✓ всё у клиентов'; $('#hfRes').classList.add('in');
 }
 async function heroF(id){
@@ -316,10 +324,9 @@ async function heroF(id){
   await wait(600, id);
   await Promise.all([hfOld(id), hfNew(id)]);
   $('#hfRes').classList.add('in');
-  await wait(7000, id);
+  await wait(6000, id);
   return heroF(id);
 }
-$('#hfReplay').addEventListener('click', () => play('f'));
 
 /* ═══════════ расчёт весов: новый рекорд пересчитывает вес ═══════════ */
 async function kgScene(id){
