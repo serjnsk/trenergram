@@ -1496,6 +1496,9 @@ if(NEWTR){
   GRPS.length = 0;
   TPL.forEach(t => { if(t.own) t.del = true });
   PROFILE_DEF.sub = {plan:'c5', until:addDays(TODAY, 14), card:'Не привязана', since:TODAY, trial:true};
+  /* Тренер, прошедший регистрацию на лендинге (landing/auth.js), — с его именем и телефоном */
+  try{ const me = JSON.parse(localStorage.getItem('tg.me') || 'null');
+       if(me) ['first','last','n','ini','city','phone'].forEach(k => { if(me[k]) TRAINER[k] = me[k] }) }catch(_){}
 }
 
 const STATE = (function(){

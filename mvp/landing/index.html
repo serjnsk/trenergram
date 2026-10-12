@@ -11,6 +11,7 @@
 <!-- Токены — общие с кабинетом: лендинг не заводит своей палитры -->
 <link rel="stylesheet" href="../assets/theme-01-strava.css">
 <link rel="stylesheet" href="landing.css">
+<link rel="stylesheet" href="auth.css">
 </head>
 <body>
 
@@ -56,8 +57,8 @@
       <a href="#faq">FAQ</a>
     </nav>
     <div class="acts">
-      <a class="in" href="../">Войти</a>
-      <a class="lb sm" href="../">Начать<span class="xs-hide"> бесплатно</span> <svg><use href="#i-arr"/></svg></a>
+      <a class="in" href="#login">Войти</a>
+      <a class="lb sm" href="#signup">Начать<span class="xs-hide"> бесплатно</span> <svg><use href="#i-arr"/></svg></a>
     </div>
   </div>
 </header>
@@ -75,7 +76,7 @@
       <h1 class="h1">Автоматизируем <em>тренерскую рутину</em></h1>
       <p class="lede">Сервис для тренеров, помогающий ускорить и упростить процесс создания тренировок и ведения клиентов.</p>
       <div class="cta">
-        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+        <a class="lb lg" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
       </div>
       <div class="perks"><span class="perk" tabindex="0" data-tip="Попробуйте сервис на своих клиентах 14 дней"><svg><use href="#i-gift"/></svg><u>14 дней бесплатно</u></span><span class="perk" tabindex="0" data-tip="Все модули и функции открыты с первого дня"><svg><use href="#i-unlock"/></svg><u><span class="pf">Полный функционал без ограничений</span><span class="ps">Все функции</span></u></span><span class="perk" tabindex="0" data-tip="Для регистрации и триала карта не нужна"><svg><use href="#i-card-off"/></svg><u><span class="pf">Без привязки карты</span><span class="ps">Без карты</span></u></span></div>
     </div>
@@ -161,7 +162,7 @@
         <div class="fx-row rev">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Конструктор тренировок</h3></div>
           <div class="ft ft-b rv-in"><p>Неделя клиента на одном экране: дни, блоки, упражнения из базы. Добавляйте готовые блоки и шаблоны, меняйте порядок, копируйте дни — без таблиц и формул.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="fm m-con">
           <div class="card mc-ed">
@@ -191,7 +192,7 @@
         <div class="fx-row">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Авторасчёт весов</h3></div>
           <div class="ft ft-b rv-in"><p>Нагрузку задаёте от максимума — 1ПМ, 3ПМ или рекорда. Клиенту приходит готовый вес, округлённый до блинов. Поставил новый рекорд — веса в следующих тренировках пересчитаются сами.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="fm kgx" id="kgx">
           <div class="card m-kg">
@@ -221,7 +222,7 @@
         <div class="fx-row rev">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Массовое добавление программ</h3></div>
           <div class="ft ft-b rv-in"><p>Напишите тренировку один раз и отдайте её группе в 20–30 человек. Каждый получит свои веса от своего максимума, а тому, у кого травма, вы поправите только его день — у остальных ничего не изменится.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="hc-vis" id="hc">
       <div class="hc-tr">
@@ -252,7 +253,7 @@
         <div class="fx-row">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Ввод текстом и AI</h3></div>
           <div class="ft ft-b rv-in"><p>Наберите тренировку целиком с клавиатуры или вставьте из заметок. По кнопке AI текст разложится на блоки, упражнения из базы, подходы и проценты — и после публикации окажется у клиента в телефоне уже в килограммах.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="stage ha-stage" id="ha">
       <div class="ha-ed">
@@ -312,7 +313,7 @@
         <div class="fx-row rev">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Лента событий</h3></div>
           <div class="ft ft-b rv-in"><p>Утром открываете кабинет и сразу видите, кому ответить, у кого рекорд, кто пропал на неделю и у кого кончается программа. На вопрос по тренировке отвечаете прямо из ленты.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="fm">
           <div class="card m-feed">
@@ -332,7 +333,7 @@
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Приложение клиента</h3></div>
           <div class="ft ft-b rv-in"><p>Тренировка в телефоне с весами, анимацией упражнений и вашими заметками. Клиент отмечает подходы, пишет комментарии и видит свои рекорды — а вы получаете это в ленту. Для клиентов бесплатно.</p>
             <div class="fx-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg><span><b>Работает на iPhone и Android уже сейчас</b> — иконка на экране телефона, открывается как обычное приложение. В App Store и Google Play — через 2–3 недели.</span></div>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="fm warm fx-app">
           <div class="phone" style="--pw:290px">
@@ -366,7 +367,7 @@
         <div class="fx-row rev">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Офлайн-режим работы <span class="soon">Скоро</span></h3></div>
           <div class="ft ft-b rv-in"><p>Скоро программа будет храниться у клиента в телефоне, а не в облаке. Пропала связь — он всё равно видит тренировку и отмечает подходы, а результаты уйдут вам сами, как только сеть вернётся.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="fm warm fx-offm">
           <div class="hd-vis" id="hd">
@@ -405,7 +406,7 @@
         <div class="fx-row">
           <div class="ft ft-h rv-in"><h3 class="fx-ttl">Оплаты <span class="soon">Скоро</span></h3></div>
           <div class="ft ft-b rv-in"><p>Подписка или разовые тренировки, автопродление, промокоды. Не оплатил — доступ к новым тренировкам закрывается сам, по вашей настройке.</p>
-            <a class="lb fx-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
+            <a class="lb fx-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a></div>
           <div class="fx-m">
         <div class="fm">
           <div class="card m-pay">
@@ -496,7 +497,7 @@
           <input type="range" id="prRange" min="0" max="5" step="1" value="0" aria-label="Количество клиентов">
           <div class="pr1-ticks" id="prTicks"></div>
         </div>
-        <a class="lb lg pr1-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+        <a class="lb lg pr1-cta" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
         <div class="pr1-note">Клиентам приложение бесплатно · отмена в любой момент</div>
       </div>
       <div class="pr1-inc">
@@ -562,7 +563,7 @@
         <span class="kick">14 дней бесплатно</span>
         <h2>Верните себе рабочий день в неделю</h2>
         <p>Отдайте Тренерграму рутину — расчёт весов, рассылку и сбор результатов. Тратьте время на тренировки, а не на таблицы.</p>
-        <a class="lb lg" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
+        <a class="lb lg" href="#signup">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
         <div class="fin-ok"><span><svg><use href="#i-check"/></svg>Без банковской карты</span><span><svg><use href="#i-check"/></svg>Все возможности сразу</span><span><svg><use href="#i-check"/></svg>Отмена в любой момент</span></div>
       </div>
       <div class="fin-v" aria-hidden="true">
@@ -591,5 +592,6 @@
 </footer>
 
 <script src="landing.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>
