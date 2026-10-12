@@ -520,7 +520,7 @@ a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
 /* Онбординг — компактная заметка-чек-лист, не на всю ширину; действия — ссылками за текстом. */
 /* Обёртка с отступом, как у .dkpis: margin у первого ребёнка панели схлопывается и выталкивает блок за её край. */
 .onbw{padding:12px 0 6px}
-.onb{max-width:620px;padding:14px 16px 10px;border-radius:var(--rad-l);background:var(--s1);font-size:14.5px}
+.onb{max-width:760px;padding:14px 16px 10px;border-radius:var(--rad-l);background:var(--s1);font-size:14.5px}
 .onb .oh{display:flex;align-items:center;gap:10px}
 .onb .oh .k{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;gap:6px}
 .onb .oh .k svg{width:13px;height:13px;flex:none;stroke-width:1.6}
@@ -532,12 +532,9 @@ a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
 .onb .st:first-child{border-top:0}
 .onb .ck{display:grid;place-items:center;width:18px;height:18px;margin-top:1px;flex:none;border:1.5px solid var(--line2);border-radius:50%;background:var(--bg);color:#fff}
 .onb .ck svg{width:11px;height:11px;stroke-width:2.6}
-.onb .st.next .ck{border-color:var(--acc)}
 .onb .st.done .ck{background:var(--acc);border-color:var(--acc)}
 .onb .st .t{flex:1;min-width:0;line-height:1.4}
-.onb .st .t i{font-style:normal;color:var(--tx4)}
 .onb .st .t .ol{margin-left:6px}
-.onb .st.next .t{font-weight:600}
 .onb .st.done .t{color:var(--tx4);text-decoration:line-through}
 .onb.fold{padding-bottom:14px}
 /* ─── Онбординг компактнее, лента событий — основной блок, пробный период в шапке ─── */

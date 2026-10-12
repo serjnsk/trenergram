@@ -526,24 +526,27 @@ function onbTouch(){
   if(!onbState().seen){ onbState().seen = true; saveState() }
 }
 const onbInvite = () => (STATE.profile || {}).invite || TRAINER.invite;
+/* Сколько упражнений в сохранённом дне — и отдельных, и внутри связок. */
+const onbExN = c => { try{ return (JSON.parse(c).b || []).reduce((n, b) => n + (b.i || []).reduce((m, it) => m + (it.e || String(it.r || '').trim() ? 1 : 0) + (it.ch || []).filter(p => p.e || String(p.r || '').trim()).length, 0), 0) }catch(_){ return 0 } };
 function onbSteps(){
-  /* Демо-клиента убрали — шаги на нём уже не нужны. */
-  /* o.all — чек-лист отмечен пройденным целиком (?new=done). */
-  const o = onbState(), gone = !!o.demoGone || !!o.all, days = Object.entries((STATE.days || {}).p1 || {}).filter(([i, r]) => +i >= ONB_BASE && r && contentHas(r.c));
+  /* Демо-клиента убрали — шаги на нём уже не нужны. o.all — чек-лист отмечен
+     пройденным целиком (?new=done). Шаги проходят в любом порядке. */
+  const o = onbState(), gone = !!o.demoGone || !!o.all, bag = (STATE.days || {}).p1 || {};
+  const days = Object.entries(bag).filter(([i, r]) => r && contentHas(r.c));
   const last = program('p1') ? addDays(dayDate('p1', composedDays('p1') - 1), 1) : null;
+  /* Демо-тренировка — день, что был в программе с самого начала; упражнение
+     добавлено, если в дне их стало больше, чем в исходном. */
+  const added = days.some(([i, r]) => +i < ONB_BASE && onbExN(r.c) > onbExN(serializeDay(buildDay('p1', +i))));
+  const pm0 = (client(ONB_DEMO) || {}).pm || {}, pm = (STATE.pm || {})[ONB_DEMO] || {};
   return [
-    {k:'seen', n:'Откройте карточку демо-клиента', d:'Программа, максимумы и история тренировок — так будет выглядеть каждый ваш клиент.',
-     done:!!o.seen || gone, btn:'Открыть', href:'client.html?id=' + ONB_DEMO},
-    {k:'compose', n:'Составьте тренировку демо-клиенту', d:'Напишите упражнения текстом или выберите из базы — конструктор подскажет.',
-     done:days.length > 0 || gone, btn:'Составить', href:'constructor.html?' + (last ? subjQ(ONB_DEMO) + '&date=' + last : '')},
-    {k:'publish', n:'Опубликуйте её и посмотрите глазами клиента', d:'В конструкторе включите «Опубликовать» — тренировка появится в приложении клиента.',
-     done:days.some(([, r]) => !r.draft) || gone, btn:'Открыть как клиент', href:'client/app.html'},
-    {k:'tpl', n:'Сохраните тренировку в шаблоны', d:'Хорошую тренировку не надо писать заново: из базы её можно назначить любому клиенту.',
-     done:Object.values(STATE.tplEd || {}).some(t => !t.del) || !!o.all, btn:'К шаблонам', href:'workouts.html'},
-    {k:'invite', n:'Пригласите своего клиента', d:'Одна ссылка на всех клиентов: он перейдёт по ней, зарегистрируется и увидит свои тренировки.',
+    {k:'cal', n:'Найдите в «Календаре» демо-тренировку и добавьте в неё новое упражнение',
+     done:added || gone, btn:'В календарь', href:'calendar.html?client=' + ONB_DEMO},
+    {k:'compose', n:'Создайте новую тренировку для демо-клиента',
+     done:days.some(([i]) => +i >= ONB_BASE) || gone, btn:'Создать', href:'constructor.html?' + (last ? subjQ(ONB_DEMO) + '&date=' + last : '')},
+    {k:'pm', n:'Найдите в «Клиентах» демо-клиента и добавьте ему новый рекорд',
+     done:Object.keys(pm).some(k => pm[k] !== pm0[k]) || gone, btn:'К клиентам', href:'clients.html'},
+    {k:'invite', n:'Пригласите нового клиента по ссылке',
      done:!!o.invited || !!o.all, btn:'Скопировать ссылку', act:'invite'},
-    {k:'demo', n:'Уберите демо-клиента', d:'Когда освоитесь, удалите демо, чтобы в списках остались только ваши клиенты.',
-     done:gone, btn:'Убрать демо', act:'demo'},
   ];
 }
 /* Короткое имя в карточках: «Артём К.». */
@@ -565,7 +568,7 @@ function onbHTML(){
   return `<div class="onbw"><section class="onb${all ? ' fin' : ''}${fold ? ' fold' : ''}${enter ? ' enter' : ''}" id="onb">${head}
     <div class="obody"><ol class="osteps">${st.map((x, i) => `<li class="st${x.done ? ' done' : ''}${x === next ? ' next' : ''}${x.done && !shown.includes(x.k) ? ' just' : ''}" style="--i:${i}">
       <span class="ck">${x.done ? ICON.chk : ''}</span>
-      <span class="t"><i>${i + 1}.</i> ${esc(x.n)}${x.done ? '' : x.href ? ` <a class="ol" href="${x.href}">${esc(x.btn)}</a>` : ` <button class="ol" data-onb="${x.act}">${esc(x.btn)}</button>`}</span>
+      <span class="t">${esc(x.n)}${x.done ? '' : x.href ? ` <a class="ol" href="${x.href}">${esc(x.btn)}</a>` : ` <button class="ol" data-onb="${x.act}">${esc(x.btn)}</button>`}</span>
     </li>`).join('')}</ol></div>
   </section></div>`;
 }
