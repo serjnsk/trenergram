@@ -626,7 +626,7 @@ img{display:block;max-width:100%}
 .demo-note{text-align:center;font-size:13px;color:var(--tx4);margin-top:20px}
 
 /* ─── тарифы: один тариф, цена — от числа клиентов ───
-   Ползунок по ступеням (10 / 20 / 50 / 100 / 100+), слева цена и CTA, справа —
+   Ползунок по ступеням (5 / 10 / 20 / 50 / 100 / 100+), слева цена и CTA, справа —
    всё, что входит. Отличие ступеней только в лимите клиентов. */
 .pr1{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);max-width:1040px;margin:0 auto;border-radius:24px;
   background:var(--bg);border:2px solid var(--acc);box-shadow:0 24px 60px -30px rgba(252,82,0,.45);overflow:hidden}

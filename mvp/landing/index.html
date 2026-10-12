@@ -439,9 +439,9 @@
 <!-- ════════════════ ОТЗЫВЫ ════════════════ -->
 <section class="sec gray" id="reviews">
   <!-- Отзывы — слайдер: один отзыв на слайд, крупное фото тренера.
-       ВНИМАНИЕ: все отзывы, имена и цифры сейчас ВЫДУМАННЫЕ, а заголовок
-       говорит «реальных тренеров» — перед показом наружу заменить настоящими
-       отзывами с согласия тренеров. Вместо фото — заглушки (силуэт и инициалы). Стоковые
+       Сейчас — черновики-шаблоны: тренеры правят и подтверждают текст, вместо
+       «Имя Фамилия», [город] и цифр в [скобках] — их данные, фото и Instagram.
+       До подтверждения наружу не показывать. Вместо фото — заглушки. Стоковые
        фото реальных людей к выдуманным отзывам не ставим — только настоящие
        фото бета-тестеров вместе с их отзывами. Ссылка на Instagram — место
        под настоящий профиль: href и data-ig заполняются вместе с реальным
@@ -453,51 +453,39 @@
     </div>
     <div class="rsl rv-in" id="rsl" aria-roledescription="карусель" aria-label="Отзывы тренеров">
       <div class="rs-track" id="rsTrack">
-        <article class="rs" aria-roledescription="слайд" aria-label="1 из 5">
-          <div class="rs-ph ta" role="img" aria-label="Фото тренера: Алексей Волков"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>АВ</span></div>
+        <article class="rs" aria-roledescription="слайд" aria-label="1 из 4">
+          <div class="rs-ph tta" role="img" aria-label="Фото тренера"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ИФ</span></div>
           <div class="rs-b">
-            <div class="rs-met"><b>−6 ч</b><s>в неделю на программы</s></div>
-            <q>Раньше воскресенье уходило на таблицы на 18 человек. Теперь пишу неделю текстом, как привык, жму AI — и через десять минут всё у ребят в телефонах с их весами.</q>
-            <div class="rs-who"><b>Алексей Волков</b><s>Кроссфит-бокс, Новосибирск</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+            <q>Веду две утренние группы, человек по [15]. Раньше на каждого делала свою копию в таблице, и если кто-то с травмой — правила вручную, потом путалась, у кого что. Теперь пишу одну тренировку на группу, а тем, кому нельзя прыжки, меняю день отдельно. Остальных это не трогает. На составление недели уходит [около часа], а было [полвоскресенья].</q>
+            <div class="rs-who"><b>Имя Фамилия</b><s>Функциональный тренинг, [город]</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
           </div>
         </article>
-        <article class="rs" aria-roledescription="слайд" aria-label="2 из 5">
-          <div class="rs-ph tb" role="img" aria-label="Фото тренера: Екатерина Миронова"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ЕМ</span></div>
+        <article class="rs" aria-roledescription="слайд" aria-label="2 из 4">
+          <div class="rs-ph ttb" role="img" aria-label="Фото тренера"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ИФ</span></div>
           <div class="rs-b">
-            
-            <q>Самое ценное — проценты. Я больше не считаю каждому 75 % от максимума на калькуляторе. Обновился рекорд — веса пересчитались сами.</q>
-            <div class="rs-who"><b>Екатерина Миронова</b><s>Тяжёлая атлетика, Казань</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+            <q>У меня всё в процентах от максимума, и пересчитывать это на калькуляторе каждому — отдельная работа. Тут пишу «5×3 по 75 %», а у каждого спортсмена сразу свои килограммы, округлённые до блинов. Поставил человек новый максимум — следующие тренировки пересчитались сами. Ради этого и перешёл.</q>
+            <div class="rs-who"><b>Имя Фамилия</b><s>Пауэрлифтинг, [город]</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
           </div>
         </article>
-        <article class="rs" aria-roledescription="слайд" aria-label="3 из 5">
-          <div class="rs-ph tc" role="img" aria-label="Фото тренера: Дмитрий Сергеев"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ДС</span></div>
+        <article class="rs" aria-roledescription="слайд" aria-label="3 из 4">
+          <div class="rs-ph ttd" role="img" aria-label="Фото тренера"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ИФ</span></div>
           <div class="rs-b">
-            <div class="rs-met"><b>28</b><s>человек в одной группе</s></div>
-            <q>У меня утренняя группа на 28 человек, у троих травмы. Пишу одну тренировку, этим троим правлю их день — остальных это не трогает. В TRNR так не получалось.</q>
-            <div class="rs-who"><b>Дмитрий Сергеев</b><s>Функциональный тренинг, Москва</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+            <q>Больше всего боялась переезда — у меня всё было в заметках и гугл-таблицах за [два года]. Сделала скрины старых программ, вставила, и они разложились по блокам. Пару строк поправила руками. Клиентки поставили иконку на телефон и даже не спрашивали, как пользоваться.</q>
+            <div class="rs-who"><b>Имя Фамилия</b><s>Онлайн-ведение, [город]</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
           </div>
         </article>
-        <article class="rs" aria-roledescription="слайд" aria-label="4 из 5">
-          <div class="rs-ph tb" role="img" aria-label="Фото тренера: Марина Ковальчук"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>МК</span></div>
+        <article class="rs" aria-roledescription="слайд" aria-label="4 из 4">
+          <div class="rs-ph ttc" role="img" aria-label="Фото тренера"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>ИФ</span></div>
           <div class="rs-b">
-            <div class="rs-met"><b>1 вечер</b><s>на перенос всех программ</s></div>
-            <q>Перенесла программы за один вечер. Боялась, что придётся всё перепечатывать, — нет, вставила скриншоты и поправила пару строк.</q>
-            <div class="rs-who"><b>Марина Ковальчук</b><s>Онлайн-ведение, Санкт-Петербург</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
-          </div>
-        </article>
-        <article class="rs" aria-roledescription="слайд" aria-label="5 из 5">
-          <div class="rs-ph ta" role="img" aria-label="Фото тренера: Роман Голубев"><svg viewBox="0 0 200 240" aria-hidden="true"><circle cx="100" cy="88" r="42"/><path d="M22 240c4-56 38-88 78-88s74 32 78 88z"/></svg><span>РГ</span></div>
-          <div class="rs-b">
-            
-            <q>Лента — моя утренняя планёрка. Вижу, кто задал вопрос, кто поставил рекорд и кто пропал. Отвечаю прямо оттуда, мессенджер больше не нужен для работы.</q>
-            <div class="rs-who"><b>Роман Голубев</b><s>Тренер по пауэрлифтингу, Краснодар</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
+            <q>Пишу тренировку как привык — текстом, со всеми своими сокращениями. Жму AI, и он раскладывает всё по упражнениям из базы, остаётся проверить. Ребята видят день в телефоне с весами, не надо ничего пересылать в чат. Вопросы по упражнению пишут прямо под ним, и я больше не ищу их в переписке.</q>
+            <div class="rs-who"><b>Имя Фамилия</b><s>Кроссфит, [город]</s><a class="rs-ig" href="#" target="_blank" rel="noopener" data-ig=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Профиль в Instagram</a></div>
           </div>
         </article>
       </div>
       <div class="rs-nav">
         <button class="rs-btn" id="rsPrev" aria-label="Предыдущий отзыв"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4 3 8l4 4"/></svg></button>
         <div class="rs-dots" id="rsDots"></div>
-        <span class="rs-cnt num" id="rsCnt">1 / 5</span>
+        <span class="rs-cnt num" id="rsCnt">1 / 4</span>
         <button class="rs-btn" id="rsNext" aria-label="Следующий отзыв"><svg><use href="#i-arr"/></svg></button>
       </div>
     </div>
@@ -517,11 +505,11 @@
     <div class="pr1 rv-in">
       <div class="pr1-main">
         <div class="pr1-top">
-          <div class="pr1-price"><b class="num" id="prPrice">990 ₽</b><s>/ месяц</s></div>
-          <div class="pr1-lim" id="prLim">до 10 клиентов</div>
+          <div class="pr1-price"><b class="num" id="prPrice">490 ₽</b><s>/ месяц</s></div>
+          <div class="pr1-lim" id="prLim">до 5 клиентов</div>
         </div>
         <div class="pr1-sl">
-          <input type="range" id="prRange" min="0" max="4" step="1" value="0" aria-label="Количество клиентов">
+          <input type="range" id="prRange" min="0" max="5" step="1" value="0" aria-label="Количество клиентов">
           <div class="pr1-ticks" id="prTicks"></div>
         </div>
         <a class="lb lg pr1-cta" href="../">Начать бесплатно <svg><use href="#i-arr"/></svg></a>
