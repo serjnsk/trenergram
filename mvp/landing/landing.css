@@ -81,6 +81,8 @@ img{display:block;max-width:100%}
 /* бейдж акции: залитая метка с пульсирующей точкой и расходящейся волной */
 .badge.promo i{position:relative;background:var(--acc);color:var(--on-acc);gap:6px;display:inline-flex;align-items:center;padding:0 10px 0 9px;
   font-weight:800;letter-spacing:.02em;animation:promo-ring 2s ease-out infinite}
+/* у бейджа акции два текста: полный — на компьютере, короткий — на телефоне, чтобы таблетка не ломалась */
+.badge.promo .ps{display:none}
 .badge.promo i::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:promo-dot 1s ease-in-out infinite alternate}
 @keyframes promo-ring{0%{box-shadow:0 0 0 0 rgba(252,82,0,.45)}70%{box-shadow:0 0 0 9px rgba(252,82,0,0)}100%{box-shadow:0 0 0 0 rgba(252,82,0,0)}}
 @keyframes promo-dot{from{opacity:1;transform:scale(1)}to{opacity:.35;transform:scale(.7)}}
@@ -97,6 +99,8 @@ img{display:block;max-width:100%}
 .perks{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;margin-top:18px}
 .perk{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--tx2);cursor:help;outline:none}
 .perk svg{width:16px;height:16px;color:var(--acc)}
+/* у плюсов два текста: полный — на компьютере, короткий — на телефоне, чтобы встали в одну строку */
+.perk .ps{display:none}
 .perk u{text-decoration:underline dashed var(--tx4);text-decoration-thickness:1px;text-underline-offset:4px}
 .perk:hover u,.perk:focus u{text-decoration-color:var(--acc);color:var(--tx1)}
 .perk::after{content:attr(data-tip);position:absolute;left:50%;top:calc(100% + 10px);transform:translateX(-50%);white-space:nowrap;z-index:5;
@@ -524,6 +528,13 @@ img{display:block;max-width:100%}
 .fx-row.rev{grid-template-columns:minmax(0,8fr) minmax(0,4fr);grid-template-areas:"m h" "m b"}
 .fx-h{margin-bottom:28px}
 .fx .ft h3{font-size:30px}
+/* плашка-уточнение под описанием фичи (статус приложения клиента) */
+.fx-note{display:flex;gap:10px;align-items:flex-start;margin-top:18px;padding:12px 14px;border-radius:12px;background:var(--acc-a);
+  font-size:14.5px;line-height:1.45;color:var(--tx1)}
+.fx-note svg{width:20px;height:20px;flex:none;color:var(--acc);margin-top:1px}
+.fx-note b{font-weight:600}
+/* под описанием фичи — кнопка, списков нет */
+.fx .fx-cta{margin-top:22px}
 /* заголовок фичи — название возможности, один на блок */
 .fx .ft h3.fx-ttl{margin:0;font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-.025em;color:var(--ink);text-wrap:balance}
 .fx .ft h3.fx-ttl .soon{font-size:13px;vertical-align:8px}
@@ -598,8 +609,10 @@ img{display:block;max-width:100%}
 .rs-btn:hover{background:var(--s1)}
 .rs-btn svg{width:16px;height:16px}
 .rs-dots{display:flex;gap:0}
-.rs-dots button{width:8px;height:8px;border-radius:4px;background:var(--line2);background-clip:content-box;padding:10px 4px;box-sizing:content-box;transition:width .25s,background .25s}   /* поле нажатия 28 px вокруг точки */
-.rs-dots button.on{width:24px;background:var(--acc)}
+.rs-dots button{width:16px;height:28px;padding:0;display:grid;place-items:center;transition:width .25s}   /* поле нажатия 28 px, сама точка — ::before */
+.rs-dots button::before{content:"";width:8px;height:8px;border-radius:4px;background:var(--line2);transition:width .25s,background .25s}
+.rs-dots button.on{width:32px}
+.rs-dots button.on::before{width:24px;background:var(--acc)}
 .rs-cnt{font-size:14px;font-weight:600;color:var(--tx3);min-width:38px;text-align:center}
 @media (max-width:900px){
   .rs{grid-template-columns:minmax(0,1fr);min-height:0}
@@ -880,6 +893,7 @@ img{display:block;max-width:100%}
 @media (max-width:640px){
   :root{--gut:16px}
   /* аудит мобильной версии 2026-10-12 */
+  .fx .fx-cta{width:100%}
   .hf-t b{font-size:14.5px}
   .hf-send .r{white-space:normal}
   .kgx .m-kg th,.kgx .m-kg td{padding:9px 8px}
@@ -891,18 +905,24 @@ img{display:block;max-width:100%}
   .foot .wrap{flex-direction:column;gap:22px}
   .foot .sp{display:none}
   .top .wrap{gap:12px}
-  .top .in{display:none}
+  .top .acts{gap:16px}
+  .top .in{font-size:14.5px}
   .top .logo{font-size:19px}
   .top .lb.sm svg{display:none}
+  .top .lb.sm{padding:0 13px}
   .v-imp{gap:6px}
   .v-imp .f{width:50px}
   .hero{padding:40px 0 64px}
   .badge{font-size:12.5px;white-space:nowrap;gap:8px;padding-right:11px}
-  .badge.promo{border-radius:18px;white-space:normal;height:auto;min-height:34px;padding-top:5px;padding-bottom:5px;text-align:left;line-height:1.3;max-width:100%}
+  .badge.promo .pf{display:none}
+  .badge.promo .ps{display:inline}
   .badge.promo i{flex:none}
   .badge i{white-space:nowrap;font-size:12px}
-  .perks{gap:8px 18px}
-  .perk{font-size:13px}
+  .perks{gap:8px 10px;align-self:stretch}
+  .perk{font-size:12.5px;gap:4px;white-space:nowrap}
+  .perk svg{width:14px;height:14px}
+  .perk .pf{display:none}
+  .perk .ps{display:inline}
   .perk::after{white-space:normal;width:190px;text-align:center}
   .perk:first-child::after{left:0;transform:none}
   .perk:last-child::after{left:auto;right:0;transform:none}
@@ -914,6 +934,15 @@ img{display:block;max-width:100%}
   .ha-stage,.fx .ha-stage{padding:14px}
   .ha-ed{height:520px}
   .ha-doc{padding:14px}
+  /* «Ввод текстом и AI» в один экран: редактор и телефон в одном окне по очереди —
+     после публикации телефон выезжает поверх редактора, редактор уходит на фон */
+  .fx .ha-stage{display:block;position:relative;height:430px;overflow:hidden;padding:12px}
+  .fx .ha-ed{height:406px;transition:opacity .4s,transform .4s}
+  .fx .ha-link{display:none}
+  .fx .ha-ph{--pw:300px;zoom:.66;position:absolute;left:0;right:0;top:22px;margin:0 auto;
+    transform:translateY(120%);transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+  .fx .ha-ph.in{transform:none}
+  .fx .ha-stage:has(.ha-ph.in) .ha-ed{opacity:.3;transform:scale(.96)}
   .pr{grid-template-columns:26px minmax(0,1fr) 48px 44px;gap:8px;font-size:13.5px}
   .hc-vis{padding:14px}
   .hc-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
@@ -936,6 +965,20 @@ img{display:block;max-width:100%}
   .fin .lb.lg{width:100%}
   .qa summary{font-size:16.5px}
   .qa .a{padding-right:0}
+}
+@media (max-width:420px){
+  .top .logo{font-size:17px}
+  .top .acts{gap:14px}
+  .top .in{font-size:14px}
+  .top .lb.sm{padding:0 11px;font-size:14px}
+}
+@media (max-width:370px){
+  .top .xs-hide{display:none}
+  .h1{font-size:34px}
+  .hc-pct{gap:8px}
+  .hc-pct output{min-width:0;font-size:18px}
+  .ha-foot{padding:0 12px;gap:8px}
+  .ha-foot .sv{padding:0 10px}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}

@@ -370,20 +370,22 @@ addEventListener('scroll', spy, { passive: true });
 spy();
 
 /* ═══════════ отзывы: слайдер ═══════════
-   Лента на scroll-snap; номер слайда — по прокрутке ленты, поэтому свайп,
-   стрелки и точки не расходятся. Сам листает раз в 7 с, пока отзывы на
-   экране и посетитель не навёл мышь и не листал сам. */
+   Лента на scroll-snap, один отзыв на слайд. Точек столько, сколько
+   позиций прокрутки. Сам
+   листает раз в 7 с, пока отзывы на экране и посетитель не трогал слайдер. */
 const rsTrack = $('#rsTrack'), rsSlides = $$('.rs', rsTrack), rsDots = $('#rsDots');
-rsDots.innerHTML = rsSlides.map((_, i) => `<button aria-label="Отзыв ${i + 1}"></button>`).join('');
-const rsIdx = () => Math.round(rsTrack.scrollLeft / rsTrack.clientWidth);
-const rsGo = i => { i = (i + rsSlides.length) % rsSlides.length; rsTrack.scrollTo({ left: i * rsTrack.clientWidth, behavior: RM ? 'instant' : 'smooth' }); };
-function rsMark(){
-  const i = rsIdx();
-  $$('button', rsDots).forEach((b, k) => b.classList.toggle('on', k === i));
-  $('#rsCnt').textContent = `${i + 1} / ${rsSlides.length}`;
+const rsStep = () => rsSlides.length > 1 ? rsSlides[1].offsetLeft - rsSlides[0].offsetLeft : rsTrack.clientWidth;
+const rsCount = () => Math.max(1, rsSlides.length - Math.round(rsTrack.clientWidth / rsStep()) + 1);
+const rsIdx = () => Math.round(rsTrack.scrollLeft / rsStep());
+const rsGo = i => { const n = rsCount(); i = (i + n) % n; rsTrack.scrollTo({ left: i * rsStep(), behavior: RM ? 'instant' : 'smooth' }); };
+function rsBuild(){
+  rsDots.innerHTML = Array.from({ length: rsCount() }, (_, i) => `<button aria-label="Отзыв ${i + 1}"></button>`).join('');
+  rsMark();
 }
+function rsMark(){ const i = rsIdx(); $$('button', rsDots).forEach((b, k) => b.classList.toggle('on', k === i)); $('#rsCnt').textContent = `${i + 1} / ${rsCount()}`; }
 let rsHold = false, rsUser = 0;
 rsTrack.addEventListener('scroll', rsMark, { passive: true });
+addEventListener('resize', rsBuild);
 $('#rsPrev').onclick = () => { rsUser = Date.now(); rsGo(rsIdx() - 1); };
 $('#rsNext').onclick = () => { rsUser = Date.now(); rsGo(rsIdx() + 1); };
 rsDots.onclick = e => { const b = e.target.closest('button'); if (b){ rsUser = Date.now(); rsGo($$('button', rsDots).indexOf(b)); } };
@@ -395,7 +397,7 @@ setInterval(() => {
   if (RM || rsHold || Date.now() - rsUser < 12000 || r.bottom < 0 || r.top > innerHeight) return;
   rsGo(rsIdx() + 1);
 }, 7000);
-rsMark();
+rsBuild();
 
 /* ═══════════ тарифы: один тариф, цена от числа клиентов ═══════════
    Сетка от заказчика (2026-10-08): ступень — [подпись на шкале, лимит, ₽ в месяц]. */
