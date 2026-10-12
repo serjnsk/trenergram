@@ -1464,6 +1464,33 @@ const grpIni = n => { const w = String(n || '').trim().split(/[^а-яёa-z0-9]+/
   });
 })();
 
+/* ─── Режим «новый тренер» (?new=1) ───
+   Первый вход в сервис: в аккаунте один демо-клиент, шаблонов и групп нет, тариф
+   «Старт». Нужен, чтобы проектировать и проверять онбординг на дашборде.
+   ?new=1 включает режим и оставляет прогресс, ?new=reset начинает заново, ?new=0
+   возвращает полную демо-базу. Состояние режима лежит отдельно от основного —
+   под ключом trenergram.state.new, — поэтому одно другому не мешает. Демо-клиента
+   тренер может убрать шагом чек-листа (STATE.onb.demoGone) — тогда клиентов нет. */
+const NEWTR = (function(){
+  try{ const m = /[?&]new=(1|0|reset)\b/.exec(location.search);
+       if(m){ if(m[1] === 'reset'){ localStorage.removeItem('trenergram.state.new'); history.replaceState(null, '', location.pathname + location.search.replace(/([?&])new=reset&?/, '$1').replace(/[?&]$/, '') + location.hash) }  /* сброс — один раз, не на каждой перезагрузке */
+       localStorage.setItem('tg.new', m[1] === '0' ? '' : '1') }
+       return !!localStorage.getItem('tg.new') }catch(_){ return false }
+})();
+const STATE_KEY = 'trenergram.state' + (NEWTR ? '.new' : '');
+/* С какого дня программа демо-клиента не составлена — от него шаг «составить тренировку». */
+const ONB_BASE = (PLAN.p1 || []).length;
+if(NEWTR){
+  let gone = false; try{ gone = !!((JSON.parse(localStorage.getItem(STATE_KEY) || '{}').onb) || {}).demoGone }catch(_){}
+  CLIENTS.splice(gone ? 0 : 1);
+  if(CLIENTS[0]){ Object.assign(CLIENTS[0], {n:'Александр Невский (демо клиент)', ini:'АН', demo:true}) }
+  PROGRAMS.splice(0, PROGRAMS.length, ...PROGRAMS.filter(p => !gone && p.id === 'p1'));
+  Object.keys(PLAN).forEach(k => { if(gone || k !== 'p1') delete PLAN[k] });
+  GRPS.length = 0;
+  TPL.forEach(t => { if(t.own) t.del = true });
+  PROFILE_DEF.sub = {plan:'start', until:addDays(TODAY, 14), card:'Не привязана', since:TODAY, trial:true};
+}
+
 const STATE = (function(){
   const def = {online:true, queue:0, ids:false, navc:false, curClient:'c1', curProg:'p1', curWeek:4,
                pm:Object.fromEntries(CLIENTS.map(c=>[c.id, {...c.pm}])), replied:{}, days:{}, profile:null};
@@ -1472,7 +1499,7 @@ const STATE = (function(){
      id: состояние, записанное при другой базе (до датасета id были «squat»,
      «bench»…), не поднимаем — строки дней показались бы пустыми. */
   def.exdb = EXDB_SRC.sha.slice(0, 7);
-  try{ const raw = localStorage.getItem('trenergram.state'), p = raw && JSON.parse(raw);
+  try{ const raw = localStorage.getItem(STATE_KEY), p = raw && JSON.parse(raw);
        if(p && p.exdb === def.exdb) s = Object.assign({}, def, p) }catch(_){}
   return s;
 })();
@@ -1481,7 +1508,7 @@ const STATE = (function(){
    подробный вид (CAL-3). Пишутся вместе с остальным состоянием. */
 const wmsgOf = () => Object.fromEntries(Object.entries(TALK.workout)
   .map(([k, arr]) => [k, ((arr || []).find(m => m.who === 'trainer') || {}).text || '']).filter(([, t]) => t));
-function saveState(){ STATE.wmsg = wmsgOf(); try{ localStorage.setItem('trenergram.state', JSON.stringify(STATE)) }catch(_){} }
+function saveState(){ STATE.wmsg = wmsgOf(); try{ localStorage.setItem(STATE_KEY, JSON.stringify(STATE)) }catch(_){} }
 (function restoreWmsg(){
   if(!STATE.wmsg) return;
   Object.values(TALK.workout).forEach(arr => { const i = arr.findIndex(m => m.who === 'trainer'); if(i >= 0) arr.splice(i, 1) });

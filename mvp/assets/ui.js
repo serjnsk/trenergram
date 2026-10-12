@@ -76,11 +76,18 @@ function setTopTitle(title, count){
   const h = document.getElementById('ptitle');
   if(h) h.innerHTML = esc(title) + (count != null ? `<span class="cnt">${count}</span>` : '');
 }
+/* Пробный период — в шапке на каждой странице, пока он идёт: тариф меняют в профиле. */
+function trialPill(){
+  if(!NEWTR || !subNow().trial) return '';
+  const n = Math.max(0, daysBetween(TODAY, subNow().until));
+  return `<a class="trial" href="profile.html" title="Выбрать тариф">Пробный период · ${n === 0 ? 'последний день' : 'осталось ' + n + ' ' + plural(n, 'день', 'дня', 'дней')}</a>`;
+}
 function renderTop(cfg){
   const t = (cfg && cfg.title) ? {title:cfg.title, count:cfg.count} : (PT || {title: document.title.split(' · ')[0]});
   $('#topbar').innerHTML = `
     <h1 class="ptitle" id="ptitle">${esc(t.title)}${t.count != null ? `<span class="cnt">${t.count}</span>` : ''}</h1>
     <span class="sp"></span>
+    ${trialPill()}
     ${topButton()}`;
   bindTopButton();
 }
@@ -103,6 +110,7 @@ function renderHead(cfg){
 }
 
 function initShell(cfg){
+  onbTouch();
   renderNav(cfg.page);
   renderTop(cfg);
   renderHead(cfg);
@@ -412,7 +420,7 @@ function events(cid){
     if(tx) ev.push({t:'fee', d: st === 'closed' ? addDays(c.paidUntil, 1) : TODAY, c, fee:c.id, title:c.n, tx, act:'Получил оплату', href:'client.html?id='+c.id+'#pay'}) });
   noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
   CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
-  ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});
+  if(!NEWTR) ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});
   const order = {q:0, fee:1, prog:2, pr:3, miss:4, new:5, done:6, pay:7};
   const list = cid ? ev.filter(e=>e.c && e.c.id===cid) : ev;
   return list.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
@@ -461,3 +469,80 @@ function feeModal(cid, mode){
   const off = $('#feeOff'); if(off) off.onclick = () => { c.paidUntil = null; feeSave(c); toast('Оплата не ведётся — клиент тренируется без ограничений'); redraw() };
 }
 document.addEventListener('click', e=>{ const b = e.target.closest('[data-fee]'); if(!b) return; e.preventDefault(); e.stopPropagation(); feeModal(b.dataset.fee, b.dataset.feeMode || 'pay') });
+
+
+/* ═══════════ ОНБОРДИНГ НОВОГО ТРЕНЕРА (режим ?new=1) ═══════════
+   Чек-лист на дашборде вместо урока с затемнением: шаги можно проходить в любом
+   порядке и в несколько заходов, каждый ведёт на нужный экран. Отметки ставятся
+   по фактам — из состояния, а не по клику: тренировка написана, опубликована,
+   шаблон сохранён. Клиент по ссылке в прототипе не придёт, поэтому приглашение
+   отмечаем, когда ссылка скопирована. */
+const ONB_DEMO = 'c1';
+const onbState = () => (STATE.onb ||= {});
+/* Открытая карточка демо-клиента — единственный шаг, который не вывести из данных. */
+function onbTouch(){
+  if(!NEWTR || !/\/client\.html$/.test(location.pathname) || new URLSearchParams(location.search).get('id') !== ONB_DEMO) return;
+  if(!onbState().seen){ onbState().seen = true; saveState() }
+}
+const onbInvite = () => (STATE.profile || {}).invite || TRAINER.invite;
+function onbSteps(){
+  /* Демо-клиента убрали — шаги на нём уже не нужны. */
+  const o = onbState(), gone = !!o.demoGone, days = Object.entries((STATE.days || {}).p1 || {}).filter(([i, r]) => +i >= ONB_BASE && r && contentHas(r.c));
+  const last = program('p1') ? addDays(dayDate('p1', composedDays('p1') - 1), 1) : null;
+  return [
+    {k:'seen', n:'Откройте карточку демо-клиента', d:'Программа, максимумы и история тренировок — так будет выглядеть каждый ваш клиент.',
+     done:!!o.seen || gone, btn:'Открыть', href:'client.html?id=' + ONB_DEMO},
+    {k:'compose', n:'Составьте тренировку демо-клиенту', d:'Напишите упражнения текстом или выберите из базы — конструктор подскажет.',
+     done:days.length > 0 || gone, btn:'Составить', href:'constructor.html?' + (last ? subjQ(ONB_DEMO) + '&date=' + last : '')},
+    {k:'publish', n:'Опубликуйте её и посмотрите глазами клиента', d:'В конструкторе включите «Опубликовать» — тренировка появится в приложении клиента.',
+     done:days.some(([, r]) => !r.draft) || gone, btn:'Открыть как клиент', href:'client/app.html'},
+    {k:'tpl', n:'Сохраните тренировку в шаблоны', d:'Хорошую тренировку не надо писать заново: из базы её можно назначить любому клиенту.',
+     done:Object.values(STATE.tplEd || {}).some(t => !t.del), btn:'К шаблонам', href:'workouts.html'},
+    {k:'invite', n:'Пригласите своего клиента', d:'Одна ссылка на всех клиентов: он перейдёт по ней, зарегистрируется и увидит свои тренировки.',
+     done:!!o.invited, btn:'Скопировать ссылку', act:'invite'},
+    {k:'demo', n:'Уберите демо-клиента', d:'Когда освоитесь, удалите демо, чтобы в списках остались только ваши клиенты.',
+     done:!!o.demoGone, btn:'Убрать демо', act:'demo'},
+  ];
+}
+/* Короткое имя в карточках: «Артём К.». */
+const briefName = n => { const w = String(n).replace(/\s*\(.*\)/, '').split(' '); return w.length > 1 ? w[0] + ' ' + w[1][0] + '.' : w[0] };
+function onbHTML(){
+  if(!NEWTR || onbState().hidden) return '';
+  const st = onbSteps(), n = st.filter(x => x.done).length, all = n === st.length, next = st.find(x => !x.done);
+  const fold = !!onbState().fold;
+  if(all) return `<section class="onb fin" id="onb">
+    <span class="ck">${ICON.chk}</span>
+    <div class="ot"><h2>Вы прошли все шаги</h2><p>Кабинет готов к работе. Это временный блок — теперь его можно убрать, ниже остаётся лента событий.</p></div>
+    <button class="btn sm" data-onb="hide">Убрать блок</button>
+  </section>`;
+  return `<section class="onb${fold ? ' fold' : ''}" id="onb">
+    <div class="oh">
+      <div class="ot"><h2>Добро пожаловать в Тренерграм, ${esc(TRAINER.first)}!</h2>
+        ${fold ? '' : '<p>Мы добавили демо-клиента: пробуйте на нём всё, ничего не сломаете. Шесть шагов, около 10 минут. <span class="tmp">Блок временный — исчезнет, когда пройдёте все шаги.</span></p>'}</div>
+      <div class="op"><b>${n} из ${st.length}</b><div class="bar"><i style="width:${n / st.length * 100}%"></i></div></div>
+      <button class="btn gh sm" data-onb="fold">${fold ? 'Развернуть' : 'Свернуть'}</button>
+    </div>
+    ${fold ? '' : `<div class="osteps">${st.map(x => `<div class="st${x.done ? ' done' : ''}${x === next ? ' next' : ''}">
+      <span class="ck">${x.done ? ICON.chk : ''}</span>
+      <span class="t"><b>${esc(x.n)}</b>${x === next ? `<span class="sub">${esc(x.d)}</span>` : ''}</span>
+      ${x.done ? '' : x.href ? `<a class="btn ${x === next ? '' : 'gh'} sm" href="${x.href}">${esc(x.btn)}</a>`
+        : `<button class="btn ${x === next ? '' : 'gh'} sm" data-onb="${x.act}">${esc(x.btn)}</button>`}
+    </div>`).join('')}</div>`}
+  </section>`;
+}
+/* Обработчики блока: вызывается после каждой отрисовки дашборда. */
+function onbBind(redraw){
+  $$('[data-onb]').forEach(b => b.onclick = () => {
+    const o = onbState(), a = b.dataset.onb;
+    if(a === 'fold'){ o.fold = !o.fold; saveState(); redraw() }
+    else if(a === 'hide'){ o.hidden = true; saveState(); redraw() }
+    else if(a === 'invite'){
+      try{ navigator.clipboard.writeText(onbInvite()) }catch(_){}
+      o.invited = true; saveState(); toast('Ссылка скопирована — отправьте её клиенту'); redraw();
+    } else if(a === 'demo'){
+      openModal({title:'Убрать демо-клиента?', body:'<div class="hint">Исчезнут его программа, тренировки и рекорды. Вернуть их нельзя. Ваши собственные клиенты и шаблоны не затронуты.</div>',
+        foot:'<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="onbDemoOk">Убрать</button>'});
+      $('#onbDemoOk').onclick = () => { o.demoGone = true; saveState(); location.reload() };
+    }
+  });
+}

@@ -506,3 +506,61 @@ a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
 .mh b.fee-closed{color:var(--rm)} .mh b.fee-today,.mh b.fee-tomorrow,.mh b.fee-soon{color:var(--warn)} .mh b.fee-ok{color:var(--ok)}
 .feenote{padding:10px 16px;font-size:14px;line-height:1.45;color:var(--rm-d);background:var(--rm-a);border-bottom:1px solid var(--line)}
 .mdf .lnk-rm{margin-top:0}
+
+/* ─── Дашборд: четыре карточки, чек-лист онбординга, строка аккаунта ─── */
+.dkpis{grid-template-columns:repeat(4,1fr)}
+.kpi.lnk{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;text-align:left;font:inherit;color:inherit;text-decoration:none;border:0;cursor:pointer;transition:background .12s}
+.kpi.lnk:hover{background:var(--acc-a)}
+.kpi .nm{font-size:13px;color:var(--tx2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)}
+.acstrip{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:12px 0 6px;padding:11px 16px;border-radius:var(--rad-l);background:var(--s1);font-size:14px;color:var(--tx3)}
+.acstrip b{color:var(--tx1);font-weight:600}
+.acstrip .sp{flex:1}
+.acstrip a{color:var(--acc);font-weight:600;text-decoration:none}
+.onb{margin:12px 0 6px;border:1px solid var(--line);border-radius:var(--rad-l);background:var(--bg);overflow:hidden}
+.onb .oh{display:flex;align-items:flex-start;gap:20px;padding:18px 20px}
+.onb .ot{flex:1;min-width:0}
+.onb .ot h2{margin:0 0 5px;font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.02em}
+.onb .ot p{margin:0;max-width:680px;font-size:14.5px;line-height:1.5;color:var(--tx2)}
+.onb .op{width:170px;flex:none;font-size:14px;text-align:right}
+.onb .op b{font-weight:600}
+.onb .bar{height:6px;margin-top:7px;border-radius:3px;background:var(--s1);overflow:hidden}
+.onb .bar i{display:block;height:100%;border-radius:3px;background:var(--acc);transition:width .25s}
+.onb .osteps{border-top:1px solid var(--line)}
+.onb .st{display:flex;align-items:center;gap:13px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.onb .st:last-child{border-bottom:0}
+.onb .st.next{background:var(--acc-a)}
+.onb .ck{display:grid;place-items:center;width:22px;height:22px;flex:none;border:1.5px solid var(--line2);border-radius:50%;color:#fff}
+.onb .ck svg{width:12px;height:12px;stroke-width:2.4}
+.onb .st.next .ck{border-color:var(--acc)}
+.onb .st.done .ck{background:var(--ok);border-color:var(--ok)}
+.onb .st .t{flex:1;min-width:0}
+.onb .st .t b{display:block;font-size:15px;font-weight:600}
+.onb .st .t .sub{display:block;margin-top:2px;font-size:13.5px;color:var(--tx3)}
+.onb .st.done .t b{font-weight:500;color:var(--tx4);text-decoration:line-through}
+
+/* ─── Онбординг компактнее, лента событий — основной блок, пробный период в шапке ─── */
+.trial{display:inline-flex;align-items:center;height:34px;margin-right:12px;padding:0 13px;border-radius:17px;background:var(--acc-a);color:var(--acc-d);font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.trial:hover{background:var(--acc-p)}
+.feedh{padding:18px 4px 4px}
+.feedh h2{margin:0;font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:-.02em}
+.onb .oh{align-items:center;gap:16px;padding:12px 16px}
+.onb .ot h2{margin:0;font-size:16px}
+.onb .ot p{margin:3px 0 0;font-size:13.5px;line-height:1.45;color:var(--tx3)}
+.onb .ot .tmp{color:var(--tx2);font-weight:500}
+.onb .op{width:120px}
+.onb .st{padding:8px 16px;gap:11px}
+.onb .st .t b{font-size:14.5px}
+.onb .ck{width:20px;height:20px}
+.onb.fin{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--ok-a);border-color:var(--ok)}
+.onb.fin .ck{background:var(--ok);border-color:var(--ok);width:28px;height:28px}
+.onb.fin .ck svg{width:15px;height:15px}
+.onb.fin .ot{flex:1}
+.onb.fin .ot h2{font-size:16px}
+.onb.fin .ot p{color:var(--tx2)}
+@media (max-width:760px){.trial{display:none}}
+.kpi.lnk.on{background:var(--acc-a);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.kpi .kbar{height:5px;margin:8px 0 7px;border-radius:3px;background:var(--line2);overflow:hidden}
+.kpi .kbar i{display:block;height:100%;border-radius:3px;background:var(--ok)}
+.kpi .rows{margin-top:9px;border-top:1px solid var(--line2);font-size:13.5px;color:var(--tx2)}
+.kpi .rows div{display:flex;justify-content:space-between;gap:10px;padding-top:7px}
+.kpi .rows b{font-weight:700;color:var(--tx1)}

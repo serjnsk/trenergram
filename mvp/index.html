@@ -35,22 +35,30 @@
    (вопросы, кончающиеся программы, пропуски, новые клиенты) и «Что
    произошло» (рекорды, записанные результаты, подписка). Справа — панель
    «Аккаунт»: цифры с трендом к прошлой неделе и очередь составления. */
-/* Статистика аккаунта — с трендом к прошлой неделе (демо-дельты). */
+/* Четыре карточки сверху — не счётчики, а ответ на вопрос «что мне сейчас делать»:
+   каждая ведёт туда, где с этим работают. Рекорды и ответы на вопросы живут в
+   ленте ниже, поэтому отдельных цифр не получают. */
 function stats(){
-  const active = CLIENTS.filter(c=>c.prog).length;
-  const done = CLIENTS.reduce((a,c)=>a+(c.done||0),0), plan = CLIENTS.reduce((a,c)=>a+(c.plan||0),0);
-  const q = composeQueue();
-  const drafts = Object.values(STATE.days||{}).flatMap(o=>Object.values(o)).filter(r=>r.draft).length;
+  const pl = planNow(), n = CLIENTS.length, sub = subNow();
+  const plan = scheduleAll(TODAY,TODAY).length, done = CLIENTS.filter(c=>c.prog && c.last===TODAY).length;
+  const ending = composeQueue().filter(x=>x.runway<=7), idl = idle(), q = unread().length;
   return [
-    {k:'Активных клиентов', v:active, d:`из ${CLIENTS.length} в аккаунте`, tr:'+2', ic:ICON.users},
-    {k:'Выполнение за неделю', v:Math.round(done/plan*100)+' %', d:'отмеченных тренировок', tr:'+5 %', ic:ICON.chk},
-    {k:'Занятий сегодня', v:sessionsOn(TODAY).length, d:`${scheduleAll(TODAY,TODAY).length} атлетов суммарно`, tr:'', ic:ICON.cal},
-    {k:'Рекорды за неделю', v:CLIENTS.filter(c=>c.pr && daysBetween(c.pr.at,TODAY)<=7).length, d:'новых максимумов', tr:'−1', dn:true, ic:ICON.star, acc:true},
-    {k:'Ждут ответа', v:unread().length, d:'вопросов без ответа', tr:'+3', dn:true, ic:ICON.chat, acc:true},
-    {k:'Кончаются на неделе', v:q.filter(x=>x.runway>=0 && x.runway<=7).length + q.filter(x=>x.runway<0).length, d:`${q.filter(x=>x.runway<0).length} уже без тренировок`, tr:'', ic:ICON.prog, warn:true},
+    {k:'Тренировки сегодня', ic:ICON.cal, href:'calendar.html', v: plan ? `${done} из ${plan}` : '0', bar: plan ? done/plan : 0,
+     d: plan ? 'выполнено из назначенных на сегодня' : 'на сегодня ничего не назначено'},
+    {k:'Нужно внимание', ic:ICON.prog, href:'clients.html', v:ending.length+idl.length, warn:ending.length+idl.length>0,
+     rows: ending.length+idl.length ? [['Программа на исходе', ending.length], ['Нет тренировок 3+ дня', idl.length]] : null,
+     d: ending.length+idl.length ? '' : 'все клиенты в графике'},
+    {k:'Ждут ответа', ic:ICON.chat, feed:'q', v:q, acc:q>0, d: q ? 'вопросов клиентов — показать в ленте' : 'вопросов без ответа нет'},
+    {k:'Аккаунт', ic:ICON.users, href:'profile.html', v:`${n} из ${pl.limit}`, warn:n>=pl.limit*0.9,
+     d:`тариф «${pl.n}» · ${sub.trial ? 'пробный период до' : 'подписка до'} ${humanDate(sub.until)}`},
   ];
 }
-const kpiHTML = (s, cls='') => `<div class="kpi ${cls}"><span class="k">${s.ic} ${esc(s.k)}</span><div class="v ${s.acc?'acc':s.warn?'warn':''}">${s.v}${s.tr?`<span class="tr ${s.dn?'dn':''}">${s.tr}</span>`:''}</div><div class="d">${esc(s.d)}</div></div>`;
+const kpiHTML = s => { const tag = s.href ? `a href="${s.href}"` : `button type="button" data-feed="${s.feed}"`, on = s.feed && F.t===s.feed;
+  return `<${tag} class="kpi lnk${on?' on':''}"><span class="k">${s.ic} ${esc(s.k)}</span><div class="v ${s.acc?'acc':s.warn?'warn':''}">${s.v}</div>
+    ${s.bar!=null?`<div class="kbar"><i style="width:${Math.round(s.bar*100)}%"></i></div>`:''}
+    ${s.d?`<div class="d">${esc(s.d)}</div>`:''}
+    ${s.rows?`<div class="rows">${s.rows.map(([t,n])=>`<div><span>${esc(t)}</span><b>${n}</b></div>`).join('')}</div>`:''}</${s.href?'a':'button'}>`;
+};
 const queueHTML = n => composeQueue().slice(0,n).map(x=>{ const c=client(x.p.clients[0]); const lbl = x.runway<0?'кончилась':x.runway===0?'сегодня':`${x.runway} ${plural(x.runway,'день','дня','дней')}`;
   return `<div class="act"><span class="n">${esc(c?c.ini:'—')}</span><span class="t">${esc(c?c.n:x.p.title)}<s>${esc(x.p.title)} · ${x.composed ? 'составлено до ' + dm(dayDate(x.p.id, x.composed-1)) : 'ничего не составлено'}</s></span><span class="chip ${x.runway<0?'rm':x.runway<=7?'warn':'ghost'}">${lbl}</span></div>`}).join('');
 const actionsHTML = () => { const ev = events(); const un = ev.filter(e=>e.t==='q'), pg = ev.filter(e=>e.t==='prog'), ms = ev.filter(e=>e.t==='miss'), nw = ev.filter(e=>e.t==='new');
@@ -65,12 +73,17 @@ function render(){
   const ev = events();
   const list = F.t==='all' ? ev : ev.filter(e=>e.t===F.t);
   const types = [['all','Все',ev.length], ...Object.keys(TYPES).filter(t=>ev.some(e=>e.t===t)).map(t=>[t,TYPES[t],ev.filter(e=>e.t===t).length])];
-  const st = stats();
-  $('#page').innerHTML = paneHead('Дашборд', null, `<span class="ph-sub">${['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(TODAY)]}, ${humanDate(TODAY)}</span><span class="sp"></span>`)
-    + limitAlertHTML() + `<div class="dkpis">${st.map(s=>kpiHTML(s)).join('')}</div>
+  const st = stats(), ob = onbHTML();
+  /* Карточки — когда онбординг пройден или убран: у новичка вместо них одни нули. */
+  const onbOpen = ob && !/class="onb fin"/.test(ob);
+  setTopTitle('Дашборд');
+  $('#page').innerHTML = limitAlertHTML() + ob + (onbOpen ? '' : `<div class="dkpis">${st.map(kpiHTML).join('')}</div>`) + `
+      <div class="feedh"><h2>Лента событий</h2></div>
       <div class="tabs2">${types.map(([k,n,c])=>`<button data-t="${k}" class="${F.t===k?'on':''}">${n}<s>${c}</s></button>`).join('')}</div>
       <div class="feed1">${feedHTML(list)}</div>`;
   $$('.tabs2 [data-t]').forEach(b=>b.onclick=()=>{ F.t=b.dataset.t; render() });
+  $$('.kpi[data-feed]').forEach(b=>b.onclick=()=>{ const on = F.t===b.dataset.feed; F.t = on ? 'all' : b.dataset.feed; render(); if(!on) $('.feedh').scrollIntoView({behavior:'smooth', block:'start'}) });
+  onbBind(render);
   /* Ответ на вопрос — прямо в ленте, без перехода в карточку. */
   $$('.fev.t-q .btn').forEach(b=>b.onclick=e=>{ e.preventDefault(); const row=b.closest('.fev'); if(row.querySelector('.reply')) return;
     const key=row.dataset.key; row.querySelector('.c').insertAdjacentHTML('beforeend', `<div class="reply"><input placeholder="Ответить…" data-key="${key}"><button class="btn gh sm" data-send="${key}">Отправить</button></div>`);
