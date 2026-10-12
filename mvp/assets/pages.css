@@ -516,47 +516,35 @@ a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
 .acstrip b{color:var(--tx1);font-weight:600}
 .acstrip .sp{flex:1}
 .acstrip a{color:var(--acc);font-weight:600;text-decoration:none}
-.onb{margin:12px 0 6px;border:1px solid var(--line);border-radius:var(--rad-l);background:var(--bg);overflow:hidden}
-.onb .oh{display:flex;align-items:flex-start;gap:20px;padding:18px 20px}
-.onb .ot{flex:1;min-width:0}
-.onb .ot h2{margin:0 0 5px;font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.02em}
-.onb .ot p{margin:0;max-width:680px;font-size:14.5px;line-height:1.5;color:var(--tx2)}
-.onb .op{width:170px;flex:none;font-size:14px;text-align:right}
-.onb .op b{font-weight:600}
-.onb .bar{height:6px;margin-top:7px;border-radius:3px;background:var(--s1);overflow:hidden}
-.onb .bar i{display:block;height:100%;border-radius:3px;background:var(--acc);transition:width .25s}
-.onb .osteps{border-top:1px solid var(--line)}
-.onb .st{display:flex;align-items:center;gap:13px;padding:12px 20px;border-bottom:1px solid var(--line)}
-.onb .st:last-child{border-bottom:0}
-.onb .st.next{background:var(--acc-a)}
-.onb .ck{display:grid;place-items:center;width:22px;height:22px;flex:none;border:1.5px solid var(--line2);border-radius:50%;color:#fff}
-.onb .ck svg{width:12px;height:12px;stroke-width:2.4}
-.onb .st.next .ck{border-color:var(--acc)}
-.onb .st.done .ck{background:var(--ok);border-color:var(--ok)}
-.onb .st .t{flex:1;min-width:0}
-.onb .st .t b{display:block;font-size:15px;font-weight:600}
-.onb .st .t .sub{display:block;margin-top:2px;font-size:13.5px;color:var(--tx3)}
-.onb .st.done .t b{font-weight:500;color:var(--tx4);text-decoration:line-through}
 
+/* Онбординг — компактная заметка-чек-лист, не на всю ширину; действия — ссылками за текстом. */
+/* Обёртка с отступом, как у .dkpis: margin у первого ребёнка панели схлопывается и выталкивает блок за её край. */
+.onbw{padding:12px 0 6px}
+.onb{max-width:620px;padding:14px 16px 10px;border-radius:var(--rad-l);background:var(--s1);font-size:14.5px}
+.onb .oh{display:flex;align-items:center;gap:10px}
+.onb .oh .k{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;gap:6px}
+.onb .oh .k svg{width:13px;height:13px;flex:none;stroke-width:1.6}
+.onb .oh .ol{color:var(--tx3);font-weight:500;font-size:13.5px}
+.onb .ol{padding:0;border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--acc);text-decoration:none;cursor:pointer;white-space:nowrap}
+.onb .ol:hover{text-decoration:underline}
+.onb .osteps{margin:6px 0 0;padding:0;list-style:none}
+.onb .st{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-top:1px solid var(--line2)}
+.onb .st:first-child{border-top:0}
+.onb .ck{display:grid;place-items:center;width:18px;height:18px;margin-top:1px;flex:none;border:1.5px solid var(--line2);border-radius:50%;background:var(--bg);color:#fff}
+.onb .ck svg{width:11px;height:11px;stroke-width:2.6}
+.onb .st.next .ck{border-color:var(--acc)}
+.onb .st.done .ck{background:var(--acc);border-color:var(--acc)}
+.onb .st .t{flex:1;min-width:0;line-height:1.4}
+.onb .st .t i{font-style:normal;color:var(--tx4)}
+.onb .st .t .ol{margin-left:6px}
+.onb .st.next .t{font-weight:600}
+.onb .st.done .t{color:var(--tx4);text-decoration:line-through}
+.onb.fold{padding-bottom:14px}
 /* ─── Онбординг компактнее, лента событий — основной блок, пробный период в шапке ─── */
 .trial{display:inline-flex;align-items:center;height:34px;margin-right:12px;padding:0 13px;border-radius:17px;background:var(--acc-a);color:var(--acc-d);font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap}
 .trial:hover{background:var(--acc-p)}
 .feedh{padding:18px 4px 4px}
 .feedh h2{margin:0;font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:-.02em}
-.onb .oh{align-items:center;gap:16px;padding:12px 16px}
-.onb .ot h2{margin:0;font-size:16px}
-.onb .ot p{margin:3px 0 0;font-size:13.5px;line-height:1.45;color:var(--tx3)}
-.onb .ot .tmp{color:var(--tx2);font-weight:500}
-.onb .op{width:120px}
-.onb .st{padding:8px 16px;gap:11px}
-.onb .st .t b{font-size:14.5px}
-.onb .ck{width:20px;height:20px}
-.onb.fin{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--ok-a);border-color:var(--ok)}
-.onb.fin .ck{background:var(--ok);border-color:var(--ok);width:28px;height:28px}
-.onb.fin .ck svg{width:15px;height:15px}
-.onb.fin .ot{flex:1}
-.onb.fin .ot h2{font-size:16px}
-.onb.fin .ot p{color:var(--tx2)}
 @media (max-width:760px){.trial{display:none}}
 .kpi.lnk.on{background:var(--acc-a);box-shadow:inset 0 0 0 1.5px var(--acc)}
 .kpi .kbar{height:5px;margin:8px 0 7px;border-radius:3px;background:var(--line2);overflow:hidden}
@@ -564,3 +552,52 @@ a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
 .kpi .rows{margin-top:9px;border-top:1px solid var(--line2);font-size:13.5px;color:var(--tx2)}
 .kpi .rows div{display:flex;justify-content:space-between;gap:10px;padding-top:7px}
 .kpi .rows b{font-weight:700;color:var(--tx1)}
+
+/* ─── Лента событий, вариант 2: дни заголовками, фото, имя — ссылка, действие под текстом ─── */
+.evday2{display:flex;align-items:center;gap:10px;margin:18px 0 6px;font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx1)}
+.evday2:first-child{margin-top:12px}
+.evgrp{border:1px solid var(--line);border-radius:var(--rad-l);overflow:hidden}
+.fev2{display:flex;gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
+.fev2:first-child{border-top:0}
+.fev2 .avl{flex:none;text-decoration:none}
+.ava{position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--s1);color:var(--tx3);font-size:13.5px;font-weight:700}
+.ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ava i{font-style:normal}
+.ava.grp svg{width:18px;height:18px}
+.fev2 .c{flex:1;min-width:0}
+.fev2 .h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.fev2 .who{font-size:14.5px;font-weight:600;color:var(--tx1);text-decoration:none}
+a.who:hover{color:var(--acc);text-decoration:underline}
+.fev2 .ex{font-weight:600;color:var(--tx1)}
+.fev2 .tchip{align-self:center;font-size:11.5px;padding:1px 7px}
+.fev2 .tx{margin-top:2px;font-size:14px;line-height:1.45;color:var(--tx2)}
+.fev2 .fa{margin-top:5px}
+.fact{padding:0;border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--acc);text-decoration:none;cursor:pointer}
+.fact:hover{text-decoration:underline}
+.fev2 .reply{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;border-radius:var(--rad-m);background:var(--s1)}
+.fev2 .reply input{flex:1;min-width:0;font-size:14px}
+.feed1:has(.evgrp){margin:0}
+@media (max-width:760px){.fev2{padding:12px}.fev2 .reply{flex-wrap:wrap}.fev2 .reply input{flex:1 1 100%;height:40px}.fact{line-height:32px}}
+/* В карточке клиента лента уже внутри карточки — без второй рамки. */
+.card .evgrp{border:0;border-radius:0}
+.card .evday2{margin:12px 14px 4px}
+/* ─── Онбординг: прогресс под заголовком, вход, сворачивание и «щелчок» шага (как в HWPO) ─── */
+.onb .oh .on{margin-left:auto;font-size:13.5px;font-weight:600;color:var(--tx2);font-variant-numeric:tabular-nums}
+.onb .oh .ol{margin-left:8px}
+.onb .obar{height:3px;margin-top:9px;border-radius:2px;background:var(--line2);overflow:hidden}
+.onb .obar i{display:block;height:100%;border-radius:2px;background:var(--acc);transition:width .7s cubic-bezier(.22,1,.36,1) .35s}
+.onb .obody{display:grid;grid-template-rows:1fr;transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1),opacity .2s}
+.onb .obody > ol{min-height:0;overflow:hidden}
+.onb.fold .obody{grid-template-rows:0fr;opacity:0}
+.onb.fold{padding-bottom:12px}
+.onb .ck,.onb .st .t{transition:color .2s,background .2s,border-color .2s}
+.onb.enter{animation:onbIn .42s cubic-bezier(.22,1,.36,1) both}
+.onb.enter .st{animation:onbRow .5s cubic-bezier(.34,1.45,.64,1) both;animation-delay:calc(.14s + var(--i) * .07s)}
+.onb .st.just .ck{animation:onbPop .45s cubic-bezier(.34,1.8,.64,1) both;animation-delay:calc(.55s + var(--i) * .07s)}
+.onb .st.just .t{animation:onbStrike .45s ease-out both;animation-delay:calc(.65s + var(--i) * .07s)}
+@keyframes onbIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes onbRow{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes onbPop{0%{transform:scale(.4);background:var(--bg);border-color:var(--line2)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes onbStrike{from{color:var(--tx1);text-decoration-color:transparent}to{color:var(--tx4);text-decoration-color:var(--tx4)}}
+@media (prefers-reduced-motion:reduce){.onb.enter,.onb.enter .st,.onb .st.just .ck{animation:none}.onb .st.just .t{animation:none}.onb .obar i,.onb .obody{transition:none}}
+.feedh .fnew{font-family:var(--ui, inherit);font-size:15px;font-weight:500;letter-spacing:0;color:var(--tx3)}

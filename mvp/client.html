@@ -232,7 +232,7 @@ function render(){
       if(!k || !isFinite(v)){ toast('Укажите 1ПМ'); return } pm[k]=v; ((C.hist ||= {})[k] ||= []).push([TODAY, v]); if(isFinite(v3)) pm3Of(C.id)[k]=v3;
       V.metric=k; saveState(); closeModal(); toast('Упражнение добавлено'); render() } };
   document.addEventListener('click', e=>{ if(e.target.closest('#nmSave')){ const r={date:TODAY}; $$('[data-nm]').forEach(i=>{ const v=parseFloat(i.value.replace(',','.')); if(isFinite(v)) r[i.dataset.nm]=v }); if(Object.keys(r).length>1){ (C.meas ||= []).push(r); if(r.w) C.w=r.w; closeModal(); toast('Замер записан'); render() } } }, {once:true});
-  $$('.fev.t-q .btn').forEach(b=>b.onclick=e=>{ e.preventDefault(); location.href='#events'; toast('Ответ на вопрос — из ленты дашборда') });
+  $$('.fev.t-q .btn, .fev2.t-q .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); location.href='#events'; toast('Ответ на вопрос — из ленты дашборда') });
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
   const HEAD = 58 + 52;

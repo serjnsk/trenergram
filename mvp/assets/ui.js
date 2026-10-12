@@ -404,7 +404,7 @@ const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:I
 function events(cid){
   const ev = [];
   CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый максимум: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
-  unread().forEach(({c,cm,key})=>ev.push({t:'q', d:cm.d, c, key, title:c.n + (cm.ex?' · '+cm.ex:''), tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
+  unread().forEach(({c,cm,key})=>ev.push({t:'q', d:cm.d, c, key, title:c.n + (cm.ex?' · '+cm.ex:''), sub:cm.ex, tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
   idle().forEach(c=>ev.push({t:'miss', d:c.last, c, title:c.n, tx:`Не появлялся ${ago(c.last)} — серия прервана`, act:'Открыть профиль', href:'client.html?id='+c.id}));
   composeQueue().filter(x=>x.runway<=7).forEach(x=>{
     /* Группа в очереди — одной строкой: писать нужно ей, а не каждому участнику. */
@@ -431,11 +431,52 @@ const evHTML = (e, mini) => `<div class="fev t-${e.t}${mini?' mini':''}" data-ke
     <div class="c"><div class="h"><b>${esc(e.title)}</b><span class="tchip t-${e.t}">${TLABEL[e.t]}</span>${mini?'':`<time>${dayLabel(e.d)}</time>`}</div><div class="tx">${e.tx}</div></div>
     ${mini ? '' : e.fee ? `<button class="btn gh sm" data-fee="${e.fee}">${e.act}</button>` : `<a class="btn gh sm" href="${e.href}">${e.act}</a>`}
   </div>`;
+/* Фото клиента — заглушка с randomuser.me (пол по имени), пока клиенты не грузят своё;
+   не загрузилось — инициалы. */
+const FEMALE_EXC = /^(Илья|Никита|Фома|Лука|Савва|Данила|Кузьма)$/;
+function avaURL(c){
+  const first = String(c.n).split(' ')[0], w = /[ая]$/.test(first) && !FEMALE_EXC.test(first);
+  let h = 0; for(const ch of String(c.id)) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  return `https://randomuser.me/api/portraits/${w ? 'women' : 'men'}/${h % 90}.jpg`;
+}
+const avaHTML = c => c && !c.members
+  ? `<span class="ava"><img src="${avaURL(c)}" alt="" loading="lazy" onerror="this.remove()"><i>${esc(c.ini)}</i></span>`
+  : `<span class="ava grp"><i>${c ? ICON.grp : ICON.folder}</i></span>`;
+/* Куда ведёт клиент события: карточка клиента, группа — в список групп. */
+const evWho = e => !e.c ? null : e.c.members ? 'groups.html' : 'client.html?id=' + e.c.id;
+
+/* Лента (вариант 2): день — заголовком с линией, в событии фото и имя ссылкой на
+   клиента, действие — ссылкой сразу под текстом, а не у правого края.
+   Прежний вид — ?feed=old. */
+const FEED_OLD = /[?&]feed=old\b/.test(location.search);
+const ev2HTML = e => { const who = evWho(e), name = e.c && e.sub ? e.title.slice(0, -(' · ' + e.sub).length) : e.title;
+  return `<div class="fev2 t-${e.t}" data-key="${e.key||''}">
+    ${who ? `<a class="avl" href="${who}" title="${esc(name)}">${avaHTML(e.c)}</a>` : `<span class="avl">${avaHTML(null)}</span>`}
+    <div class="c">
+      <div class="h">${who ? `<a class="who" href="${who}">${esc(name)}</a>` : `<b class="who">${esc(name)}</b>`}<span class="tchip t-${e.t}">${TLABEL[e.t]}</span></div>
+      <div class="tx">${e.sub ? `<span class="ex">${esc(e.sub)}:</span> ` : ''}${e.tx}</div>
+      <div class="fa">${e.fee ? `<button class="fact" data-fee="${e.fee}">${e.act}</button>` : `<a class="fact" href="${e.href}">${e.act}</a>`}</div>
+    </div>
+  </div>` };
+/* Новые события — те, что тренер ещё не видел на дашборде (STATE.feedSeen). Счётчик
+   считается один раз при открытии страницы и сразу обнуляется на следующий визит. */
+const evKey = e => [e.t, e.c ? e.c.id : '', e.d, e.key || '', String(e.tx).replace(/<[^>]+>/g, '').slice(0, 40)].join('|');
+let FEED_NEW = null;
+function feedNew(){
+  if(FEED_NEW !== null) return FEED_NEW;
+  const seen = new Set(STATE.feedSeen || []), keys = events().map(evKey);
+  FEED_NEW = keys.filter(k => !seen.has(k)).length;
+  STATE.feedSeen = keys; saveState();
+  return FEED_NEW;
+}
 function feedHTML(list, withDays=true){
   if(!list.length) return '<div class="empty"><div class="t">Тихо</div><div class="d">Новых событий нет</div></div>';
   let out='', day=null;
-  list.forEach(e=>{ if(withDays && e.d!==day){ day=e.d; out+=`<div class="evday">${dayLabel(e.d)}${e.d===TODAY||e.d===addDays(TODAY,-1)?' · '+humanDate(e.d):''}</div>` } out+=evHTML(e) });
-  return out;
+  const head = d => dayLabel(d) + (d===TODAY||d===addDays(TODAY,-1) ? ' · ' + humanDate(d) : '');
+  if(FEED_OLD){ list.forEach(e=>{ if(withDays && e.d!==day){ day=e.d; out+=`<div class="evday">${head(e.d)}</div>` } out+=evHTML(e) }); return out }
+  list.forEach(e=>{ if(e.d!==day){ if(day) out+='</div>'; day=e.d;
+    out+=`<div class="evday2">${head(e.d)}</div><div class="evgrp">` } out+=ev2HTML(e) });
+  return out + '</div>';
 }
 
 const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', fee:'Оплата', new:'Новый клиент', done:'Результат', pay:'Подписка'};
@@ -487,7 +528,8 @@ function onbTouch(){
 const onbInvite = () => (STATE.profile || {}).invite || TRAINER.invite;
 function onbSteps(){
   /* Демо-клиента убрали — шаги на нём уже не нужны. */
-  const o = onbState(), gone = !!o.demoGone, days = Object.entries((STATE.days || {}).p1 || {}).filter(([i, r]) => +i >= ONB_BASE && r && contentHas(r.c));
+  /* o.all — чек-лист отмечен пройденным целиком (?new=done). */
+  const o = onbState(), gone = !!o.demoGone || !!o.all, days = Object.entries((STATE.days || {}).p1 || {}).filter(([i, r]) => +i >= ONB_BASE && r && contentHas(r.c));
   const last = program('p1') ? addDays(dayDate('p1', composedDays('p1') - 1), 1) : null;
   return [
     {k:'seen', n:'Откройте карточку демо-клиента', d:'Программа, максимумы и история тренировок — так будет выглядеть каждый ваш клиент.',
@@ -497,44 +539,49 @@ function onbSteps(){
     {k:'publish', n:'Опубликуйте её и посмотрите глазами клиента', d:'В конструкторе включите «Опубликовать» — тренировка появится в приложении клиента.',
      done:days.some(([, r]) => !r.draft) || gone, btn:'Открыть как клиент', href:'client/app.html'},
     {k:'tpl', n:'Сохраните тренировку в шаблоны', d:'Хорошую тренировку не надо писать заново: из базы её можно назначить любому клиенту.',
-     done:Object.values(STATE.tplEd || {}).some(t => !t.del), btn:'К шаблонам', href:'workouts.html'},
+     done:Object.values(STATE.tplEd || {}).some(t => !t.del) || !!o.all, btn:'К шаблонам', href:'workouts.html'},
     {k:'invite', n:'Пригласите своего клиента', d:'Одна ссылка на всех клиентов: он перейдёт по ней, зарегистрируется и увидит свои тренировки.',
-     done:!!o.invited, btn:'Скопировать ссылку', act:'invite'},
+     done:!!o.invited || !!o.all, btn:'Скопировать ссылку', act:'invite'},
     {k:'demo', n:'Уберите демо-клиента', d:'Когда освоитесь, удалите демо, чтобы в списках остались только ваши клиенты.',
-     done:!!o.demoGone, btn:'Убрать демо', act:'demo'},
+     done:gone, btn:'Убрать демо', act:'demo'},
   ];
 }
 /* Короткое имя в карточках: «Артём К.». */
 const briefName = n => { const w = String(n).replace(/\s*\(.*\)/, '').split(' '); return w.length > 1 ? w[0] + ' ' + w[1][0] + '.' : w[0] };
+/* Анимация как у чек-листа HWPO: при входе на дашборд карточка проявляется и
+   поднимается, шаги выезжают по одному с лёгким пружинным доводом, полоса прогресса
+   дорастает до своего значения. Только при первом показе на странице — перерисовка
+   ленты или фильтра блок не дёргает. Шаг, выполненный с прошлого визита, «щёлкает»
+   галочкой (o.shown — какие шаги тренер уже видел выполненными). */
+let ONB_ENTERED = false;
 function onbHTML(){
   if(!NEWTR || onbState().hidden) return '';
-  const st = onbSteps(), n = st.filter(x => x.done).length, all = n === st.length, next = st.find(x => !x.done);
-  const fold = !!onbState().fold;
-  if(all) return `<section class="onb fin" id="onb">
-    <span class="ck">${ICON.chk}</span>
-    <div class="ot"><h2>Вы прошли все шаги</h2><p>Кабинет готов к работе. Это временный блок — теперь его можно убрать, ниже остаётся лента событий.</p></div>
-    <button class="btn sm" data-onb="hide">Убрать блок</button>
-  </section>`;
-  return `<section class="onb${fold ? ' fold' : ''}" id="onb">
-    <div class="oh">
-      <div class="ot"><h2>Добро пожаловать в Тренерграм, ${esc(TRAINER.first)}!</h2>
-        ${fold ? '' : '<p>Мы добавили демо-клиента: пробуйте на нём всё, ничего не сломаете. Шесть шагов, около 10 минут. <span class="tmp">Блок временный — исчезнет, когда пройдёте все шаги.</span></p>'}</div>
-      <div class="op"><b>${n} из ${st.length}</b><div class="bar"><i style="width:${n / st.length * 100}%"></i></div></div>
-      <button class="btn gh sm" data-onb="fold">${fold ? 'Развернуть' : 'Свернуть'}</button>
-    </div>
-    ${fold ? '' : `<div class="osteps">${st.map(x => `<div class="st${x.done ? ' done' : ''}${x === next ? ' next' : ''}">
+  const o = onbState(), st = onbSteps(), n = st.filter(x => x.done).length, all = n === st.length, next = st.find(x => !x.done);
+  const fold = !!o.fold && !all, enter = !ONB_ENTERED, shown = o.shown || [];
+  const head = `<div class="oh"><span class="k">${ICON.star} ${all ? 'Все шаги пройдены' : 'Первые шаги'}</span>
+    <span class="on">${n} / ${st.length}</span>
+    <button class="ol" data-onb="${all ? 'hide' : 'fold'}">${all ? 'Убрать' : fold ? 'Показать' : 'Свернуть'}</button></div>
+    <div class="obar"><i style="width:${enter ? 0 : n / st.length * 100}%" data-w="${n / st.length * 100}"></i></div>`;
+  return `<div class="onbw"><section class="onb${all ? ' fin' : ''}${fold ? ' fold' : ''}${enter ? ' enter' : ''}" id="onb">${head}
+    <div class="obody"><ol class="osteps">${st.map((x, i) => `<li class="st${x.done ? ' done' : ''}${x === next ? ' next' : ''}${x.done && !shown.includes(x.k) ? ' just' : ''}" style="--i:${i}">
       <span class="ck">${x.done ? ICON.chk : ''}</span>
-      <span class="t"><b>${esc(x.n)}</b>${x === next ? `<span class="sub">${esc(x.d)}</span>` : ''}</span>
-      ${x.done ? '' : x.href ? `<a class="btn ${x === next ? '' : 'gh'} sm" href="${x.href}">${esc(x.btn)}</a>`
-        : `<button class="btn ${x === next ? '' : 'gh'} sm" data-onb="${x.act}">${esc(x.btn)}</button>`}
-    </div>`).join('')}</div>`}
-  </section>`;
+      <span class="t"><i>${i + 1}.</i> ${esc(x.n)}${x.done ? '' : x.href ? ` <a class="ol" href="${x.href}">${esc(x.btn)}</a>` : ` <button class="ol" data-onb="${x.act}">${esc(x.btn)}</button>`}</span>
+    </li>`).join('')}</ol></div>
+  </section></div>`;
 }
 /* Обработчики блока: вызывается после каждой отрисовки дашборда. */
 function onbBind(redraw){
+  const box = $('#onb');
+  if(box){
+    /* Полоса дорастает со следующего кадра, чтобы сработал transition. */
+    if(!ONB_ENTERED) requestAnimationFrame(() => requestAnimationFrame(() => { const i = $('#onb .obar i'); if(i) i.style.width = i.dataset.w + '%' }));
+    ONB_ENTERED = true;
+    const o = onbState(), done = onbSteps().filter(x => x.done).map(x => x.k);
+    if(done.some(k => !(o.shown || []).includes(k))){ o.shown = done; saveState() }
+  }
   $$('[data-onb]').forEach(b => b.onclick = () => {
     const o = onbState(), a = b.dataset.onb;
-    if(a === 'fold'){ o.fold = !o.fold; saveState(); redraw() }
+    if(a === 'fold'){ o.fold = !o.fold; saveState(); $('#onb').classList.toggle('fold', o.fold); b.textContent = o.fold ? 'Показать' : 'Свернуть' }
     else if(a === 'hide'){ o.hidden = true; saveState(); redraw() }
     else if(a === 'invite'){
       try{ navigator.clipboard.writeText(onbInvite()) }catch(_){}

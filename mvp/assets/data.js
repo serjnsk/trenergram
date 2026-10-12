@@ -1468,12 +1468,14 @@ const grpIni = n => { const w = String(n || '').trim().split(/[^а-яёa-z0-9]+/
    Первый вход в сервис: в аккаунте один демо-клиент, шаблонов и групп нет, тариф
    «Старт». Нужен, чтобы проектировать и проверять онбординг на дашборде.
    ?new=1 включает режим и оставляет прогресс, ?new=reset начинает заново, ?new=0
-   возвращает полную демо-базу. Состояние режима лежит отдельно от основного —
+   возвращает полную демо-базу, ?new=done — начинает заново с уже пройденным
+   чек-листом (посмотреть финальное состояние блока). Состояние режима лежит отдельно от основного —
    под ключом trenergram.state.new, — поэтому одно другому не мешает. Демо-клиента
    тренер может убрать шагом чек-листа (STATE.onb.demoGone) — тогда клиентов нет. */
+let NEW_DONE = false;
 const NEWTR = (function(){
-  try{ const m = /[?&]new=(1|0|reset)\b/.exec(location.search);
-       if(m){ if(m[1] === 'reset'){ localStorage.removeItem('trenergram.state.new'); history.replaceState(null, '', location.pathname + location.search.replace(/([?&])new=reset&?/, '$1').replace(/[?&]$/, '') + location.hash) }  /* сброс — один раз, не на каждой перезагрузке */
+  try{ const m = /[?&]new=(1|0|reset|done)\b/.exec(location.search);
+       if(m){ if(m[1] === 'reset' || m[1] === 'done'){ NEW_DONE = m[1] === 'done'; localStorage.removeItem('trenergram.state.new'); history.replaceState(null, '', location.pathname + location.search.replace(/([?&])new=(reset|done)&?/, '$1').replace(/[?&]$/, '') + location.hash) }  /* сброс — один раз, не на каждой перезагрузке */
        localStorage.setItem('tg.new', m[1] === '0' ? '' : '1') }
        return !!localStorage.getItem('tg.new') }catch(_){ return false }
 })();
@@ -1509,6 +1511,7 @@ const STATE = (function(){
 const wmsgOf = () => Object.fromEntries(Object.entries(TALK.workout)
   .map(([k, arr]) => [k, ((arr || []).find(m => m.who === 'trainer') || {}).text || '']).filter(([, t]) => t));
 function saveState(){ STATE.wmsg = wmsgOf(); try{ localStorage.setItem(STATE_KEY, JSON.stringify(STATE)) }catch(_){} }
+if(NEW_DONE){ STATE.onb = {all:true}; saveState() }
 (function restoreWmsg(){
   if(!STATE.wmsg) return;
   Object.values(TALK.workout).forEach(arr => { const i = arr.findIndex(m => m.who === 'trainer'); if(i >= 0) arr.splice(i, 1) });
