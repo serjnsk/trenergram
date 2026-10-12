@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="assets/base-trainer.css">
 <link rel="stylesheet" href="assets/theme-01-strava.css">
 <link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/mobile.css">
+<script src="assets/mobile.js"></script>
 </head>
 <body>
 <div class="app">
@@ -133,7 +135,9 @@ function renderCal(keepYM){
   { const h = document.querySelector('.calwrap .wkh'); if(h) $('#cal').style.setProperty('--wkh', h.offsetHeight + 'px') }
   if(keepYM) scrollToMonth(keepYM, false);
 }
-const HEAD = () => 58 + ((document.querySelector('.calwrap .wkh')||{}).offsetHeight || 62);   /* шапка приложения + липкая шапка календаря */
+/* шапка приложения + липкая шапка календаря; на телефоне липнет только заголовок месяца (шапка календаря прячется при прокрутке вниз, mobile.js) */
+const HEAD = () => matchMedia('(max-width:760px)').matches ? 52 + ((document.querySelector('.monh')||{}).offsetHeight || 40)
+  : 58 + ((document.querySelector('.calwrap .wkh')||{}).offsetHeight || 62);
 /* Переход к произвольной дате: месяц дорастает при необходимости, день мигает. */
 function jumpTo(date){
   const ym = ymOf(date);
