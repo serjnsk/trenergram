@@ -587,6 +587,8 @@ img{display:block;max-width:100%}
 .rs-ph{position:relative;display:grid;place-items:end center;overflow:hidden}
 .rs-ph svg{width:78%;fill:rgba(255,255,255,.55)}
 .rs-ph span{position:absolute;left:24px;top:22px;font:900 22px/1 var(--head);letter-spacing:-.03em;color:rgba(20,20,20,.35)}
+.rs-ph.has-photo{display:block}
+.rs-ph img{width:100%;height:100%;object-fit:cover;object-position:center 25%;display:block}
 .rs-ph.ta{background:linear-gradient(160deg,#FFD9C2,#FF9E66)}
 .rs-ph.tb{background:linear-gradient(160deg,#EDE7E1,#C9BFB5)}
 .rs-ph.tc{background:linear-gradient(160deg,#E3E3E3,#B8B8B8)}
