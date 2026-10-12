@@ -76,11 +76,15 @@ function setTopTitle(title, count){
   const h = document.getElementById('ptitle');
   if(h) h.innerHTML = esc(title) + (count != null ? `<span class="cnt">${count}</span>` : '');
 }
-/* Пробный период — в шапке на каждой странице, пока он идёт: тариф меняют в профиле. */
+/* Пробный период — в шапке на каждой странице, пока он идёт: тариф меняют в профиле.
+   Так же — отменённая подписка: до какого числа доступ, по нажатию — возобновить. */
 function trialPill(){
-  if(!NEWTR || !subNow().trial) return '';
+  const sub = subNow();
+  if(SUBRO) return `<a class="trial end" href="profile.html#billing" title="Продлить подписку">Только просмотр · продлить</a>`;   /* закончилась: плашка в закреплённой шапке + полоса под ней (nav.js) */
+  if(sub.canceled && !sub.trial) return `<a class="trial" href="profile.html#billing" title="Возобновить подписку">Подписка отменена · доступ до ${humanDate(sub.until)}</a>`;
+  if(!NEWTR || !sub.trial) return '';
   const n = Math.max(0, daysBetween(TODAY, subNow().until));
-  return `<a class="trial" href="profile.html" title="Выбрать тариф">Пробный период · ${n === 0 ? 'последний день' : 'осталось ' + n + ' ' + plural(n, 'день', 'дня', 'дней')}</a>`;
+  return `<a class="trial" href="profile.html#billing" title="Выбрать тариф">Пробный период · ${n === 0 ? 'последний день' : 'осталось ' + n + ' ' + plural(n, 'день', 'дня', 'дней')}</a>`;
 }
 function renderTop(cfg){
   const t = (cfg && cfg.title) ? {title:cfg.title, count:cfg.count} : (PT || {title: document.title.split(' · ')[0]});
@@ -420,7 +424,7 @@ function events(cid){
     if(tx) ev.push({t:'fee', d: st === 'closed' ? addDays(c.paidUntil, 1) : TODAY, c, fee:c.id, title:c.n, tx, act:'Получил оплату', href:'client.html?id='+c.id+'#pay'}) });
   noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
   CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
-  if(!NEWTR) ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка «Тренер» продлена', tx:'2 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Профиль', href:'profile.html'});
+  if(!NEWTR) ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка продлена', tx:'3 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Подписка', href:'profile.html#billing'});
   const order = {q:0, fee:1, prog:2, pr:3, miss:4, new:5, done:6, pay:7};
   const list = cid ? ev.filter(e=>e.c && e.c.id===cid) : ev;
   return list.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
@@ -546,7 +550,7 @@ function onbSteps(){
     {k:'pm', n:'Найдите в «Клиентах» демо-клиента и добавьте ему новый рекорд',
      done:Object.keys(pm).some(k => pm[k] !== pm0[k]) || gone, btn:'К клиентам', href:'clients.html'},
     {k:'invite', n:'Пригласите нового клиента по ссылке',
-     done:!!o.invited || !!o.all, btn:'Скопировать ссылку', act:'invite'},
+     done:!!o.invited || !!o.all, btn:'Где взять ссылку', href:'clients.html?onb=invite'},
   ];
 }
 /* Короткое имя в карточках: «Артём К.». */
@@ -571,6 +575,20 @@ function onbHTML(){
       <span class="t">${esc(x.n)}${x.done ? '' : x.href ? ` <a class="ol" href="${x.href}">${esc(x.btn)}</a>` : ` <button class="ol" data-onb="${x.act}">${esc(x.btn)}</button>`}</span>
     </li>`).join('')}</ol></div>
   </section></div>`;
+}
+/* Окно «Пригласить клиента» — со страницы «Клиенты»: та же ссылка, что в профиле.
+   Скопировал — шаг онбординга «пригласить» выполнен. */
+function inviteModal(){
+  const url = onbInvite();
+  openModal({title:'Пригласить клиента', body:`
+    <div class="copyfield"><code title="${esc(url)}"><span>${esc(url.replace(/[^/]+$/,''))}</span><b>${esc(url.split('/').pop())}</b></code><button class="btn sm" id="invCopy">Скопировать</button></div>
+    <div class="hint">Одна ссылка для всех клиентов, без срока. Отправьте её в чат или мессенджер: клиент откроет, войдёт по номеру телефона и сразу появится в этом списке. Выпустить новую ссылку — в <a href="profile.html">профиле</a>.</div>`,
+    foot:'<span class="sp"></span><button class="btn gh" data-close>Готово</button>'});
+  $('#invCopy').onclick = () => {
+    try{ navigator.clipboard.writeText(url) }catch(_){}
+    if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() }
+    toast('Ссылка скопирована — отправьте её клиенту');
+  };
 }
 /* Обработчики блока: вызывается после каждой отрисовки дашборда. */
 function onbBind(redraw){

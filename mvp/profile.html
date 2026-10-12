@@ -33,9 +33,10 @@
 <script>
 /* ═══════════ ПРОФИЛЬ ТРЕНЕРА ═══════════
    Настройки аккаунта, а не витрина бренда (BRD-1 — за пределами MVP):
-   основные данные, подписка и лимит клиентов, безопасность. Виды спорта,
+   таб «Профиль» — данные, приглашение, реквизиты, вход; таб «Подписка» —
+   тариф, лимит клиентов, карта, история платежей. Виды спорта,
    часовой пояс и уведомления убраны. Приглашение клиентов (REG-1) живёт здесь
-   же — это свойство аккаунта тренера. «Сообщение по оплате занятий» — текст
+   же — это свойство аккаунта тренера. «Реквизиты для оплаты занятий» — текст
    для оплаты занятий (PAY-9): клиент видит его, когда пора платить.
    Фото загружается по нажатию на сам аватар; в прототипе — уменьшенная копия
    в STATE.profile.photo, на бэкенде будет загрузка в хранилище. */
@@ -45,11 +46,10 @@ if(P.invite) T.invite = P.invite;
 /* Новая ссылка-приглашение: случайный код без похожих букв и цифр (0/O, 1/I) */
 const newInvite = () => 'https://trenergram.app/j/' + Array.from({length:6}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
 const save = msg => { saveState(); if(msg) toast(msg) };
-const plan = () => PLANS.find(x=>x.id===P.sub.plan) || PLANS[1];
+const plan = () => PLANS.find(x=>x.id===P.sub.plan) || PLANS[0];
 const rub = n => n.toLocaleString('ru-RU') + ' ₽';
 const MONG = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()]+' '+d.getFullYear() };
-const dshort = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONG[d.getMonth()].slice(0,3)+' '+d.getFullYear() };
 const daysLeft = iso => daysBetween(TODAY, iso);
 const CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 /* Фото — квадрат 160 px из середины кадра: в localStorage влезает, на аватаре 64 px резко */
@@ -65,77 +65,114 @@ function photoFrom(file, done){
   img.src = url;
 }
 
-function render(){
+/* Два таба: «Профиль» — всё, что про тренера и его клиентов (данные, ссылка,
+   реквизиты, вход); «Подписка» — оплата Тренерграма. Таб — в хэше адреса,
+   поэтому плашка пробного периода и баннер перерасхода ведут сразу в #billing. */
+const TABS = [['profile','Профиль','<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.2 3.8-5 7-5s5.8 1.8 7 5"/>'],
+              ['billing','Подписка','<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>']];
+const tab = () => location.hash === '#billing' ? 'billing' : 'profile';
+const row = (label, desc, ctl) => `<div class="srow"><div class="sl"><b>${label}</b>${desc?`<s>${desc}</s>`:''}</div><div class="sc">${ctl}</div></div>`;
+
+function profileTab(){
+  return `
+    <div class="sechead"><span class="t">Как вас видят клиенты</span><span class="ln"></span></div>
+    <div class="card cb">
+      ${row('Фото', '', `<div class="avrow">
+        <label class="av av-up${P.photo?' has':''}" for="inPhoto" title="${P.photo?'Сменить фото':'Загрузить фото'}">
+          ${P.photo?`<img src="${P.photo}" alt="">`:esc(T.ini)}<span class="av-cam">${CAMERA}</span></label>
+        <label class="btn gh sm" for="inPhoto">${P.photo?'Сменить фото':'Загрузить фото'}</label>
+        <input type="file" id="inPhoto" accept="image/*" hidden></div>`)}
+      ${row('Имя и фамилия', '', `<div class="cols2"><input class="inp" data-t="first" value="${esc(T.first)}" placeholder="Имя" aria-label="Имя"><input class="inp" data-t="last" value="${esc(T.last)}" placeholder="Фамилия" aria-label="Фамилия"></div>`)}
+      ${row('Город', '', `<input class="inp" data-t="city" value="${esc(T.city)}">`)}
+      ${row('О себе', '', `<textarea class="inp" data-t="about" rows="3">${esc(T.about)}</textarea>`)}
+    </div>
+
+    <div class="sechead"><span class="t">Приглашение клиентов</span><span class="ln"></span></div>
+    <div class="card cb">
+      <div class="invbox"><code>${esc(T.invite.replace(/[^/]+$/,''))}<b>${esc(T.invite.split('/').pop())}</b></code><button class="btn" id="btnCopy">Скопировать</button></div>
+      <div class="invfoot"><span>Одна ссылка для всех клиентов, без срока. Клиент входит по номеру телефона и сразу привязан к вам.</span><button class="btn gh sm" id="btnNewLink">Выпустить новую</button></div>
+    </div>
+
+    <div class="sechead"><span class="t">Реквизиты для оплаты занятий</span><span class="ln"></span></div>
+    <div class="card cb">
+      <textarea class="inp" id="payHow" rows="3" aria-label="Реквизиты для оплаты занятий" placeholder="Например: перевод по номеру телефона, банк, получатель">${esc(payHow())}</textarea>
+      <div class="hint">Клиент видит их, когда подходит срок оплаты. Сумму и срок задаёте в карточке клиента.</div>
+    </div>
+
+    <div class="sechead"><span class="t">Вход в кабинет</span><span class="ln"></span></div>
+    <div class="card cb">
+      ${row('Телефон', 'Логин для входа', `<input class="inp" data-t="phone" value="${esc(T.phone)}">`)}
+      ${row('Email', 'Чеки и восстановление пароля', `<input class="inp" data-t="email" value="${esc(T.email)}">`)}
+      ${row('Пароль', '', `<div class="pwrow"><span>••••••••</span><button class="btn gh sm" id="btnPass">Сменить пароль</button></div>`)}
+    </div>`;
+}
+
+/* Подписка — две карточки, как биллинг Shopify. В первой сводка строкой ячеек:
+   текущий тариф, клиенты из лимита, стоимость и до какого числа действует;
+   под ней карта, внизу полосой — следующий платёж и отмена. Вторая — история. */
+const PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
+const dnum = iso => iso.split('-').reverse().join('.');
+function billingTab(){
   const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until), over = used > pl.limit;
+  const trial = !!P.sub.trial, nocard = !/\d/.test(P.sub.card||''), hist = payHist();
+  /* Отменённая подписка: доступ до конца оплаченного срока, списаний больше нет.
+     Сверху карточки — плашка с датой и «Возобновить», точка у даты жёлтая,
+     в полосе снизу вместо следующего платежа — «списаний не будет». */
+  const ended = left < 0, off = !!P.sub.canceled && !trial && !ended;
+  /* Срок прошёл (оплата не прошла, подписку отменили или кончился пробный) —
+     кабинет только для просмотра (SUBRO, data.js); здесь — «Продлить». */
+  const brand = (P.sub.card||'').split(' ')[0];
+  const cell = (k, v, cls='') => `<div class="bst${cls?' '+cls:''}"><s>${k}</s><b>${v}</b></div>`;
+  return `
+    <div class="card bcard">
+      <div class="bc-b">
+        <div class="bc-h"><b>Подписка</b>${off?'':`<button class="lnk-t" id="btnPlan">${trial&&!ended?'Выбрать тариф':'Сменить тариф'}</button>`}</div>
+        ${ended?`<div class="bnote end"><span><b>${trial?'Пробный период закончился':'Подписка закончилась'} ${dlong(P.sub.until)}.</b> Кабинет открыт только для просмотра — после продления снова можно составлять тренировки и добавлять клиентов.</span><button class="btn sm" id="btnRenew">Продлить подписку</button></div>`
+        : off?`<div class="bnote"><span><b>Подписка отменена.</b> Доступ сохранится до ${dlong(P.sub.until)}, потом кабинет станет только для просмотра.</span><button class="btn sm" id="btnResume">Возобновить</button></div>`:''}
+        <div class="bstats">
+          ${cell('Текущий тариф', trial?'Пробный период':esc(pl.n), 'pl')}
+          ${cell('Клиентов', `${used}<i> / ${pl.t}</i>`, over?'over':'')}
+          ${cell('Стоимость', `${trial&&!ended?0:pl.price.toLocaleString('ru-RU')}<i> ₽/мес</i>`)}
+          ${cell('Действует до', `<span class="dot ${left>0?(left<=3||off?'warn':'ok'):'rm'}"></span>${dnum(P.sub.until)}`)}
+        </div>
+        <div class="pmbox">${nocard
+          ? `<span class="pm-t">Карта не привязана</span><button class="btn sm" id="btnCard">Привязать карту</button>`
+          : `<span class="pm-br">${esc(brand)}</span><span class="pm-t">${esc(P.sub.card)}</span><button class="iact" id="btnCard" title="Изменить карту" aria-label="Изменить карту">${PEN}</button>`}</div>
+      </div>
+      <div class="bc-f"><span>${ended
+        ? `Продление — ${rub(pl.price)} за месяц, ${esc(pl.n)}; доступ откроется сразу`
+        : trial
+        ? `Потом — ${rub(pl.price)} в месяц, ${esc(pl.n)}`
+        : off ? `Автопродление выключено — списаний больше не будет`
+        : left>0 ? `Следующий платёж ${rub(pl.price)} — ${dlong(P.sub.until)}, через ${left} ${plural(left,'день','дня','дней')}` : `Подписка закончилась ${dlong(P.sub.until)}`}</span>
+        ${trial||off||ended?'':'<button class="lnk-t" id="btnCancel">Отменить подписку</button>'}</div>
+    </div>
+
+    <div class="card bcard">
+      <div class="bc-b">
+        <div class="bc-h"><b>История платежей</b></div>
+        ${hist.length?`<div class="tblwrap bc-tbl"><table class="tbl"><thead><tr><th>Дата</th><th class="bh-pl">Назначение</th><th class="r">Сумма</th><th>Статус</th></tr></thead><tbody>
+          ${hist.map(d=>`<tr><td class="nw">${dlong(d)}</td><td class="bh-pl">Подписка на месяц · ${esc(pl.n)}</td><td class="r nw">${rub(pl.price)}</td><td><span class="chip ok">оплачен</span></td></tr>`).join('')}</tbody></table></div>`
+          :'<div class="bc-s">Платежей пока не было</div>'}
+      </div>
+    </div>`;
+}
+/* История в прототипе — ежемесячные списания до даты продления, не раньше начала подписки */
+const payHist = () => P.sub.trial ? [] : [1,2,3,4].map(k=>{ const d = new Date(P.sub.until+'T00:00:00'); d.setMonth(d.getMonth()-k); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') }).filter(d=>d<=TODAY && d>=(P.sub.since||''));
+
+function render(){
+  const t = tab();
   $('#page').innerHTML = `
-  <div class="prof">
-    <div>
-      <div class="sechead"><span class="t">Основные данные</span><span class="ln"></span></div>
-      <div class="card cb">
-        <div class="avrow">
-          <label class="av av-up${P.photo?' has':''}" title="${P.photo?'Сменить фото':'Загрузить фото'}">
-            ${P.photo?`<img src="${P.photo}" alt="">`:esc(T.ini)}<span class="av-cam">${CAMERA}</span>
-            <input type="file" id="inPhoto" accept="image/*" hidden></label>
-          <span class="av-t"><b>${esc(T.first)} ${esc(T.last)}</b><s>${P.photo?'Нажмите на фото, чтобы сменить':'Нажмите на кружок, чтобы загрузить фото'}</s></span>
-        </div>
-        <div class="cols2" style="margin-bottom:12px">
-          <div class="formfld"><span class="k">Имя</span><input class="inp" data-t="first" value="${esc(T.first)}"></div>
-          <div class="formfld"><span class="k">Фамилия</span><input class="inp" data-t="last" value="${esc(T.last)}"></div>
-        </div>
-        <div class="cols2" style="margin-bottom:12px">
-          <div class="formfld"><span class="k">Телефон</span><input class="inp" data-t="phone" value="${esc(T.phone)}"></div>
-          <div class="formfld"><span class="k">Email</span><input class="inp" data-t="email" value="${esc(T.email)}"></div>
-        </div>
-        <div class="cols2" style="margin-bottom:12px">
-          <div class="formfld"><span class="k">Город</span><input class="inp" data-t="city" value="${esc(T.city)}"></div>
-        </div>
-        <div class="formfld"><span class="k">О себе — видят клиенты</span>
-          <textarea class="inp" data-t="about" rows="3">${esc(T.about)}</textarea></div>
-      </div>
+  <nav class="ptabs">${TABS.map(([k,n,ic])=>`<a href="#${k}" class="${k===t?'on':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">${ic}</svg>${n}</a>`).join('')}</nav>
+  <div class="prof">${t==='billing'?billingTab():profileTab()}</div>`;
+  t==='billing' ? bindBilling() : bindProfile();
+}
 
-      <div class="sechead"><span class="t">Приглашение клиентов</span><span class="ln"></span></div>
-      <div class="card cb">
-        <div class="copyfield"><code title="${esc(T.invite)}"><span>${esc(T.invite.replace(/[^/]+$/,''))}</span><b>${esc(T.invite.split('/').pop())}</b></code><button class="btn gh sm" id="btnCopy">Скопировать</button></div>
-        <div class="hint">Одна ссылка для всех клиентов, без срока. Клиент открывает её, входит по номеру телефона и сразу привязан к вам. Список — в «Клиентах».</div>
-        <button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>
-      </div>
-
-      <div class="sechead"><span class="t">Сообщение по оплате занятий для клиентов</span><span class="ln"></span></div>
-      <div class="card cb">
-        <div class="formfld"><textarea class="inp" id="payHow" rows="2" aria-label="Сообщение по оплате занятий для клиентов" placeholder="Например: перевод по номеру телефона, банк, получатель">${esc(payHow())}</textarea></div>
-        <div class="hint">Клиент видит этот текст, когда пора платить: за день до конца оплаты, в последний день и когда доступ к новым тренировкам закрыт. Сумму и срок каждому клиенту задаёте в его карточке.</div>
-      </div>
-
-      <div class="sechead"><span class="t">Безопасность</span><span class="ln"></span></div>
-      <div class="card cb">
-        <div class="setrow"><span class="t"><b>Пароль</b><s>Вход по телефону и паролю</s></span><button class="btn gh sm" id="btnPass">Сменить пароль</button></div>
-      </div>
-    </div>
-
-    <div class="side">
-      <div class="sechead"><span class="t">Подписка</span><span class="ln"></span></div>
-      <div class="card cb subc">
-        <div class="subc-h">
-          <span class="pl">${esc(pl.n)}</span><span class="chip ${left>0?'ok':'rm'}">${left>0?'активна':'истекла'}</span>
-          <span class="pr">${rub(pl.price)}<s> / мес</s></span>
-        </div>
-        <div class="usage${over?' over':''}"><div class="l"><span>Клиентов</span><b>${used} из ${pl.limit}</b></div><div class="bar"><i style="width:${Math.min(100,used/pl.limit*100)}%"></i></div>
-          ${over?`<div class="uwarn">Перерасход: ${used-pl.limit} ${plural(used-pl.limit,'клиент','клиента','клиентов')} сверх лимита</div>`:''}</div>
-        <div class="subc-rows">
-          <div class="r"><s>Оплачено до</s><b>${dshort(P.sub.until)}${left>0?` <i>· ${left} ${plural(left,'день','дня','дней')}</i>`:''}</b></div>
-          <div class="r"><s>Следующий платёж</s><b>${dshort(P.sub.until)}</b></div>
-          <div class="r"><s>Способ оплаты</s><b>${esc(P.sub.card)}</b></div>
-        </div>
-        <div class="subc-acts"><button class="btn" id="btnPlan">Сменить тариф</button><button class="btn gh" id="btnHist">История платежей</button></div>
-        <div class="subc-foot"><button class="lnk-rm" id="btnCancel">Отменить подписку</button></div>
-      </div>
-    </div>
-  </div>`;
-
+function bindProfile(){
   $$('[data-t]').forEach(i=>i.onchange=e=>{ T[i.dataset.t]=e.target.value.trim(); if(i.dataset.t==='first'||i.dataset.t==='last'){ T.n=(T.first+' '+T.last).trim(); T.ini=(T.first[0]||'')+(T.last[0]||''); renderNav('profile.html') } save('Сохранено'); if(i.dataset.t!=='about') render() });
   $('#payHow').onchange=e=>{ P.payHow=e.target.value.trim(); save('Сохранено') };
   $('#inPhoto').onchange=e=>{ const f=e.target.files[0]; if(f) photoFrom(f, url=>{ P.photo=url; save('Фото обновлено'); render() }) };
-  $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); toast('Ссылка скопирована') };
+  $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() } toast('Ссылка скопирована') };
   $('#btnNewLink').onclick=()=>openModal({title:'Новая ссылка', body:`<p class="lead">Прежняя ссылка сразу перестанет работать: кто откроет её, увидит «Ссылка устарела» и просьбу запросить новую у тренера. Клиенты, которые уже пришли, останутся с вами.</p>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" data-close id="mdNewLink">Выпустить</button>`});
   $('#btnPass').onclick=()=>openModal({title:'Сменить пароль', body:`
@@ -143,18 +180,55 @@ function render(){
       <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password"></div>
       <div class="formfld"><span class="k">Ещё раз</span><input class="inp" type="password"></div></div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPass">Сохранить</button>`});
-  $('#btnPlan').onclick=()=>openModal({title:'Тариф', wide:true, body:`<div class="plans">${PLANS.map(x=>`<div class="plan ${x.id===P.sub.plan?'on':''}"><b>${esc(x.n)}</b><span class="pr">${rub(x.price)} <s>/ мес</s></span><s>до ${x.limit} клиентов · ${esc(x.d)}</s>
-      <button class="btn ${x.id===P.sub.plan?'gh':''} sm" data-plan="${x.id}" ${x.id===P.sub.plan?'disabled':''}>${x.id===P.sub.plan?'Текущий':'Выбрать'}</button></div>`).join('')}</div><div class="hint">Смена тарифа вступает в силу со следующего платежа; лимит клиентов — сразу.</div>`});
-  $('#btnHist').onclick=()=>openModal({title:'История платежей', body:`<table class="tbl"><thead><tr><th>Дата</th><th>Тариф</th><th class="r">Сумма</th><th>Карта</th></tr></thead><tbody>
-      ${['2026-09-12','2026-08-12','2026-07-12','2026-06-12'].map(d=>`<tr><td>${dlong(d)}</td><td>${esc(pl.n)} · месяц</td><td class="r">${rub(pl.price)}</td><td>${esc(P.sub.card)}</td></tr>`).join('')}</tbody></table>`});
-  $('#btnCancel').onclick=()=>openModal({title:'Отменить подписку', body:`<p class="lead">Доступ сохранится до <b>${dlong(P.sub.until)}</b>, потом кабинет станет только для чтения: клиенты увидят уже назначенные тренировки, новые назначить будет нельзя.</p>`,
-    foot:`<span class="sp"></span><button class="btn gh" data-close>Оставить подписку</button><button class="btn rm" data-close id="mdCancel">Отменить</button>`});
 }
+
+/* Смена тарифа — как блок цен на лендинге: один тариф, ступень выбирается
+   ползунком по числу клиентов. Сразу стоит текущая ступень, а при перерасходе —
+   первая, куда помещаются все клиенты. Лимит меняется сразу, цена — со
+   следующего платежа (в пробный период — с первого). */
+function planModal(){
+  const used = CLIENTS.length, cur = PLANS.findIndex(x=>x.id===P.sub.plan);
+  let i = used > PLANS[cur].limit ? PLANS.findIndex(x=>x.limit>=used) : cur;
+  openModal({title:'Тариф', body:`
+    <p class="lead">Все возможности на любой ступени — цена зависит только от числа клиентов.</p>
+    <div class="tpick">
+      <div class="tp-top"><div class="tp-price"><b id="tpPrice"></b><s>/ месяц</s></div><span class="tp-lim" id="tpLim"></span></div>
+      <input type="range" id="tpRange" min="0" max="${PLANS.length-1}" step="1" aria-label="Количество клиентов">
+      <div class="tp-ticks">${PLANS.map((x,k)=>`<button type="button" data-tp="${k}">${x.t}</button>`).join('')}</div>
+    </div>
+    <div class="hint" id="tpNote"></div>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPlan"></button>`});
+  const set = k => {
+    i = k; const x = PLANS[k], same = k === cur, short = used > x.limit;
+    $('#tpRange').value = k; $('#tpRange').style.setProperty('--p', k/(PLANS.length-1)*100 + '%');
+    $('#tpPrice').textContent = rub(x.price); $('#tpLim').textContent = x.n;
+    $$('[data-tp]').forEach((b,n)=>b.classList.toggle('on', n===k));
+    $('#tpNote').innerHTML = same ? 'Это ваш текущий тариф.'
+      : short ? `<span class="warn">У вас ${used} ${plural(used,'клиент','клиента','клиентов')} — ${used-x.limit} ${plural(used-x.limit,'окажется','окажутся','окажутся')} сверх лимита.</span>`
+      : P.sub.trial ? `После пробного периода — ${rub(x.price)} в месяц, с ${dlong(P.sub.until)}.`
+      : `Лимит изменится сразу, новая цена — со следующего платежа, ${dlong(P.sub.until)}.`;
+    $('#mdPlan').disabled = same; $('#mdPlan').textContent = same ? 'Текущий тариф' : 'Перейти на ' + rub(x.price) + ' в месяц';
+  };
+  $('#tpRange').oninput = e => set(+e.target.value);
+  $$('[data-tp]').forEach(b=>b.onclick=()=>set(+b.dataset.tp));
+  $('#mdPlan').onclick = () => { P.sub.plan = PLANS[i].id; save('Тариф изменён: ' + PLANS[i].n); closeModal(); render() };
+  set(i);
+}
+
+function bindBilling(){
+  $('#btnPlan')?.addEventListener('click', planModal);
+  $('#btnCard').onclick=()=>openModal({title:'Способ оплаты', body:`<p class="lead">Карту привязываем на защищённой странице банка — данные карты Тренерграм не хранит. В прототипе этот шаг не открывается.</p>`,
+    foot:`<span class="sp"></span><button class="btn" data-close>Понятно</button>`});
+  $('#btnRenew')?.addEventListener('click', ()=>{ Object.assign(P.sub, {until:addDays(TODAY, 30), canceled:false, trial:false}); SUBRO = false; save('Подписка продлена до ' + dlong(P.sub.until) + ' — кабинет снова открыт для правки'); render(); renderTop({title:'Профиль'}) });
+  $('#btnResume')?.addEventListener('click', ()=>{ P.sub.canceled = false; save('Подписка возобновлена — следующий платёж ' + dlong(P.sub.until)); render(); renderTop({title:'Профиль'}) });
+  $('#btnCancel')?.addEventListener('click', ()=>openModal({title:'Отменить подписку', body:`<p class="lead">Доступ сохранится до <b>${dlong(P.sub.until)}</b>, потом кабинет станет только для чтения: клиенты увидят уже назначенные тренировки, новые назначить будет нельзя.</p>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Оставить подписку</button><button class="btn rm" data-close id="mdCancel">Отменить</button>`}));
+}
+window.addEventListener('hashchange', ()=>{ render(); scrollTo(0,0) });
 document.addEventListener('click', e=>{
   if(e.target.closest('[data-close]') || e.target===$('#ov')) closeModal();
-  const pl = e.target.closest('[data-plan]'); if(pl){ P.sub.plan=pl.dataset.plan; save('Тариф изменён — с ' + dlong(P.sub.until)); closeModal(); render() }
   if(e.target.closest('#mdPass')){ closeModal(); toast('Пароль изменён') }
-  if(e.target.closest('#mdCancel')) toast('Подписка отменена — доступ до ' + dlong(P.sub.until));
+  if(e.target.closest('#mdCancel')){ P.sub.canceled = true; save('Подписка отменена — доступ до ' + dlong(P.sub.until)); render(); renderTop({title:'Профиль'}) }
   if(e.target.closest('#mdNewLink')){ P.invite = T.invite = newInvite(); save('Новая ссылка готова — прежняя больше не работает'); render() }
 });
 render();

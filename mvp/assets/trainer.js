@@ -100,7 +100,7 @@ let TT = TQ && TQ !== 'new' ? tplById(TQ) : null;
 if(TT && (TT.del || !['блок','тренировка'].includes(TT.lvl))) TT = null;
 const TPLM = !TQ ? null : TT ? TT.lvl : Q.get('lvl') === 'workout' ? 'тренировка' : 'блок';
 const TMISS = !!TQ && TQ !== 'new' && !TT;         /* шаблона нет в базе (удалён, неверный адрес) */
-const TRO = !!TT && !TT.own;                       /* общий из базы сервиса — только смотреть */
+const TRO = !!TT && (!TT.own || SUBRO);            /* общий из базы сервиса — только смотреть; свой — тоже, если подписка закончилась */
 let TDAYS = null, TSIG = null, TFOLDER = null;
 /* Открыть можно и группу (?group=): у неё свой контейнер дней, и конструктор
    работает с ним так же, как с календарём клиента (GRP-2). */
@@ -254,7 +254,7 @@ function renderTop(){
      Крошки, выбор клиента и «Назначить» переехали в рабочую зону — они
      относятся к тренировке, а не к приложению. */
   $('#topbar').innerHTML = `
-    <h1 class="ptitle">Создать тренировку<button class="ptd" id="ptd" title="Выбрать дату тренировки"></button></h1>
+    <h1 class="ptitle">${SUBRO ? 'Тренировка' : 'Создать тренировку'}<button class="ptd" id="ptd" title="Выбрать дату тренировки"></button></h1>
     <span class="sp"></span>
     ${topButton()}`;
   bindTopButton();
@@ -343,7 +343,7 @@ function renderTplHead(){
       ${own ? '<span class="ep auto">Правки сохраняются сами</span>' : ''}
     </div>
   </div>
-  ${TRO ? `<div class="ebar"><span><b>${isB ? 'Блок' : 'Тренировка'} из общей базы</b><s>Правится только своё (TPL-2). Нажмите «Сохранить как своё» — появится ваша копия, её и правьте.</s></span></div>` : ''}
+  ${TRO && !SUBRO ? `<div class="ebar"><span><b>${isB ? 'Блок' : 'Тренировка'} из общей базы</b><s>Правится только своё (TPL-2). Нажмите «Сохранить как своё» — появится ваша копия, её и правьте.</s></span></div>` : ''}
   ${!TT ? `<div class="ebar"><span><b>${isB ? 'Новый блок' : 'Новая тренировка'}</b><s>Появится в вашей базе, как только в ${isB ? 'нём' : 'ней'} будет название или упражнение. Состав — как в конструкторе, справа база ${isB ? 'упражнений' : 'упражнений и блоков'}.</s></span></div>` : ''}`;
   const back = keepId && document.getElementById(keepId);
   if(back){ back.focus({preventScroll:true}); if(keep) back.setSelectionRange(keep[0], keep[1]) }
@@ -754,6 +754,10 @@ function renderDoc(){
   /* Клиент сверх лимита тарифа (TRN-2): пока тренер не изменит лимит,
      тренировки ему не составляются — вместо редактора алерт. */
   if(isOver(S.cid)){ $('#doc').innerHTML = limitAlertHTML(S.cid); return; }
+  /* Подписка закончилась (SUBRO, data.js): день только смотрят — как общий
+     шаблон, без правки; пустой день не открывается на ввод. */
+  $('#doc').classList.toggle('ro', SUBRO);
+  if(SUBRO && !dayCount(day())){ $('#doc').classList.remove('quick','fresh'); $('#doc').innerHTML = `<div class="roempty">На этот день тренировки нет. Составить новую можно после продления подписки.</div>`; return; }
   const d = day(), dt = new Date(d.date + 'T00:00:00');
   /* Пустой день открывается как ручной ввод: сразу пустой блок со строкой
      упражнения, без карточек-подсказок — они дублировали кнопки под названием. */
@@ -788,7 +792,7 @@ function renderDoc(){
       <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
     </div>
     ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
-    ${QUICK ? '' : `<div class="ways4" role="group" aria-label="Как создать тренировку">${[
+    ${QUICK || SUBRO ? '' : `<div class="ways4" role="group" aria-label="Как создать тренировку">${[
       ['hand', ICON.pen,  'Вручную'],
       ['tpl',  ICON.tpl,  'Скопировать из шаблона'],
       ['cal',  ICON.cal,  'Скопировать из календаря'],
@@ -801,13 +805,15 @@ function renderDoc(){
       <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
     </label>` : ''}
     ${d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b, k)).join('')}
-    <div class="addbrow">${QUICK
+    ${SUBRO ? '' : `<div class="addbrow">${QUICK
       ? `<button class="addb" id="add-blk">${ICON.plus} Блок</button>
       <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>`
       : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
       <button class="addb" id="add-blk-text">${ICON.text} Добавить блок текстом</button>`}
-    </div>
-    ${pubbarHTML(d, n)}`;
+    </div>`}
+    ${SUBRO ? '' : pubbarHTML(d, n)}`;
+  if(SUBRO) $$('#doc input, #doc textarea').forEach(i => { i.readOnly = true; i.tabIndex = -1 });
+  if(SUBRO) $$('#doc [contenteditable]').forEach(e => e.contentEditable = 'false');
 }
 
 /* ═══════════ ГРУППА В КОНСТРУКТОРЕ (GRP-2 … GRP-4) ═══════════

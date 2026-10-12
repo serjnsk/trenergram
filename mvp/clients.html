@@ -73,6 +73,8 @@ function match(c){
   if(V.q && norm(c.n).indexOf(norm(V.q))<0) return false;
   return true;
 }
+/* Пришли из онбординга (?onb=invite) — подсвечиваем, где лежит ссылка-приглашение. */
+let ONB_SPOT = new URLSearchParams(location.search).get('onb') === 'invite';
 function render(){
   let list = CLIENTS.filter(match);
   const SORTS = {
@@ -90,7 +92,8 @@ function render(){
 
   $('#page').innerHTML = paneHead('Клиенты', CLIENTS.length, `
       <label class="search" style="width:260px">${ICON.search}<input id="q" placeholder="Поиск по имени…" value="${esc(V.q)}"></label>
-      <div class="filters">${FILTERS.map(([k,n])=>`<button data-f="${k}" class="${V.f===k?'on':''}">${esc(n)}</button>`).join('')}</div>`)
+      <div class="filters">${FILTERS.map(([k,n])=>`<button data-f="${k}" class="${V.f===k?'on':''}">${esc(n)}</button>`).join('')}</div>
+      <span class="invw${ONB_SPOT ? ' spot' : ''}"><button class="btn" id="btnInvite">${ICON.plus} Пригласить клиента</button>${ONB_SPOT ? '<span class="spottip">Ваша ссылка-приглашение — здесь</span>' : ''}</span>`)
     + (list.length ? `<div class="tblwrap"><table class="tbl" data-tbl="cli"><thead><tr>
         ${th('n','Клиент')}${th('prog','Программа')}${th('grp','Группа')}${th('run','Составлено на')}${th('pay','Оплата')}${th('last','Последняя активность')}
       </tr></thead><tbody>
@@ -121,6 +124,7 @@ function render(){
   /* Строка — ссылка на карточку клиента; ссылки внутри строки (группа) работают сами */
   $$('tr[data-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('a,[data-fee]')) return; location.href='client.html?id='+r.dataset.row });
   $$('.filters button').forEach(b=>b.onclick=()=>{ V.f=b.dataset.f; render() });
+  $('#btnInvite').onclick=()=>{ if(ONB_SPOT){ ONB_SPOT = false; render() } inviteModal() };
   $('#q').oninput=e=>{ V.q=e.target.value; render() };
   $('#q').focus({preventScroll:true}); $('#q').setSelectionRange(V.q.length,V.q.length);
 }

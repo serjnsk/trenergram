@@ -37,15 +37,20 @@ const TRAINER = {
 };
 /* Подписка и рабочие настройки тренера. Тарифы — заглушка до решения OQ-8:
    структура (лимит клиентов, срок, следующий платёж) реальная, цифры — нет. */
+/* Один тариф, цена — от числа клиентов. Сетка та же, что на лендинге
+   (landing.js, PRICE; от заказчика 2026-10-08): t — подпись на шкале. */
 const PLANS = [
-  {id:'start',  n:'Старт',  limit:10,  price:990,  d:'Для начала: до 10 клиентов'},
-  {id:'pro',    n:'Тренер', limit:50,  price:2990, d:'Персональный тренер с полной базой'},
-  {id:'studio', n:'Студия', limit:200, price:7990, d:'Несколько тренеров, до 200 клиентов'},
+  {id:'c5',   t:'5',    n:'до 5 клиентов',       limit:5,    price:490},
+  {id:'c10',  t:'10',   n:'6–10 клиентов',       limit:10,   price:990},
+  {id:'c20',  t:'20',   n:'11–20 клиентов',      limit:20,   price:1990},
+  {id:'c50',  t:'50',   n:'21–50 клиентов',      limit:50,   price:3990},
+  {id:'c100', t:'100',  n:'51–100 клиентов',     limit:100,  price:7990},
+  {id:'cmax', t:'100+', n:'больше 100 клиентов', limit:9999, price:9990},
 ];
 /* Виды спорта — у клиентов (карточка, список). В профиле тренера их больше нет. */
 const SPORTS = ['Кроссфит','Тренажёрный зал','Тяжёлая атлетика','Функциональный тренинг','Бег','Плавание','Единоборства','Реабилитация'];
 const PROFILE_DEF = {
-  sub:{plan:'pro', until:'2026-10-12', card:'Visa •••• 4242', since:'2025-03-12'},
+  sub:{plan:'c50', until:'2026-10-12', card:'Visa •••• 4242', since:'2025-03-12'},
   prefs:{units:'кг', lang:'ru', weekStart:'пн'},
   notify:{results:true, comments:true, missed:true, programEnd:true, newClient:true},
 };
@@ -1258,7 +1263,7 @@ CLIENTS.push({id:'c7', n:'Илья Соколов', ini:'ИС', sex:'м', born:'
    страницах клиента, — и, пока лимит не изменён, этому клиенту нельзя
    составлять тренировки. Сверх лимита — те, кто пришёл последними. */
 const subNow = () => (STATE.profile || PROFILE_DEF).sub;
-const planNow = () => PLANS.find(x => x.id === subNow().plan) || PLANS[1];
+const planNow = () => PLANS.find(x => x.id === subNow().plan) || PLANS[0];
 function overLimit(){
   const lim = planNow().limit;
   return CLIENTS.length <= lim ? [] : [...CLIENTS].sort((a, b) => (a.since || '').localeCompare(b.since || '')).slice(lim);
@@ -1465,8 +1470,8 @@ const grpIni = n => { const w = String(n || '').trim().split(/[^а-яёa-z0-9]+/
 })();
 
 /* ─── Режим «новый тренер» (?new=1) ───
-   Первый вход в сервис: в аккаунте один демо-клиент, шаблонов и групп нет, тариф
-   «Старт». Нужен, чтобы проектировать и проверять онбординг на дашборде.
+   Первый вход в сервис: в аккаунте один демо-клиент, шаблонов и групп нет, ступень
+   «до 5 клиентов». Нужен, чтобы проектировать и проверять онбординг на дашборде.
    ?new=1 включает режим и оставляет прогресс, ?new=reset начинает заново, ?new=0
    возвращает полную демо-базу, ?new=done — начинает заново с уже пройденным
    чек-листом (посмотреть финальное состояние блока). Состояние режима лежит отдельно от основного —
@@ -1490,7 +1495,7 @@ if(NEWTR){
   Object.keys(PLAN).forEach(k => { if(gone || k !== 'p1') delete PLAN[k] });
   GRPS.length = 0;
   TPL.forEach(t => { if(t.own) t.del = true });
-  PROFILE_DEF.sub = {plan:'start', until:addDays(TODAY, 14), card:'Не привязана', since:TODAY, trial:true};
+  PROFILE_DEF.sub = {plan:'c5', until:addDays(TODAY, 14), card:'Не привязана', since:TODAY, trial:true};
 }
 
 const STATE = (function(){
@@ -1503,6 +1508,10 @@ const STATE = (function(){
   def.exdb = EXDB_SRC.sha.slice(0, 7);
   try{ const raw = localStorage.getItem(STATE_KEY), p = raw && JSON.parse(raw);
        if(p && p.exdb === def.exdb) s = Object.assign({}, def, p) }catch(_){}
+  /* Тарифы «Старт / Тренер / Студия» сменились ступенями по числу клиентов —
+     сохранённый тариф переводим на ступень с тем же лимитом. */
+  const sub = s.profile && s.profile.sub, OLD = {start:'c10', pro:'c50', studio:'cmax'};
+  if(sub && OLD[sub.plan]) sub.plan = OLD[sub.plan];
   return s;
 })();
 /* Сообщения тренера к тренировкам (COM-4) — в STATE.wmsg: без этого написанное в
@@ -1512,6 +1521,19 @@ const wmsgOf = () => Object.fromEntries(Object.entries(TALK.workout)
   .map(([k, arr]) => [k, ((arr || []).find(m => m.who === 'trainer') || {}).text || '']).filter(([, t]) => t));
 function saveState(){ STATE.wmsg = wmsgOf(); try{ localStorage.setItem(STATE_KEY, JSON.stringify(STATE)) }catch(_){} }
 if(NEW_DONE){ STATE.onb = {all:true}; saveState() }
+/* ─── Подписка закончилась: кабинет только для просмотра ───
+   Срок подписки (или пробного периода) прошёл — тренер всё видит, но ничего
+   не создаёт и не правит; клиенты видят уже назначенные тренировки. Выход —
+   продлить подписку в профиле, профиль и оплата открыты всегда.
+   Демо: ?ended=1 — срок истёк вчера, автопродление выключено; ?ended=0 — продлено на месяц. */
+(function(){
+  const m = /[?&]ended=(1|0)\b/.exec(location.search); if(!m) return;
+  const p = STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF));
+  if(m[1] === '1') Object.assign(p.sub, {until:addDays(TODAY, -1), canceled:true});
+  else Object.assign(p.sub, {until:addDays(TODAY, 30), canceled:false, trial:false});
+  saveState();
+})();
+let SUBRO = daysBetween(TODAY, subNow().until) < 0;
 (function restoreWmsg(){
   if(!STATE.wmsg) return;
   Object.values(TALK.workout).forEach(arr => { const i = arr.findIndex(m => m.who === 'trainer'); if(i >= 0) arr.splice(i, 1) });

@@ -331,23 +331,75 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .tbl td.num{font-family:var(--mono);font-size:14px;color:var(--tx2);font-variant-numeric:tabular-nums}
 .tblwrap{overflow-x:auto}
 
-/* ─── профиль тренера ─── */
-.prof{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
-.prof .side{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px}
+/* ─── профиль тренера: два таба, одна колонка; настройки строками «подпись слева — поле справа» ─── */
+.ptabs{max-width:780px;display:flex;justify-content:center;gap:30px;margin:4px 0 22px}
+.ptabs a{display:inline-flex;align-items:center;gap:8px;font-size:16px;font-weight:600;color:var(--tx3);text-decoration:none;padding:4px 0}
+.ptabs a:hover{color:var(--tx2)}
+.ptabs a.on{color:var(--ink)}
+.ptabs svg{width:19px;height:19px}
+.prof{max-width:780px}
 .prof .card{border:1px solid var(--line)}
 .prof textarea.inp{height:auto;min-height:84px;padding:9px 11px;resize:vertical;line-height:1.45;font-family:inherit}
-.avrow{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.srow{display:grid;grid-template-columns:190px minmax(0,1fr);gap:8px 20px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.srow:first-child{padding-top:0}
+.srow:last-child{border-bottom:0;padding-bottom:0}
+.srow:has(textarea){align-items:start}
+.srow .sl b{display:block;font-size:15px;font-weight:600}
+.srow .sl s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx3);margin-top:2px}
+.srow .cols2{gap:10px}
+.avrow{display:flex;align-items:center;gap:14px}
 .avrow .av{width:64px;height:64px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);display:grid;place-items:center;font-family:var(--disp);font-size:23px;font-weight:700;flex:none}
-.avrow .av-t b{display:block;font-size:16.5px;font-weight:600}
-.avrow .av-t s{text-decoration:none;font-size:13.5px;color:var(--tx3)}
-/* аватар — он же кнопка загрузки фото: по наведению затемняется и показывает камеру */
-.avrow .av-up{position:relative;cursor:pointer;overflow:hidden}
-.avrow .av-up img{width:100%;height:100%;object-fit:cover;display:block}
-.avrow .av-cam{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,20,20,.45);color:#fff;opacity:0;transition:opacity .15s}
-.avrow .av-cam svg{width:22px;height:22px}
-.avrow .av-up:not(.has) .av-cam{background:rgba(252,82,0,.85)}
-.avrow .av-up:hover .av-cam,.avrow .av-up:focus-within .av-cam{opacity:1}
-.avrow .av-t s{display:block;margin-top:2px}
+/* аватар — он же кнопка загрузки; значок камеры виден всегда */
+.avrow .av-up{position:relative;cursor:pointer}
+.avrow .av-up img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+.avrow .av-cam{position:absolute;right:-2px;bottom:-2px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#fff;border:2px solid var(--bg)}
+.avrow .av-cam svg{width:13px;height:13px}
+.pwrow{display:flex;align-items:center;gap:12px}
+.pwrow span{flex:1;color:var(--tx3);letter-spacing:.12em}
+/* ссылка-приглашение: адрес целиком и «Скопировать», склеенные в одно поле */
+.invbox{display:flex;align-items:stretch;height:44px;border:1px solid var(--line2);border-radius:var(--rad-m);overflow:hidden}
+.invbox code{flex:1;min-width:0;display:flex;align-items:center;padding:0 14px;font-size:14.5px;color:var(--tx3);background:var(--s2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.invbox code b{font-weight:600;color:var(--ink)}
+.invbox .btn{height:auto;border-radius:0;padding:0 18px}
+.invfoot{display:flex;align-items:center;gap:16px;margin-top:12px;font-size:13.5px;color:var(--tx3);line-height:1.45}
+.invfoot span{flex:1}
+.invfoot .btn{flex:none}
+#payHow + .hint{margin-top:8px}
+/* подписка: карточки как биллинг Shopify — шапка с текстовым действием, крупная сумма,
+   карта в рамке с карандашом, серая полоса снизу; история — таблица в рамке */
+.bcard{padding:0;overflow:hidden;margin-bottom:16px}
+.bc-b{padding:20px 22px}
+.bc-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bc-h b{font-size:16px;font-weight:600}
+.lnk-t{font-size:14.5px;font-weight:600;color:var(--ink);background:none;padding:0}
+.lnk-t:hover{text-decoration:underline;text-underline-offset:3px}
+.bc-s{font-size:15px;color:var(--tx2);margin-top:4px}
+.bnote{display:flex;align-items:center;gap:14px;margin-top:14px;padding:12px 14px;border-radius:var(--rad-l);background:#FBF1DE;font-size:14.5px;line-height:1.45;color:var(--tx1,var(--ink))}
+.bnote > span{display:block;flex:1;min-width:0}
+.bnote span b{display:inline;font-weight:600}
+.bnote .btn{flex:none}
+.bnote.end{background:var(--rm-a)}
+.bnote.end b{color:var(--rm)}
+.bstats{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.2fr;margin-top:14px;padding:14px 0;background:var(--s2);border-radius:var(--rad-l)}
+.bst{padding:0 18px;border-left:1px solid var(--line2);min-width:0}
+.bst:first-child{border-left:0}
+.bst s{display:block;text-decoration:none;font-size:13px;color:var(--tx3)}
+.bst b{display:flex;align-items:center;gap:7px;margin-top:4px;font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.bst b i{font-style:normal;font-family:var(--body,inherit);font-size:14.5px;font-weight:500;color:var(--tx3);margin-left:-4px}
+.bst.over b{color:var(--rm)}
+.bst .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ok)}
+.bst .dot.warn{background:var(--warn)} .bst .dot.rm{background:var(--rm)}
+.pmbox{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--rad-l)}
+.pm-br{height:30px;min-width:48px;padding:0 8px;border-radius:5px;background:#1434CB;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;font-style:italic;letter-spacing:.02em;text-transform:uppercase}
+.pm-t{flex:1;min-width:0;font-size:15px;color:var(--tx2)}
+.pmbox .iact{background:none}
+.pmbox .iact:hover{background:var(--s1)}
+.bc-f{display:flex;align-items:center;gap:12px;padding:13px 22px;background:var(--s2);border-top:1px solid var(--line);font-size:14.5px;color:var(--tx2)}
+.bc-f span{flex:1;min-width:0}
+.bc-f .lnk-t{font-weight:500;color:var(--tx2);text-decoration:underline;text-underline-offset:3px}
+.bc-tbl{margin-top:14px;border:1px solid var(--line);border-radius:var(--rad-l)}
+.bc-tbl .tbl th{background:var(--s2)}
+.tbl td.nw{white-space:nowrap}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tags button{height:28px;padding:0 11px;border-radius:20px;font-size:14px;font-weight:500;background:var(--s1);color:var(--tx2)}
 .tags button:hover{background:var(--s2);color:var(--ink)}
@@ -366,24 +418,6 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
 .switch.on{background:var(--acc)}
 .switch.on::after{left:19px}
-/* Подписка в профиле: тариф, статус и цена — шапкой; лимит клиентов полосой;
-   даты и карта — строками «подпись слева, значение справа», без переносов;
-   действия во всю ширину, отмена — отдельно внизу. */
-.subc-h{display:flex;align-items:center;gap:8px}
-.subc-h .pl{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em}
-.subc-h .pr{margin-left:auto;font-size:15px;font-weight:700;white-space:nowrap}
-.subc-h .pr s{text-decoration:none;font-size:13.5px;font-weight:500;color:var(--tx3)}
-.subc .usage{margin-top:14px}
-.subc .uwarn{margin-top:6px;font-size:13px;color:var(--rm)}
-.subc-rows{margin-top:14px;border-top:1px solid var(--line)}
-.subc-rows .r{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
-.subc-rows s{text-decoration:none;color:var(--tx3);white-space:nowrap}
-.subc-rows b{font-weight:600;white-space:nowrap;text-align:right}
-.subc-rows b i{font-style:normal;font-weight:500;color:var(--tx3)}
-.subc-acts{display:grid;gap:8px;margin-top:14px}
-.subc-acts .btn{width:100%;justify-content:center}
-.subc-foot{margin-top:12px;text-align:center}
-.subc-foot .lnk-rm{margin-top:0;font-size:13.5px}
 .usage{margin-top:12px}
 .usage .bar{height:6px;border-radius:3px;background:var(--s1);overflow:hidden;margin-top:6px}
 .usage .bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
@@ -393,15 +427,23 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .kv b{font-weight:600}
 .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .lnk-rm{font-size:14px;color:var(--rm);background:none;text-decoration:underline;text-underline-offset:3px;margin-top:10px}
-.lnk-new{display:block;font-size:13.5px;color:var(--tx2);background:none;text-decoration:underline;text-underline-offset:3px;margin-top:10px}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.plan{border:1px solid var(--line);border-radius:var(--rad-l);padding:14px;display:flex;flex-direction:column;gap:6px}
-.plan.on{border-color:var(--acc);background:var(--acc-a)}
-.plan b{font-family:var(--disp);font-size:17.5px;font-weight:700}
-.plan .pr{font-size:21px;font-weight:700;letter-spacing:-.02em}
-.plan .pr s{text-decoration:none;font-size:13.5px;color:var(--tx3);font-weight:500}
-.plan s{text-decoration:none;font-size:13.5px;color:var(--tx3)}
-.plan .btn{margin-top:6px;justify-content:center}
+/* Смена тарифа: цена и ступень, ползунок по числу клиентов — как на лендинге */
+.tpick{margin:6px 0 4px}
+.tp-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tp-price{display:flex;align-items:baseline;gap:6px}
+.tp-price b{font-family:var(--disp);font-size:36px;font-weight:800;letter-spacing:-.03em}
+.tp-price s{text-decoration:none;font-size:15px;color:var(--tx3)}
+.tp-lim{font-size:15px;font-weight:600;color:var(--acc-d);background:var(--acc-a);padding:5px 11px;border-radius:999px}
+#tpRange{width:100%;margin-top:22px;-webkit-appearance:none;appearance:none;height:8px;border-radius:4px;cursor:pointer;
+  background:linear-gradient(var(--acc),var(--acc)) 0/var(--p,0%) 100% no-repeat,var(--line)}
+#tpRange::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px var(--acc),0 2px 8px rgba(0,0,0,.2)}
+#tpRange::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--acc)}
+.tp-ticks{display:flex;justify-content:space-between;margin:2px -6px 0}
+.tp-ticks button{font-size:13.5px;font-weight:600;color:var(--tx3);min-width:40px;padding:10px 0;text-align:center}
+.tp-ticks button:hover{color:var(--ink)}
+.tp-ticks button.on{color:var(--acc-d)}
+#tpNote .warn{color:var(--rm)}
+.btn:disabled{opacity:.5;cursor:default}
 .dngr{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
 
 /* ─── карточка клиента: шапка = полоса идентификации + сетка полей + заметка; ниже табы-якоря ─── */
@@ -499,8 +541,6 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .gchip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:var(--rad-s);background:var(--s1);color:var(--tx2);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
 .gchip svg{width:13px;height:13px}
 a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
-/* В колонке профиля карточки идут через gap — заголовок к своей карточке так же близко, как в основной колонке. */
-.prof .side > .sechead{margin-bottom:-2px}
 /* Оплата занятий в карточке клиента (PAY-9) */
 .mh b i{font-style:normal;font-weight:500;color:var(--tx3)}
 .mh b.fee-closed{color:var(--rm)} .mh b.fee-today,.mh b.fee-tomorrow,.mh b.fee-soon{color:var(--warn)} .mh b.fee-ok{color:var(--ok)}
@@ -540,6 +580,7 @@ a.gchip:hover{background:var(--acc-a);color:var(--acc-d)}
 /* ─── Онбординг компактнее, лента событий — основной блок, пробный период в шапке ─── */
 .trial{display:inline-flex;align-items:center;height:34px;margin-right:12px;padding:0 13px;border-radius:17px;background:var(--acc-a);color:var(--acc-d);font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap}
 .trial:hover{background:var(--acc-p)}
+.trial.end{background:var(--rm-a);color:var(--rm)}
 .feedh{padding:18px 4px 4px}
 .feedh h2{margin:0;font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:-.02em}
 @media (max-width:760px){.trial{display:none}}
@@ -598,3 +639,10 @@ a.who:hover{color:var(--acc);text-decoration:underline}
 @keyframes onbStrike{from{color:var(--tx1);text-decoration-color:transparent}to{color:var(--tx4);text-decoration-color:var(--tx4)}}
 @media (prefers-reduced-motion:reduce){.onb.enter,.onb.enter .st,.onb .st.just .ck{animation:none}.onb .st.just .t{animation:none}.onb .obar i,.onb .obody{transition:none}}
 .feedh .fnew{font-family:var(--ui, inherit);font-size:15px;font-weight:500;letter-spacing:0;color:var(--tx3)}
+/* «Пригласить клиента» на странице клиентов; подсветка, когда пришли из онбординга. */
+.invw{position:relative;margin-left:auto;display:inline-flex}
+.invw.spot .btn{animation:spotPulse 1.6s ease-out infinite}
+.spottip{position:absolute;top:calc(100% + 10px);right:0;z-index:5;padding:8px 12px;border-radius:var(--rad-m);background:var(--tx1);color:var(--bg);font-size:13.5px;font-weight:500;white-space:nowrap;animation:onbIn .35s cubic-bezier(.22,1,.36,1) both}
+.spottip::before{content:'';position:absolute;top:-5px;right:22px;width:10px;height:10px;background:inherit;transform:rotate(45deg)}
+@keyframes spotPulse{0%{box-shadow:0 0 0 0 rgba(252,82,0,.45)}70%{box-shadow:0 0 0 10px rgba(252,82,0,0)}100%{box-shadow:0 0 0 0 rgba(252,82,0,0)}}
+@media (prefers-reduced-motion:reduce){.invw.spot .btn{animation:none;box-shadow:0 0 0 3px var(--acc-p)}}

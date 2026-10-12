@@ -1705,3 +1705,13 @@ select[data-dsel]{display:none !important}
 .dsl .dsel-cap{padding:8px 10px 4px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
 .dsl .dsel-cap:first-child{padding-top:2px}
 .dsl .dsel-none{padding:10px;font-size:14px;color:var(--tx3)}
+
+/* ─── Подписка закончилась: полоса под шапкой, кабинет только для просмотра (nav.js, roInit) ─── */
+.roband{display:flex;align-items:center;gap:14px;padding:10px 24px;background:var(--rm-a);border-bottom:1px solid var(--line);font-size:14.5px;line-height:1.45;color:var(--ink)}
+.roband > .t{display:block;flex:1;min-width:0}
+.roband .t b{display:inline;font-weight:600;color:var(--rm)}
+.roband .btn{flex:none;text-decoration:none}
+body.subro .rail{display:none}
+body.subro .cons{grid-template-columns:minmax(0,1fr)}
+#doc .roempty{padding:40px 20px;text-align:center;color:var(--tx3);font-size:15px}
+body.subro .ro-off{opacity:.45;cursor:not-allowed}

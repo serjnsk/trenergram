@@ -62,6 +62,7 @@ function renderNav(page){
   /* Из свёрнутого состояния выходят кликом по знаку: кнопки-стрелки там нет,
      она заняла бы половину колонки. */
   $('#nav .logo').onclick = () => { if(document.body.classList.contains('navmin')) setNavMin(false) };
+  roInit(page);
 }
 
 /* Состояние сворачивания переживает переход между страницами — иначе меню
@@ -83,6 +84,7 @@ addEventListener('DOMContentLoaded', ()=>{
    (массовое копирование, CON-4) из шапки убран, но остаётся доступен по
    ссылке constructor.html?wizard=1. */
 function topButton(){
+  if(SUBRO) return '';
   return `<span class="tsplit one"><a class="btn" href="constructor.html">Создать тренировку</a></span>`;
 }
 function bindTopButton(){
@@ -298,10 +300,53 @@ function openDatePicker(btn, curDate, onPick){
    числе в конструкторе. Без cid — общий, для дашборда;
    с cid — только на страницах клиента сверх лимита. */
 function limitAlertHTML(cid){
+  if(SUBRO) return '';                               /* подписка закончилась — править всё равно нельзя, говорит полоса под шапкой */
   const over = overLimit(); if(!over.length || (cid && !isOver(cid))) return '';
   const pl = planNow(), n = CLIENTS.length;
   const tx = cid
-    ? `Клиент сверх лимита тарифа «${esc(pl.n)}» — до ${pl.limit} клиентов. Он пользуется приложением как обычно, но, пока вы не измените лимит, составлять ему тренировки нельзя.`
-    : `В аккаунте ${n} ${plural(n,'клиент','клиента','клиентов')} при лимите ${pl.limit} на тарифе «${esc(pl.n)}». Клиенты сверх лимита пользуются приложением, но, пока вы не измените лимит, составлять им тренировки нельзя: ${over.map(c=>`<a href="client.html?id=${c.id}">${esc(c.n)}</a>`).join(', ')}.`;
-  return `<div class="lalert" role="alert"><span class="t"><b>Перерасход лимита клиентов</b><s>${tx}</s></span><a class="btn sm" href="profile.html">Изменить тариф</a></div>`;
+    ? `Клиент сверх лимита тарифа — до ${pl.limit} клиентов. Он пользуется приложением как обычно, но, пока вы не измените лимит, составлять ему тренировки нельзя.`
+    : `В аккаунте ${n} ${plural(n,'клиент','клиента','клиентов')} при лимите тарифа ${pl.limit}. Клиенты сверх лимита пользуются приложением, но, пока вы не измените лимит, составлять им тренировки нельзя: ${over.map(c=>`<a href="client.html?id=${c.id}">${esc(c.n)}</a>`).join(', ')}.`;
+  return `<div class="lalert" role="alert"><span class="t"><b>Перерасход лимита клиентов</b><s>${tx}</s></span><a class="btn sm" href="profile.html#billing">Изменить тариф</a></div>`;
 }
+
+
+/* ═══════════ ПОДПИСКА ЗАКОНЧИЛАСЬ — ТОЛЬКО ПРОСМОТР ═══════════
+   Полоса под шапкой на каждой странице кабинета, кроме профиля (там то же
+   в карточке подписки). Смотреть можно всё: списки, карточки, календарь,
+   тренировки, базы, поиск и фильтры. Всё, что создаёт или меняет данные,
+   останавливается с подсказкой: поля не принимают ввод, перетаскивание
+   выключено, кнопки действий («Создать», «Добавить», «Сохранить»,
+   «Удалить»…) не срабатывают. Конструктор показывает день как в общем
+   шаблоне — без правки (trainer.js). */
+const RO_ACT = /(^|[\s+])(Создать|Добавить|Сохранить|Удалить|Убрать|Дублировать|Изменить|Задать|Получил оплату|Пригласить|Отправить|Опубликовать|Назначить|Вставить|Копировать|Скопировать в|Перенести|Заменить|Очистить|Принять|Выпустить|В тренировку|Отметить|Загрузить|Перетащить|Вернуть текст|Разобрать|Тренировка$|Отдых$)/i;
+const RO_SEL = '[data-fee],[data-send],[data-delday],[data-u],.addb,.way4,.cph-up,.gr,[draggable="true"]';
+const roHint = () => (typeof toast === 'function' ? toast : alert)('Подписка закончилась — продлите её в профиле, чтобы вносить изменения');
+function roInit(page){
+  if(!SUBRO || page === 'profile.html' || document.body.classList.contains('subro')) return;
+  document.body.classList.add('subro');
+  const s = subNow(), when = humanDateRO(s.until);
+  document.querySelector('.topbar')?.insertAdjacentHTML('afterend', `<div class="roband" role="status">
+    <span class="t"><b>${s.trial ? 'Пробный период закончился' : 'Подписка закончилась'} ${when}.</b> Кабинет только для просмотра, клиенты по-прежнему видят назначенные тренировки.</span>
+    <a class="btn sm" href="profile.html#billing">Продлить подписку</a></div>`);
+  const free = el => el.closest('.nav, .topbar, .roband, .msh, .mtab, [data-ro-ok], [data-close], .cls, .mdh');
+  const search = el => el.type === 'search' || el.type === 'range' || /^(Поиск|Найти|Группа или участник)/.test(el.placeholder || '') || el.closest('.search, [class*=jump]');
+  const editable = el => el.matches && (el.matches('textarea, select, [contenteditable="true"], [contenteditable=""]')
+    || (el.matches('input') && !['button','submit','reset'].includes(el.type)));
+  document.addEventListener('focusin', e => {
+    const t = e.target; if(!editable(t) || free(t) || search(t)) return;
+    t.blur(); roHint();
+  }, true);
+  const CAND = 'button, a[href], [role=button], [role=switch], label, input[type=checkbox], input[type=radio], .addb, .way4, [data-fee], [data-u]';
+  /* Ссылки — только те, что ведут создавать («Создать программу»); остальные — просмотр */
+  const act = t => !free(t) && (t.matches('a') ? RO_ACT.test((t.textContent || '').replace(/\s+/g, ' ').trim()) : t.matches(RO_SEL) || t.matches('input[type=checkbox], input[type=radio]')
+    || RO_ACT.test(((t.textContent || '') + ' ' + (t.getAttribute('aria-label') || '')).replace(/\s+/g, ' ').trim()) || RO_ACT.test(t.title || ''));
+  document.addEventListener('click', e => {
+    const t = e.target.closest(CAND);
+    if(t && act(t)){ e.preventDefault(); e.stopImmediatePropagation(); roHint() }
+  }, true);
+  /* Действия видно заранее: такие кнопки приглушены, подсказка — в title */
+  const mark = () => document.querySelectorAll(CAND).forEach(t => { if(!t.classList.contains('ro-off') && act(t)){ t.classList.add('ro-off'); t.title = 'Доступно после продления подписки' } });
+  mark(); new MutationObserver(mark).observe(document.body, {childList:true, subtree:true});
+  document.addEventListener('dragstart', e => { if(!free(e.target)){ e.preventDefault(); roHint() } }, true);
+}
+const humanDateRO = iso => { const d = new Date(iso + 'T00:00:00'); return d.getDate() + ' ' + ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'][d.getMonth()] };
