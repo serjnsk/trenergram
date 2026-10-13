@@ -490,7 +490,8 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 /* оплата и лента — узкие блоки: две-три колонки не разъезжаются по краям */
 #pay,#events{max-width:960px}
 #pay .mhead .btn{white-space:nowrap}
-.cev{padding-top:12px}
+/* flow-root: отступ подписи дня остаётся внутри подложки, а не выпадает за её край */
+.card.cev{display:flow-root;padding-bottom:6px}
 .csec .sechead{margin-top:0}
 .csec .sechead .lnk{font-size:14px;color:var(--acc-d)}
 
