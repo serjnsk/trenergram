@@ -38,12 +38,13 @@
    группы полей «подпись — значение» сверху вниз: «Связь» (телефон, Telegram,
    Max) и «Тренировки» (оплачено до, последняя активность, с нами с) →
    заметка тренера. Длинное значение переносится в своей строке. Ниже табы:
-   Обзор (замеры и рекорды) · События · Оплата (PAY-9); открытый таб — в адресе (#events, #pay). */
+   Обзор (замеры и рекорды) · События · История оплат (PAY-9); открытый таб —
+   в адресе (#events, #pay). Рядом с «оплачено до» — кнопка «Принять оплату». */
 const CID = new URLSearchParams(location.search).get('id') || STATE.curClient || 'c1';
 const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
 const V = { metric: Object.keys(C.hist||{})[0] || 'squat', meas:'w' };
-const TABS = [['overview','Обзор'],['events','События'],['pay','Оплата']];
+const TABS = [['overview','Обзор'],['events','События'],['pay','История оплат']];
 const tabOf = h => TABS.some(t=>t[0]===h) ? h : 'overview';
 V.tab = tabOf(location.hash.slice(1));
 const MEAS = [['w','Вес','кг'],['waist','Талия','см'],['chest','Грудь','см'],['hips','Бёдра','см'],['fat','Жир','%']];
@@ -171,7 +172,7 @@ function render(){
           <div class="cf"><span class="k">Max</span><a class="v" href="#" title="Написать в Max" data-max>${CI.max}${esc(C.max||'—')}</a></div>
         </div>
         <div class="cgrp"><div class="cgt">Тренировки</div>
-          <div class="cf"><span class="k">Оплачено до</span>${paidKV()}</div>
+          <div class="cf"><span class="k">Оплачено до</span><span class="cfv">${paidKV()}${feeState(C) === 'none' ? '' : `<button class="btn gh sm cfb" data-fee="${C.id}">${ICON.chk} Принять оплату</button>`}</span></div>
           <div class="cf"><span class="k">Активность</span>${actKV()}</div>
           <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
         </div>

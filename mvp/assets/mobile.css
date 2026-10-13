@@ -244,6 +244,7 @@ td.mnil{display:none !important}
 .cf{grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:center;padding:0}
 .cf .k{font-size:14px}
 .cf .v{min-height:28px;font-size:15px;align-items:center}
+.cf .cfb{height:40px;padding:0 14px}
 .cnote{flex-direction:column;align-items:stretch;gap:8px}
 .cnote .k{min-height:0}
 .cnote textarea{flex:none;min-height:44px;padding:11px 12px;font-size:16px;line-height:22px}

@@ -463,12 +463,16 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .cacts{display:flex;align-items:center;gap:8px}
 /* поля шапки: две группы фиксированной ширины, «подпись — значение» сверху вниз;
    длинное значение переносится в своей строке и не двигает соседей */
-.cinfo{display:grid;grid-template-columns:repeat(2,minmax(0,440px));gap:0 56px;margin-top:14px;padding:12px 0 10px;border-top:1px solid var(--line)}
+.cinfo{display:grid;grid-template-columns:minmax(0,380px) minmax(0,580px);gap:0 56px;margin-top:14px;padding:12px 0 10px;border-top:1px solid var(--line)}
 .cgt{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);padding:2px 0 6px}
 .cf{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:baseline;padding:5px 0}
 .cf .k{font-size:14px;color:var(--tx3)}
 .cf .v{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;min-width:0;overflow-wrap:anywhere;justify-self:start}
 .cf .v svg,.cf .v .dot{align-self:center}
+/* «Оплачено до» и кнопка «Принять оплату» в одной строке */
+.cfv{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;min-width:0}
+.cf .cfb{height:28px;padding:0 11px;font-size:14px}
+.cf .cfb svg{width:13px;height:13px}
 .cf a.v:hover{color:var(--acc-d)}
 .cf .v svg{width:14px;height:14px;color:var(--tx3);flex:none}
 .cf a.v:hover svg{color:var(--acc)}
