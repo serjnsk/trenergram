@@ -188,6 +188,9 @@ const clAge = iso => { if (!iso) return ''; const b = D(iso), t = D(TODAY); let 
   if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--;
   return a > 0 && a < 120 ? a + ' ' + plural3(a, 'год', 'года', 'лет') : ''; };
 
+/* Тренер глазами клиента — то, что он заполнил в профиле кабинета: фото, имя, город.
+   Клуба у тренера нет. Фото — из общего с кабинетом состояния, нет — инициалы */
+const clTrAva = () => { const ph = (STATE.profile || {}).photo; return ph ? `<img src="${ph}" alt="">` : clEsc(TRAINER.ini); };
 const CL_LEVELS = ['Новичок', 'Есть опыт', 'Продвинутый', 'Спортсмен'];
 const CL_GOALS = ['Похудеть', 'Набрать мышечную массу', 'Стать сильнее', 'Выносливость', 'Здоровье и самочувствие', 'Подготовка к соревнованиям'];
 
@@ -198,8 +201,8 @@ const CL_UI = {
     const and = clOS() === 'android', br = and ? 'Chrome' : 'Safari';
     return `<div class="pg auth tgo">
       <div class="invc">
-        <div class="av">${clEsc(TRAINER.ini)}</div>
-        <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться · ${clEsc(TRAINER.workspace)}</s></div>
+        <div class="av">${clTrAva()}</div>
+        <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться${TRAINER.city ? ' · ' + clEsc(TRAINER.city) : ''}</s></div>
       </div>
       ${clHead('Откройте в ' + br, 'Из Telegram приложение не поставить на экран телефона. Перейдите в ' + br + ' и войдите там.')}
       <button class="btn pri" data-openbr>${clI('link')}Открыть в ${br}</button>
@@ -216,8 +219,8 @@ const CL_UI = {
   /* R1. Вход по номеру — единый для новых и существующих */
   phone(sc, v) {
     const inv = v === 'invite' ? `<div class="invc">
-        <div class="av">${clEsc(TRAINER.ini)}</div>
-        <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться · ${clEsc(TRAINER.workspace)}</s></div>
+        <div class="av">${clTrAva()}</div>
+        <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться${TRAINER.city ? ' · ' + clEsc(TRAINER.city) : ''}</s></div>
       </div>`
       /* Тренер выпустил новую ссылку (REG-1): по прежней — только просьба запросить новую */
       : v === 'expired' ? `<div class="invc exp" role="alert">
@@ -484,10 +487,10 @@ const CL_UI_MOUNT = {
   },
 
   home(scr, sc, v) {
-    /* Все первые шаги пройдены — один раз финал с достижением «Курс молодого бойца»; вид «start» на стенде показывает его снова */
+    /* Все первые шаги пройдены — один раз финал с достижением «Курс молодого бойца» */
     const st = clFirstSteps();
-    if (v === 'start') setTimeout(clAchShow, 250);
-    else if (st.every(t => t[1]) && !clS.ach.start) { clAchGive(); setTimeout(clAchShow, 250); }
+    /* Вид «start» на стенде засчитывает достижение по-настоящему — тренер видит событие в ленте */
+    if (v === 'start' || (st.every(t => t[1]) && !clS.ach.start)) { if (!clS.ach.start) clAchGive(); setTimeout(clAchShow, 250); }
     scr.addEventListener('click', e => {
       const d = e.target.closest('[data-date]');
       if (d) { clDate = d.dataset.date; clRepaint(scr, 'home'); return; }
@@ -1115,7 +1118,7 @@ CL_UI.profile = (sc, v) => {
       <div class="pgrid">${f('Телефон', c.phone)}${f('Уровень', p.level)}${f('Рост', p.h ? p.h + ' см' : '')}${f('Вес', w ? clNum(w.w, 1) + ' кг' : '')}</div>
       <div class="pgoal"><div><s>Основная цель</s><b>${clEsc(p.goal)}</b></div>${p.goal2 ? `<div><s>Дополнительная цель</s><b>${clEsc(p.goal2)}</b></div>` : ''}</div>
     </section>
-    <section class="card ptr"><span class="pav sm">${clEsc(TRAINER.ini)}</span><div><s>Тренер</s><b>${clEsc(TRAINER.n)}</b><span>${clEsc(TRAINER.workspace)} · с ${clFullDate(c.since)}</span></div></section>
+    <section class="card ptr"><span class="pav sm">${clTrAva()}</span><div><s>Тренер</s><b>${clEsc(TRAINER.n)}</b><span>${TRAINER.city ? clEsc(TRAINER.city) + ' · ' : ''}с ${clFullDate(c.since)}</span></div></section>
     ${clAchShelf()}
     ${clFeeCard()}
     <nav class="ptabs" role="tablist"><button role="tab" class="${tab === 'pr' ? 'on' : ''}" data-ptab="pr">Рекорды</button><button role="tab" class="${tab === 'meas' ? 'on' : ''}" data-ptab="meas">Замеры</button></nav>

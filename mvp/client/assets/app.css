@@ -918,3 +918,7 @@ html.f-tg.f-iphone{--sa-t:0px;--sa-b:34px}
 .bdg b{font:700 12.5px/1.2 var(--ui);color:var(--ink)}
 .bdg s{text-decoration:none;font-size:12px;line-height:1.2;color:var(--tx3)}
 .bdg.lock b{color:var(--tx3)}
+
+/* Фото тренера в карточках клиента */
+.invc .av img,.pav img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.invc .av{overflow:hidden}
