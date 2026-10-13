@@ -473,6 +473,7 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .cfv{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;min-width:0}
 .cf .cfb{height:28px;padding:0 11px;font-size:14px}
 .cf .cfb svg{width:13px;height:13px}
+.md .cl .box.rd{border-radius:50%}
 .cf a.v:hover{color:var(--acc-d)}
 .cf .v svg{width:14px;height:14px;color:var(--tx3);flex:none}
 .cf a.v:hover svg{color:var(--acc)}

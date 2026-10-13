@@ -36,7 +36,7 @@
    растягивается, таблицы — по содержимому.
    Шапка: фото, имя, пол и возраст, действия (конструктор, календарь) → две
    группы полей «подпись — значение» сверху вниз: «Связь» (телефон, Telegram,
-   Max) и «Тренировки» (оплачено до, последняя активность, с нами с) →
+   Max) и «Тренировки» (группа со сменой, оплачено до, активность, с нами с) →
    заметка тренера. Длинное значение переносится в своей строке. Ниже табы:
    Обзор (замеры и рекорды) · События · История оплат (PAY-9); открытый таб —
    в адресе (#events, #pay). Рядом с «оплачено до» — кнопка «Принять оплату». */
@@ -85,6 +85,31 @@ function payHTML(){
       ${hist.length ? hist.map(h=>`<tr><td>${dlong(h.d)}</td><td class="r"><b>${rubs(h.amt)}</b></td><td>${dlong(h.until)}</td></tr>`).join('') : '<tr><td colspan="3" class="mut">Платежей пока нет</td></tr>'}
     </tbody></table></div>
   </div>`;
+}
+/* Группа клиента: одна или никакой; сменить — в окне ниже (GRP-1). */
+const grpKV = () => { const G = groupOf(C.id);
+  return G ? `<a class="v" href="groups.html?id=${G.id}" title="Открыть группу">${GRPICON}${esc(G.n)}</a>` : '<span class="v"><i class="dot"></i>не состоит</span>' };
+function groupPick(){
+  const was = groupOf(C.id); let pick = was ? was.id : '';
+  const opt = (id, n, d, ini) => `<button class="cl ${pick===id?'on':''}" data-gp="${id}"><span class="box rd">${ICON.chk}</span><span class="av">${ini}</span><span class="who"><b>${esc(n)}</b><s>${esc(d)}</s></span></button>`;
+  const draw = () => {
+    $('#gpList').innerHTML = GRPS.map(G => opt(G.id, G.n, G.members.length + ' ' + plural(G.members.length,'участник','участника','участников') + (G.about ? ' · ' + G.about : ''), esc(G.ini || ''))).join('')
+      + opt('', 'Без группы', 'Тренировки только личные', '—');
+    const to = grp(pick);
+    $('#gpSum').textContent = (was ? was.id : '') === pick ? '' : [was ? `Будущие тренировки группы «${was.n}» у клиента уберутся, прошедшие останутся.` : '', to ? `Тренировки группы «${to.n}» встанут клиенту с сегодняшнего дня.` : ''].filter(Boolean).join(' ');
+  };
+  openModal({title:'Группа · ' + C.n, body:`<div class="gpick" id="gpList"></div><div class="hint" id="gpSum"></div>
+    ${GRPS.length ? '' : '<div class="hint">Групп пока нет — создайте её в разделе <a href="groups.html">Группы</a>.</div>'}`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="gpOk">Сохранить</button>`});
+  draw();
+  $('#gpList').onclick = e => { const b = e.target.closest('[data-gp]'); if(!b) return; pick = b.dataset.gp; draw() };
+  $('#gpOk').onclick = () => {
+    if((was ? was.id : '') !== pick){
+      if(was) groupRemove(was, C.id);
+      const to = grp(pick); if(to) groupAdd(to, C.id);
+      saveGroups(); toast(to ? 'Клиент в группе «' + to.n + '»' : 'Клиент убран из группы «' + was.n + '»');
+    }
+    closeModal(); render() };
 }
 const actKV = () => !C.last ? '<span class="v"><i class="dot"></i>ещё не заходил</span>' : `<span class="v ${daysBetween(C.last,TODAY)>=3?'warn':'ok'}"><i class="dot"></i>${ago(C.last)}</span>`;
 
@@ -157,7 +182,7 @@ function render(){
     <div class="chead">
       <div class="chead-top">
         <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
-        <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}${groupOf(C.id) ? ` · <span class="gchips"><a class="gchip" href="groups.html?id=${groupOf(C.id).id}" title="Группа «${esc(groupOf(C.id).n)}»">${GRPICON}${esc(groupOf(C.id).n)}</a></span>` : ''}</div></div>
+        <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</div></div>
         <div class="cacts">
           ${over ? '' : P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
           <a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>
@@ -170,6 +195,7 @@ function render(){
           <div class="cf"><span class="k">Max</span><a class="v" href="#" title="Написать в Max" data-max>${CI.max}${esc(C.max||'—')}</a></div>
         </div>
         <div class="cgrp"><div class="cgt">Тренировки</div>
+          <div class="cf"><span class="k">Группа</span><span class="cfv">${grpKV()}<button class="btn gh sm cfb" id="grpChg">${groupOf(C.id) ? 'Сменить' : ICON.plus + ' В группу'}</button></span></div>
           <div class="cf"><span class="k">Оплачено до</span><span class="cfv">${paidKV()}${feeState(C) === 'none' ? '' : `<button class="btn gh sm cfb" data-fee="${C.id}">${ICON.chk} Принять оплату</button>`}</span></div>
           <div class="cf"><span class="k">Активность</span>${actKV()}</div>
           <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
@@ -218,6 +244,7 @@ function render(){
       V.metric=k; saveState(); closeModal(); toast('Упражнение добавлено'); render() } };
   document.addEventListener('click', e=>{ if(e.target.closest('#nmSave')){ const r={date:TODAY}; $$('[data-nm]').forEach(i=>{ const v=parseFloat(i.value.replace(',','.')); if(isFinite(v)) r[i.dataset.nm]=v }); if(Object.keys(r).length>1){ (C.meas ||= []).push(r); if(r.w) C.w=r.w; closeModal(); toast('Замер записан'); render() } } }, {once:true});
   $$('.fev.t-q .btn, .fev2.t-q .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Ответ на вопрос — из ленты дашборда') });
+  $('#grpChg').onclick = groupPick;
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
   const go = t => { V.tab = t; history.replaceState(null,'','#'+t); render() };
