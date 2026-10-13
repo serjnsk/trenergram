@@ -539,36 +539,48 @@ const onbInvite = () => (STATE.profile || {}).invite || TRAINER.invite;
    Тренер отправляет не голую ссылку, а сообщение: из него клиент понимает, кто
    пишет и что делать (открыть в браузере телефона — иначе иконку на экран «Домой»
    не поставить). Текст — шаблон, тренер правит его под себя; правка хранится в
-   STATE.profile.inviteText. Ссылка в текст не вшита: она отдельной строкой ниже и
-   дописывается при копировании, поэтому «Выпустить новую» не ломает сохранённый
-   текст. Тренера мигрировали из других приложений — слов «теперь всё будет здесь»
+   STATE.profile.inviteText (по кнопке «Сохранить»). Ссылка стоит в тексте первым шагом;
+   «Скопировать ссылку» — отдельно, одна ссылка без текста. Тренера мигрировали из других приложений — слов «теперь всё будет здесь»
    в шаблоне нет. */
 const inviteDefault = () => `Привет! Это ${TRAINER.first || 'твой тренер'}. Зову тебя в Тренерграм — тут будут твои тренировки, а отговорка «забыл, что сегодня» больше не работает 😄
 
-Открой ссылку в браузере телефона (Safari или Chrome, не из мессенджера), введи номер — и ты у меня в списке. Чтобы иконка была на главном экране: «Поделиться» → «На экран Домой».`;
+Как подключиться:
+1. Открой ссылку в браузере телефона (Safari или Chrome, не из мессенджера):
+${onbInvite()}
+2. Введи номер телефона — и ты у меня в списке
+3. Чтобы иконка была на главном экране: «Поделиться» → «На экран Домой»`;
 const inviteText = () => { const t = (STATE.profile || {}).inviteText; return t == null ? inviteDefault() : t };
-/* Что уходит в буфер: текст и ссылка в конце, чтобы мессенджер показал превью. */
-const inviteMessage = () => inviteText().trim() + '\n\n' + onbInvite();
-function inviteBlockHTML(opt = {}){
+/* Что уходит в буфер: ровно то, что в поле. Ссылка — последней строкой самого текста. */
+const inviteMessage = () => inviteText().trim();
+function inviteBlockHTML(){
   return `<div class="invb">
     <textarea class="inp invb-t" id="invText" rows="6" aria-label="Сообщение клиенту" spellcheck="true">${esc(inviteText())}</textarea>
-    <div class="invb-l"><span>Ссылка допишется в конец сообщения</span><code title="${esc(onbInvite())}">${esc(onbInvite().replace(/^https?:\/\//, ''))}</code></div>
     <div class="invb-a">
       <button class="btn" id="invCopy">Скопировать сообщение</button>
-      <button class="btn gh sm" id="invReset" ${(STATE.profile || {}).inviteText == null ? 'hidden' : ''}>Вернуть шаблон</button>
-      ${opt.newLink || ''}
+      <button class="btn gh" id="invLink">Скопировать ссылку</button>
+      <button class="btn gh invb-save" id="invSave" disabled>Сохранено</button>
     </div>
   </div>`;
 }
+/* Текст растёт по содержимому: прокрутки внутри поля нет, видно всё сообщение. */
+const inviteFit = t => { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px' };
 function inviteBlockBind(){
   const t = $('#invText'); if(!t) return;
-  const sync = () => { const r = $('#invReset'); if(r) r.hidden = (STATE.profile || {}).inviteText == null };
-  t.oninput = () => { (STATE.profile ||= {}).inviteText = t.value; saveState(); sync() };
-  $('#invReset').onclick = () => { delete (STATE.profile || {}).inviteText; saveState(); t.value = inviteDefault(); sync(); toast('Шаблон возвращён') };
+  const sv = $('#invSave');
+  /* Правка не сохраняется сама: «Сохранить» ложится в профиль (STATE.profile.inviteText),
+     и дальше сообщение открывается уже вашим. Кнопка оживает, когда текст отличается от сохранённого. */
+  const sync = () => { const dirty = t.value !== inviteText(); sv.disabled = !dirty; sv.textContent = dirty ? 'Сохранить свой текст' : 'Сохранено' };
+  inviteFit(t); addEventListener('resize', () => inviteFit(t));
+  t.oninput = () => { inviteFit(t); sync() };
+  sv.onclick = () => { (STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF))).inviteText = t.value; saveState(); sync(); toast('Текст сохранён — теперь он будет вашим по умолчанию') };
+  const done = () => { if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() } };
   $('#invCopy').onclick = () => {
-    try{ navigator.clipboard.writeText(inviteMessage()) }catch(_){}
-    if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() }
-    toast('Сообщение скопировано — вставьте его клиенту в мессенджер');
+    try{ navigator.clipboard.writeText(t.value.trim()) }catch(_){}
+    done(); toast('Сообщение скопировано — вставьте его клиенту в мессенджер');
+  };
+  $('#invLink').onclick = () => {
+    try{ navigator.clipboard.writeText(onbInvite()) }catch(_){}
+    done(); toast('Ссылка скопирована');
   };
 }
 /* Сколько упражнений в сохранённом дне — и отдельных, и внутри связок. */
@@ -620,8 +632,7 @@ function onbHTML(){
 /* Окно «Пригласить клиента» — со страницы «Клиенты»: та же ссылка, что в профиле.
    Скопировал — шаг онбординга «пригласить» выполнен. */
 function inviteModal(){
-  openModal({title:'Пригласить клиента', body:inviteBlockHTML({newLink:'<a class="lnk-new" href="profile.html">Выпустить новую ссылку</a>'}),
-    foot:'<span class="sp"></span><button class="btn gh" data-close>Готово</button>'});
+  openModal({title:'Пригласить клиента', body:inviteBlockHTML()});
   inviteBlockBind();
 }
 /* Обработчики блока: вызывается после каждой отрисовки дашборда. */

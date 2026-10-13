@@ -357,14 +357,11 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .pwrow{display:flex;align-items:center;gap:12px}
 .pwrow span{flex:1;color:var(--tx3);letter-spacing:.12em}
 /* ссылка-приглашение: адрес целиком и «Скопировать», склеенные в одно поле */
-.invb-t{height:auto;min-height:150px;padding:12px 14px;resize:vertical;line-height:1.5;font-family:inherit;font-size:15px}
-.invb-l{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13.5px;color:var(--tx3);min-width:0}
-.invb-l span{flex:none}
-.invb-l code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx2);font-size:13.5px}
+.invb-t{height:auto;min-height:150px;padding:12px 14px;resize:none;overflow:hidden;line-height:1.5;font-family:inherit;font-size:15px}
 .invb-a{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:14px}
-.invb-a .btn[hidden]{display:none}
-.invb-a .lnk-new{margin-left:auto;background:none;font-size:13.5px;color:var(--tx2);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.invb-a .lnk-new:hover{color:var(--ink)}
+.invb-save:disabled{color:var(--tx4);cursor:default;background:none}
+.invb-save:not(:disabled){background:var(--ink);color:#fff}
+.invb-save:not(:disabled):hover{background:#000}
 .invbox{display:flex;align-items:stretch;height:44px;border:1px solid var(--line2);border-radius:var(--rad-m);overflow:hidden}
 .invbox code{flex:1;min-width:0;display:flex;align-items:center;padding:0 14px;font-size:14.5px;color:var(--tx3);background:var(--s2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .invbox code b{font-weight:600;color:var(--ink)}

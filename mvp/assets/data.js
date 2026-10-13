@@ -1530,6 +1530,8 @@ if(NEW_DONE){ STATE.onb = {all:true}; saveState() }
    не создаёт и не правит; клиенты видят уже назначенные тренировки. Выход —
    продлить подписку в профиле, профиль и оплата открыты всегда.
    Демо: ?ended=1 — срок истёк вчера, автопродление выключено; ?ended=0 — продлено на месяц. */
+/* Профиль, сохранённый без подписки (так мог записать ранний вариант окна «Пригласить»), достраиваем значениями по умолчанию. */
+if(STATE.profile && !STATE.profile.sub) STATE.profile = Object.assign(JSON.parse(JSON.stringify(PROFILE_DEF)), STATE.profile);
 (function(){
   const m = /[?&]ended=(1|0)\b/.exec(location.search); if(!m) return;
   const p = STATE.profile ||= JSON.parse(JSON.stringify(PROFILE_DEF));

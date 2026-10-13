@@ -89,7 +89,7 @@ function profileTab(){
 
     <div class="sechead"><span class="t">Приглашение клиентов</span><span class="ln"></span></div>
     <div class="card cb">
-      ${inviteBlockHTML({newLink:'<button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>'})}
+      ${inviteBlockHTML()}
     </div>
 
     <div class="sechead"><span class="t">Реквизиты для оплаты занятий</span><span class="ln"></span></div>
@@ -172,8 +172,6 @@ function bindProfile(){
   $('#payHow').onchange=e=>{ P.payHow=e.target.value.trim(); save('Сохранено') };
   $('#inPhoto').onchange=e=>{ const f=e.target.files[0]; if(f) photoFrom(f, url=>{ P.photo=url; save('Фото обновлено'); render() }) };
   inviteBlockBind();
-  $('#btnNewLink').onclick=()=>openModal({title:'Новая ссылка', body:`<p class="lead">Прежняя ссылка сразу перестанет работать: кто откроет её, увидит «Ссылка устарела» и просьбу запросить новую у тренера. Клиенты, которые уже пришли, останутся с вами.</p>`,
-    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" data-close id="mdNewLink">Выпустить</button>`});
   $('#btnPass').onclick=()=>openModal({title:'Сменить пароль', body:`
       <div class="formfld" style="margin-bottom:10px"><span class="k">Текущий пароль</span><input class="inp" type="password"></div>
       <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password"></div>
@@ -228,7 +226,6 @@ document.addEventListener('click', e=>{
   if(e.target.closest('[data-close]') || e.target===$('#ov')) closeModal();
   if(e.target.closest('#mdPass')){ closeModal(); toast('Пароль изменён') }
   if(e.target.closest('#mdCancel')){ P.sub.canceled = true; save('Подписка отменена — доступ до ' + dlong(P.sub.until)); render(); renderTop({title:'Профиль'}) }
-  if(e.target.closest('#mdNewLink')){ P.invite = T.invite = newInvite(); save('Новая ссылка готова — прежняя больше не работает'); render() }
 });
 render();
 initShell({page:'profile.html', title:'Профиль'});

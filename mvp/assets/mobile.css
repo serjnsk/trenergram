@@ -318,11 +318,8 @@ td.mnil{display:none !important}
 .prof .card{border-radius:12px}
 .srow{grid-template-columns:minmax(0,1fr);gap:8px}
 .avrow .av{width:56px;height:56px}
-.invb-t{font-size:16px;min-height:230px}
-.invb-l{flex-wrap:wrap}
+.invb-t{font-size:16px;min-height:0}
 .invb-a .btn{flex:1 1 100%;height:46px;justify-content:center}
-.invb-a .btn.sm{flex:1 1 auto;height:44px}
-.invb-a .lnk-new{margin:0 auto;padding:10px 0;font-size:14.5px}
 .invbox{height:auto;flex-wrap:wrap}
 .invbox code{flex:1 1 100%;height:44px}
 .invbox .btn{flex:1 1 100%;height:46px;justify-content:center}
