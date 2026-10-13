@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Брендбук Тренерграм</title>
+<meta name="description" content="Логотип, знак, цвета, шрифты и анимации Тренерграма — для SMM, партнёров и рекламы.">
+<meta property="og:title" content="Брендбук Тренерграм">
+<meta property="og:description" content="Логотип, знак, цвета, шрифты и анимации — всё для публикаций и рекламы.">
+<meta property="og:image" content="logo/trenergram-avatar.png">
+<link rel="icon" href="logo/trenergram-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@900&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   БРЕНДБУК ТРЕНЕРГРАМА
+
+   Визуальный язык — как у кабинета и лендинга: один оранжевый
+   акцент, Inter, плоскость и тонкие линии. Файлы логотипа
+   собирает build.py — эта страница только показывает и раздаёт их.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --acc:#FC5200; --acc-d:#D94600; --acc-a:#FFF1EA;
+  --ink:#141414; --tx2:#474747; --tx3:#666666; --tx4:#8A8A8A;
+  --bg:#FFFFFF; --s1:#F1F1F1; --s2:#F7F7F7; --line:#E3E3E3; --warm:#F7F3EF;
+  --ui:"Inter",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --head:"Montserrat",var(--ui);
+  --w:1200px; --gut:32px; --rad:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--ui);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img,video{display:block;max-width:100%}
+code{font:500 .92em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--s1);padding:1px 6px;border-radius:5px}
+.wrap{max-width:calc(var(--w) + var(--gut)*2);margin:0 auto;padding:0 var(--gut)}
+
+/* ─── шапка ─── */
+.top{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:28px;height:60px}
+.top .lg{height:16px;flex:none}
+.top nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto}
+.top nav::-webkit-scrollbar{display:none}
+.top nav a{font:500 14px var(--ui);color:var(--tx3);text-decoration:none;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.top nav a:hover{color:var(--ink);background:var(--s1)}
+.top nav a.on{color:var(--ink)}
+
+/* ─── кнопки ─── */
+.btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:8px;
+  background:var(--acc);color:#fff;text-decoration:none;font-weight:600;font-size:15px;white-space:nowrap;transition:background .15s}
+.btn:hover{background:var(--acc-d)}
+.btn svg{width:16px;height:16px}
+.dl{display:flex;flex-wrap:wrap;gap:6px}
+.dl a{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;
+  font:600 12.5px var(--ui);color:var(--ink);text-decoration:none;background:var(--bg);transition:border-color .15s,color .15s}
+.dl a:hover{border-color:var(--acc);color:var(--acc)}
+.dl a svg{width:13px;height:13px}
+.dl a small{font-weight:500;color:var(--tx4)}
+
+/* ─── обложка ─── */
+.hero{padding:88px 0 72px;border-bottom:1px solid var(--line)}
+.hero .eyebrow{font:600 13px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--acc);margin:0 0 28px}
+.hero .wm{width:min(100%,860px);height:auto}
+.hero p.lede{max-width:62ch;margin:36px 0 28px;font-size:18px;color:var(--tx2)}
+.hero .row{display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px}
+.hero .note{font-size:14px;color:var(--tx3)}
+
+/* ─── разделы ─── */
+section{padding:80px 0;border-bottom:1px solid var(--line)}
+.sh{display:grid;grid-template-columns:200px 1fr;gap:32px;margin-bottom:40px}
+.sh .n{font:900 14px var(--head);color:var(--acc);padding-top:8px}
+h2{margin:0 0 12px;font:900 34px/1.05 var(--head);letter-spacing:-.03em;text-transform:uppercase}
+.sh p{margin:0;max-width:68ch;color:var(--tx2)}
+h3{margin:0 0 6px;font:700 18px/1.3 var(--ui);letter-spacing:-.01em}
+.sub{margin:56px 0 20px;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.sub h3{margin:0}
+.sub p{margin:0;color:var(--tx3);font-size:14.5px}
+.muted{color:var(--tx3)}
+
+/* ─── о бренде ─── */
+.slogan{margin:0;padding:44px 40px;background:var(--acc);color:#fff;border-radius:var(--rad);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.slogan q{font:900 clamp(28px,4.4vw,52px)/1 var(--head);letter-spacing:-.035em;text-transform:uppercase;quotes:none;max-width:16ch}
+.slogan span{font-size:14px;opacity:.85;max-width:34ch}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
+.names ul{margin:0;padding:0;list-style:none}
+.names li{display:flex;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}
+.names li b{font-weight:600;min-width:150px}
+.names li span{color:var(--tx3);font-size:14.5px}
+.ok,.no{font:700 12px var(--ui);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block}
+.ok{color:#1A9E5C}.no{color:#C0392B}
+.names .bad b{text-decoration:line-through;text-decoration-color:#C0392B;text-decoration-thickness:2px}
+
+/* ─── плитки логотипа ─── */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.tiles.t2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles.t4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tile{display:flex;flex-direction:column;gap:14px}
+.pl{aspect-ratio:16/10;border-radius:var(--rad);display:grid;place-items:center;padding:12%;position:relative;border:1px solid transparent}
+.pl.sq{aspect-ratio:1}
+.pl img{width:100%;height:auto}
+.pl.sq img{width:52%}
+.pl.sq img.full{width:100%;height:100%;object-fit:contain}
+.pl.light{background:var(--bg);border-color:var(--line)}
+.pl.grey{background:var(--s1)}
+.pl.warm{background:var(--warm)}
+.pl.dark{background:var(--ink)}
+.pl.orng{background:var(--acc)}
+.tile .cap{display:flex;flex-direction:column;gap:8px}
+.tile .cap b{font-weight:600}
+.tile .cap span{font-size:14px;color:var(--tx3)}
+
+/* построение и охранное поле */
+.build{display:grid;grid-template-columns:1.35fr 1fr;gap:20px}
+.cons{background:var(--s2);border-radius:var(--rad);padding:56px 40px;display:grid;place-items:center}
+.cons svg{width:100%;height:auto;overflow:visible}
+.rules{display:flex;flex-direction:column;gap:0}
+.rules div{padding:18px 0;border-bottom:1px solid var(--line)}
+.rules div:first-child{padding-top:0}
+.rules b{display:block;font-weight:600;margin-bottom:4px}
+.rules p{margin:0;color:var(--tx2);font-size:15px}
+
+/* как нельзя */
+.donts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.dont .pl{aspect-ratio:4/3;padding:14%;overflow:hidden}
+.dont .pl::after{content:"";position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;
+  background:#C0392B url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7 7 17'/%3E%3C/svg%3E") center/14px no-repeat}
+.dont p{margin:12px 0 0;font-size:14.5px;color:var(--tx2)}
+.x-stretch img{transform:scaleX(1.2) scaleY(.7)}
+.x-rotate img{transform:rotate(-12deg)}
+.x-shadow img{filter:drop-shadow(3px 4px 0 #2F6BFF) drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.x-recolor img{filter:hue-rotate(150deg) saturate(1.4)}
+.x-font span{font:700 italic 28px/1 Georgia,serif;color:var(--ink)}
+.x-font span b{color:var(--acc);font-weight:700}
+.x-busy{background:repeating-linear-gradient(45deg,#FF9F43 0 14px,#FFD166 14px 28px,#6A8BFF 28px 42px)!important}
+.x-low{background:#FF8A4C!important}
+.x-crop img{width:150%!important;max-width:none;transform:translateX(18%)}
+
+/* ─── цвета ─── */
+.sw-main{display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px}
+.sw-sec{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;margin-top:20px}
+.sw{border-radius:var(--rad);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;background:var(--bg)}
+.sw .chip{height:180px;padding:18px;display:flex;align-items:flex-end;font:900 22px/1 var(--head);letter-spacing:-.03em;text-transform:uppercase}
+.sw-sec .sw .chip{height:96px}
+.sw .meta{padding:14px 16px 16px;display:flex;flex-direction:column;gap:2px}
+.sw .meta b{font-weight:600;margin-bottom:6px}
+.sw .meta button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:10px;font:500 13px ui-monospace,Menlo,monospace;
+  color:var(--tx2);padding:3px 0;border-radius:4px}
+.sw .meta button:hover{color:var(--acc)}
+.sw .meta button i{font:500 12px var(--ui);color:var(--tx4);font-style:normal}
+.sw .meta button.done i{color:#1A9E5C}
+.sw .meta p{margin:8px 0 0;font-size:13.5px;color:var(--tx3)}
+.grad{margin-top:20px;border-radius:var(--rad);height:120px;background:linear-gradient(150deg,#FF7A1F 0%,#FC5200 48%,#E24400 100%);
+  display:flex;align-items:flex-end;justify-content:space-between;padding:18px 20px;color:#fff;gap:16px;flex-wrap:wrap}
+.grad b{font-weight:600}
+.grad code{background:rgba(255,255,255,.18);color:#fff;white-space:normal;word-break:break-word}
+.ratio{margin-top:20px;display:flex;height:14px;border-radius:7px;overflow:hidden}
+.ratio + p{margin:10px 0 0;font-size:14.5px;color:var(--tx3)}
+
+/* ─── шрифты ─── */
+.fonts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.font{border:1px solid var(--line);border-radius:var(--rad);padding:28px 26px 24px;display:flex;flex-direction:column;gap:16px}
+.font .spec{font-size:92px;line-height:1;letter-spacing:-.03em;margin-bottom:6px}
+.font.f1 .spec{font-family:var(--head);font-weight:900;text-transform:uppercase}
+.font.f2 .spec{font-family:var(--ui);font-weight:700}
+.font.f3 .spec{font-family:"Caveat",cursive;font-weight:600;color:#3D3A8C;letter-spacing:0}
+.font .demo{margin:0;color:var(--tx2)}
+.font.f1 .demo{font:900 24px/1.05 var(--head);letter-spacing:-.035em;text-transform:uppercase;color:var(--ink)}
+.font.f3 .demo{font:600 30px/1.1 "Caveat",cursive;color:#3D3A8C}
+.font dl{margin:auto 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px;padding-top:16px;border-top:1px solid var(--line)}
+.font dt{color:var(--tx4)}
+.font dd{margin:0;color:var(--tx2)}
+.scale{margin-top:20px;border:1px solid var(--line);border-radius:var(--rad);overflow:hidden}
+.scale div{display:grid;grid-template-columns:180px 1fr;align-items:baseline;gap:20px;padding:16px 24px;border-bottom:1px solid var(--line)}
+.scale div:last-child{border-bottom:0}
+.scale span{font-size:13px;color:var(--tx4)}
+.scale .s1{font:900 44px/1 var(--head);letter-spacing:-.035em;text-transform:uppercase}
+.scale .s2{font:900 26px/1.05 var(--head);letter-spacing:-.03em;text-transform:uppercase}
+.scale .s3{font:600 20px/1.3 var(--ui);letter-spacing:-.01em}
+.scale .s4{font:400 16px/1.55 var(--ui);color:var(--tx2)}
+.scale .s5{font:500 13px/1.4 var(--ui);color:var(--tx3)}
+
+/* ─── анимации ─── */
+.anims{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.an{border:1px solid var(--line);border-radius:var(--rad);overflow:hidden;display:grid;grid-template-columns:44% 1fr}
+.an .stage{background:#fff;border-right:1px solid var(--line);aspect-ratio:1;position:relative;cursor:pointer}
+.an .stage > div{position:absolute;inset:0}
+.an .body{padding:22px 22px 20px;display:flex;flex-direction:column;gap:8px}
+.an .ttl{display:flex;align-items:baseline;gap:10px}
+.an .ttl b{font:900 13px var(--head);color:var(--acc)}
+.an .ttl h3{margin:0}
+.an .ttl span{margin-left:auto;font-size:13px;color:var(--tx4);white-space:nowrap}
+.an p{margin:0;font-size:14.5px;color:var(--tx2)}
+.an p.use{color:var(--tx3);font-size:13.5px}
+.an .dl{margin-top:auto;padding-top:10px}
+.avs{display:grid;grid-template-columns:260px 260px 1fr;gap:32px;align-items:start}
+.av video{width:100%;aspect-ratio:1;object-fit:cover;border-radius:50%;border:1px solid var(--line);background:#fff}
+.av .cap{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.av .cap span{font-size:14px;color:var(--tx3)}
+.howto{background:var(--s2);border-radius:var(--rad);padding:24px}
+.howto ol{margin:10px 0 0;padding-left:20px;color:var(--tx2);font-size:14.5px}
+.howto li{margin:6px 0}
+.preview-link{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:24px;
+  padding:20px 24px;border:1px dashed var(--line);border-radius:var(--rad)}
+.preview-link p{margin:0;color:var(--tx2)}
+.preview-link a{font-weight:600;color:var(--acc);text-decoration:none;white-space:nowrap}
+.preview-link a:hover{text-decoration:underline}
+
+/* ─── всё одним архивом ─── */
+.final{padding:72px 0 88px;border-bottom:0}
+.final .box{background:var(--ink);color:#fff;border-radius:20px;padding:48px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.final h2{color:#fff}
+.final p{margin:0;color:rgba(255,255,255,.7);max-width:60ch}
+.final ul{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.final li{font-size:13px;padding:5px 10px;border-radius:6px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
+footer{padding:28px 0 40px;font-size:13.5px;color:var(--tx4)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:#fff;font:500 14px var(--ui);
+  padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ─── адаптив ─── */
+@media (max-width:1100px){
+  .tiles.t4,.donts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sw-sec{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .fonts{grid-template-columns:1fr 1fr}
+  .anims{grid-template-columns:1fr}
+  .avs{grid-template-columns:1fr 1fr}
+  .avs .howto{grid-column:1/-1}
+}
+@media (max-width:760px){
+  :root{--gut:16px}
+  .top nav{display:none}
+  .top .wrap{justify-content:space-between}
+  .top .btn{height:36px;padding:0 14px;font-size:14px}
+  .hero{padding:48px 0 48px}
+  .hero p.lede{font-size:16px;margin:28px 0 22px}
+  section{padding:56px 0}
+  .sh{grid-template-columns:1fr;gap:6px;margin-bottom:28px}
+  .sh .n{padding:0}
+  h2{font-size:26px}
+  .tiles,.tiles.t2,.names,.build,.sw-main,.fonts{grid-template-columns:1fr}
+  .tiles.t4,.donts{grid-template-columns:1fr 1fr;gap:14px}
+  .sw-sec{grid-template-columns:1fr 1fr;gap:12px}
+  .sw .chip{height:120px}
+  .slogan{padding:28px 22px}
+  .cons{padding:28px 18px}
+  .names li{flex-direction:column;gap:2px}
+  .an{grid-template-columns:1fr}
+  .an .stage{border-right:0;border-bottom:1px solid var(--line)}
+  .scale div{grid-template-columns:1fr;gap:4px;padding:14px 18px}
+  .scale .s1{font-size:34px}
+  .font .spec{font-size:72px}
+  .final .box{grid-template-columns:1fr;padding:28px 22px}
+  .dont p,.tile .cap span{font-size:13.5px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img class="lg" src="logo/trenergram-logo.svg" alt="Тренерграм">
+    <nav aria-label="Разделы">
+      <a href="#about">О бренде</a>
+      <a href="#logo">Логотип</a>
+      <a href="#mark">Знак</a>
+      <a href="#donts">Как нельзя</a>
+      <a href="#colors">Цвета</a>
+      <a href="#type">Шрифты</a>
+      <a href="#motion">Анимации</a>
+    </nav>
+    <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать всё</a>
+  </div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Брендбук</p>
+    <img class="wm" src="logo/trenergram-logo.svg" alt="Тренерграм" width="860" height="86">
+    <p class="lede">Логотип, знак, цвета, шрифты и анимации Тренерграма в одном месте. Страница для SMM-менеджеров, дизайнеров и партнёров, которые готовят рекламу и публикации. Берите файлы отсюда и не собирайте логотип заново.</p>
+    <div class="row">
+      <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать весь пакет · ZIP</a>
+      <span class="note">SVG и PNG логотипа, Lottie, стикеры Telegram, видео MP4</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ 01 О БРЕНДЕ ═══════════ -->
+<section id="about">
+  <div class="wrap">
+    <div class="sh"><span class="n">01</span><div>
+      <h2>О бренде</h2>
+      <p>Тренерграм — сервис для тренеров, который ускоряет и упрощает создание тренировок и ведение клиентов. У тренера кабинет, у его клиентов приложение с тренировками.</p>
+    </div></div>
+    <div class="slogan"><q>Автоматизируем тренерскую рутину</q><span>Слоган. Используется в рекламе, шапках соцсетей и на обложках.</span></div>
+
+    <div class="sub"><h3>Как писать название</h3></div>
+    <div class="names">
+      <ul>
+        <li><b>Тренерграм</b><span>в тексте: одно слово, с заглавной, кириллицей</span></li>
+        <li><b>ТРЕНЕРГРАМ</b><span>только в логотипе, в тексте капсом не пишем</span></li>
+        <li><b>Trenergram</b><span>латиницей: ссылки, хэштеги, англоязычные площадки</span></li>
+      </ul>
+      <ul class="bad">
+        <li><b>Тренерграмм</b><span>с двумя «м»</span></li>
+        <li><b>ТренерГрам, Тренер-грам</b><span>с большой буквой в середине, через дефис</span></li>
+        <li><b>«Тренерграм»</b><span>в кавычках: название пишем без них</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 02 ЛОГОТИП ═══════════ -->
+<section id="logo">
+  <div class="wrap">
+    <div class="sh"><span class="n">02</span><div>
+      <h2>Логотип</h2>
+      <p>Основной логотип — слово ТРЕНЕРГРАМ. Набрано Montserrat Black капсом со сжатым трекингом. Первая и последняя буквы оранжевые: Т…М читается как сокращение «ТМ», из этих же букв сделан знак. Левый верхний угол Т и правый нижний угол М срезаны под 45°. Буквы переведены в кривые, шрифт для файлов не нужен.</p>
+    </div></div>
+
+    <div class="tiles">
+      <div class="tile">
+        <div class="pl light"><img src="logo/trenergram-logo.svg" alt="Логотип на светлом фоне"></div>
+        <div class="cap"><b>Основной — на светлом</b><span>Белый и светлые фоны. Буквы <code>#141414</code>, Т и М <code>#FC5200</code></span>
+          <div class="dl"><a href="logo/trenergram-logo.svg" download>SVG</a><a href="logo/trenergram-logo.png" download>PNG <small>2400 px</small></a></div></div>
+      </div>
+      <div class="tile">
+        <div class="pl dark"><img src="logo/trenergram-logo-on-dark.svg" alt="Логотип на тёмном фоне"></div>
+        <div class="cap"><b>На тёмном</b><span>Тёмные фоны и фото с тёмной подложкой. Буквы белые, Т и М оранжевые</span>
+          <div class="dl"><a href="logo/trenergram-logo-on-dark.svg" download>SVG</a><a href="logo/trenergram-logo-on-dark.png" download>PNG <small>2400 px</small></a></div></div>
+      </div>
+      <div class="tile">
+        <div class="pl orng"><img src="logo/trenergram-logo-white.svg" alt="Белый логотип на оранжевом"></div>
+        <div class="cap"><b>Белый</b><span>На фирменном оранжевом и на фото. Все буквы белые</span>
+          <div class="dl"><a href="logo/trenergram-logo-white.svg" download>SVG</a><a href="logo/trenergram-logo-white.png" download>PNG <small>2400 px</small></a></div></div>
+      </div>
+    </div>
+    <div class="tiles t2" style="margin-top:20px">
+      <div class="tile">
+        <div class="pl grey" style="aspect-ratio:16/6"><img src="logo/trenergram-logo-black.svg" alt="Чёрный логотип" style="width:70%"></div>
+        <div class="cap"><b>Чёрный, одноцветный</b><span>Печать в один цвет, гравировка, документы, факс-формы</span>
+          <div class="dl"><a href="logo/trenergram-logo-black.svg" download>SVG</a><a href="logo/trenergram-logo-black.png" download>PNG <small>2400 px</small></a></div></div>
+      </div>
+      <div class="tile">
+        <div class="pl warm" style="aspect-ratio:16/6"><img src="logo/trenergram-logo.svg" alt="Логотип на тёплом фоне" style="width:70%"></div>
+        <div class="cap"><b>На тёплом фоне приложения</b><span>Основной логотип работает и на <code>#F7F3EF</code>: это фон клиентского приложения</span></div>
+      </div>
+    </div>
+
+    <div class="sub"><h3>Охранное поле и минимальный размер</h3><p>Х — высота букв логотипа</p></div>
+    <div class="build">
+      <div class="cons">
+        <svg viewBox="-1600 -1560 10260 2420" aria-label="Схема охранного поля">
+          <rect x="-1384" y="-1400" width="9822" height="2100" fill="none" stroke="#FC5200" stroke-width="14" stroke-dasharray="70 50"/>
+          <rect x="16" y="-700" width="7022" height="700" fill="none" stroke="#C9C9C9" stroke-width="10"/>
+          <image href="logo/trenergram-logo.svg" x="16" y="-700" width="7022" height="700"/>
+          <g fill="#FC5200" font-family="Inter,sans-serif" font-weight="600" font-size="230">
+            <line x1="-1384" y1="-350" x2="16" y2="-350" stroke="#FC5200" stroke-width="12"/>
+            <text x="-684" y="-450" text-anchor="middle">2Х</text>
+            <line x1="3527" y1="-1400" x2="3527" y2="-700" stroke="#FC5200" stroke-width="12"/>
+            <text x="3627" y="-980">Х</text>
+            <line x1="3527" y1="0" x2="3527" y2="700" stroke="#FC5200" stroke-width="12"/>
+            <text x="3627" y="440">Х</text>
+            <line x1="8100" y1="-700" x2="8100" y2="0" stroke="#141414" stroke-width="12"/>
+            <text x="8180" y="-280" fill="#141414">Х</text>
+          </g>
+        </svg>
+      </div>
+      <div class="rules">
+        <div><b>Охранное поле</b><p>Сверху и снизу не меньше Х, слева и справа не меньше 2Х. В этой зоне нет текста, иконок и краёв экрана.</p></div>
+        <div><b>Минимальный размер</b><p>Ширина на экране от 96 px, в печати от 25 мм. Если места меньше, ставьте знак ТМ.</p></div>
+        <div><b>Только готовые файлы</b><p>Не набирайте логотип шрифтом: в файлах точный трекинг, кернинг и срезы. Масштабируйте пропорционально.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 03 ЗНАК ═══════════ -->
+<section id="mark">
+  <div class="wrap">
+    <div class="sh"><span class="n">03</span><div>
+      <h2>Знак ТМ</h2>
+      <p>Короткая форма логотипа — первая и последняя буквы названия. Подходит для аватаров, иконки приложения, фавиконки, стикеров и мест, где слово не помещается. У ножки Т такой же срез 45°, как в логотипе.</p>
+    </div></div>
+    <div class="tiles t4">
+      <div class="tile">
+        <div class="pl sq grey"><img class="full" src="logo/trenergram-mark.svg" alt="Знак в оранжевой плашке" style="width:62%;height:auto"></div>
+        <div class="cap"><b>Иконка</b><span>Оранжевая плашка со скруглением 22,5 %. Иконка приложения, фавиконка</span>
+          <div class="dl"><a href="logo/trenergram-mark.svg" download>SVG</a><a href="logo/trenergram-mark.png" download>PNG <small>1024</small></a></div></div>
+      </div>
+      <div class="tile">
+        <div class="pl sq grey"><img class="full" src="logo/trenergram-avatar.svg" alt="Аватар" style="width:72%;height:auto;clip-path:circle(50%)"></div>
+        <div class="cap"><b>Аватар соцсетей</b><span>Квадрат без скругления: площадка сама обрежет его в круг, буквы остаются внутри</span>
+          <div class="dl"><a href="logo/trenergram-avatar.svg" download>SVG</a><a href="logo/trenergram-avatar.png" download>PNG <small>1024</small></a></div></div>
+      </div>
+      <div class="tile">
+        <div class="pl sq light"><img src="logo/trenergram-mark-letters.svg" alt="Оранжевые буквы ТМ"></div>
+        <div class="cap"><b>Без плашки</b><span>Оранжевые буквы на белом и светлом</span>
+          <div class="dl"><a href="logo/trenergram-mark-letters.svg" download>SVG</a><a href="logo/trenergram-mark-letters.png" download>PNG</a></div></div>
+      </div>
+      <div class="tile">
+        <div class="pl sq orng"><img src="logo/trenergram-mark-letters-white.svg" alt="Белые буквы ТМ"></div>
+        <div class="cap"><b>Белый без плашки</b><span>На оранжевом и на фото</span>
+          <div class="dl"><a href="logo/trenergram-mark-letters-white.svg" download>SVG</a><a href="logo/trenergram-mark-letters-white.png" download>PNG</a></div></div>
+      </div>
+    </div>
+    <div class="tiles t4" style="margin-top:20px">
+      <div class="tile">
+        <div class="pl sq light"><img class="full" src="logo/trenergram-mark-dark.svg" alt="Знак в тёмной плашке" style="width:62%;height:auto"></div>
+        <div class="cap"><b>Тёмная плашка</b><span>Если рядом уже много оранжевого. Оранжевые буквы на <code>#141414</code></span>
+          <div class="dl"><a href="logo/trenergram-mark-dark.svg" download>SVG</a><a href="logo/trenergram-mark-dark.png" download>PNG <small>1024</small></a></div></div>
+      </div>
+      <div class="tile" style="grid-column:span 3">
+        <div class="pl grey" style="aspect-ratio:auto;height:calc(100% - 0px);min-height:200px;display:flex;align-items:center;justify-content:center;gap:clamp(16px,4vw,48px);padding:32px">
+          <img src="logo/trenergram-mark.svg" alt="" style="width:120px">
+          <img src="logo/trenergram-mark.svg" alt="" style="width:64px">
+          <img src="logo/trenergram-mark.svg" alt="" style="width:32px">
+          <img src="logo/trenergram-mark.svg" alt="" style="width:20px">
+        </div>
+        <div class="cap"><b>Минимум 20 px</b><span>Знак читается от 20 px на экране и от 6 мм в печати. Охранное поле вокруг плашки не меньше четверти её стороны.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 04 КАК НЕЛЬЗЯ ═══════════ -->
+<section id="donts">
+  <div class="wrap">
+    <div class="sh"><span class="n">04</span><div>
+      <h2>Как нельзя</h2>
+      <p>Чаще всего логотип портят при вёрстке баннеров. Здесь собраны типичные ошибки. Если сомневаетесь, возьмите основной логотип на белом или белый на оранжевом.</p>
+    </div></div>
+    <div class="donts">
+      <div class="dont"><div class="pl light x-stretch"><img src="logo/trenergram-logo.svg" alt=""></div><p>Растягивать и сжимать непропорционально</p></div>
+      <div class="dont"><div class="pl light x-recolor"><img src="logo/trenergram-logo.svg" alt=""></div><p>Перекрашивать в другие цвета</p></div>
+      <div class="dont"><div class="pl light x-shadow"><img src="logo/trenergram-logo.svg" alt=""></div><p>Добавлять тени, обводки, градиенты и объём</p></div>
+      <div class="dont"><div class="pl light x-rotate"><img src="logo/trenergram-logo.svg" alt=""></div><p>Поворачивать и ставить под наклоном</p></div>
+      <div class="dont"><div class="pl light x-font"><span><b>Т</b>ренерграм</span></div><p>Набирать название другим шрифтом</p></div>
+      <div class="dont"><div class="pl x-busy"><img src="logo/trenergram-logo.svg" alt=""></div><p>Ставить на пёстрый фон без подложки</p></div>
+      <div class="dont"><div class="pl x-low"><img src="logo/trenergram-logo.svg" alt=""></div><p>Ставить цветной логотип на оранжевый: на нём только белый</p></div>
+      <div class="dont"><div class="pl light x-crop"><img src="logo/trenergram-logo.svg" alt=""></div><p>Обрезать краем макета и залезать в охранное поле</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 ЦВЕТА ═══════════ -->
+<section id="colors">
+  <div class="wrap">
+    <div class="sh"><span class="n">05</span><div>
+      <h2>Цвета</h2>
+      <p>Фирменный цвет один — оранжевый. Им выделяют главное: знак, кнопку, ключевое слово. Остальное держится на белом, почти чёрном и серых. Нажмите на код, чтобы скопировать его.</p>
+    </div></div>
+    <div class="sw-main">
+      <div class="sw"><div class="chip" style="background:#FC5200;color:#fff">Оранжевый</div><div class="meta">
+        <b>Тренерграм оранжевый</b>
+        <button data-c="#FC5200">#FC5200 <i>HEX</i></button>
+        <button data-c="252, 82, 0">252, 82, 0 <i>RGB</i></button>
+        <button data-c="C0 M75 Y100 K0">C0 M75 Y100 K0 <i>CMYK ≈</i></button>
+        <button data-c="Pantone 1655 C">1655 C <i>Pantone ≈</i></button>
+        <p>CMYK и Pantone — ближайшие значения. Для тиража сверяйте с пробным оттиском.</p>
+      </div></div>
+      <div class="sw"><div class="chip" style="background:#141414;color:#fff">Тёмный</div><div class="meta">
+        <b>Почти чёрный</b>
+        <button data-c="#141414">#141414 <i>HEX</i></button>
+        <button data-c="20, 20, 20">20, 20, 20 <i>RGB</i></button>
+        <button data-c="C0 M0 Y0 K92">C0 M0 Y0 K92 <i>CMYK ≈</i></button>
+        <p>Текст и тёмные фоны. Чистый #000 не используем.</p>
+      </div></div>
+      <div class="sw"><div class="chip" style="background:#fff;color:#141414;box-shadow:inset 0 -1px 0 var(--line)">Белый</div><div class="meta">
+        <b>Белый</b>
+        <button data-c="#FFFFFF">#FFFFFF <i>HEX</i></button>
+        <button data-c="255, 255, 255">255, 255, 255 <i>RGB</i></button>
+        <p>Основной фон кабинета и лендинга.</p>
+      </div></div>
+    </div>
+    <div class="sw-sec">
+      <div class="sw"><div class="chip" style="background:#D94600"></div><div class="meta"><b>Оранжевый тёмный</b><button data-c="#D94600">#D94600 <i>HEX</i></button><p>Нажатие, наведение</p></div></div>
+      <div class="sw"><div class="chip" style="background:#FFF1EA"></div><div class="meta"><b>Оранжевый светлый</b><button data-c="#FFF1EA">#FFF1EA <i>HEX</i></button><p>Подложки, плашки</p></div></div>
+      <div class="sw"><div class="chip" style="background:#F7F3EF"></div><div class="meta"><b>Тёплый фон</b><button data-c="#F7F3EF">#F7F3EF <i>HEX</i></button><p>Клиентское приложение</p></div></div>
+      <div class="sw"><div class="chip" style="background:#F1F1F1"></div><div class="meta"><b>Серый фон</b><button data-c="#F1F1F1">#F1F1F1 <i>HEX</i></button><p>Подложки на белом</p></div></div>
+      <div class="sw"><div class="chip" style="background:#666666"></div><div class="meta"><b>Серый текст</b><button data-c="#666666">#666666 <i>HEX</i></button><p>Подписи, второстепенное</p></div></div>
+      <div class="sw"><div class="chip" style="background:#E3E3E3"></div><div class="meta"><b>Линия</b><button data-c="#E3E3E3">#E3E3E3 <i>HEX</i></button><p>Разделители, рамки</p></div></div>
+    </div>
+    <div class="grad">
+      <div><b>Фирменный градиент</b><br><span style="opacity:.85;font-size:14px">Для крупных плоскостей: обложки, баннеры, фон телефона в промо</span></div>
+      <code>linear-gradient(150deg, #FF7A1F 0%, #FC5200 48%, #E24400 100%)</code>
+    </div>
+    <div class="sub" style="margin-top:40px"><h3>Пропорции</h3></div>
+    <div class="ratio" aria-label="Белый 60%, тёмный 25%, серые 10%, оранжевый 5%">
+      <span style="flex:60;background:#fff;box-shadow:inset 0 0 0 1px var(--line)"></span>
+      <span style="flex:25;background:#141414"></span>
+      <span style="flex:10;background:#D2D2D2"></span>
+      <span style="flex:5;background:#FC5200"></span>
+    </div>
+    <p>В интерфейсе и спокойных макетах оранжевого немного, он работает как акцент. В рекламе и на обложках можно залить им весь фон, тогда логотип и текст белые.</p>
+  </div>
+</section>
+
+<!-- ═══════════ 06 ШРИФТЫ ═══════════ -->
+<section id="type">
+  <div class="wrap">
+    <div class="sh"><span class="n">06</span><div>
+      <h2>Шрифты</h2>
+      <p>Все три шрифта бесплатные, из Google Fonts, с кириллицей.</p>
+    </div></div>
+    <div class="fonts">
+      <div class="font f1">
+        <div class="spec">Аа</div>
+        <p class="demo">Пишите тренировки как в заметках</p>
+        <dl><dt>Шрифт</dt><dd>Montserrat Black (900)</dd><dt>Для чего</dt><dd>Логотип, заголовки, слоганы, цифры на обложках</dd><dt>Набор</dt><dd>Капс, трекинг −3,5 %, интерлиньяж 1–1,05</dd>
+          <dt>Скачать</dt><dd><a href="https://fonts.google.com/specimen/Montserrat" target="_blank" rel="noopener">Google Fonts</a></dd></dl>
+      </div>
+      <div class="font f2">
+        <div class="spec">Аа</div>
+        <p class="demo">Тренерграм разберёт текст, пересчитает проценты в килограммы для каждого клиента и отправит тренировку в приложение.</p>
+        <dl><dt>Шрифт</dt><dd>Inter 400 · 500 · 600 · 700</dd><dt>Для чего</dt><dd>Основной текст, подписи, интерфейс, кнопки</dd><dt>Набор</dt><dd>Строчные, интерлиньяж 1,5</dd>
+          <dt>Скачать</dt><dd><a href="https://fonts.google.com/specimen/Inter" target="_blank" rel="noopener">Google Fonts</a></dd></dl>
+      </div>
+      <div class="font f3">
+        <div class="spec">Аа</div>
+        <p class="demo">присед 5×5 70%<br>жим 4×6 — ?</p>
+        <dl><dt>Шрифт</dt><dd>Caveat SemiBold (600)</dd><dt>Для чего</dt><dd>Рукописные заметки тренера в иллюстрациях: «как в блокноте» до того, как Тренерграм разберёт текст</dd><dt>Набор</dt><dd>Чернильный синий <code>#3D3A8C</code>, только в иллюстрациях, не для заголовков</dd>
+          <dt>Скачать</dt><dd><a href="https://fonts.google.com/specimen/Caveat" target="_blank" rel="noopener">Google Fonts</a></dd></dl>
+      </div>
+    </div>
+    <div class="scale">
+      <div><span>Заголовок · Montserrat 900</span><p class="s1" style="margin:0">Тренировки за минуты</p></div>
+      <div><span>Подзаголовок · Montserrat 900</span><p class="s2" style="margin:0">Автокалькуляция весов</p></div>
+      <div><span>Акцент · Inter 600</span><p class="s3" style="margin:0">Одна программа — двадцать атлетов</p></div>
+      <div><span>Текст · Inter 400</span><p class="s4" style="margin:0">Сервис для тренеров, помогающий ускорить и упростить процесс создания тренировок и ведения клиентов.</p></div>
+      <div><span>Подпись · Inter 500</span><p class="s5" style="margin:0">14 дней бесплатно · без привязки карты</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 07 АНИМАЦИИ ═══════════ -->
+<section id="motion">
+  <div class="wrap">
+    <div class="sh"><span class="n">07</span><div>
+      <h2>Анимации</h2>
+      <p>Четыре анимации знака собраны из тех же векторов, что и логотип. Каждая есть в трёх форматах: <b>MP4</b> 1080×1080 для сторис, Reels и постов, <b>Lottie JSON</b> для сайтов и приложений, <b>TGS</b> — анимированный стикер Telegram. Нажмите на анимацию, чтобы поставить её на паузу.</p>
+    </div></div>
+    <div class="anims" id="anims"></div>
+
+    <div class="sub"><h3>Видео-аватары</h3><p>800×800, для аватара канала или профиля</p></div>
+    <div class="avs">
+      <div class="av"><video src="animation/trenergram-avatar-barbell.mp4" autoplay muted loop playsinline preload="metadata"></video>
+        <div class="cap"><b>Штанга</b><span>7,7 с · цикл</span><div class="dl"><a href="animation/trenergram-avatar-barbell.mp4" download>MP4 <small>0,5 МБ</small></a></div></div></div>
+      <div class="av"><video src="animation/trenergram-avatar-rope.mp4" autoplay muted loop playsinline preload="metadata"></video>
+        <div class="cap"><b>Скакалка</b><span>6,6 с · цикл</span><div class="dl"><a href="animation/trenergram-avatar-rope.mp4" download>MP4 <small>2,4 МБ</small></a></div></div></div>
+      <div class="howto">
+        <h3>Как добавить стикеры в Telegram</h3>
+        <ol>
+          <li>Скачайте файлы <code>.tgs</code> из карточек выше.</li>
+          <li>Откройте бота <a href="https://t.me/Stickers" target="_blank" rel="noopener">@Stickers</a> и отправьте <code>/newanimated</code>.</li>
+          <li>Пришлите название набора, затем по одному файлу <code>.tgs</code> с эмодзи к каждому.</li>
+          <li>Завершите командой <code>/publish</code> и придумайте короткое имя для ссылки.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="preview-link">
+      <p>Покадровый просмотр, скорость 0,25×–1× и превью на тёмном фоне — на отдельной странице анимаций.</p>
+      <a href="../logo-lottie/" target="_blank" rel="noopener">Открыть превью анимаций →</a>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <div class="box">
+      <div>
+        <h2>Всё одним архивом</h2>
+        <p>Все файлы со страницы в одном ZIP. Если нужен формат, которого здесь нет, напишите команде Тренерграма — подготовим.</p>
+        <ul><li>9 SVG логотипа и знака</li><li>9 PNG</li><li>4 Lottie JSON</li><li>4 стикера TGS</li><li>6 видео MP4</li></ul>
+      </div>
+      <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать ZIP · 4,3 МБ</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap"><span>© Тренерграм, 2026</span><span>Брендбук обновляется вместе с продуктом. Берите файлы по этой ссылке, а не из старых переписок.</span></div></footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* Анимации: JSON лежат рядом в animation/ — те же файлы, что раздаются на скачивание */
+const ANIMS_BB = [
+  {key:'collapse', title:'Схлопывание', dur:'4 с', mb:'0,4',
+   desc:'Слово ТРЕНЕРГРАМ сжимается от центра: средние буквы проваливаются, Т и М съезжаются, под ними вырастает плашка — получается знак. Потом обратно.',
+   use:'Заставка видео, интро и аутро роликов, переход «сайт → приложение»'},
+  {key:'biceps', title:'Бицепс', dur:'3,3 с', mb:'0,3',
+   desc:'У знака ТМ из-за плашки вырастают руки и дважды «качают» бицепс с искрами. Плашка приседает от напряжения.',
+   use:'Поздравления, рекорды клиентов, «тренировка выполнена»'},
+  {key:'barbell', title:'Штанга', dur:'3,8 с', mb:'0,3',
+   desc:'Перекладина Т становится грифом, сверху падают блины, гриф проседает — два повтора. М рядом приседает и подпрыгивает.',
+   use:'Промо, анонсы программ, посты про силовые'},
+  {key:'rope', title:'Скакалка', dur:'2,2 с', mb:'0,6',
+   desc:'Знак прыгает через скакалку: сжимается перед прыжком, тянется в полёте. Цикл бесшовный.',
+   use:'Лоадер, ожидание, короткие сторис-вставки'},
+];
+const DL_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>';
+const animsBox = document.getElementById('anims');
+ANIMS_BB.forEach((m, i) => {
+  const el = document.createElement('article');
+  el.className = 'an';
+  el.innerHTML = `
+    <div class="stage" title="Пауза / играть"><div></div></div>
+    <div class="body">
+      <div class="ttl"><b>0${i + 1}</b><h3>${m.title}</h3><span>${m.dur} · цикл</span></div>
+      <p>${m.desc}</p>
+      <p class="use">Где: ${m.use}</p>
+      <div class="dl">
+        <a href="animation/trenergram-${m.key}.mp4" download>${DL_ICON}MP4 <small>${m.mb} МБ</small></a>
+        <a href="animation/trenergram-${m.key}.json" download>${DL_ICON}Lottie</a>
+        <a href="animation/trenergram-${m.key}.tgs" download>${DL_ICON}Стикер TGS</a>
+      </div>
+    </div>`;
+  animsBox.appendChild(el);
+  if (!window.lottie) return;
+  const anim = lottie.loadAnimation({container: el.querySelector('.stage > div'), renderer: 'svg',
+    loop: true, autoplay: true, path: `animation/trenergram-${m.key}.json`});
+  el.querySelector('.stage').onclick = () => anim.isPaused ? anim.play() : anim.pause();
+});
+
+/* Копирование кодов цвета */
+const toast = document.getElementById('toast');
+let toastT;
+document.querySelectorAll('.sw .meta button').forEach(b => b.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(b.dataset.c); }
+  catch (e) {
+    const t = document.createElement('textarea'); t.value = b.dataset.c; document.body.appendChild(t);
+    t.select(); try { document.execCommand('copy'); } catch (_) {} t.remove();
+  }
+  toast.textContent = `Скопировано: ${b.dataset.c}`;
+  toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 1600);
+}));
+
+/* Подсветка раздела в шапке */
+const links = [...document.querySelectorAll('.top nav a')];
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.hash === '#' + e.target.id));
+}), {rootMargin: '-40% 0px -55% 0px'});
+document.querySelectorAll('section[id]').forEach(s => io.observe(s));
+</script>
+</body>
+</html>
