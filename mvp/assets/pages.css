@@ -469,7 +469,6 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .cf .k{font-size:14px;color:var(--tx3)}
 .cf .v{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;min-width:0;overflow-wrap:anywhere;justify-self:start}
 .cf .v svg,.cf .v .dot{align-self:center}
-.cf .v s.ln2{flex-basis:100%;font-size:14px}
 .cf a.v:hover{color:var(--acc-d)}
 .cf .v svg{width:14px;height:14px;color:var(--tx3);flex:none}
 .cf a.v:hover svg{color:var(--acc)}

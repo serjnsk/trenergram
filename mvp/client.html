@@ -36,10 +36,9 @@
    растягивается, таблицы — по содержимому.
    Шапка: фото, имя, пол и возраст, действия (конструктор, календарь) → две
    группы полей «подпись — значение» сверху вниз: «Связь» (телефон, Telegram,
-   Max) и «Тренировки» (программа и докуда составлено, оплачено до, последняя
-   активность, с нами с) → заметка тренера. Длинное значение переносится в своей
-   строке и не ломает ряд. Ниже табы: Обзор (замеры и рекорды) · События ·
-   Оплата (PAY-9); открытый таб — в адресе (#events, #pay). */
+   Max) и «Тренировки» (оплачено до, последняя активность, с нами с) →
+   заметка тренера. Длинное значение переносится в своей строке. Ниже табы:
+   Обзор (замеры и рекорды) · События · Оплата (PAY-9); открытый таб — в адресе (#events, #pay). */
 const CID = new URLSearchParams(location.search).get('id') || STATE.curClient || 'c1';
 const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
@@ -86,10 +85,6 @@ function payHTML(){
     </tbody></table></div>
   </div>`;
 }
-/* Программа и докуда составлено — то, что раньше стояло над календарём. */
-const progKV = P => { if(!P) return '<span class="v"><i class="dot"></i>не назначена</span>';
-  const n = composedDays(C.prog);
-  return `<a class="v" href="calendar.html?client=${C.id}" title="Открыть календарь">${esc(P.title)} <s class="ln2">${n ? 'составлено до ' + dm(dayDate(C.prog, n-1)) : 'ничего не составлено'}</s></a>` };
 const actKV = () => !C.last ? '<span class="v"><i class="dot"></i>ещё не заходил</span>' : `<span class="v ${daysBetween(C.last,TODAY)>=3?'warn':'ok'}"><i class="dot"></i>${ago(C.last)}</span>`;
 
 /* Замеры в динамике: график по выбранному показателю и таблица по датам. */
@@ -176,7 +171,6 @@ function render(){
           <div class="cf"><span class="k">Max</span><a class="v" href="#" title="Написать в Max" data-max>${CI.max}${esc(C.max||'—')}</a></div>
         </div>
         <div class="cgrp"><div class="cgt">Тренировки</div>
-          <div class="cf"><span class="k">Программа</span>${progKV(P)}</div>
           <div class="cf"><span class="k">Оплачено до</span>${paidKV()}</div>
           <div class="cf"><span class="k">Активность</span>${actKV()}</div>
           <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
