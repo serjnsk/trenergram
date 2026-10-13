@@ -530,6 +530,43 @@ function onbTouch(){
   if(!onbState().seen){ onbState().seen = true; saveState() }
 }
 const onbInvite = () => (STATE.profile || {}).invite || TRAINER.invite;
+
+/* ═══════════ БЛОК «ПРИГЛАШЕНИЕ КЛИЕНТОВ» — ОДИН НА ПРОФИЛЬ И ОКНО «ПРИГЛАСИТЬ» ═══════════
+   Тренер отправляет не голую ссылку, а сообщение: из него клиент понимает, кто
+   пишет и что делать (открыть в браузере телефона — иначе иконку на экран «Домой»
+   не поставить). Текст — шаблон, тренер правит его под себя; правка хранится в
+   STATE.profile.inviteText. Ссылка в текст не вшита: она отдельной строкой ниже и
+   дописывается при копировании, поэтому «Выпустить новую» не ломает сохранённый
+   текст. Тренера мигрировали из других приложений — слов «теперь всё будет здесь»
+   в шаблоне нет. */
+const inviteDefault = () => `Привет! Это ${TRAINER.first || 'твой тренер'}. Зову тебя в Тренерграм — тут будут твои тренировки, а отговорка «забыл, что сегодня» больше не работает 😄
+
+Открой ссылку в браузере телефона (Safari или Chrome, не из мессенджера), введи номер — и ты у меня в списке. Чтобы иконка была на главном экране: «Поделиться» → «На экран Домой».`;
+const inviteText = () => { const t = (STATE.profile || {}).inviteText; return t == null ? inviteDefault() : t };
+/* Что уходит в буфер: текст и ссылка в конце, чтобы мессенджер показал превью. */
+const inviteMessage = () => inviteText().trim() + '\n\n' + onbInvite();
+function inviteBlockHTML(opt = {}){
+  return `<div class="invb">
+    <textarea class="inp invb-t" id="invText" rows="6" aria-label="Сообщение клиенту" spellcheck="true">${esc(inviteText())}</textarea>
+    <div class="invb-l"><span>Ссылка допишется в конец сообщения</span><code title="${esc(onbInvite())}">${esc(onbInvite().replace(/^https?:\/\//, ''))}</code></div>
+    <div class="invb-a">
+      <button class="btn" id="invCopy">Скопировать сообщение</button>
+      <button class="btn gh sm" id="invReset" ${(STATE.profile || {}).inviteText == null ? 'hidden' : ''}>Вернуть шаблон</button>
+      ${opt.newLink || ''}
+    </div>
+  </div>`;
+}
+function inviteBlockBind(){
+  const t = $('#invText'); if(!t) return;
+  const sync = () => { const r = $('#invReset'); if(r) r.hidden = (STATE.profile || {}).inviteText == null };
+  t.oninput = () => { (STATE.profile ||= {}).inviteText = t.value; saveState(); sync() };
+  $('#invReset').onclick = () => { delete (STATE.profile || {}).inviteText; saveState(); t.value = inviteDefault(); sync(); toast('Шаблон возвращён') };
+  $('#invCopy').onclick = () => {
+    try{ navigator.clipboard.writeText(inviteMessage()) }catch(_){}
+    if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() }
+    toast('Сообщение скопировано — вставьте его клиенту в мессенджер');
+  };
+}
 /* Сколько упражнений в сохранённом дне — и отдельных, и внутри связок. */
 const onbExN = c => { try{ return (JSON.parse(c).b || []).reduce((n, b) => n + (b.i || []).reduce((m, it) => m + (it.e || String(it.r || '').trim() ? 1 : 0) + (it.ch || []).filter(p => p.e || String(p.r || '').trim()).length, 0), 0) }catch(_){ return 0 } };
 function onbSteps(){
@@ -579,16 +616,9 @@ function onbHTML(){
 /* Окно «Пригласить клиента» — со страницы «Клиенты»: та же ссылка, что в профиле.
    Скопировал — шаг онбординга «пригласить» выполнен. */
 function inviteModal(){
-  const url = onbInvite();
-  openModal({title:'Пригласить клиента', body:`
-    <div class="copyfield"><code title="${esc(url)}"><span>${esc(url.replace(/[^/]+$/,''))}</span><b>${esc(url.split('/').pop())}</b></code><button class="btn sm" id="invCopy">Скопировать</button></div>
-    <div class="hint">Одна ссылка для всех клиентов, без срока. Отправьте её в чат или мессенджер: клиент откроет, войдёт по номеру телефона и сразу появится в этом списке. Выпустить новую ссылку — в <a href="profile.html">профиле</a>.</div>`,
+  openModal({title:'Пригласить клиента', body:inviteBlockHTML({newLink:'<a class="lnk-new" href="profile.html">Выпустить новую ссылку</a>'}),
     foot:'<span class="sp"></span><button class="btn gh" data-close>Готово</button>'});
-  $('#invCopy').onclick = () => {
-    try{ navigator.clipboard.writeText(url) }catch(_){}
-    if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() }
-    toast('Ссылка скопирована — отправьте её клиенту');
-  };
+  inviteBlockBind();
 }
 /* Обработчики блока: вызывается после каждой отрисовки дашборда. */
 function onbBind(redraw){
@@ -605,8 +635,8 @@ function onbBind(redraw){
     if(a === 'fold'){ o.fold = !o.fold; saveState(); $('#onb').classList.toggle('fold', o.fold); b.textContent = o.fold ? 'Показать' : 'Свернуть' }
     else if(a === 'hide'){ o.hidden = true; saveState(); redraw() }
     else if(a === 'invite'){
-      try{ navigator.clipboard.writeText(onbInvite()) }catch(_){}
-      o.invited = true; saveState(); toast('Ссылка скопирована — отправьте её клиенту'); redraw();
+      try{ navigator.clipboard.writeText(inviteMessage()) }catch(_){}
+      o.invited = true; saveState(); toast('Сообщение скопировано — отправьте его клиенту'); redraw();
     } else if(a === 'demo'){
       openModal({title:'Убрать демо-клиента?', body:'<div class="hint">Исчезнут его программа, тренировки и рекорды. Вернуть их нельзя. Ваши собственные клиенты и шаблоны не затронуты.</div>',
         foot:'<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="onbDemoOk">Убрать</button>'});

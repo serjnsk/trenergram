@@ -89,8 +89,7 @@ function profileTab(){
 
     <div class="sechead"><span class="t">Приглашение клиентов</span><span class="ln"></span></div>
     <div class="card cb">
-      <div class="invbox"><code>${esc(T.invite.replace(/[^/]+$/,''))}<b>${esc(T.invite.split('/').pop())}</b></code><button class="btn" id="btnCopy">Скопировать</button></div>
-      <div class="invfoot"><span>Одна ссылка для всех клиентов, без срока. Клиент входит по номеру телефона и сразу привязан к вам.</span><button class="btn gh sm" id="btnNewLink">Выпустить новую</button></div>
+      ${inviteBlockHTML({newLink:'<button class="lnk-new" id="btnNewLink">Выпустить новую ссылку</button>'})}
     </div>
 
     <div class="sechead"><span class="t">Реквизиты для оплаты занятий</span><span class="ln"></span></div>
@@ -172,7 +171,7 @@ function bindProfile(){
   $$('[data-t]').forEach(i=>i.onchange=e=>{ T[i.dataset.t]=e.target.value.trim(); if(i.dataset.t==='first'||i.dataset.t==='last'){ T.n=(T.first+' '+T.last).trim(); T.ini=(T.first[0]||'')+(T.last[0]||''); renderNav('profile.html') } save('Сохранено'); if(i.dataset.t!=='about') render() });
   $('#payHow').onchange=e=>{ P.payHow=e.target.value.trim(); save('Сохранено') };
   $('#inPhoto').onchange=e=>{ const f=e.target.files[0]; if(f) photoFrom(f, url=>{ P.photo=url; save('Фото обновлено'); render() }) };
-  $('#btnCopy').onclick=()=>{ navigator.clipboard?.writeText(T.invite); if(NEWTR && !onbState().invited){ onbState().invited = true; saveState() } toast('Ссылка скопирована') };
+  inviteBlockBind();
   $('#btnNewLink').onclick=()=>openModal({title:'Новая ссылка', body:`<p class="lead">Прежняя ссылка сразу перестанет работать: кто откроет её, увидит «Ссылка устарела» и просьбу запросить новую у тренера. Клиенты, которые уже пришли, останутся с вами.</p>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" data-close id="mdNewLink">Выпустить</button>`});
   $('#btnPass').onclick=()=>openModal({title:'Сменить пароль', body:`
