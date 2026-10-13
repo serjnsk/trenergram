@@ -120,6 +120,12 @@ a{color:var(--acc-d)}
 .bro svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .bro .hi{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:#141414}
 .bro.light .hi{background:#fff}
+.bro .tgb{position:absolute;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:0 14px;border-bottom:1px solid rgba(0,0,0,.08);background:#F7F7F7;color:#141414;font:400 17px/1 -apple-system,"Inter",sans-serif}
+.bro .tgb>span{min-width:64px;display:flex;color:#2481CC}
+.bro .tgb>span:last-child{justify-content:flex-end}
+.bro .tgb b{display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:600;font-size:15px}
+.bro .tgb s{text-decoration:none;font-weight:400;font-size:12px;color:#8A8A8E}
 .bro .bst{position:absolute;left:0;right:0;top:0;height:24px;display:flex;align-items:center;justify-content:space-between;
   padding:0 16px;font:500 13px/1 "Roboto","Inter",sans-serif}
 .dims{font:500 12px/1 var(--mono);color:var(--tx3);text-align:center;padding-bottom:10px}
@@ -234,8 +240,8 @@ const CHEV = '<svg class="chv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg
    рисует стенд: у iPhone снизу панель Safari, у Android сверху статус-бар
    и адресная строка Chrome, снизу жестовая полоса */
 const DEVICES = {
-  iphone:  { name: 'iPhone',  r: 55, pad: 12, note: 'safe area 59 / 34', web: { top: 0, bottom: 84 } },
-  android: { name: 'Android', r: 28, pad: 9,  note: 'полосы 24 / 16',    web: { top: 80, bottom: 16 } }
+  iphone:  { name: 'iPhone',  r: 55, pad: 12, note: 'safe area 59 / 34', web: { top: 0, bottom: 84 }, tg: { top: 103, bottom: 0 } },
+  android: { name: 'Android', r: 28, pad: 9,  note: 'полосы 24 / 16',    web: { top: 80, bottom: 16 }, tg: { top: 80, bottom: 16 } }
 };
 /* Разрешения экрана — отдельно от устройства */
 const SIZES = [[360, 780], [450, 976]];
@@ -289,9 +295,9 @@ function renderParams() {
 /* Параметры поменялись: экран остаётся, если он есть в новом сценарии,
    иначе — первый экран сценария */
 function setParams(p) {
-  const was = st.p.platform;
+  const was = st.p.platform, wasW = st.p.where;
   st.p = clNorm(Object.assign({}, st.p, p));
-  if (st.p.platform !== was) {     /* веб ↔ приложение — другая рамка, перезагружаем фрейм */
+  if (st.p.platform !== was || (st.p.platform === 'web' && st.p.where !== wasW)) {     /* веб ↔ приложение, браузер ↔ Telegram — другая рамка, перезагружаем фрейм */
     const o = clInFlow(st.id, st.p);
     if (!o) { st.id = clSeq(st.p)[0].id; st.v = ''; }
     loadFrame(); sync(); return;
@@ -352,7 +358,10 @@ function loadFrame() {
   const d = dev(), web = st.p.platform === 'web';
   document.body.className = 'f-' + st.dev;
   /* В вебе приложению достаётся высота за вычетом полос браузера */
-  const top = web ? d.web.top : 0, bot = web ? d.web.bottom : 0;
+  /* Telegram показывает ссылку в своём браузере: сверху его полоса, снизу
+     у iPhone только полоска Home (её держит safe area приложения) */
+  const tg = web && st.p.where === 'tg';
+  const top = tg ? d.tg.top : web ? d.web.top : 0, bot = tg ? d.tg.bottom : web ? d.web.bottom : 0;
   const sc = $('scrn'), ph = $('phone');
   sc.className = 'scrn' + (web ? ' web' : '');
   sc.style.width = d.w + 'px'; sc.style.height = d.h + 'px'; sc.style.borderRadius = d.r + 'px';
@@ -361,7 +370,7 @@ function loadFrame() {
   $('broTop').className = 'bro top' + (top ? ' on' : ''); $('broTop').style.height = top + 'px';
   $('broBot').className = 'bro bot' + (bot ? ' on' : ''); $('broBot').style.height = bot + 'px';
   drawBrowser();
-  fr.src = 'app.html?frame=' + st.dev + (web ? '-web' : '') + '&p=' + pStr(st.p) + appHash();
+  fr.src = 'app.html?frame=' + st.dev + (web ? '-web' : '') + (tg ? '-tg' : '') + '&p=' + pStr(st.p) + appHash();
   $('dev').innerHTML = Object.entries(DEVICES).map(([k, x]) =>
     `<button class="${k === st.dev ? 'on' : ''}" data-dev="${k}">${x.name}</button>`).join('');
   $('size').innerHTML = SIZES.map(([w, h]) =>
@@ -375,6 +384,19 @@ const send = m => fr.contentWindow && fr.contentWindow.postMessage(m, '*');
 const HOST = location.hostname === 'localhost' ? 'localhost' : location.hostname;
 function drawBrowser() {
   const i = s => `<svg viewBox="0 0 24 24">${s}</svg>`;
+  const dots = v => i(v ? '<circle cx="12" cy="6" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="18" r="1.3" fill="currentColor"/>'
+    : '<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>');
+  if (st.p.platform === 'web' && st.p.where === 'tg') {
+    /* Встроенный браузер Telegram: «Закрыть», заголовок с адресом, меню */
+    const and = st.dev === 'android';
+    $('broTop').innerHTML = `<div class="bst"${and ? '' : ' style="height:59px;padding:0 34px;font:600 17px/1 -apple-system,Inter,sans-serif"'}><span>9:41</span><span></span></div>
+      <div class="tgb" style="top:${and ? 24 : 59}px">
+        <span>${and ? i('<path d="M6 6l12 12M18 6L6 18"/>') : 'Закрыть'}</span>
+        <b>Тренерграм<s>${HOST}</s></b>
+        <span>${dots(and)}</span></div>`;
+    $('broBot').innerHTML = and ? '<i class="hi" style="width:108px;margin-left:-54px;bottom:6px;height:4px;opacity:.5"></i>' : '';
+    return;
+  }
   if (st.dev === 'iphone') {
     $('broBot').innerHTML = `<span class="rnd" style="left:16px">${i('<path d="M15 5l-7 7 7 7"/>')}</span>
       <span class="pill" style="left:72px;right:72px;top:10px;height:48px;padding:0 16px;border-radius:24px">${i('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9h16"/>')}<span style="flex:1;text-align:center">${HOST}</span>${i('<path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/>')}</span>

@@ -192,7 +192,9 @@ const clFrame = new URLSearchParams(location.search).get('frame');
 /* frame: iphone, android — приложение; iphone-web, android-web — в браузере */
 { const [dev, web] = String(clFrame || '').split('-');
   if (dev === 'iphone' || dev === 'android') document.documentElement.classList.add('f-' + dev);
-  if (web === 'web') document.documentElement.classList.add('f-web'); }
+  if (web === 'web') document.documentElement.classList.add('f-web');
+  /* Встроенный браузер Telegram: его полосу сверху вместе со статус-баром рисует стенд */
+  if (String(clFrame).endsWith('-tg')) document.documentElement.classList.add('f-tg'); }
 const clInFrame = window.parent !== window;
 
 const clDev = document.getElementById('dev');
@@ -267,7 +269,8 @@ const CL_SHEETS = {
     icon: true,
     title: 'Установите Тренерграм на телефон',
     text: 'Приложение будет открываться с главного экрана в одно касание и работать без интернета.',
-    acts: ['Установить', 'Позже']
+    acts: ['Установить', 'Позже'],
+    howto: true   /* «Установить» — то же слайдшоу, что у шага «Иконка на экране» */
   }
 };
 function clSheet(id) {
@@ -279,11 +282,11 @@ function clSheet(id) {
   w.className = 'shw';
   w.innerHTML = `<div class="shbg" data-close></div>
     <div class="sheet" role="dialog" aria-label="${clEsc(x.title)}"><i class="grab"></i>
-      ${x.icon ? '<span class="appic"><i>ТМ</i></span>' : ''}
+      ${x.icon ? CL_MARK('appic') : ''}
       <h2>${clEsc(x.title)}</h2>
       <p>${clEsc(x.text)}</p>
       <div class="acts">${x.acts.map((l, i) =>
-        `<button class="btn ${i ? 'sec' : 'pri'}" data-close>${clEsc(l)}</button>`).join('')}</div>
+        `<button class="btn ${i ? 'sec' : 'pri'}" data-close${!i && x.howto ? ' data-howto' : ''}>${clEsc(l)}</button>`).join('')}</div>
     </div>`;
   clDev.appendChild(w);
 }
@@ -295,7 +298,7 @@ let clSheetShown = false;
 function clGo(id, v, replace) {
   const o = clInFlow(id, clP);
   const sc = CL_SCREENS[id];
-  if (!v && sc.sheetView && clP.platform === 'web' && !clSheetShown) { v = sc.sheetView; clSheetShown = true; }
+  if (!v && sc.sheetView && clP.platform === 'web' && clP.where !== 'pwa' && !clSheetShown) { v = sc.sheetView; clSheetShown = true; }
   const h = clHash(id, clView(id, v || (o && o.v)));
   if (h === location.hash) return clRender();
   if (replace) { clStack.pop(); location.replace(h); }
@@ -321,7 +324,9 @@ clDev.addEventListener('click', e => {
   const b = e.target.closest('[data-back]');
   if (b) { if (clStack.length > 1) history.back(); return; }
   const c = e.target.closest('[data-close]');
-  if (c) { const { id, v } = clParse(location.hash); clGo(id, clBase(id, v), true); return; }
+  if (c) { const { id, v } = clParse(location.hash); clGo(id, clBase(id, v), true);
+    if (c.hasAttribute('data-howto')) setTimeout(clHowto, 240);
+    return; }
   const g = e.target.closest('[data-go]');
   if (g) {
     /* @next — следующий экран сценария при текущих параметрах */
@@ -335,7 +340,7 @@ addEventListener('message', e => {
   const m = e.data || {};
   if (m.cl === 'go') { if (m.p) clP = clNorm(m.p); clGo(m.id, m.v, m.replace); }
   /* Оплата со стенда меняет вид текущего экрана — перерисовываем его */
-  if (m.cl === 'params') { const was = clP.pay; clP = clNorm(m.p); if (clP.pay !== was && clDev.querySelector('.scr')) { clCur = ''; clRender(); } }
+  if (m.cl === 'params') { const was = clP.pay + clP.where; clP = clNorm(m.p); if (clP.pay + clP.where !== was && clDev.querySelector('.scr')) { clCur = ''; clRender(); } }
   /* Тема со стенда: перерисовываем текущий экран — в настройках виден выбор */
   if (m.cl === 'theme' && m.t && clInFrame) { clS.set.theme = m.t; clSave(); clApplyTheme(); clCur = ''; clRender(); parent.postMessage({ cl: 'theme' }, '*'); }
   if (m.cl === 'back' && clStack.length > 1) history.back();

@@ -43,6 +43,11 @@ const CL_SVG = {
   link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
   wallet: '<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 15h2"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  share: '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/>',
+  addsq: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
+  book: '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
 /* Отдых — та же иконка, что в календаре кабинета тренера (из брифа) */
@@ -188,6 +193,26 @@ const CL_GOALS = ['Похудеть', 'Набрать мышечную масс�
 
 /* ═══════════ отрисовка ═══════════ */
 const CL_UI = {
+  /* R0. Ссылка открыта в Telegram — просим перейти в браузер до входа */
+  tgopen() {
+    const and = clOS() === 'android', br = and ? 'Chrome' : 'Safari';
+    return `<div class="pg auth tgo">
+      <div class="invc">
+        <div class="av">${clEsc(TRAINER.ini)}</div>
+        <div><em>Приглашение тренера</em><b>${clEsc(TRAINER.n)}</b><s>приглашает вас тренироваться · ${clEsc(TRAINER.workspace)}</s></div>
+      </div>
+      ${clHead('Откройте в ' + br, 'Из Telegram приложение не поставить на экран телефона. Перейдите в ' + br + ' и войдите там.')}
+      <button class="btn pri" data-openbr>${clI('link')}Открыть в ${br}</button>
+      <div class="card tgalt">
+        <b>Не открылось?</b>
+        <div class="mk sm">${clMock(and ? 'tg-and' : 'tg-ios')}</div>
+        <p>Нажмите <em>${and ? '⋮' : '⋯'}</em> вверху справа → <em>«Открыть в ${and ? 'браузере' : 'Safari'}»</em>. Или скопируйте ссылку в ${br}.</p>
+        <button class="btn sec" data-copylink>Скопировать ссылку</button>
+      </div>
+      <button class="lnk tgstay" data-go="@next">Продолжить в Telegram</button>
+    </div>`;
+  },
+
   /* R1. Вход по номеру — единый для новых и существующих */
   phone(sc, v) {
     const inv = v === 'invite' ? `<div class="invc">
@@ -279,20 +304,16 @@ const CL_UI = {
       return `<button class="wd${date === sel ? ' on' : ''}${date === TODAY ? ' today' : ''}" data-date="${date}">
         <s>${RU[k]}</s><b>${D(date).getDate()}</b><i class="${x.rest ? '' : x.comp ? 'comp' : 'has'}"></i></button>`;
     }).join('');
-    /* Первые шаги — как «Getting started» у HWPO, задачи — из нашего продукта */
-    const pm = pmOf(CL_ME);
-    const tasks = [
-      ['Заполнить профиль', true, '', ''],
-      ['Указать рекорды', Object.keys(pm).length > 0, 'Указать', 'profile'],
-      ['Выполнить первую тренировку', Object.keys(clS.dayDone).length > 0, 'Начать', 'workout']
-    ];
+    /* Первые шаги — как «Getting started» у HWPO, задачи — из нашего продукта.
+       Шаг отмечается по факту и только тем, что клиент сделал сам */
+    const tasks = clFirstSteps();
     const nDone = tasks.filter(t => t[1]).length;
     const steps = nDone < tasks.length ? `<section class="card steps">
       <button class="sth" id="hidetasks" aria-expanded="${!clS.hideTasks}"><b>Первые шаги</b>${clI('down', clS.hideTasks ? '' : 'up')}<span>${nDone} / ${tasks.length}</span></button>
       <div class="prog"><i style="width:${nDone / tasks.length * 100}%"></i></div>
-      ${clS.hideTasks ? '' : `<div class="tasks">${tasks.map(([t, ok, act, to]) => `<div class="task${ok ? ' ok' : ''}">
+      ${clS.hideTasks ? '' : `<div class="tasks">${tasks.map(([t, ok, act, to, tab]) => `<div class="task${ok ? ' ok' : ''}">
         <i class="ck">${ok ? clI('check') : ''}</i><span>${clEsc(t)}</span>
-        ${!ok && act ? `<button class="go" data-go="${to}">${clEsc(act)} ${CL_ICON.next}</button>` : ''}</div>`).join('')}</div>`}
+        ${!ok && act ? `<button class="go" ${to === '@howto' ? 'data-howto' : `data-go="${to}"`}${tab ? ` data-tabgo="${tab}"` : ''}>${clEsc(act)} ${CL_ICON.next}</button>` : ''}</div>`).join('')}</div>`}
     </section>` : '';
     return `<header class="hhead">
       <div class="wmk">Тренерграм</div>
@@ -400,6 +421,13 @@ function clDayCard(x) {
 
 /* ═══════════ поведение ═══════════ */
 const CL_UI_MOUNT = {
+  tgopen(scr) {
+    scr.addEventListener('click', e => {
+      if (e.target.closest('[data-openbr]')) clToast(clOS() === 'android' ? 'Здесь откроется Chrome' : 'Здесь откроется Safari');
+      if (e.target.closest('[data-copylink]')) { try { navigator.clipboard.writeText(TRAINER.invite); } catch (x) {} clToast('Ссылка скопирована'); }
+    });
+  },
+
   phone(scr) {
     const inp = scr.querySelector('#tel'), btn = scr.querySelector('#getcode');
     const sync = () => {
@@ -462,6 +490,9 @@ const CL_UI_MOUNT = {
       const w = e.target.closest('[data-week]');
       if (w) { clDate = addDays(clDate, +w.dataset.week); clRepaint(scr, 'home'); return; }
       if (e.target.closest('#hidetasks')) { clS.hideTasks = !clS.hideTasks; clSave(); clRepaint(scr, 'home'); }
+      /* «Внести» ведёт в профиль сразу на нужную вкладку; переход делает роутер */
+      const tg = e.target.closest('[data-tabgo]'); if (tg) clProfOn = tg.dataset.tabgo;
+      if (e.target.closest('[data-howto]')) clHowto();
       if (e.target.closest('[data-mcal]')) clMonthCal(date => { clDate = date; clRepaint(scr, 'home'); });
     });
   },
@@ -524,6 +555,113 @@ function clRepaint(scr, id) {
   const top = scr.scrollTop;
   scr.innerHTML = CL_UI[id](CL_SCREENS[id], clParse(location.hash).v, clP);
   scr.scrollTop = top;
+}
+
+/* ═══ Первые шаги и «Иконка на экране» ═══ */
+
+/* Иконка приложения — знак из брендбука (mvp/brand/logo/trenergram-mark.svg):
+   в схемах слайдшоу и в подсказке установки */
+const CL_MARK = cls => `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FC5200"/><path fill="#fff" d="M12 32H46V42H34V66L28 72H24V42H12Z"/><path fill="#fff" d="M52 32H62L71 50L80 32H90V72H81V49L73 64H69L61 49V72H52Z"/></svg>`;
+
+/* Устройство: во фрейме стенда — класс рамки, на телефоне — по браузеру */
+const clOS = () => { const h = document.documentElement.classList;
+  return h.contains('f-android') ? 'android' : h.contains('f-iphone') ? 'ios' : /Android/i.test(navigator.userAgent) ? 'android' : 'ios'; };
+
+/* [название, выполнено, кнопка, куда, вкладка профиля].
+   Иконка — только в мобильном вебе: в приложении из стора её ставит магазин */
+function clFirstSteps() {
+  const st = [];
+  if (clP.platform === 'web') st.push(['Добавить иконку на экран', clP.where === 'pwa', 'Как?', '@howto']);
+  st.push(
+    ['Внести рекорды', Object.values(clS.pmh).some(a => a && a.length), 'Внести', 'profile', 'pr'],
+    ['Внести замеры', clS.meas.length > 0, 'Внести', 'profile', 'meas'],
+    ['Поставить фото профиля', !!clS.photo, 'Поставить', 'profile', 'pr'],
+    ['Выполнить первую тренировку', Object.keys(clS.dayDone).length > 0, 'Начать', 'workout'],
+    ['Оставить комментарий к упражнению', Object.values(clS.sent).some(a => a && a.length), 'Открыть', 'workout']);
+  return st;
+}
+
+/* Схемы экранов для слайдшоу: не скриншоты, а упрощённый телефон —
+   страница скелетоном, системные кнопки, нужная подсвечена (.hl) */
+function clMock(k) {
+  const pg = '<div class="mpg"><i></i><i></i><i></i><b></b></div>';
+  const host = 'trenergram.app';
+  const menu = (rows, cls) => `<div class="mmenu ${cls}">${rows.map(([t, ic, hl]) => `<div class="${hl ? 'hl' : ''}"><span>${t}</span>${ic ? clI(ic) : ''}</div>`).join('')}</div>`;
+  const dots3 = '<svg viewBox="0 0 24 24" class="i"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>';
+  const dotsV = '<svg viewBox="0 0 24 24" class="i"><circle cx="12" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18" r="1.6"/></svg>';
+  const appic = CL_MARK('mapp');
+  switch (k) {
+    /* iOS 26 Safari: снизу «назад», адрес, «⋯»; «Поделиться» — в меню «⋯» */
+    case 'ios-menu': return pg + menu([['Поделиться', 'share', 1], ['Добавить в закладки', 'book'], ['Найти на странице', 'search']], 'br') +
+      `<div class="msaf"><span class="rb">${clI('left')}</span><span class="pill">${host}</span><span class="rb hl">${dots3}</span></div>`;
+    case 'ios-share': return pg + `<div class="mdim"></div><div class="msh"><div class="mhd">${appic}<span><b>Тренерграм</b><s>${host}</s></span></div>
+      <div class="mapps"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="mlist"><div><span>Скопировать</span>${clI('link')}</div><div><span>Добавить в Избранное</span>${clI('book')}</div><div class="hl"><span>На экран «Домой»</span>${clI('addsq')}</div></div></div>`;
+    case 'ios-add': return `<div class="mnav"><span>Отменить</span><b>На экран «Домой»</b><span class="hl">Добавить</span></div>
+      <div class="mcard">${appic}<span><b>Тренерграм</b><s>${host}</s></span></div>
+      <div class="mcard row"><span>Открывать как веб-приложение</span><i class="tgl on"></i></div>`;
+    case 'home': return `<div class="mhome">${Array.from({ length: 12 }, (_, i) => i === 6
+      ? `<span class="me hl">${appic}<s>Тренерграм</s></span>` : '<span><i></i><s></s></span>').join('')}</div>`;
+    /* Android Chrome: адрес и «⋮» сверху */
+    case 'and-menu': return `<div class="mchr"><span class="pill">${host}</span><span class="rb hl">${dotsV}</span></div>` + pg +
+      menu([['Новая вкладка', 'plus'], ['История', 'cal'], ['Добавить на гл. экран', 'addsq', 1], ['Настройки', 'gear']], 'tr');
+    case 'and-install': return pg + `<div class="mdim"></div><div class="mdlg">${appic}<b>Установить приложение?</b><s>Тренерграм · ${host}</s>
+      <div class="mbtns"><span>Отмена</span><span class="hl">Установить</span></div></div>`;
+    /* Встроенный браузер Telegram: сверху «Закрыть», заголовок, меню */
+    case 'tg-ios': case 'tg-and': { const a = k === 'tg-and';
+      return `<div class="mtg"><span>${a ? clI('x') : 'Закрыть'}</span><b>Тренерграм<s>${host}</s></b><span class="rb hl">${a ? dotsV : dots3}</span></div>` + pg +
+        menu([[a ? 'Открыть в браузере' : 'Открыть в Safari', 'compass', 1], ['Скопировать ссылку', 'link'], ['Поделиться', 'share']], 'tr tgm'); }
+  }
+  return pg;
+}
+
+/* Слайды для текущего места: Telegram → сначала в браузер, дальше шаги браузера */
+function clSlides() {
+  const and = clOS() === 'android', tg = clP.where === 'tg', out = [];
+  if (tg) out.push(['tg-' + (and ? 'and' : 'ios'), and ? 'Сначала откройте в Chrome' : 'Сначала откройте в Safari',
+    `Telegram не умеет добавлять сайты на экран. Нажмите ${and ? '«⋮»' : '«⋯»'} вверху справа и «Открыть в ${and ? 'браузере' : 'Safari'}», там войдите по номеру ещё раз.`]);
+  if (and) out.push(
+    ['and-menu', 'Нажмите «⋮» вверху справа', 'Затем — «Добавить на гл. экран».'],
+    ['and-install', 'Нажмите «Установить»', 'Chrome сам положит иконку на экран телефона.'],
+    ['home', 'Готово — Тренерграм на экране', 'Открывайте его с иконки, как обычное приложение.']);
+  else out.push(
+    ['ios-menu', 'Нажмите «⋯» внизу справа', 'Затем — «Поделиться». На старых iPhone кнопка «Поделиться» сразу внизу экрана.'],
+    ['ios-share', 'Выберите «На экран „Домой“»', 'Если пункта не видно — пролистайте список вниз.'],
+    ['ios-add', 'Нажмите «Добавить»', 'Переключатель «Открывать как веб-приложение» оставьте включённым.'],
+    ['home', 'Готово — Тренерграм на экране', 'Открывайте его с иконки. В первый раз войдите по номеру ещё раз — это 10 секунд.']);
+  return out;
+}
+
+/* Слайдшоу — лист снизу; листается кнопками и свайпом */
+function clHowto() {
+  const sl = clSlides(); let i = 0;
+  const w = document.createElement('div');
+  w.className = 'shw';
+  const draw = (dir) => {
+    const [m, t, d] = sl[i], last = i === sl.length - 1;
+    w.innerHTML = `<div class="shbg" data-x></div>
+    <div class="sheet howto" role="dialog" aria-label="Иконка на экране"><i class="grab"></i>
+      <div class="hth"><s>Шаг ${i + 1} из ${sl.length}</s><button class="ib sm" data-x aria-label="Закрыть">${clI('x')}</button></div>
+      <div class="mk${dir ? ' ' + dir : ''}">${clMock(m)}</div>
+      <h2>${clEsc(t)}</h2><p>${clEsc(d)}</p>
+      <div class="hdots">${sl.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="hbtn">${i ? '<button class="btn sec" data-prev>Назад</button>' : ''}<button class="btn pri" ${last ? 'data-x' : 'data-next'}>${last ? 'Понятно' : 'Дальше'}</button></div>
+    </div>`;
+    /* Перелистывание — лист на месте, едет только схема */
+    if (dir) w.querySelectorAll('.sheet,.shbg').forEach(el => { el.style.animation = 'none'; });
+  };
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 220); };
+  const go = d => { const n = i + d; if (n < 0 || n >= sl.length) return; i = n; draw(d > 0 ? 'fwd' : 'bk'); };
+  w.addEventListener('click', e => {
+    if (e.target.closest('[data-x]')) close();
+    else if (e.target.closest('[data-next]')) go(1);
+    else if (e.target.closest('[data-prev]')) go(-1);
+  });
+  let x0 = null;
+  w.addEventListener('pointerdown', e => { if (e.target.closest('.mk')) x0 = e.clientX; });
+  w.addEventListener('pointerup', e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); });
+  draw('');
+  document.getElementById('dev').appendChild(w);
 }
 
 /* Техника упражнения — лист снизу: демонстрация, акценты тренера и шаги из

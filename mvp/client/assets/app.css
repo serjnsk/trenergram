@@ -476,8 +476,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 
 /* листы снизу: подсказка установки, техника */
 .sheet{max-height:88%;overflow-y:auto}
-.appic{align-self:flex-start;display:grid;place-items:center;width:56px;height:56px;border-radius:13px;background:var(--c-grad)}
-.appic i{font:900 23px/1 var(--c-head);font-style:normal;letter-spacing:-.05em;color:#fff}
+.appic{align-self:flex-start;display:block;width:56px;height:56px;flex:none}
 .tgif{display:block;width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:#fff}
 .tgif.none{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;aspect-ratio:16/9;background:var(--s2);color:var(--tx3)}
 .tgif.none .i{width:34px;height:34px;fill:var(--line2);stroke:none}
@@ -751,3 +750,110 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .fst.ok{color:var(--ok)} .fst.warn{color:var(--acc-d)}
 .fcardp .fbtn{margin:6px 0 -10px;padding:0}
 .evi.t-fee{background:var(--acc);color:#fff}
+
+/* Telegram-рамка стенда: статус-бар и полосу браузера рисует стенд */
+html.f-tg.f-iphone{--sa-t:0px;--sa-b:34px}
+.f-tg .sbar{display:none}
+.f-tg.f-iphone .hbar{display:flex}
+
+/* ── R0. Ссылка открыта в Telegram ── */
+.tgo{padding-top:16px}
+.tgo .invc{margin-bottom:16px}
+.tgo .h1{font-size:26px}
+.tgo .mk.sm{height:128px}
+.tgo>.btn.pri{margin-top:18px;width:100%;gap:8px}
+.tgalt{margin-top:12px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.tgalt>b{font:800 16px var(--ui);color:var(--ink)}
+.tgalt p{margin:0;font-size:14.5px;line-height:1.4;color:var(--tx2)}
+.tgalt em{font-style:normal;font-weight:700;color:var(--ink)}
+.tgstay{color:var(--tx2)}
+
+/* ── Слайдшоу «Иконка на экране» ── */
+.howto{gap:8px}
+.hth{display:flex;align-items:center;justify-content:space-between;margin:-6px -6px 0 0}
+.hth s{text-decoration:none;font:700 13px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--acc-d)}
+.howto h2{margin-top:6px;font-size:20px}
+.howto p{font-size:15px;line-height:1.4;min-height:42px}
+.hdots{display:flex;justify-content:center;gap:6px;margin:6px 0 2px}
+.hdots i{width:6px;height:6px;border-radius:3px;background:var(--line2);transition:width .2s}
+.hdots i.on{width:18px;background:var(--acc)}
+.hbtn{display:flex;gap:10px;margin-top:6px}
+.hbtn .btn{flex:1}
+.mk.fwd{animation:mk-in .28s ease both}
+.mk.bk{animation:mk-back .28s ease both}
+@keyframes mk-in{from{opacity:0;transform:translateX(24px)}}
+@keyframes mk-back{from{opacity:0;transform:translateX(-24px)}}
+
+/* Схема телефона: упрощённый экран, нужная кнопка — оранжевым кольцом с пульсом.
+   Цвета системных элементов — нейтральные, как у iOS и Android, а не наши */
+.mk{position:relative;height:210px;border-radius:14px;overflow:hidden;background:#F2F2F4;color:#141414;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);font:500 12.5px/1.2 -apple-system,"Inter",sans-serif;touch-action:pan-y;user-select:none}
+.mk.sm{height:150px}
+.mk .i{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mk circle[r="1.6"]{fill:currentColor;stroke:none}
+.mpg{position:absolute;inset:14px 14px auto;display:flex;flex-direction:column;gap:8px}
+.mpg i{display:block;height:9px;border-radius:5px;background:rgba(0,0,0,.08)}
+.mpg i:nth-child(1){width:46%;height:12px}.mpg i:nth-child(2){width:84%}.mpg i:nth-child(3){width:64%}
+.mpg b{display:block;height:60px;border-radius:8px;background:rgba(0,0,0,.06)}
+.mchr+.mpg,.mtg+.mpg{top:52px}
+.mk .pill{flex:1;height:30px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;
+  color:#3C3C43;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.mk .rb{width:30px;height:30px;flex:none;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.msaf{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:8px;align-items:center}
+.mchr{position:absolute;left:0;right:0;top:0;height:44px;padding:0 8px 0 10px;display:flex;gap:6px;align-items:center;background:#fff}
+.mchr .pill{justify-content:flex-start;padding-left:12px;background:#F1F3F4;box-shadow:none}
+.mchr .rb,.mtg .rb{box-shadow:none;background:transparent}
+.mtg{position:absolute;left:0;right:0;top:0;height:44px;padding:0 8px 0 12px;display:flex;align-items:center;justify-content:space-between;
+  background:#F7F7F7;border-bottom:1px solid rgba(0,0,0,.08);color:#2481CC}
+.mtg b{display:flex;flex-direction:column;align-items:center;gap:1px;color:#141414;font-weight:600}
+.mtg b s{text-decoration:none;font-weight:400;font-size:10.5px;color:#8A8A8E}
+.mtg>span:first-child{min-width:56px}
+.mmenu{position:absolute;width:196px;white-space:nowrap;background:rgba(255,255,255,.96);border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 28px -6px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.08)}
+.mmenu.br{right:10px;bottom:48px}
+.mmenu.tr{right:8px;top:40px}
+.mmenu>div{display:flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 12px;border-top:.5px solid rgba(0,0,0,.1)}
+.mmenu>div:first-child{border-top:0}
+.mdim{position:absolute;inset:0;background:rgba(0,0,0,.25)}
+.msh{position:absolute;left:0;right:0;bottom:0;top:22px;background:#F2F2F7;border-radius:14px 14px 0 0;padding:10px 10px 0}
+.mhd{display:flex;gap:8px;align-items:center}
+.mhd b,.mcard b{display:block;font-weight:600}
+.mhd s,.mcard s{display:block;text-decoration:none;color:#8A8A8E;font-size:11px}
+.mapps{display:flex;gap:10px;margin:10px 0}
+.mapps i{width:30px;height:30px;border-radius:9px;background:rgba(0,0,0,.09)}
+.mlist{background:#fff;border-radius:10px;overflow:hidden}
+.mlist>div{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border-top:.5px solid rgba(0,0,0,.1)}
+.mlist>div:first-child{border-top:0}
+.mk .mapp{width:30px;height:30px;flex:none;display:block}
+.mnav{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 10px;color:#007AFF}
+.mnav b{color:#141414;font-weight:600}
+.mnav span{padding:3px 4px;border-radius:6px}
+.mnav span.hl{font-weight:600}
+.mcard{display:flex;align-items:center;gap:10px;margin:6px 10px 0;padding:10px;border-radius:10px;background:#fff}
+.mcard.row{justify-content:space-between;margin-top:10px}
+.mk .tgl{width:38px;height:23px;border-radius:12px;background:#34C759}
+.mk .tgl::after{content:"";position:absolute;top:2px;left:auto;right:2px;transform:none;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.mhome{position:absolute;inset:0;padding:18px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px 10px;
+  background:linear-gradient(160deg,#7E8FB8,#C7A4A8 60%,#E9C9A8)}
+.mhome>span{display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:10px}
+.mhome>span>i{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.45)}
+.mhome s{width:30px;height:5px;border-radius:3px;background:rgba(255,255,255,.55)}
+.mhome .me .mapp{width:38px;height:38px}
+.mhome .me s{width:auto;height:auto;background:none;text-decoration:none;color:#fff;font-size:9.5px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.mdlg{position:absolute;left:22px;right:22px;top:34px;padding:14px;border-radius:20px;background:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  box-shadow:0 10px 30px -8px rgba(0,0,0,.35)}
+.mdlg b{margin-top:6px;font-weight:600;font-size:14px}
+.mdlg s{text-decoration:none;color:#5F6368}
+.mbtns{align-self:flex-end;display:flex;gap:16px;margin-top:10px;color:#0B57D0;font-weight:600}
+.mbtns span{padding:4px 6px;border-radius:14px}
+/* Подсветка нужного: кольцо + пульс; без анимации — только кольцо */
+.mk .hl{position:relative;box-shadow:0 0 0 2px var(--acc);border-radius:8px;z-index:1}
+.mk .rb.hl{border-radius:50%}
+.mk .hl::after{content:"";position:absolute;inset:-2px;border-radius:inherit;box-shadow:0 0 0 2px var(--acc);animation:mk-pulse 1.4s ease-out infinite;pointer-events:none}
+.mmenu>.hl,.mlist>.hl{color:var(--acc-d);font-weight:600;border-radius:0;box-shadow:inset 0 0 0 2px var(--acc)}
+.mmenu>.hl::after,.mlist>.hl::after{display:none}
+@keyframes mk-pulse{to{inset:-9px;opacity:0}}
+@media (prefers-reduced-motion:reduce){.mk .hl::after,.mk.fwd,.mk.bk{animation:none}}
+.mhome .me.hl{box-shadow:none}
+.mhome .me.hl::after{display:none}
+.mhome .me .mapp{border-radius:9px;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--acc)}
