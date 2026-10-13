@@ -576,8 +576,7 @@ function clFirstSteps() {
     ['Внести рекорды', Object.values(clS.pmh).some(a => a && a.length), 'Внести', 'profile', 'pr'],
     ['Внести замеры', clS.meas.length > 0, 'Внести', 'profile', 'meas'],
     ['Поставить фото профиля', !!clS.photo, 'Поставить', 'profile', 'pr'],
-    ['Выполнить первую тренировку', Object.keys(clS.dayDone).length > 0, 'Начать', 'workout'],
-    ['Оставить комментарий к упражнению', Object.values(clS.sent).some(a => a && a.length), 'Открыть', 'workout']);
+    ['Выполнить первую тренировку', Object.keys(clS.dayDone).length > 0, 'Начать', 'workout']);
   return st;
 }
 
