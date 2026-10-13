@@ -115,7 +115,8 @@ function measHTML(){
   </div>`;
 }
 /* Рекорды: 1ПМ и 3ПМ — оба вносятся тренером или клиентом; 3ПМ по умолчанию
-   пуст, пока его не зафиксировали. Динамика — графиком справа по выбранной строке. */
+   пуст, пока его не зафиксировали. Динамика — графиком справа по выбранной строке
+   (упражнение выбирается только строкой таблицы); длинный список прокручивается. */
 const pm3Of = cid => ((STATE.pm3 ||= {})[cid] ||= {});
 function pmHTML(){
   const pm = pmOf(C.id), pm3 = pm3Of(C.id), hist = C.hist || {};
@@ -137,11 +138,11 @@ function pmHTML(){
       <button class="btn gh sm" id="addPm">${ICON.plus} Добавить упражнение</button>
     </div>
     <div class="mbody">
-      <div class="tblwrap"><table class="tbl ctbl pmt" data-tbl="pm"><thead><tr><th>Упражнение</th><th class="r">1ПМ<s>кг</s></th><th class="r">3ПМ<s>кг</s></th><th class="r">Обновлён</th></tr></thead><tbody>
+      <div class="tblwrap pmscroll" id="pmScroll"><table class="tbl ctbl pmt" data-tbl="pm"><thead><tr><th>Упражнение</th><th class="r">1ПМ<s>кг</s></th><th class="r">3ПМ<s>кг</s></th><th class="r">Обновлён</th></tr></thead><tbody>
         ${keys.length ? keys.map(rowOf).join('') : '<tr><td colspan="4" class="mut">Рекордов пока нет — добавьте упражнение</td></tr>'}
       </tbody></table></div>
       <div class="mchart">
-        <div class="pmpick">${keys.map(k=>`<button data-pm-pick="${k}" class="${V.metric===k?'on':''}">${esc(pmLabel(k))}</button>`).join('')}</div>
+        ${V.metric ? `<div class="pmname">${esc(pmLabel(V.metric))}</div>` : ''}
         <div class="chartbox">${series ? lineChart(series,'кг') : '<div class="empty"><div class="t">Истории пока нет</div><div class="d">Появится после второго зафиксированного рекорда</div></div>'}</div>
       </div>
     </div>
@@ -149,6 +150,7 @@ function pmHTML(){
 }
 
 function render(){
+  const pmTop = ($('#pmScroll')||{}).scrollTop || 0;
   const P = C.prog ? program(C.prog) : null;
   const over = isOver(C.id);
   $('#page').innerHTML = limitAlertHTML(C.id) + `
@@ -193,9 +195,9 @@ function render(){
       ${payHTML()}
     </section>`}`;
 
+  const ps = $('#pmScroll'); if(ps) ps.scrollTop = pmTop;
   $$('[data-meas]').forEach(b=>b.onclick=()=>{ V.meas=b.dataset.meas; render() });
   $$('[data-pm-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input')) return; V.metric=r.dataset.pmRow; render() });
-  $$('[data-pm-pick]').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.pmPick; render() });
   $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; (C.hist[inp.dataset.pm] ||= []).push([TODAY, v]); saveState(); toast('1ПМ обновлён — проценты в тренировках пересчитаются'); render() });
   $$('[data-pm3]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); pm3Of(C.id)[inp.dataset.pm3] = isFinite(v) ? v : null; saveState(); toast('3ПМ записан') });
   /* Заметка растёт по высоте вместе с текстом — без прокрутки внутри поля. */

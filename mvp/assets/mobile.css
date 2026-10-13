@@ -276,6 +276,7 @@ td.mnil{display:none !important}
 .pmt .pmin{width:84px;height:44px}
 .mchart{padding:12px}
 .pmpick{gap:6px}
+.pmscroll{max-height:none}
 .pmpick button{height:36px;padding:0 12px;font-size:14.5px}
 .feenote{padding:10px 12px}
 .cols2,.cols3,.cols4{grid-template-columns:1fr}
