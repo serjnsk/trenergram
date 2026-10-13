@@ -311,12 +311,9 @@ const CL_UI = {
     const steps = nDone < tasks.length ? `<section class="card steps">
       <button class="sth" id="hidetasks" aria-expanded="${!clS.hideTasks}"><b>Первые шаги</b>${clI('down', clS.hideTasks ? '' : 'up')}<span>${nDone} / ${tasks.length}</span></button>
       <div class="prog"><i style="width:${nDone / tasks.length * 100}%"></i></div>
-      ${clS.hideTasks ? '' : `<div class="tasks">${tasks.map(([t, ok, to, tab]) => {
-        /* Невыполненный шаг нажимается целиком, справа — только стрелка: на 360 px название встаёт в одну строку */
-        const body = `<i class="ck">${ok ? clI('check') : ''}</i><span>${clEsc(t)}</span>`;
-        return ok ? `<div class="task ok">${body}</div>`
-          : `<button class="task" ${to === '@howto' ? 'data-howto' : `data-go="${to}"`}${tab ? ` data-tabgo="${tab}"` : ''}>${body}${clI('right', 'chev')}</button>`;
-      }).join('')}</div>`}
+      ${clS.hideTasks ? '' : `<div class="tasks">${tasks.map(([t, ok, act, to, tab]) => `<div class="task${ok ? ' ok' : ''}">
+        <i class="ck">${ok ? clI('check') : ''}</i><span>${clEsc(t)}</span>
+        ${!ok && act ? `<button class="go" ${to === '@howto' ? 'data-howto' : `data-go="${to}"`}${tab ? ` data-tabgo="${tab}"` : ''}>${clEsc(act)} ${CL_ICON.next}</button>` : ''}</div>`).join('')}</div>`}
     </section>` : '';
     return `<header class="hhead">
       <div class="wmk">Тренерграм</div>
@@ -570,16 +567,16 @@ const CL_MARK = cls => `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="t
 const clOS = () => { const h = document.documentElement.classList;
   return h.contains('f-android') ? 'android' : h.contains('f-iphone') ? 'ios' : /Android/i.test(navigator.userAgent) ? 'android' : 'ios'; };
 
-/* [название, выполнено, куда, вкладка профиля]. Названия короткие — в одну строку на 360 px.
+/* [название, выполнено, кнопка, куда, вкладка профиля].
    Иконка — только в мобильном вебе: в приложении из стора её ставит магазин */
 function clFirstSteps() {
   const st = [];
-  if (clP.platform === 'web') st.push(['Иконка на экране', clP.where === 'pwa', '@howto']);
+  if (clP.platform === 'web') st.push(['Добавить иконку на экран', clP.where === 'pwa', 'Как?', '@howto']);
   st.push(
-    ['Внести рекорды', Object.values(clS.pmh).some(a => a && a.length), 'profile', 'pr'],
-    ['Внести замеры', clS.meas.length > 0, 'profile', 'meas'],
-    ['Фото профиля', !!clS.photo, 'profile', 'pr'],
-    ['Первая тренировка', Object.keys(clS.dayDone).length > 0, 'workout']);
+    ['Внести рекорды', Object.values(clS.pmh).some(a => a && a.length), 'Внести', 'profile', 'pr'],
+    ['Внести замеры', clS.meas.length > 0, 'Внести', 'profile', 'meas'],
+    ['Поставить фото профиля', !!clS.photo, 'Поставить', 'profile', 'pr'],
+    ['Выполнить первую тренировку', Object.keys(clS.dayDone).length > 0, 'Начать', 'workout']);
   return st;
 }
 
