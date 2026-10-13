@@ -505,6 +505,9 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 /* замеры: шапка с постоянными данными, таблица слева, график справа */
 .mhead{display:flex;align-items:center;gap:28px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .mhead .sp{flex:1}
+/* постоянные данные над замерами и рекордами — «подпись значение» в строку, как поля шапки */
+.mmeta{display:flex;flex-wrap:wrap;gap:6px 32px;font-size:15px;font-weight:600;color:var(--ink)}
+.mmeta s{text-decoration:none;font-size:14px;font-weight:500;color:var(--tx3);margin-right:8px}
 .mh s{display:block;text-decoration:none;font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
 .mh b{display:block;font-size:15px;font-weight:600;margin-top:3px;white-space:nowrap}
 .mbody{display:grid;grid-template-columns:max-content minmax(360px,1fr);gap:0}

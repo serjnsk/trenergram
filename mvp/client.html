@@ -99,9 +99,7 @@ function measHTML(){
     return `<i class="dl ${d<0?'dn':d>0?'up':''}">${d ? (d>0?'+':'')+String(d).replace('.',',') : ''}</i>` };
   return `<div class="card">
     <div class="mhead">
-      <span class="mh"><s>Пол</s><b>${C.sex==='ж'?'Женский':'Мужской'}</b></span>
-      <span class="mh"><s>Дата рождения</s><b>${dlong(C.born)} · ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</b></span>
-      <span class="mh"><s>Рост</s><b>${C.h?C.h+' см':'—'}</b></span>
+      <span class="mmeta"><span><s>Рост</s>${C.h?C.h+' см':'—'}</span><span><s>Дата рождения</s>${dlong(C.born)}</span></span>
       <span class="sp"></span>
       <button class="btn gh sm" id="addMeas">${ICON.plus} Добавить замер</button>
     </div>
@@ -134,9 +132,7 @@ function pmHTML(){
   const series = V.metric && hist[V.metric] && hist[V.metric].length>1 ? hist[V.metric] : null;
   return `<div class="card">
     <div class="mhead">
-      <span class="mh"><s>Упражнений</s><b>${keys.length}</b></span>
-      <span class="mh"><s>Обновлён</s><b>${lastAll ? humanDate(lastAll) : '—'}</b></span>
-      <span class="mh"><s>Проценты в тренировках</s><b>от 1ПМ</b></span>
+      <span class="mmeta"><span><s>Упражнений</s>${keys.length}</span><span><s>Обновлено</s>${lastAll ? humanDate(lastAll) : '—'}</span></span>
       <span class="sp"></span>
       <button class="btn gh sm" id="addPm">${ICON.plus} Добавить упражнение</button>
     </div>
