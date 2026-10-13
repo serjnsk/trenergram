@@ -3142,8 +3142,8 @@ function clientRow(c, key, needsPm){
     <span class="box">${ICON.chk}</span>
     <span class="av">${esc(c.ini)}</span>
     <span class="who"><b>${esc(c.n)}</b>
-      <s>${blind ? 'нет максимума — проценты не посчитаются'
-                 : esc(has ? list : 'максимумы не заданы')}</s></span>
+      <s>${blind ? 'нет рекорда — проценты не посчитаются'
+                 : esc(has ? list : 'рекорды не заданы')}</s></span>
     <span class="pmv"><b>${pm[key]!=null?fmtN(pm[key]):'—'}</b><s>${esc(PMNAMES[key])}</s></span>
   </button>`;
 }

@@ -240,9 +240,10 @@ td.mnil{display:none !important}
 .cacts{flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cacts .btn{justify-content:center;padding:0 10px}
 .cacts .btn:only-child{grid-column:1 / -1}
-.cgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;padding:14px 0}
-.cf .k{white-space:normal;font-size:12px}
-.cf .v{white-space:normal;flex-wrap:wrap;min-height:28px;font-size:15px;overflow-wrap:anywhere}
+.cinfo{grid-template-columns:minmax(0,1fr);gap:10px;padding:12px 0}
+.cf{grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:center;padding:0}
+.cf .k{font-size:14px}
+.cf .v{min-height:28px;font-size:15px;align-items:center}
 .cnote{flex-direction:column;align-items:stretch;gap:8px}
 .cnote input{height:44px;font-size:16px}
 .ctabs{top:var(--mtop);margin:8px -8px 14px;border-radius:0;padding:6px 8px;overflow-x:auto;scrollbar-width:none;gap:4px}

@@ -117,7 +117,7 @@ function draw(){
         ${own ? `<div class="tags">${EX_UNITS.map(u=>`<button data-u="${esc(u)}" class="${(x.u||[]).includes(u)?'on':''}">${esc(u)}</button>`).join('')}</div>`
           : `<div>${chips(x.u||[])}</div>`}
         <div class="hint">В этих единицах вы задаёте нагрузку в тренировке, а клиент записывает результат (EX-3).</div>
-        <div class="setrow" style="margin-top:12px"><span class="t"><b>Расчёт от максимума</b><s>Процент в тренировке считается от 1ПМ этого движения</s></span>
+        <div class="setrow" style="margin-top:12px"><span class="t"><b>Расчёт от рекорда</b><s>Процент в тренировке считается от 1ПМ этого движения</s></span>
           ${own ? `<select class="inp" id="ePm" style="width:220px"><option value="">Нет</option>${Object.entries(PMNAMES).map(([k,n])=>`<option value="${k}" ${x.pm===k?'selected':''}>${esc(n)}</option>`).join('')}</select>`
             : `<b>${x.pm ? esc(PMNAMES[x.pm] || x.pm) : '<span style="color:var(--tx3);font-weight:500">нет</span>'}</b>`}</div>
       </div>

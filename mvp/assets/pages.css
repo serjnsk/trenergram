@@ -461,9 +461,15 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .cid .nm{font-family:var(--disp);font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
 .cid .sub{margin-top:4px;font-size:14.5px;color:var(--tx2)}
 .cacts{display:flex;align-items:center;gap:8px}
-.cgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 24px;margin-top:14px;padding:13px 0 14px;border-top:1px solid var(--line)}
-.cf .k{display:block;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);white-space:nowrap}
-.cf .v{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;max-width:100%;white-space:nowrap}
+/* поля шапки: две группы фиксированной ширины, «подпись — значение» сверху вниз;
+   длинное значение переносится в своей строке и не двигает соседей */
+.cinfo{display:grid;grid-template-columns:repeat(2,minmax(0,440px));gap:0 56px;margin-top:14px;padding:12px 0 10px;border-top:1px solid var(--line)}
+.cgt{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);padding:2px 0 6px}
+.cf{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:baseline;padding:5px 0}
+.cf .k{font-size:14px;color:var(--tx3)}
+.cf .v{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 6px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;min-width:0;overflow-wrap:anywhere;justify-self:start}
+.cf .v svg,.cf .v .dot{align-self:center}
+.cf .v s.ln2{flex-basis:100%;font-size:14px}
 .cf a.v:hover{color:var(--acc-d)}
 .cf .v svg{width:14px;height:14px;color:var(--tx3);flex:none}
 .cf a.v:hover svg{color:var(--acc)}
@@ -477,11 +483,15 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .cnote .k i{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;color:var(--tx3)}
 .cnote input{flex:1;min-width:0;font-size:14.5px;height:30px;padding:0 10px;border-radius:var(--rad-m);background:#FFF8E6;border:1px dashed #F0D9A0}
 .cnote input:focus{outline:0;border-style:solid;border-color:#E3C170}
-.ctabs{position:sticky;top:58px;z-index:5;display:flex;gap:2px;background:var(--bg);border-radius:var(--rad-l);padding:6px;margin:12px 0 18px;border-bottom:1px solid var(--line)}
+.ctabs{display:flex;gap:2px;background:var(--bg);border-radius:var(--rad-l);padding:6px;margin:12px 0 18px;border-bottom:1px solid var(--line)}
 .ctabs a{height:34px;padding:0 14px;border-radius:var(--rad-m);display:inline-flex;align-items:center;font-size:15px;font-weight:600;color:var(--tx2);text-decoration:none}
 .ctabs a:hover{background:var(--s1);color:var(--ink)}
 .ctabs a.on{background:var(--acc-a);color:var(--acc-d)}
-.csec{scroll-margin-top:120px;margin-bottom:26px}
+.csec{margin-bottom:26px}
+/* оплата и лента — узкие блоки: две-три колонки не разъезжаются по краям */
+#pay,#events{max-width:960px}
+#pay .mhead .btn{white-space:nowrap}
+.cev{padding-top:12px}
 .csec .sechead{margin-top:0}
 .csec .sechead .lnk{font-size:14px;color:var(--acc-d)}
 
@@ -493,7 +503,7 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .mhead .sp{flex:1}
 .mh s{display:block;text-decoration:none;font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
 .mh b{display:block;font-size:15px;font-weight:600;margin-top:3px;white-space:nowrap}
-.mbody{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0}
+.mbody{display:grid;grid-template-columns:max-content minmax(360px,1fr);gap:0}
 .mbody .tblwrap{border-right:1px solid var(--line)}
 .mtbl th{white-space:nowrap}
 .mtbl th s{display:block;text-decoration:none;font-size:13px;font-weight:600;color:var(--tx3);letter-spacing:.04em;text-transform:none}
@@ -504,7 +514,7 @@ select.inp{-webkit-appearance:none;appearance:none;cursor:pointer;padding-right:
 .mtbl td.r .dl{font-style:normal;font-size:13px;font-weight:600;text-align:left}
 .mtbl th.r{padding-right:52px}
 .mtbl .dl.up{color:var(--rm)} .mtbl .dl.dn{color:var(--ok)}
-/* обе таблицы карточки клиента — замеры и максимумы — с одинаковой высотой строк */
+/* обе таблицы карточки клиента — замеры и рекорды — с одинаковой высотой строк */
 .ctbl td{height:46px;padding:6px 12px}
 .ctbl td.mut{color:var(--tx3);font-size:13.5px}
 .pmt th s{display:block;text-decoration:none;font-size:13px;font-weight:600;color:var(--tx3);letter-spacing:.04em;text-transform:none}

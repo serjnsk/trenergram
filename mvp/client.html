@@ -18,7 +18,7 @@
   <aside class="nav" id="nav"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
-    <div class="page"><div class="pagewrap wide">
+    <div class="page"><div class="pagewrap">
         <div class="phead" id="pagehead"></div>
         <div id="page"></div>
       </div></div>
@@ -32,17 +32,21 @@
 <script src="assets/ui.js"></script>
 <script>
 /* ═══════════ КАРТОЧКА КЛИЕНТА ═══════════
-   Шапка по паттерну CRM-профиля (Zoho/HubSpot): полоса идентификации (фото,
-   имя, пол и возраст, действия) → сетка подписанных полей (телефон, Telegram,
-   Max ссылками; с нами с; оплачено до; последняя активность — точка-статус) →
-   заметка тренера строкой на всю ширину. Ниже липкие табы-якоря:
-   Календарь (две недели) · События · Оплата (PAY-9) · Замеры (в динамике) ·
-   Максимумы (1ПМ/3ПМ с динамикой). Один экран без переходов. */
+   Ширина страницы ограничена (pagewrap без wide): на 1920 карточка не
+   растягивается, таблицы — по содержимому.
+   Шапка: фото, имя, пол и возраст, действия (конструктор, календарь) → две
+   группы полей «подпись — значение» сверху вниз: «Связь» (телефон, Telegram,
+   Max) и «Тренировки» (программа и докуда составлено, оплачено до, последняя
+   активность, с нами с) → заметка тренера. Длинное значение переносится в своей
+   строке и не ломает ряд. Ниже табы: Обзор (замеры и рекорды) · События ·
+   Оплата (PAY-9); открытый таб — в адресе (#events, #pay). */
 const CID = new URLSearchParams(location.search).get('id') || STATE.curClient || 'c1';
 const C = client(CID) || CLIENTS[0];
 STATE.curClient = C.id; saveState();
 const V = { metric: Object.keys(C.hist||{})[0] || 'squat', meas:'w' };
-const SECTIONS = [['cal','Календарь'],['events','События'],['pay','Оплата'],['meas','Замеры'],['pm','Максимумы']];
+const TABS = [['overview','Обзор'],['events','События'],['pay','Оплата']];
+const tabOf = h => TABS.some(t=>t[0]===h) ? h : 'overview';
+V.tab = tabOf(location.hash.slice(1));
 const MEAS = [['w','Вес','кг'],['waist','Талия','см'],['chest','Грудь','см'],['hips','Бёдра','см'],['fat','Жир','%']];
 const pmLabel = k => PMNAMES[k] || (EX.find(e=>e.id===k)||{}).ru || k;
 const CI = {
@@ -52,12 +56,12 @@ const CI = {
 };
 const dlong = iso => { const d = new Date(iso+'T00:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear() };
 const dshort = iso => dm(iso)+'.'+iso.slice(0,4);
-/* «Оплачено до» в шапке — ссылкой на раздел оплаты. */
+/* «Оплачено до» в шапке — ссылкой на таб оплаты. */
 const paidKV = () => { const st = feeState(C);
-  if(st === 'none') return '<a class="v" href="#pay" data-sec-go="pay"><i class="dot"></i>не ведётся</a>';
+  if(st === 'none') return '<a class="v" href="#pay" data-tab-go="pay"><i class="dot"></i>не ведётся</a>';
   const r = daysBetween(TODAY, C.paidUntil), left = `ещё ${r} ${plural(r,'день','дня','дней')}`;
   const [cls, tx] = {closed:['rm','доступ закрыт'], today:['warn','последний день'], tomorrow:['warn','завтра'], soon:['warn',left], ok:['ok',left]}[st];
-  return `<a class="v ${cls}" href="#pay" data-sec-go="pay"><i class="dot"></i>${dshort(C.paidUntil)} <s>· ${tx}</s></a>` };
+  return `<a class="v ${cls}" href="#pay" data-tab-go="pay"><i class="dot"></i>${dshort(C.paidUntil)} <s>· ${tx}</s></a>` };
 /* Оплата занятий (PAY-9): сумма, срок, доступ, кнопки и история платежей.
    Не ведётся — клиент тренируется без ограничений, кнопка «Задать оплату». */
 function payHTML(){
@@ -82,21 +86,12 @@ function payHTML(){
     </tbody></table></div>
   </div>`;
 }
+/* Программа и докуда составлено — то, что раньше стояло над календарём. */
+const progKV = P => { if(!P) return '<span class="v"><i class="dot"></i>не назначена</span>';
+  const n = composedDays(C.prog);
+  return `<a class="v" href="calendar.html?client=${C.id}" title="Открыть календарь">${esc(P.title)} <s class="ln2">${n ? 'составлено до ' + dm(dayDate(C.prog, n-1)) : 'ничего не составлено'}</s></a>` };
 const actKV = () => !C.last ? '<span class="v"><i class="dot"></i>ещё не заходил</span>' : `<span class="v ${daysBetween(C.last,TODAY)>=3?'warn':'ok'}"><i class="dot"></i>${ago(C.last)}</span>`;
 
-/* Две недели — текущая и следующая — теми же карточками, что в календаре. */
-function laneHTML(){
-  const P = C.prog ? program(C.prog) : null, plan = P ? buildPlan(C.prog) : [];
-  const wk0 = addDays(TODAY, -dowMon(TODAY));
-  return `<div class="days cal compact">${Array.from({length:14},(_,k)=>{ const date=addDays(wk0,k), dt=new Date(date+'T00:00:00'); const i = P ? daysBetween(P.start, date) : -1;
-    const inProg = !!P && i>=0, x = inProg && i<plan.length ? plan[i] : null; const n = x ? dayCount(x) : 0;
-    const mon = (dt.getDate()===1 || k===0) ? ' '+MONTHS[dt.getMonth()].slice(0,3) : '';
-    const head=`<span class="d"><s>${RU[dowMon(date)]}</s>${dt.getDate()}${mon?`<s>${mon.trim()}</s>`:''}${date===TODAY?'<i class="tdot" title="Сегодня"></i>':''}</span>`;
-    const cls = date===TODAY ? ' today' : '';
-    if(!x) return `<a class="day empty rest${cls}" href="constructor.html?client=${C.id}&date=${date}" title="Составить этот день">${head}${restCell()}</a>`;
-    const st = dayStatus(x, x.draft), tt = st==='comp' ? (x.title && x.title!=='Отдых' ? x.title : 'Соревнование') : (x.title||'Без названия');
-    return `<a class="day cmp ${st}${cls}" href="constructor.html?client=${C.id}&date=${date}">${head}${dayMark(st, C.prog + ':' + i)}${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>${grpTag(x)}`}</a>`; }).join('')}</div>`;
-}
 /* Замеры в динамике: график по выбранному показателю и таблица по датам. */
 function measHTML(){
   const rows = (C.meas||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -125,7 +120,7 @@ function measHTML(){
     </div>
   </div>`;
 }
-/* Максимумы: 1ПМ и 3ПМ — оба вносятся тренером или клиентом; 3ПМ по умолчанию
+/* Рекорды: 1ПМ и 3ПМ — оба вносятся тренером или клиентом; 3ПМ по умолчанию
    пуст, пока его не зафиксировали. Динамика — графиком справа по выбранной строке. */
 const pm3Of = cid => ((STATE.pm3 ||= {})[cid] ||= {});
 function pmHTML(){
@@ -151,11 +146,11 @@ function pmHTML(){
     </div>
     <div class="mbody">
       <div class="tblwrap"><table class="tbl ctbl pmt" data-tbl="pm"><thead><tr><th>Упражнение</th><th class="r">1ПМ<s>кг</s></th><th class="r">3ПМ<s>кг</s></th><th class="r">Обновлён</th></tr></thead><tbody>
-        ${keys.length ? keys.map(rowOf).join('') : '<tr><td colspan="4" class="mut">Максимумов пока нет — добавьте упражнение</td></tr>'}
+        ${keys.length ? keys.map(rowOf).join('') : '<tr><td colspan="4" class="mut">Рекордов пока нет — добавьте упражнение</td></tr>'}
       </tbody></table></div>
       <div class="mchart">
         <div class="pmpick">${keys.map(k=>`<button data-pm-pick="${k}" class="${V.metric===k?'on':''}">${esc(pmLabel(k))}</button>`).join('')}</div>
-        <div class="chartbox">${series ? lineChart(series,'кг') : '<div class="empty"><div class="t">Истории пока нет</div><div class="d">Появится после второго зафиксированного максимума</div></div>'}</div>
+        <div class="chartbox">${series ? lineChart(series,'кг') : '<div class="empty"><div class="t">Истории пока нет</div><div class="d">Появится после второго зафиксированного рекорда</div></div>'}</div>
       </div>
     </div>
   </div>`;
@@ -170,49 +165,43 @@ function render(){
         <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
         <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}${groupOf(C.id) ? ` · <span class="gchips"><a class="gchip" href="groups.html?id=${groupOf(C.id).id}" title="Группа «${esc(groupOf(C.id).n)}»">${GRPICON}${esc(groupOf(C.id).n)}</a></span>` : ''}</div></div>
         <div class="cacts">
-          ${over ? '' : P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a><a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
+          ${over ? '' : P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
+          <a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>
         </div>
       </div>
-      <div class="cgrid">
-        <div class="cf"><span class="k">Телефон</span><a class="v" href="tel:${esc((C.phone||'').replace(/[^\d+]/g,''))}" title="Позвонить">${CI.phone}${esc(C.phone||'—')}</a></div>
-        <div class="cf"><span class="k">Telegram</span><a class="v" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}${esc(C.tg||'—')}</a></div>
-        <div class="cf"><span class="k">Max</span><a class="v" href="#" title="Написать в Max" data-max>${CI.max}${esc(C.max||'—')}</a></div>
-        <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
-        <div class="cf"><span class="k">Оплачено до</span>${paidKV()}</div>
-        <div class="cf"><span class="k">Последняя активность</span>${actKV()}</div>
+      <div class="cinfo">
+        <div class="cgrp"><div class="cgt">Связь</div>
+          <div class="cf"><span class="k">Телефон</span><a class="v" href="tel:${esc((C.phone||'').replace(/[^\d+]/g,''))}" title="Позвонить">${CI.phone}${esc(C.phone||'—')}</a></div>
+          <div class="cf"><span class="k">Telegram</span><a class="v" href="https://t.me/${esc((C.tg||'').replace('@',''))}" target="_blank" rel="noopener" title="Написать в Telegram">${CI.tg}${esc(C.tg||'—')}</a></div>
+          <div class="cf"><span class="k">Max</span><a class="v" href="#" title="Написать в Max" data-max>${CI.max}${esc(C.max||'—')}</a></div>
+        </div>
+        <div class="cgrp"><div class="cgt">Тренировки</div>
+          <div class="cf"><span class="k">Программа</span>${progKV(P)}</div>
+          <div class="cf"><span class="k">Оплачено до</span>${paidKV()}</div>
+          <div class="cf"><span class="k">Активность</span>${actKV()}</div>
+          <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
+        </div>
       </div>
       <label class="cnote"><span class="k">${ICON.chat} Заметка тренера <i>· клиент не видит</i></span><input id="fNote" value="${esc(C.note||'')}" placeholder="Что важно помнить об этом клиенте…"></label>
     </div>
 
-    <nav class="ctabs" id="ctabs">${SECTIONS.map(([k,n],i)=>`<a href="#${k}" class="${i===0?'on':''}" data-sec="${k}">${n}</a>`).join('')}</nav>
+    <nav class="ctabs" id="ctabs">${TABS.map(([k,n])=>`<a href="#${k}" class="${V.tab===k?'on':''}" data-tab="${k}">${n}</a>`).join('')}</nav>
 
-    <section class="csec" id="cal">
-      <div class="sechead"><span class="t">Календарь</span><span class="ln"></span>${P?`<span class="n">${esc(clientProgSub(C))}</span>`:''}<a class="lnk" href="calendar.html?client=${C.id}">весь календарь →</a></div>
-      <div class="card cb">${laneHTML()}</div>
-    </section>
-
-    <section class="csec" id="events">
-      <div class="sechead"><span class="t">Последние события</span><span class="ln"></span></div>
-      <div class="card cb flush"><div class="feed1" style="margin:0">${feedHTML(events(C.id))}</div></div>
-    </section>
-
-    <section class="csec" id="pay">
-      <div class="sechead"><span class="t">Оплата занятий</span><span class="ln"></span><span class="n">деньги клиент переводит вам сам — здесь срок и отметки</span></div>
-      ${payHTML()}
-    </section>
-
-    <section class="csec" id="meas">
+    ${V.tab==='overview' ? `<section class="csec" id="meas">
       <div class="sechead"><span class="t">Замеры</span><span class="ln"></span></div>
       ${measHTML()}
     </section>
 
     <section class="csec" id="pm">
-      <div class="sechead"><span class="t">Максимумы</span><span class="ln"></span></div>
+      <div class="sechead"><span class="t">Рекорды</span><span class="ln"></span></div>
       ${pmHTML()}
-    </section>`;
+    </section>` : V.tab==='events' ? `<section class="csec" id="events">
+      <div class="card cb flush cev"><div class="feed1" style="margin:0">${feedHTML(events(C.id))}</div></div>
+    </section>` : `<section class="csec" id="pay">
+      <div class="sechead"><span class="t">Оплата занятий</span><span class="ln"></span><span class="n">деньги клиент переводит вам сам — здесь срок и отметки</span></div>
+      ${payHTML()}
+    </section>`}`;
 
-  $('#cal').onclick = e => { const pb = e.target.closest('[data-pub]'); if(!pb) return; e.preventDefault(); e.stopPropagation();
-    const [pid, i] = pb.dataset.pub.split(':'); const on = pb.classList.contains('draft'); if(setPublished(pid, +i, on)){ toast(pubToggleMsg(on, pid)); render() } };
   $$('[data-meas]').forEach(b=>b.onclick=()=>{ V.meas=b.dataset.meas; render() });
   $$('[data-pm-row]').forEach(r=>r.onclick=e=>{ if(e.target.closest('input')) return; V.metric=r.dataset.pmRow; render() });
   $$('[data-pm-pick]').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.pmPick; render() });
@@ -224,7 +213,7 @@ function render(){
   const ap = $('#addPm'); if(ap) ap.onclick=()=>{ const pm = pmOf(C.id), seen = new Set(Object.keys(pm)), opts = [];
     EX.forEach(e=>{ if(!(e.u||[]).includes('кг')) return; const k = e.pm || e.id; if(seen.has(k)) return; seen.add(k); opts.push([k, PMNAMES[k] || e.ru]) });
     opts.sort((a,b)=>a[1].localeCompare(b[1],'ru'));
-    openModal({title:'Новое упражнение в максимумах', body:`<div class="formfld"><span class="k">Упражнение</span><select class="inp" id="npKey">${opts.map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join('')}</select></div>
+    openModal({title:'Новое упражнение в рекордах', body:`<div class="formfld"><span class="k">Упражнение</span><select class="inp" id="npKey">${opts.map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join('')}</select></div>
       <div class="cols2" style="margin-top:12px"><div class="formfld"><span class="k">1ПМ, кг</span><input class="inp" id="npV1" placeholder="—"></div><div class="formfld"><span class="k">3ПМ, кг · необязательно</span><input class="inp" id="npV3" placeholder="—"></div></div>`,
       foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="npSave">Добавить</button>`});
     $('#npV1').focus();
@@ -232,14 +221,12 @@ function render(){
       if(!k || !isFinite(v)){ toast('Укажите 1ПМ'); return } pm[k]=v; ((C.hist ||= {})[k] ||= []).push([TODAY, v]); if(isFinite(v3)) pm3Of(C.id)[k]=v3;
       V.metric=k; saveState(); closeModal(); toast('Упражнение добавлено'); render() } };
   document.addEventListener('click', e=>{ if(e.target.closest('#nmSave')){ const r={date:TODAY}; $$('[data-nm]').forEach(i=>{ const v=parseFloat(i.value.replace(',','.')); if(isFinite(v)) r[i.dataset.nm]=v }); if(Object.keys(r).length>1){ (C.meas ||= []).push(r); if(r.w) C.w=r.w; closeModal(); toast('Замер записан'); render() } } }, {once:true});
-  $$('.fev.t-q .btn, .fev2.t-q .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); location.href='#events'; toast('Ответ на вопрос — из ленты дашборда') });
+  $$('.fev.t-q .btn, .fev2.t-q .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Ответ на вопрос — из ленты дашборда') });
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
-  const HEAD = 58 + 52;
-  $$('[data-sec-go]').forEach(a=>a.onclick=e=>{ e.preventDefault(); $('#ctabs a[data-sec="'+a.dataset.secGo+'"]').click() });
-  $$('#ctabs a').forEach(a=>a.onclick=e=>{ e.preventDefault(); const el=$('#'+a.dataset.sec); window.scrollTo({top: el.getBoundingClientRect().top + scrollY - HEAD, behavior:'smooth'}); history.replaceState(null,'','#'+a.dataset.sec) });
-  const io = new IntersectionObserver(es=>{ es.forEach(en=>{ if(en.isIntersecting){ $$('#ctabs a').forEach(a=>a.classList.toggle('on', a.dataset.sec===en.target.id)) } }) }, {rootMargin:'-120px 0px -70% 0px'});
-  $$('.csec').forEach(s=>io.observe(s));
+  const go = t => { V.tab = t; history.replaceState(null,'','#'+t); render() };
+  $$('[data-tab-go]').forEach(a=>a.onclick=e=>{ e.preventDefault(); go(a.dataset.tabGo) });
+  $$('#ctabs a').forEach(a=>a.onclick=e=>{ e.preventDefault(); go(a.dataset.tab) });
 }
 render();
 initShell({page:'clients.html', title:'Карточка клиента'});

@@ -88,7 +88,7 @@ function render(){
     row.querySelector('input').focus();
     row.querySelector('[data-send]').onclick=()=>{ const v=row.querySelector('input').value.trim(); if(!v) return; const [cid,i]=key.split(':'); client(cid).comments[+i].reply=v; STATE.replied[key]=true; saveState(); toast('Ответ отправлен'); render() };
   });
-  $$('.fev.t-pr .btn, .fev2.t-pr .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Проценты в назначенных тренировках пересчитаны от нового максимума') });
+  $$('.fev.t-pr .btn, .fev2.t-pr .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Проценты в назначенных тренировках пересчитаны от нового рекорда') });
 }
 render();
 initShell({page:'index.html', title:'Дашборд'});

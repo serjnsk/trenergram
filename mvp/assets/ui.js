@@ -407,7 +407,7 @@ const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:I
 /* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
 function events(cid){
   const ev = [];
-  CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый максимум: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
+  CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый рекорд: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
   unread().forEach(({c,cm,key})=>ev.push({t:'q', d:cm.d, c, key, title:c.n + (cm.ex?' · '+cm.ex:''), sub:cm.ex, tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
   idle().forEach(c=>ev.push({t:'miss', d:c.last, c, title:c.n, tx:`Не появлялся ${ago(c.last)} — серия прервана`, act:'Открыть профиль', href:'client.html?id='+c.id}));
   composeQueue().filter(x=>x.runway<=7).forEach(x=>{
