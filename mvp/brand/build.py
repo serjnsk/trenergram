@@ -10,8 +10,8 @@
 Знак ТМ — пути из docs/assets/logo.svg (ветка main), без шрифта.
 
 Запуск:  python3 build.py
-  → logo/*.svg, logo/*.png (рендер через Chrome), animation/* из ../mvp/logo-lottie,
-    trenergram-brand.zip со всем сразу.
+  → logo/*.svg, logo/*.png (рендер через Chrome), animation/* из ../logo-lottie,
+    highlights/<пак>/* — обложки Instagram (highlights.py), trenergram-brand.zip со всем сразу.
 Шрифт скачивается в .cache/ при первом запуске (нужен fontTools).
 """
 import pathlib, shutil, subprocess, tempfile, urllib.request, zipfile
@@ -241,10 +241,21 @@ def main():
         if f.exists():
             shutil.copy(f, ANIM / f'{dst}.mp4')
 
+    # обложки «Актуального» Instagram: три пака по девять иконок, у каждого свой ZIP
+    import highlights
+    highlights.build(render_png)
+    for pack in sorted(p for p in highlights.OUT.iterdir() if p.is_dir()):
+        with zipfile.ZipFile(highlights.OUT / f'trenergram-highlights-{pack.name}.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            for f in sorted(pack.iterdir()):
+                z.write(f, f'trenergram-highlights-{pack.name}/{f.name}')
+
     with zipfile.ZipFile(HERE / 'trenergram-brand.zip', 'w', zipfile.ZIP_DEFLATED) as z:
         for d in (LOGO, ANIM):
             for f in sorted(d.iterdir()):
                 z.write(f, f'trenergram-brand/{d.name}/{f.name}')
+        for pack in sorted(p for p in highlights.OUT.iterdir() if p.is_dir()):
+            for f in sorted(pack.iterdir()):
+                z.write(f, f'trenergram-brand/instagram-highlights/{pack.name}/{f.name}')
     print('ok', box)
 
 

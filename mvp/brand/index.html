@@ -209,6 +209,19 @@ h3{margin:0 0 6px;font:700 18px/1.3 var(--ui);letter-spacing:-.01em}
 .preview-link a{font-weight:600;color:var(--acc);text-decoration:none;white-space:nowrap}
 .preview-link a:hover{text-decoration:underline}
 
+/* ─── обложки Instagram ─── */
+.hl{border:1px solid var(--line);border-radius:var(--rad);padding:24px;margin-bottom:20px}
+.hl-h{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.hl-h h3{margin:0}
+.hl-h span{color:var(--tx3);font-size:14px;margin-left:10px}
+.hl-row{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:16px}
+.hl-row a{display:flex;flex-direction:column;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-size:13px;text-align:center}
+.hl-row img{width:100%;aspect-ratio:1;border-radius:50%;box-shadow:0 0 0 1px var(--line),0 0 0 4px #fff,0 0 0 5px var(--line);transition:transform .15s}
+.hl-row a:hover img{transform:scale(1.05)}
+.hl-note{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:8px}
+.hl-note div{background:var(--s2);border-radius:var(--rad);padding:18px 20px;font-size:14.5px;color:var(--tx2)}
+.hl-note b{display:block;color:var(--ink);margin-bottom:4px}
+
 /* ─── всё одним архивом ─── */
 .final{padding:72px 0 88px;border-bottom:0}
 .final .box{background:var(--ink);color:#fff;border-radius:20px;padding:48px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
@@ -231,6 +244,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .anims{grid-template-columns:1fr}
   .avs{grid-template-columns:1fr 1fr}
   .avs .howto{grid-column:1/-1}
+  .hl-row{grid-template-columns:repeat(5,minmax(0,1fr))}
 }
 @media (max-width:760px){
   :root{--gut:16px}
@@ -250,6 +264,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .slogan{padding:28px 22px}
   .cons{padding:28px 18px}
   .names li{flex-direction:column;gap:2px}
+  .hl-row{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 14px}
+  .hl{padding:18px 16px}
+  .hl-note{grid-template-columns:1fr}
   .an{grid-template-columns:1fr}
   .an .stage{border-right:0;border-bottom:1px solid var(--line)}
   .scale div{grid-template-columns:1fr;gap:4px;padding:14px 18px}
@@ -274,6 +291,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       <a href="#colors">Цвета</a>
       <a href="#type">Шрифты</a>
       <a href="#motion">Анимации</a>
+      <a href="#instagram">Instagram</a>
     </nav>
     <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать всё</a>
   </div>
@@ -287,7 +305,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     <p class="lede">Логотип, знак, цвета, шрифты и анимации Тренерграма в одном месте. Страница для SMM-менеджеров, дизайнеров и партнёров, которые готовят рекламу и публикации. Берите файлы отсюда и не собирайте логотип заново.</p>
     <div class="row">
       <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать весь пакет · ZIP</a>
-      <span class="note">SVG и PNG логотипа, Lottie, стикеры Telegram, видео MP4</span>
+      <span class="note">SVG и PNG логотипа, Lottie, стикеры Telegram, видео MP4, обложки Instagram</span>
     </div>
   </div>
 </div>
@@ -573,15 +591,45 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   </div>
 </section>
 
+<!-- ═══════════ 08 INSTAGRAM ═══════════ -->
+<section id="instagram">
+  <div class="wrap">
+    <div class="sh"><span class="n">08</span><div>
+      <h2>Обложки для Instagram</h2>
+      <p>Девять иконок для «Актуального» в трёх паках. В профиле используйте один пак целиком, не смешивайте. Нажмите на иконку, чтобы скачать PNG 1080×1080, или заберите весь пак архивом: внутри PNG и SVG.</p>
+    </div></div>
+    <div class="hl">
+      <div class="hl-h"><div><h3 style="display:inline">Тёмный</h3><span>оранжевые иконки на #141414 — ближе всего к классическим обложкам</span></div>
+        <div class="dl"><a href="highlights/trenergram-highlights-dark.zip" download>Весь пак · ZIP <small>84 КБ</small></a></div></div>
+      <div class="hl-row"><a href="highlights/dark/01-features.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/01-features.svg" alt="Возможности" loading="lazy">Возможности</a><a href="highlights/dark/02-how-it-works.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/02-how-it-works.svg" alt="Как работает" loading="lazy">Как работает</a><a href="highlights/dark/03-for-trainer.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/03-for-trainer.svg" alt="Для тренера" loading="lazy">Для тренера</a><a href="highlights/dark/04-ai.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/04-ai.svg" alt="AI" loading="lazy">AI</a><a href="highlights/dark/05-groups.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/05-groups.svg" alt="Группы" loading="lazy">Группы</a><a href="highlights/dark/06-client.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/06-client.svg" alt="Клиент" loading="lazy">Клиент</a><a href="highlights/dark/07-pricing.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/07-pricing.svg" alt="Тарифы" loading="lazy">Тарифы</a><a href="highlights/dark/08-reviews.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/08-reviews.svg" alt="Отзывы" loading="lazy">Отзывы</a><a href="highlights/dark/09-faq.png" download title="Скачать PNG 1080×1080"><img src="highlights/dark/09-faq.svg" alt="FAQ" loading="lazy">FAQ</a></div>
+    </div>
+    <div class="hl">
+      <div class="hl-h"><div><h3 style="display:inline">Оранжевый</h3><span>белые иконки на фирменном градиенте — самые заметные в профиле</span></div>
+        <div class="dl"><a href="highlights/trenergram-highlights-orange.zip" download>Весь пак · ZIP <small>1 МБ</small></a></div></div>
+      <div class="hl-row"><a href="highlights/orange/01-features.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/01-features.svg" alt="Возможности" loading="lazy">Возможности</a><a href="highlights/orange/02-how-it-works.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/02-how-it-works.svg" alt="Как работает" loading="lazy">Как работает</a><a href="highlights/orange/03-for-trainer.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/03-for-trainer.svg" alt="Для тренера" loading="lazy">Для тренера</a><a href="highlights/orange/04-ai.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/04-ai.svg" alt="AI" loading="lazy">AI</a><a href="highlights/orange/05-groups.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/05-groups.svg" alt="Группы" loading="lazy">Группы</a><a href="highlights/orange/06-client.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/06-client.svg" alt="Клиент" loading="lazy">Клиент</a><a href="highlights/orange/07-pricing.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/07-pricing.svg" alt="Тарифы" loading="lazy">Тарифы</a><a href="highlights/orange/08-reviews.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/08-reviews.svg" alt="Отзывы" loading="lazy">Отзывы</a><a href="highlights/orange/09-faq.png" download title="Скачать PNG 1080×1080"><img src="highlights/orange/09-faq.svg" alt="FAQ" loading="lazy">FAQ</a></div>
+    </div>
+    <div class="hl">
+      <div class="hl-h"><div><h3 style="display:inline">Светлый</h3><span>тёмные иконки с оранжевым акцентом на тёплом фоне приложения</span></div>
+        <div class="dl"><a href="highlights/trenergram-highlights-light.zip" download>Весь пак · ZIP <small>84 КБ</small></a></div></div>
+      <div class="hl-row"><a href="highlights/light/01-features.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/01-features.svg" alt="Возможности" loading="lazy">Возможности</a><a href="highlights/light/02-how-it-works.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/02-how-it-works.svg" alt="Как работает" loading="lazy">Как работает</a><a href="highlights/light/03-for-trainer.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/03-for-trainer.svg" alt="Для тренера" loading="lazy">Для тренера</a><a href="highlights/light/04-ai.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/04-ai.svg" alt="AI" loading="lazy">AI</a><a href="highlights/light/05-groups.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/05-groups.svg" alt="Группы" loading="lazy">Группы</a><a href="highlights/light/06-client.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/06-client.svg" alt="Клиент" loading="lazy">Клиент</a><a href="highlights/light/07-pricing.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/07-pricing.svg" alt="Тарифы" loading="lazy">Тарифы</a><a href="highlights/light/08-reviews.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/08-reviews.svg" alt="Отзывы" loading="lazy">Отзывы</a><a href="highlights/light/09-faq.png" download title="Скачать PNG 1080×1080"><img src="highlights/light/09-faq.svg" alt="FAQ" loading="lazy">FAQ</a></div>
+    </div>
+    <div class="hl-note">
+      <div><b>Как загрузить</b>Профиль → «Актуальное» → «Редактировать» → «Изменить обложку» → выберите PNG из галереи.</div>
+      <div><b>Обрезка</b>Instagram сам обрежет квадрат в круг: фон залит во весь кадр, иконка стоит строго по центру.</div>
+      <div><b>Подписи</b>Названия задаются в Instagram. Пишите их как здесь: «Возможности», «Как работает», «Для тренера» и т. д.</div>
+    </div>
+  </div>
+</section>
+
 <section class="final">
   <div class="wrap">
     <div class="box">
       <div>
         <h2>Всё одним архивом</h2>
         <p>Все файлы со страницы в одном ZIP. Если нужен формат, которого здесь нет, напишите команде Тренерграма — подготовим.</p>
-        <ul><li>9 SVG логотипа и знака</li><li>9 PNG</li><li>4 Lottie JSON</li><li>4 стикера TGS</li><li>6 видео MP4</li></ul>
+        <ul><li>9 SVG логотипа и знака</li><li>9 PNG</li><li>4 Lottie JSON</li><li>4 стикера TGS</li><li>6 видео MP4</li><li>27 обложек Instagram</li></ul>
       </div>
-      <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать ZIP · 4,3 МБ</a>
+      <a class="btn" href="trenergram-brand.zip" download><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 7l4 4 4-4M2.5 14h11"/></svg>Скачать ZIP · 6 МБ</a>
     </div>
   </div>
 </section>
