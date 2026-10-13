@@ -926,6 +926,7 @@ body.bk-on .pubbar{bottom:76px}
 .fev .ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--s1);color:var(--tx3);font-size:13px;font-weight:700;flex:none}
 .fev .ico svg{width:15px;height:15px}
 .fev.t-pr .ico{background:var(--acc-a);color:var(--acc)}
+.fev.t-start .ico{background:var(--acc-a);color:var(--acc)}
 .fev.t-q .ico{background:#E6F1FB;color:#185FA5}
 .fev.t-miss .ico{background:#FBF1DE;color:var(--warn)}
 .fev.t-prog .ico{background:var(--rm-a);color:var(--rm)}
@@ -973,6 +974,7 @@ body.bk-on .pubbar{bottom:76px}
 .tabs2 button s{text-decoration:none;font-weight:500;color:var(--tx3);margin-left:4px}
 .tchip{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--s1);color:var(--tx3);white-space:nowrap}
 .tchip.t-pr{background:var(--acc-a);color:var(--acc-d)}
+.tchip.t-start{background:var(--acc-a);color:var(--acc-d)}
 .tchip.t-q{background:#E6F1FB;color:#185FA5}
 .tchip.t-miss{background:#FBF1DE;color:var(--warn)}
 .tchip.t-prog{background:var(--rm-a);color:var(--rm)}

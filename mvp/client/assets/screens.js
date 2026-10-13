@@ -56,7 +56,7 @@ const clI = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 2
 
 /* ── состояние клиента ── */
 const clS = (() => {
-  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '', set: {} };
+  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '', set: {}, ach: {} };
   try { return Object.assign(def, JSON.parse(localStorage.getItem('trenergram.client') || '{}')); } catch (e) { return def; }
 })();
 const clSave = () => { try { localStorage.setItem('trenergram.client', JSON.stringify(clS)); } catch (e) {} };
@@ -483,7 +483,11 @@ const CL_UI_MOUNT = {
     check();
   },
 
-  home(scr) {
+  home(scr, sc, v) {
+    /* Все первые шаги пройдены — один раз финал с достижением «Курс молодого бойца»; вид «start» на стенде показывает его снова */
+    const st = clFirstSteps();
+    if (v === 'start') setTimeout(clAchShow, 250);
+    else if (st.every(t => t[1]) && !clS.ach.start) { clAchGive(); setTimeout(clAchShow, 250); }
     scr.addEventListener('click', e => {
       const d = e.target.closest('[data-date]');
       if (d) { clDate = d.dataset.date; clRepaint(scr, 'home'); return; }
@@ -612,6 +616,123 @@ function clMock(k) {
         menu([[a ? 'Открыть в браузере' : 'Открыть в Safari', 'compass', 1], ['Скопировать ссылку', 'link'], ['Поделиться', 'share']], 'tr tgm'); }
   }
   return pg;
+}
+
+/* ═══ Достижение «Курс молодого бойца» ═══
+   Одно достижение — за все первые шаги, только эмоциональное. Значок —
+   гиря-новобранец: пилотка набекрень, глаза вразбег, отдаёт честь, потеет.
+   Факт уходит в общее с кабинетом состояние: у тренера в ленте событие
+   «Первые шаги». Открытку со значком можно отправить друзьям. */
+const CL_ACH_NAME = 'Курс молодого бойца';
+const CL_KMB = id => `<defs><linearGradient id="hx${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A1F"/><stop offset=".5" stop-color="#FC5200"/><stop offset="1" stop-color="#E24400"/></linearGradient>
+  <radialGradient id="kb${id}" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#4A403B"/><stop offset="1" stop-color="#1E1A18"/></radialGradient></defs>
+  <path d="M60 5 108 32.5v55L60 115 12 87.5v-55z" fill="url(#hx${id})"/>
+  <path d="M60 15 99 37.5v45L60 105 21 82.5v-45z" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2"/>
+  <path class="sweat" d="M29 47c3 5 3 8 0 9.5-3-1.5-3-4.5 0-9.5z" fill="#9BDCFF" stroke="#1E1A18" stroke-width="1"/>
+  <path d="M35 80c-8 1-10 8-6 12" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>
+  <path d="M44 58c-6-30 38-30 32 0" fill="none" stroke="#1E1A18" stroke-width="9" stroke-linecap="round"/>
+  <path d="M47 54c-3-20 26-22 26-4" fill="none" stroke="#5A4E48" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+  <circle cx="60" cy="76" r="27" fill="url(#kb${id})"/>
+  <g transform="rotate(-12 60 54)"><path d="M40 58c5-11 35-12 41-1l-1.5 4c-11-4-27-4-38 1.5z" fill="#7A8A3E" stroke="#1E1A18" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M60 53.5l1 2.2 2.4.3-1.8 1.6.5 2.4-2.1-1.2-2.1 1.2.5-2.4-1.8-1.6 2.4-.3z" fill="#FF3B30" stroke="#1E1A18" stroke-width=".5"/></g>
+  <circle cx="50" cy="71" r="7.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+  <circle cx="70" cy="70" r="8.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+  <g class="pups"><circle cx="53.5" cy="73.5" r="3.3" fill="#111"/><circle cx="66" cy="67.5" r="3.6" fill="#111"/></g>
+  <circle cx="43" cy="82" r="3.5" fill="#FF7A8A" opacity=".75"/><circle cx="78" cy="81" r="3.5" fill="#FF7A8A" opacity=".75"/>
+  <path d="M48 81c4 13 20 13 24 0z" fill="#7A1F1F" stroke="#1E1A18" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M50 81.3h20l-1 3H51z" fill="#fff"/><ellipse cx="60" cy="88.5" rx="5" ry="2.6" fill="#FF7A8A"/>
+  <g class="arm"><path d="M85 80c10-6 9-17 1-24" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>
+    <path d="M78.5 54l10-3 1.4 4.6-10 3z" fill="#1E1A18" stroke="#1E1A18" stroke-width="2" stroke-linejoin="round"/></g>
+  <path d="M26 102l6-4h56l6 4-6 4H32z" fill="#7A8A3E" stroke="#1E1A18" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M34 97h52v10H34z" fill="#8E9F49" stroke="#1E1A18" stroke-width="1.4"/>
+  <text x="60" y="105.2" text-anchor="middle" font-family="Montserrat,Arial Black,sans-serif" font-weight="900" font-size="8.5" letter-spacing="1.5" fill="#fff">КМБ</text>`;
+const CL_BADGE = (cls, lock) => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true">${lock
+  ? `<path d="M60 5 108 32.5v55L60 115 12 87.5v-55z" fill="var(--c-fill2)"/>
+     <path d="M60 15 99 37.5v45L60 105 21 82.5v-45z" fill="none" stroke="var(--line2)" stroke-width="2"/>
+     <g fill="none" stroke="var(--tx4)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="44" y="56" width="32" height="24" rx="4"/><path d="M50 56v-7a10 10 0 0 1 20 0v7"/></g>`
+  : CL_KMB(cls)}</svg>`;
+function clAchGive() {
+  clS.ach.start = TODAY; clSave();
+  (STATE.steps ||= {})[CL_ME] = { d: TODAY }; saveState();
+}
+/* Финал: затемнение, конфетти, значок влетает с поворотом, гиря косит глазами
+   и машет рукой; «Поделиться» — главная кнопка, «Отлично» — закрыть */
+function clAchShow() {
+  if (document.querySelector('.achw')) return;
+  const cols = ['#FC5200', '#FF7A1F', '#FFB27A', '#8E9F49', '#fff'];
+  const bits = Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 37) % 100}%;background:${cols[i % 5]};animation-delay:${(i % 9) * 60 + 150}ms;--r:${(i * 53) % 360}deg;--x:${((i * 29) % 60) - 30}px;--d:${1500 + (i * 71) % 900}ms"></i>`).join('');
+  const w = document.createElement('div');
+  w.className = 'achw';
+  w.innerHTML = `<div class="achbg"></div><div class="confetti" aria-hidden="true">${bits}</div>
+    <div class="achc" role="dialog" aria-label="Достижение «${CL_ACH_NAME}»">
+      <div class="achb">${CL_BADGE('achsvg')}<span class="shine"></span></div>
+      <em>Достижение</em>
+      <h2>${CL_ACH_NAME}</h2>
+      <p>Все первые шаги пройдены — вы в строю! Значок уже в профиле, а тренер увидит это в своей ленте.</p>
+      <button class="btn pri" data-achshare>${clI('share')}Поделиться</button>
+      <button class="lnk achok" data-achok>Отлично</button>
+    </div>`;
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 260); };
+  w.addEventListener('click', e => { if (e.target.closest('[data-achok]')) close(); if (e.target.closest('[data-achshare]')) clAchShare(); });
+  document.getElementById('dev').appendChild(w);
+  try { navigator.vibrate && navigator.vibrate([30, 60, 40]); } catch (x) {}
+}
+/* Открытка 1080×1350 (формат поста и сторис): значок, название, кто и у какого
+   тренера. Рисуем на canvas, отдаём системному «Поделиться» картинкой;
+   где файлом поделиться нельзя — показываем открытку и сохраняем её */
+function clAchCard() {
+  return new Promise(res => {
+    const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), p = clProf(), she = p.sex === 'ж';
+    const bg = g.createRadialGradient(W / 2, 560, 60, W / 2, 560, 900); bg.addColorStop(0, '#3A2418'); bg.addColorStop(1, '#141110');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const img = new Image();
+    img.onload = () => {
+      g.save(); g.shadowColor = 'rgba(252,82,0,.55)'; g.shadowBlur = 90; g.drawImage(img, W / 2 - 330, 170, 660, 660); g.restore();
+      g.textAlign = 'center'; g.fillStyle = '#FF9A5A'; g.font = '800 40px Montserrat, Inter, sans-serif';
+      g.fillText('ДОСТИЖЕНИЕ', W / 2, 108);
+      g.fillStyle = '#fff'; g.font = '900 84px Montserrat, Inter, sans-serif';
+      g.fillText('КУРС МОЛОДОГО', W / 2, 935); g.fillText('БОЙЦА', W / 2, 1025);
+      g.fillStyle = 'rgba(255,255,255,.75)'; g.font = '500 40px Inter, sans-serif';
+      g.fillText(`${p.first || 'Я'} ${she ? 'прошла' : 'прошёл'} первые шаги в Тренерграм`, W / 2, 1105);
+      g.fillText('Тренер — ' + TRAINER.n, W / 2, 1160);
+      g.fillStyle = '#FC5200'; g.fillRect(W / 2 - 60, 1218, 120, 6);
+      g.fillStyle = '#fff'; g.font = '900 44px Montserrat, Inter, sans-serif'; g.fillText('ТРЕНЕРГРАМ', W / 2, 1290);
+      c.toBlob(b => res({ blob: b, url: URL.createObjectURL(b) }), 'image/jpeg', .92);
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">${CL_KMB('card')}</svg>`);
+  });
+}
+async function clAchShare() {
+  const btn = document.querySelector('[data-achshare]');
+  if (btn) { if (btn.disabled) return; btn.disabled = true; btn.lastChild.textContent = 'Готовим открытку…'; }
+  const { blob, url } = await clAchCard(), she = clProf().sex === 'ж';
+  if (btn) { btn.disabled = false; btn.lastChild.textContent = 'Поделиться'; }
+  const text = `${she ? 'Прошла' : 'Прошёл'} «${CL_ACH_NAME}» в Тренерграм 💪`;
+  const file = new File([blob], 'kmb-trenergram.jpg', { type: 'image/jpeg' });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  /* Системного «Поделиться» картинкой нет (стенд на компьютере) — рисуем, как оно
+     выглядит на телефоне: открытка сверху, ниже приложения. Скачивать ничего не нужно */
+  const apps = [['Telegram', '#2AABEE', 'tg'], ['WhatsApp', '#25D366', 'wa'], ['ВКонтакте', '#0077FF', 'vk'], ['Instagram', 'linear-gradient(45deg,#F9CE34,#EE2A7B,#6228D7)', 'ig'], ['Ещё', 'var(--c-fill2)', 'more']];
+  const w = document.createElement('div');
+  w.className = 'shw achsh';
+  w.innerHTML = `<div class="shbg" data-x></div><div class="sheet" role="dialog" aria-label="Поделиться"><i class="grab"></i>
+    <div class="shp"><img class="achcard" src="${url}" alt="Открытка «${CL_ACH_NAME}»"><span><b>${clEsc(text)}</b><s>Открытка · JPG</s></span></div>
+    <div class="shapps">${apps.map(([n, bg, k]) => `<button data-app="${n}"><i style="background:${bg}">${k === 'more' ? clI('plus') : n[0]}</i><span>${n}</span></button>`).join('')}</div>
+    <button class="lnk" data-x>Отмена</button></div>`;
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 220); };
+  w.addEventListener('click', e => { const a = e.target.closest('[data-app]');
+    if (a) { close(); clToast(a.dataset.app === 'Ещё' ? 'Здесь — остальные приложения телефона' : 'Открытка отправлена в ' + a.dataset.app); return; }
+    if (e.target.closest('[data-x]')) close(); });
+  document.getElementById('dev').appendChild(w);
+}
+/* Полка в профиле: «Курс молодого бойца» и три закрытых места под будущие достижения */
+function clAchShelf() {
+  const got = !!clS.ach.start;
+  const cell = (id, name, sub, lock) => `<button class="bdg${lock ? ' lock' : ''}" data-badge="${id}">${CL_BADGE('bsvg' + id, lock)}<b>${name}</b><s>${sub}</s></button>`;
+  return `<section class="card shelf"><div class="shh"><b>Мои достижения</b><span>${got ? 1 : 0} из 4</span></div>
+    <div class="bdgs">${cell('start', CL_ACH_NAME, got ? clShortDate(clS.ach.start) : 'первые шаги', !got)}${[1, 2, 3].map(k => cell('soon' + k, 'Скоро', '', true)).join('')}</div>
+  </section>`;
 }
 
 /* Слайды для текущего места: Telegram → сначала в браузер, дальше шаги браузера */
@@ -995,6 +1116,7 @@ CL_UI.profile = (sc, v) => {
       <div class="pgoal"><div><s>Основная цель</s><b>${clEsc(p.goal)}</b></div>${p.goal2 ? `<div><s>Дополнительная цель</s><b>${clEsc(p.goal2)}</b></div>` : ''}</div>
     </section>
     <section class="card ptr"><span class="pav sm">${clEsc(TRAINER.ini)}</span><div><s>Тренер</s><b>${clEsc(TRAINER.n)}</b><span>${clEsc(TRAINER.workspace)} · с ${clFullDate(c.since)}</span></div></section>
+    ${clAchShelf()}
     ${clFeeCard()}
     <nav class="ptabs" role="tablist"><button role="tab" class="${tab === 'pr' ? 'on' : ''}" data-ptab="pr">Рекорды</button><button role="tab" class="${tab === 'meas' ? 'on' : ''}" data-ptab="meas">Замеры</button></nav>
     <div class="ptab">${tab === 'pr' ? clPrTab() : clMeasTab()}</div>
@@ -1038,6 +1160,9 @@ CL_UI_MOUNT.profile = scr => {
   });
   scr.addEventListener('click', e => {
     const t = e.target.closest('[data-ptab]'); if (t) { clProfTab(scr, t.dataset.ptab); return; }
+    /* Свой значок — снова финал (с «Поделиться»), закрытый — подсказка */
+    const bd = e.target.closest('[data-badge]'); if (bd) { if (bd.dataset.badge === 'start' && clS.ach.start) clAchShow();
+      else clToast(bd.dataset.badge === 'start' ? 'Пройдите первые шаги на главной' : 'Это достижение появится позже'); return; }
     /* Раскрытие строки: выше свернулся другой график — строку держим там же, где по ней тапнули */
     const pr = e.target.closest('[data-pm]'); if (pr) { const k = pr.dataset.pm, y = pr.getBoundingClientRect().top;
       clPmSel = clPmSel === k ? '' : k; clRepaint(scr, 'profile');
@@ -1162,7 +1287,7 @@ CL_UI_MOUNT.settings = scr => {
     if (e.target.closest('[data-delacc]')) clAsk('Удалить аккаунт?',
       'Вход по этому номеру, фото, рекорды и замеры удалятся без восстановления. История тренировок и результатов останется у тренера.',
       'Удалить аккаунт', () => { try { localStorage.removeItem('trenergram.client'); } catch (x) {}
-        Object.keys(clS).forEach(k => delete clS[k]); Object.assign(clS, { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '', set: {} });
+        Object.keys(clS).forEach(k => delete clS[k]); Object.assign(clS, { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '', set: {}, ach: {} });
         clGo('phone', '', true); });
   });
 };

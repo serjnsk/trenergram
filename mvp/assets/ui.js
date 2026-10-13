@@ -401,8 +401,8 @@ const byNum = f => (a,b) => (f(a)||0) - (f(b)||0);
 const unread = () => { const out=[]; CLIENTS.forEach(c=>c.comments.forEach((cm,i)=>{ if(!cm.reply && !STATE.replied[c.id+':'+i]) out.push({c,cm,key:c.id+':'+i}) })); return out };
 const idle = () => CLIENTS.filter(c=>c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 const noProg = () => CLIENTS.filter(c=>!c.prog);
-const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', done:'Результаты', pay:'Подписка'};
-const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:ICON.wallet, new:ICON.users, done:ICON.chk, pay:ICON.folder};
+const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', start:'Первые шаги', done:'Результаты', pay:'Подписка'};
+const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:ICON.wallet, new:ICON.users, start:ICON.chk, done:ICON.chk, pay:ICON.folder};
 
 /* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
 function events(cid){
@@ -423,9 +423,13 @@ function events(cid){
       closed:'Оплата закончилась ' + humanDate(c.paidUntil) + ' — новые тренировки клиенту закрыты' + sum}[st];
     if(tx) ev.push({t:'fee', d: st === 'closed' ? addDays(c.paidUntil, 1) : TODAY, c, fee:c.id, title:c.n, tx, act:'Получил оплату', href:'client.html?id='+c.id+'#pay'}) });
   noProg().slice(0,3).forEach((c,i)=>ev.push({t:'new', d:addDays(TODAY,-i), c, title:c.n, tx:'Пришёл по вашей ссылке, программа не назначена', act:'Назначить программу', href:'client.html?id='+c.id}));
+  /* Клиент прошёл первые шаги в приложении и получил достижение «Курс молодого бойца» — повод поздравить.
+     Отметку пишет клиентское приложение (STATE.steps), у демо-клиента — в данных. */
+  CLIENTS.forEach(c=>{ const s = (STATE.steps || {})[c.id] || c.steps; if(s && daysBetween(s.d,TODAY)<=14)
+    ev.push({t:'start', d:s.d, c, title:c.n, tx:(c.sex==='ж' ? 'Прошла' : 'Прошёл') + ' первые шаги в приложении и получил' + (c.sex==='ж' ? 'а' : '') + ' достижение «Курс молодого бойца»: рекорды, замеры, фото профиля и первая тренировка', act:'Открыть профиль', href:'client.html?id='+c.id}) });
   CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
   if(!NEWTR) ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка продлена', tx:'3 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Подписка', href:'profile.html#billing'});
-  const order = {q:0, fee:1, prog:2, pr:3, miss:4, new:5, done:6, pay:7};
+  const order = {q:0, fee:1, prog:2, pr:3, miss:4, new:5, start:6, done:7, pay:8};
   const list = cid ? ev.filter(e=>e.c && e.c.id===cid) : ev;
   return list.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
 }
@@ -483,7 +487,7 @@ function feedHTML(list, withDays=true){
   return out + '</div>';
 }
 
-const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', fee:'Оплата', new:'Новый клиент', done:'Результат', pay:'Подписка'};
+const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', fee:'Оплата', new:'Новый клиент', start:'Первые шаги', done:'Результат', pay:'Подписка'};
 
 /* ═══════════ ОПЛАТА ЗАНЯТИЙ (PAY-9) — окно тренера ═══════════
    pay — «Получил оплату»: сумма и новая дата «оплачено до», по умолчанию месяц
