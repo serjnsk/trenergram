@@ -176,7 +176,7 @@ function render(){
           <div class="cf"><span class="k">С нами с</span><span class="v">${dlong(C.since)}</span></div>
         </div>
       </div>
-      <label class="cnote"><span class="k">${ICON.chat} Заметка тренера <i>· клиент не видит</i></span><input id="fNote" value="${esc(C.note||'')}" placeholder="Что важно помнить об этом клиенте…"></label>
+      <label class="cnote"><span class="k">${ICON.chat} Заметка тренера <i>· клиент не видит</i></span><textarea id="fNote" rows="1" placeholder="Что важно помнить об этом клиенте…">${esc(C.note||'')}</textarea></label>
     </div>
 
     <nav class="ctabs" id="ctabs">${TABS.map(([k,n])=>`<a href="#${k}" class="${V.tab===k?'on':''}" data-tab="${k}">${n}</a>`).join('')}</nav>
@@ -201,7 +201,10 @@ function render(){
   $$('[data-pm-pick]').forEach(b=>b.onclick=()=>{ V.metric=b.dataset.pmPick; render() });
   $$('[data-pm]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); if(!isFinite(v)) return; pmOf(C.id)[inp.dataset.pm]=v; (C.hist[inp.dataset.pm] ||= []).push([TODAY, v]); saveState(); toast('1ПМ обновлён — проценты в тренировках пересчитаются'); render() });
   $$('[data-pm3]').forEach(inp=>inp.onchange=()=>{ const v=parseFloat(inp.value.replace(',','.')); pm3Of(C.id)[inp.dataset.pm3] = isFinite(v) ? v : null; saveState(); toast('3ПМ записан') });
-  $('#fNote').onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
+  /* Заметка растёт по высоте вместе с текстом — без прокрутки внутри поля. */
+  const nt = $('#fNote'), fit = () => { nt.style.height = 'auto'; nt.style.height = nt.scrollHeight + 2 + 'px' };
+  fit(); nt.oninput = fit; window.onresize = fit;
+  nt.onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
   const am = $('#addMeas'); if(am) am.onclick=()=>openModal({title:'Новый замер', body:`<div class="cols3">${MEAS.map(([k,n,u])=>`<div class="formfld"><span class="k">${n}, ${u}</span><input class="inp" data-nm="${k}" placeholder="—"></div>`).join('')}</div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nmSave">Сохранить</button>`});
   const ap = $('#addPm'); if(ap) ap.onclick=()=>{ const pm = pmOf(C.id), seen = new Set(Object.keys(pm)), opts = [];

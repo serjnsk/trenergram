@@ -245,7 +245,8 @@ td.mnil{display:none !important}
 .cf .k{font-size:14px}
 .cf .v{min-height:28px;font-size:15px;align-items:center}
 .cnote{flex-direction:column;align-items:stretch;gap:8px}
-.cnote input{height:44px;font-size:16px}
+.cnote .k{min-height:0}
+.cnote textarea{flex:none;min-height:44px;padding:11px 12px;font-size:16px;line-height:22px}
 .ctabs{top:var(--mtop);margin:8px -8px 14px;border-radius:0;padding:6px 8px;overflow-x:auto;scrollbar-width:none;gap:4px}
 .ctabs::-webkit-scrollbar{display:none}
 .ctabs a{height:40px;padding:0 14px;flex:none}
