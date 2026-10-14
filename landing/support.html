@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Поддержка — Тренерграм</title>
+<meta name="description" content="Поддержка приложения Тренерграм: контакты и ответы на частые вопросы.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@900&display=swap" rel="stylesheet">
+<style>
+/* Тот же визуальный язык, что у заглавной landing/index.html: плоскость,
+   тонкие линии, акцент #FC5200. Тёмная тема — по системной настройке. */
+:root{
+  --acc:#FC5200; --acc-a:#FFF1EA;
+  --tx1:#141414; --tx2:#5E5E5E; --tx3:#8E8E8E;
+  --bg:#FFFFFF; --line:#E7E7E7;
+  --ui:"Inter",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){
+  :root{--acc-a:#2A1A10;--tx1:#F2F2F2;--tx2:#B4B4B4;--tx3:#808080;--bg:#0E0E0E;--line:#262626}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx1);font:400 15px/1.55 var(--ui);
+     -webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:64px 24px 80px}
+a.logo{display:block;text-decoration:none;font:900 30px/1 "Montserrat",var(--ui);letter-spacing:-.035em;
+  text-transform:uppercase;color:var(--tx1);width:fit-content;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+h1{font-size:24px;font-weight:700;margin:32px 0 8px;letter-spacing:-.02em}
+h2{font-size:17px;font-weight:600;margin:0 0 6px;letter-spacing:-.015em}
+.lede{color:var(--tx2);margin:0;max-width:52ch}
+
+.contact{margin:32px 0 0;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.contact .k{font-size:12px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em}
+.contact a{display:inline-block;margin-top:6px;font-size:20px;font-weight:600;color:var(--acc);
+           text-decoration:none;word-break:break-all}
+.contact a:hover{text-decoration:underline}
+.contact p{margin:8px 0 0;color:var(--tx2);font-size:14px}
+
+.faq{margin:40px 0 0}
+.faq .q{padding:20px 0;border-bottom:1px solid var(--line)}
+.faq .q:first-of-type{border-top:1px solid var(--line)}
+.faq p{margin:0;color:var(--tx2)}
+.sect{font-size:12px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px}
+
+footer{margin-top:36px;color:var(--tx3);font-size:13px}
+footer a{color:var(--tx2)}
+@media (max-width:520px){ .wrap{padding:40px 16px 60px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="logo" href="./">Тренерграм</a>
+
+<h1>Поддержка</h1>
+<p class="lede">Вопрос по приложению, проблема со входом или предложение — напишите нам.</p>
+
+<div class="contact">
+  <div class="k">Почта</div>
+  <a href="mailto:imhtsolutions@gmail.com">imhtsolutions@gmail.com</a>
+  <p>Отвечаем в течение 1–2 рабочих дней. Опишите, что произошло, и укажите модель телефона — так поможем быстрее.</p>
+</div>
+
+<section class="faq">
+  <div class="sect">Частые вопросы</div>
+  <div class="q">
+    <h2>Как начать пользоваться приложением?</h2>
+    <p>Попросите у своего тренера ссылку-приглашение и откройте её на телефоне. Затем войдите по номеру телефона и заполните профиль — тренировки от тренера появятся на главном экране.</p>
+  </div>
+  <div class="q">
+    <h2>Работает ли приложение без интернета?</h2>
+    <p>Да. Назначенные тренировки открываются без связи, а веса, повторы и комментарии сохраняются на телефоне и отправляются тренеру, как только появится сеть.</p>
+  </div>
+  <div class="q">
+    <h2>Как удалить аккаунт?</h2>
+    <p>В приложении откройте Профиль → Настройки → «Удалить аккаунт». Аккаунт и связанные с ним данные будут удалены. Если не получается — напишите на почту выше с номера телефона, к которому привязан аккаунт.</p>
+  </div>
+</section>
+
+<footer><a href="privacy.html">Политика конфиденциальности</a></footer>
+
+</div>
+</body>
+</html>
