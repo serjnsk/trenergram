@@ -1,0 +1,8 @@
+{
+  "name": "trenergram-content",
+  "private": true,
+  "type": "module",
+  "description": "Рендер моушн-сцен Тренерграма в MP4: render.mjs (Chrome + ffmpeg)",
+  "scripts": { "render": "node render.mjs" },
+  "dependencies": { "puppeteer-core": "^23.11.1" }
+}

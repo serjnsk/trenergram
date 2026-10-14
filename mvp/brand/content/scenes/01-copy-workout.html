@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>01 · Тренировка в один клик</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/01-copy-workout.md
+const btn = text => d => [...d.querySelectorAll('button')].find(b => b.textContent.trim().startsWith(text));
+const day = n => d => [...d.querySelectorAll('.rail button')].find(b => b.textContent.trim() === String(n));
+
+const S = Scene({ format: '9:16', duration: 13.5 });
+S.screen('../../../constructor.html');
+
+S.caption(.2, 4.6, 'Тренировка\nв *один клик*', { sub: 'Любой прошлый день клиента — прямо в конструктор' });
+
+S.focus(1.2, 2.6, '.rail', { pad: 30 });
+S.cursor(2.2, 3.3, day(24));
+S.click(3.45, day(24));
+S.highlight(3.7, 5.2, '.csrc', { pad: 8 });
+S.cursor(4.6, 5.5, '#cs-copy');
+S.click(5.7, '#cs-copy');
+
+S.focus(6.2, 7.6, { x: 260, y: 160, w: 560, h: 300 }, { pad: 16 });   // упражнения крупно
+S.caption(5.4, 10.3, 'Остаётся\n*поправить* и сохранить', { sub: 'Схема, нагрузка, заметки — всё уже на месте' });
+S.focus(8.3, 9.3, btn('Сохранить'), { pad: 220 });                      // панорама к «Сохранить»
+S.cursor(8.4, 9.4, btn('Сохранить'));
+S.click(9.6, btn('Сохранить'));
+S.highlight(9.5, 10.5, btn('Сохранить'), { pad: 6 });
+S.hideCursor(10.3);
+
+S.outro(10.9);
+S.start();
+</script>
+</body>
+</html>

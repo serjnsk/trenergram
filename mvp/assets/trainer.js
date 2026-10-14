@@ -420,15 +420,17 @@ const hasRange = it => it.pct2 != null || !!it.val2;
 /* Процент без килограммов: у группы — от 1ПМ каждого участника, в шаблоне — от 1ПМ того, кому его поставят. */
 const pctNote = it => it.pct == null ? '' : G_() ? 'от 1ПМ каждого' : TPLM ? 'от 1ПМ клиента' : '';
 const fw = (v, min, pad) => `calc(${Math.max(String(v).length, min)}ch + ${pad}px)`;
+// Поле внутри плашки .pf: левый отступ 9px (border-box) + 4px запаса — иначе «5000» режется до «500(»
+const PFI = 13;
 /* Поля схемы и нагрузки — общие у строки и у упражнения внутри связки. */
 function prmHTML(it, schPh){
   const L = loadInfo(it), kg = kgText(it, PM());
   const sch = it.txt || it.scheme || '', ld = ldVal(it);
   return `<input class="pf sch" data-pf="sch" data-for="${it.id}" value="${esc(sch)}" placeholder="${schPh}" autocomplete="off" spellcheck="false" style="width:${fw(sch, schPh.length > 3 ? 4 : 3, 20)}">
-      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
+      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, PFI)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
       <button class="rng ${hasRange(it) ? 'on' : ''}" data-rng="${it.id}" tabindex="-1" title="${hasRange(it) ? 'Убрать диапазон — оставить одно число' : 'Диапазон «от–до»: 70–80 % или 60–70 кг. Можно и набрать через дефис'}">от–до</button>` : ''}
       <span class="kg">${kg != null ? '→ ' + kg + ' кг' : pctNote(it)}</span>
-      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() && !TPLM ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}`;
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() && !TPLM ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, PFI)}"><u>кг</u></span></span>` : ''}`;
 }
 /* ─── СВЯЗКА В СТРОКЕ (CON-23) ───
    «Взятие на грудь + Фронтальный присед + Толчок  80 % · 90 кг — 3×(1+1+1)».
@@ -452,12 +454,12 @@ const chainSumm = it => { const kg = kgText(it, PM()), l = loadText(it);
 function chainPrmHTML(it){
   const L = loadInfo(it), kg = kgText(it, PM()), ld = ldVal(it), sets = it.sets || '', summ = chainSumm(it);
   return `<span class="cprm">${summ ? `<span class="cpt">${esc(summ)}</span>` : ''}
-      <span class="pf sets"><input data-pf="sets" data-for="${it.id}" value="${esc(sets)}" placeholder="1" inputmode="numeric" autocomplete="off" style="width:${fw(sets, 2, 4)}"><u>подх.</u></span>
-      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, 4)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
+      <span class="pf sets"><input data-pf="sets" data-for="${it.id}" value="${esc(sets)}" placeholder="1" inputmode="numeric" autocomplete="off" style="width:${fw(sets, 2, PFI)}"><u>подх.</u></span>
+      ${L.has ? `<span class="pf ld ${ld ? '' : 'empty'}"><input data-pf="ld" data-for="${it.id}" value="${esc(ld)}" placeholder="${L.weighted ? 'вес' : 'объём'}" inputmode="decimal" autocomplete="off" spellcheck="false" style="width:${fw(ld, 4, PFI)}"><u data-pfu="${it.id}" title="Сменить единицу">${esc(L.cur)}</u></span>
       <button class="rng ${hasRange(it) ? 'on' : ''}" data-rng="${it.id}" tabindex="-1" title="${hasRange(it) ? 'Убрать диапазон — оставить одно число' : 'Диапазон «от–до»: 70–80 % или 60–70 кг. Можно и набрать через дефис'}">от–до</button>` : ''}
       ${L.weighted && chainWeighted(it).length > 1 ? `<span class="cof ${L.cur === '%' ? '' : 'off'}">от 1ПМ <select data-cof="${it.id}" data-nosearch tabindex="-1" title="От 1ПМ какого упражнения считать процент">${cofOpts(it)}</select></span>` : ''}
       <span class="kg">${kg != null ? '→ ' + kg + ' кг' : pctNote(it)}</span>
-      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() && !TPLM ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, 4)}"><u>кг</u></span></span>` : ''}</span>`;
+      ${L.weighted ? `<span class="pmf ${L.cur === '%' && !PM()[L.key] && !G_() && !TPLM ? '' : 'off'}">1ПМ клиента <span class="pf pm"><input data-pf="pm" data-for="${it.id}" placeholder="—" inputmode="decimal" autocomplete="off" style="width:${fw('', 3, PFI)}"><u>кг</u></span></span>` : ''}</span>`;
 }
 function chainLineHTML(it){
   const ps = it.parts || [];
@@ -1905,7 +1907,7 @@ function applyLoad(i, raw, force){
   else { i.pct = null; i.unit = u; i.val = String(r.num); if(r.num2 != null) i.val2 = String(r.num2) }
 }
 const autoWidth = f => { const sch = f.dataset.pf === 'sch';
-  f.style.width = `calc(${Math.max(f.value.length, (f.placeholder || '').length, sch ? 4 : 3)}ch + ${sch ? 20 : 4}px)` };
+  f.style.width = `calc(${Math.max(f.value.length, (f.placeholder || '').length, sch ? 4 : 3)}ch + ${sch ? 20 : PFI}px)` };
 /* Вес, единица, поле 1ПМ и «текстовый» режим — на месте, без перерисовки:
    перерисовка сбила бы курсор. Поле 1ПМ, в котором сейчас печатают, не прячем. */
 function syncLoads(){

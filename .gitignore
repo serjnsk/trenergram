@@ -17,3 +17,7 @@ tools/exdb/.cache-exercises.json
 # Брендбук: шрифт для build.py скачивается сам; видео анимаций — в публикацию
 mvp/brand/.cache/
 !mvp/brand/animation/*.mp4
+
+# Контент для соцсетей: рендеры уходят в облако, зависимости рендера ставятся npm install
+mvp/brand/content/exports/
+mvp/brand/content/node_modules/
