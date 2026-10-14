@@ -55,6 +55,8 @@ jobs:
         run: |
           cp -R .prototypes/mvp _site/prototype
           cp landing/index.html _site/index.html
+          cp landing/support.html _site/support.html
+          cp landing/privacy.html _site/privacy.html
           touch _site/.nojekyll
 
       # Варианты клиентского приложения на согласование — папка design-preview
