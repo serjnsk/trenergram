@@ -216,6 +216,8 @@ const ICON = {
  copy:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></svg>',
  grip:'<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6" cy="4" r="1.1"/><circle cx="10" cy="4" r="1.1"/><circle cx="6" cy="8" r="1.1"/><circle cx="10" cy="8" r="1.1"/><circle cx="6" cy="12" r="1.1"/><circle cx="10" cy="12" r="1.1"/></svg>',
  x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>',
+ more:'<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg>',
+ erase:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 13.5h7.3M9.4 2.9l3.7 3.7-6.9 6.9H3.9L2.4 12a1.2 1.2 0 0 1 0-1.7z"/><path d="M5.9 6.4l3.7 3.7"/></svg>',
  chat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 7.6a5.2 5.2 0 0 1-7.4 4.7L2.5 13.2l1-3.6A5.2 5.2 0 1 1 13.5 7.6z"/></svg>',
  vfull:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6.5h6M5 9h6M5 11.5h4"/></svg>',
  vdetail:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 5.5h6M7 8h4M7 10.5h4"/></svg>',
@@ -552,9 +554,7 @@ function blockHTML(b, k){
       <input class="bt" data-f="title" value="${esc(b.title)}"
              placeholder="${QUICK ? 'Блок ' + (k + 1) : b.kind || txt ? 'Название блока (необязательно)' : 'Введите название блока'}">
       <button class="ftype ${b.kind?'on':''}" data-ftype="${b.id}" title="${b.fmt ? esc(fmtDesc(b.fmt)) : b.kind ? '' : 'Разминка, силовая, комплекс…'}">${b.kind ? esc(blockTypeLabel(b)) : 'тип блока'}</button>
-      <button class="x ${b.note?'on':''}" data-notetog="${b.id}" title="${b.note?'Заметка к блоку':'Добавить заметку к блоку'}">${ICON.chat}</button>
-      <button class="x ${b.savedSig === blockSig(b) ? 'on':''}" data-savblk="${b.id}" title="${b.savedSig === blockSig(b) ? 'Сохранён в базу блоков' : 'Сохранить блок в базу'}">${ICON.star}</button>
-      <button class="x" data-delblk="${b.id}">${ICON.x}</button>
+      <button class="x kebab" data-bmenu="${b.id}" title="Действия с блоком" aria-haspopup="menu">${ICON.more}</button>
     </div>
     ${b.note || b.noteOpen ? `<label class="bnote"><span>${ICON.chat}</span>
         <input data-f="note" value="${esc(b.note||'')}" placeholder="Заметка к блоку — увидит клиент">
@@ -788,10 +788,7 @@ function renderDoc(){
       ${docStatusHTML(d, n)}
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${QUICK ? 'Новая тренировка' : `${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}`}">
-      ${QUICK ? '' : `<button class="x ${d.comp?'on':''}" id="comp-tog" title="${d.comp?'Соревнование — снять статус':'Отметить день как соревнование'}">${DAYICON.comp}</button>`}
-      <button class="x ${trainerMsg(d.date)?'on':''}" id="msg-tog" title="${trainerMsg(d.date)?'Сообщение '+aud(1):'Добавить сообщение '+aud(1)}">${ICON.chat}</button>
-      <button class="x ${S.tplSaved[d.date] === serializeDay(d) ? 'on':''}" id="sav-wo" title="${S.tplSaved[d.date] === serializeDay(d) ? 'Сохранена в базу тренировок' : 'Сохранить тренировку в базу'}">${ICON.star}</button>
-      <button class="x rm" id="clr-wo" title="Очистить день">${ICON.x}</button>
+      ${SUBRO ? '' : `<button class="x kebab" id="day-menu" title="Действия с тренировкой" aria-haspopup="menu">${ICON.more}</button>`}
     </div>
     ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
     ${QUICK || SUBRO ? '' : `<div class="ways4" role="group" aria-label="Как создать тренировку">${[
@@ -803,8 +800,8 @@ function renderDoc(){
     ${trainerMsg(d.date) || S.msgOpen===d.date ? `<label class="fld wmsg"><span class="k">${ICON.chat} ${G_() ? 'Группе' : 'Клиенту'}</span>
       <input id="w-msg" value="${esc(trainerMsg(d.date))}"
              placeholder="${G_() ? 'Сообщение ко всей тренировке — каждый участник увидит его первым' : 'Сообщение ко всей тренировке — клиент увидит его первым'}">
-      <kbd class="ent">↵ Enter</kbd>
       <button class="x" id="w-msgdel" title="Удалить сообщение">${ICON.x}</button>
+      <kbd class="ent">↵ Enter</kbd>
     </label>` : ''}
     ${d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b, k)).join('')}
     ${SUBRO ? '' : `<div class="addbrow">${QUICK
@@ -1170,7 +1167,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) persist(
 const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
 /* «Пятница, 19 сентября» — дата открытого дня в заголовке страницы; год — если не текущий. */
 const fullDate = date => { const t = D(date), y = t.getFullYear(); return DOW[dowMon(date)] + ', ' + t.getDate() + ' ' + MONTHS[t.getMonth()] + (y !== new Date().getFullYear() ? ' ' + y : '') };
-function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur && TPLM !== 'блок') autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
+function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur && TPLM !== 'блок') autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); fitNotes(); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
   const pt = $('#ptd'); if(pt && cur) pt.innerHTML = esc(fullDate(cur.date)) + '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>';
   if(QUICK) freshFocus() }
 
@@ -1668,7 +1665,7 @@ function pendingStat(){
 }
 
 let SUG = null;
-const closeSug = () => { if(SUG){ SUG.remove(); SUG = null } };
+const closeSug = () => { if(SUG){ SUG.remove(); SUG = null; $$('.kebab.open').forEach(k => k.classList.remove('open')) } };
 /* Кандидаты — упражнения, где каждое набранное слово начинает какое-то слово
    названия: «жим ган» → «Жим гантелей лёжа», но не «Жим лёжа». */
 function exCands(text){
@@ -2402,7 +2399,7 @@ function saveWorkout(){
    оставляем тренеру: «Разминка перед приседом» может лежать и там и там. */
 function openFolder(btn){
   closeSug();
-  const id = btn.dataset.savblk;
+  const id = btn.dataset.savblk || btn.dataset.bmenu;
   const b = day().blocks.find(x=>x.id===id);
   const guess = FOLDER_OF(b);
   const box = document.createElement('div');
@@ -2419,6 +2416,102 @@ function openFolder(btn){
     closeSug(); saveBlock(id, f.dataset.folder);
   });
 }
+/* ═══════════ МЕНЮ «⋯» БЛОКА И ТРЕНИРОВКИ ═══════════
+   Заметка, закладка, удаление и прочее нужны редко — в шапке они спорили
+   с названием и типом блока. Поэтому всё за одной кнопкой «⋯»: пункты
+   подписаны словами, опасные — красным под чертой. */
+function blockToText(b){
+  const nm = it => it.exId ? (byId(it.exId) || {}).ru || '' : String(it.raw || '').trim();
+  const rng = (a, z) => String(a).replace('.', ',') + (z != null && z !== '' ? '–' + String(z).replace('.', ',') : '');
+  const load = it => [it.pct != null ? rng(it.pct, it.pct2) + '%' : '', it.val ? rng(it.val, it.val2) + (it.unit ? ' ' + it.unit : '') : ''].filter(Boolean).join(' ');
+  const line = it => {
+    if(it.chain){
+      const ps = (it.parts || []).filter(partHas), sc = chainScheme(it);
+      return ps.map(partName).join(' + ') + ([load(it), sc].some(Boolean) ? ': ' + [load(it), sc].filter(Boolean).join(' — ') : '');
+    }
+    if(!it.exId) return nm(it);
+    return [nm(it), it.scheme, load(it), it.txt].filter(Boolean).join(' ');
+  };
+  return (b.items || []).map(it => it.ss
+    ? 'Суперсет ' + it.rounds + ' ' + plural3(+it.rounds, 'круг', 'круга', 'кругов') + (it.rest ? ', отдых ' + it.rest : '') + ':'
+    : itemHas(it) ? (it.sub ? '• ' : '') + line(it) : '').filter(Boolean).join('\n');
+}
+/* Правка блока с возвратом из уведомления: блок кладётся на место как был. */
+function blockUndoable(b, msg, change){
+  const d = day(), was = JSON.parse(JSON.stringify(b));
+  change(); render();
+  toast(msg, 'Отменить', () => { const k = d.blocks.findIndex(x => x.id === was.id); if(k >= 0){ d.blocks[k] = was; render() } });
+}
+function openKebab(btn){
+  const blk = btn.dataset.bmenu, d = day();
+  if(SUG && SUG.dataset.kfor === (blk || 'day')){ closeSug(); return }
+  closeSug();
+  const row = (k, ic, t, cls = '') => `<button class="row ${cls}" data-km="${k}" role="menuitem">${ic}<b>${t}</b></button>`;
+  let html;
+  if(blk){
+    const b = d.blocks.find(x => x.id === blk); if(!b) return;
+    const saved = b.savedSig === blockSig(b), has = blockHas(b);
+    html = row('note', ICON.chat, b.note || b.noteOpen ? 'Удалить заметку' : 'Добавить заметку')
+      + row('save', ICON.star, saved ? 'Сохранён в базу блоков' : 'Сохранить в базу блоков', saved ? 'done' : '')
+      + (!isTextBlock(b) && has ? row('totext', ICON.text, 'Разгруппировать в текстовый блок') : '')
+      + (has ? row('clear', ICON.erase, 'Очистить блок') : '')
+      + '<i class="sep"></i>' + row('del', ICON.x, 'Удалить блок', 'rm');
+  } else {
+    const msg = trainerMsg(d.date) || S.msgOpen === d.date, saved = S.tplSaved[d.date] === serializeDay(d);
+    html = row('msg', ICON.chat, msg ? 'Удалить сообщение ' + aud(1) : 'Сообщение ' + aud(1))
+      + row('comp', DAYICON.comp, d.comp ? 'Снять статус соревнования' : 'Отметить как соревнование')
+      + row('save', ICON.star, saved ? 'Сохранена в базу тренировок' : 'Сохранить в базу тренировок', saved ? 'done' : '')
+      + (d.blocks.length ? '<i class="sep"></i>' + row('clear', ICON.erase, 'Очистить день', 'rm') : '');
+  }
+  const box = document.createElement('div');
+  box.className = 'sug kmenu'; box.setAttribute('role', 'menu'); box.dataset.kfor = blk || 'day';
+  box.innerHTML = html;
+  document.body.appendChild(box); SUG = box;
+  const r = btn.getBoundingClientRect();
+  box.style.left = Math.max(12, r.right - box.offsetWidth) + 'px';
+  box.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  btn.classList.add('open');
+  box.addEventListener('click', ev => {
+    const it = ev.target.closest('[data-km]'); if(!it) return;
+    const k = it.dataset.km; closeSug();
+    if(blk) blockAct(k, blk, btn); else dayAct(k);
+  });
+}
+function blockAct(k, id, btn){
+  const d = day(), b = d.blocks.find(x => x.id === id); if(!b) return;
+  if(k === 'note'){
+    if(b.note || b.noteOpen){ b.note = ''; b.noteOpen = false; render(); return }
+    b.noteOpen = true; render();
+    const inp = $(`[data-blk="${id}"] .bnote input`); if(inp) inp.focus();
+    return;
+  }
+  if(k === 'save'){ if(b.savedSig === blockSig(b)){ toast('Блок уже в базе блоков'); return } openFolder($(`[data-bmenu="${id}"]`) || btn); return }
+  if(k === 'totext'){ blockUndoable(b, 'Блок разгруппирован в текст', () => { b.text = blockToText(b); b.items = [] }); return }
+  if(k === 'clear'){ blockUndoable(b, 'Блок очищен', () => { if(isTextBlock(b)) b.text = ''; else b.items = [] }); return }
+  if(k === 'del'){ d.blocks = d.blocks.filter(x => x.id !== id); render() }
+}
+function dayAct(k){
+  const d = day();
+  if(k === 'msg'){
+    if(trainerMsg(d.date) || S.msgOpen === d.date){ setTrainerMsg(d.date, ''); grpMsgPush(); saveState(); S.msgOpen = null; render(); return }
+    S.msgOpen = d.date; render(); const i = $('#w-msg'); if(i) i.focus(); return;
+  }
+  if(k === 'comp'){ d.comp = !d.comp; render(); toast(d.comp ? 'День отмечен как соревнование' : 'Статус соревнования снят'); return }
+  if(k === 'save'){ if(S.tplSaved[d.date] === serializeDay(d)){ toast('Тренировка уже в базе тренировок'); return } saveWorkout(); return }
+  if(k === 'clear') askClear();
+}
+/* Поле заметки и сообщения — по ширине текста, чтобы крестик стоял сразу
+   за ним, а не у правого края карточки. Пустое — по ширине подсказки. */
+let FIT_CTX = null;
+function fitNote(inp){
+  if(!inp) return;
+  const cs = getComputedStyle(inp);
+  FIT_CTX ||= document.createElement('canvas').getContext('2d');
+  FIT_CTX.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const w = FIT_CTX.measureText(inp.value || inp.placeholder || '').width;
+  inp.style.width = Math.ceil(w + 6) + 'px';
+}
+const fitNotes = () => $$('#doc .bnote input, #w-msg').forEach(fitNote);
 /* Короткое подтверждение: действие незаметное, без него непонятно,
    случилось ли что-нибудь. */
 let TOAST = null;
@@ -2564,6 +2657,7 @@ document.addEventListener('click', e=>{
   const og = e.target.closest('[data-opengrp]'); if(og){ switchWho(og.dataset.opengrp, day().date); return }
   if(e.target.closest('#dayPrev')){ if(S.i-7 < 0){ shiftTo(addDays(program(S.pid).start, S.i-7)); return } S.i -= 7; render(); return }
   if(e.target.closest('#dayNext')){ const i = S.i+7; extendPlan(i); S.i = i; render(); return }
+  const km = e.target.closest('[data-bmenu], #day-menu'); if(km){ openKebab(km); return }
   const nd = e.target.closest('[data-notedel]');
   if(nd){ e.preventDefault(); const b = day().blocks.find(x=>x.id===nd.dataset.notedel);
           if(b){ b.note = ''; b.noteOpen = false; render() } return }
@@ -2834,12 +2928,12 @@ document.addEventListener('input', e=>{
     if(f.dataset.f === 'text'){ fitText(f); const ai = f.parentElement.querySelector('[data-aiblk]'); if(ai) ai.classList.toggle('dim', !f.value.trim()); renderStrip(); refreshChrome() }
     /* Иконка заметки заливается сразу, как появился текст, без перерисовки —
        перерисовка сбила бы курсор в поле. */
-    if(f.dataset.f === 'note'){ const ic = document.querySelector(`[data-notetog="${b.id}"]`); if(ic){ ic.classList.toggle('on', !!f.value.trim()); ic.dataset.tip = f.value.trim() ? 'Заметка к блоку' : 'Добавить заметку к блоку'; ic.removeAttribute('title') } }
+    if(f.dataset.f === 'note'){ fitNote(f); const ic = document.querySelector(`[data-notetog="${b.id}"]`); if(ic){ ic.classList.toggle('on', !!f.value.trim()); ic.dataset.tip = f.value.trim() ? 'Заметка к блоку' : 'Добавить заметку к блоку'; ic.removeAttribute('title') } }
     return;
   }
   if(e.target.id === 'd-title'){ day().title = e.target.value; renderStrip(); refreshChrome(); return }
   if(e.target.id === 'w-msg'){ setTrainerMsg(day().date, e.target.value); grpMsgPush(); saveState();
-    const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
+    fitNote(e.target); const ic = $('#msg-tog'); if(ic){ const has = !!e.target.value.trim(); ic.classList.toggle('on', has); ic.dataset.tip = has ? 'Сообщение клиенту' : 'Добавить сообщение клиенту'; ic.removeAttribute('title') }
     return }
   if(e.target.id === 'q'){ S.q = e.target.value; renderSrc(); return }
 });

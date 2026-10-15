@@ -1717,3 +1717,28 @@ body.subro .rail{display:none}
 body.subro .cons{grid-template-columns:minmax(0,1fr)}
 #doc .roempty{padding:40px 20px;text-align:center;color:var(--tx3);font-size:15px}
 body.subro .ro-off{opacity:.45;cursor:not-allowed}
+
+/* ─── меню «⋯» блока и тренировки ───
+   Кнопка видна всегда и выглядит кнопкой: тёмные точки в рамке, а не
+   бледная иконка, которую находят только наведением. */
+.blkh .x.kebab,.doch .x.kebab{color:var(--tx1);border-color:var(--tx4);background:var(--bg)}
+.blkh .x.kebab svg,.doch .x.kebab svg{width:16px;height:16px}
+.blkh .x.kebab:hover,.doch .x.kebab:hover,.x.kebab.open{background:var(--s1);border-color:var(--tx3);color:var(--tx1)}
+.x.kebab.open{border-color:var(--acc);color:var(--acc-d)}
+.sug.kmenu{min-width:270px;padding:5px}
+.kmenu .row{gap:11px;padding:8px 11px}
+.kmenu .row svg{width:15px;height:15px;flex:none;color:var(--tx3)}
+.kmenu .row b{font-size:14.5px;font-weight:500}
+.kmenu .row.done svg{color:var(--acc)}
+.kmenu .row.done b{color:var(--tx3)}
+.kmenu .row.rm b,.kmenu .row.rm svg{color:var(--rm)}
+.kmenu .row.rm:hover{background:var(--rm-a)}
+.kmenu .sep{display:block;height:1px;background:var(--line);margin:4px 6px}
+
+/* Крестик заметки и сообщения — сразу за текстом: поле по ширине
+   написанного (fitNote), а не до правого края. */
+.bnote input{flex:0 1 auto;max-width:calc(100% - 50px)}
+.wmsg input#w-msg{flex:0 1 auto;max-width:calc(100% - 210px)}
+.wmsg .ent{position:static;transform:none;display:none;flex:none}
+.wmsg .ent::before{content:none}
+.wmsg:focus-within .ent,.wmsg .ent.done{display:inline-block}
