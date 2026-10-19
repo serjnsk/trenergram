@@ -54,9 +54,9 @@ jobs:
       - name: Разложить прототип и заглавную
         run: |
           cp -R .prototypes/mvp _site/prototype
-          cp landing/index.html _site/index.html
-          cp landing/support.html _site/support.html
-          cp landing/privacy.html _site/privacy.html
+          # Всё из landing/ — в корень: заглавная, поддержка, политика,
+          # страница клиентского приложения /client/ с картинками
+          cp -R landing/. _site/
           touch _site/.nojekyll
 
       # Варианты клиентского приложения на согласование — папка design-preview
