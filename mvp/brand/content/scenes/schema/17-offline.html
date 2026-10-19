@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Офлайн-режим</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 17 «Офлайн-режим» (скоро). Экран клиента. Состояния: off → on → sent.
+   Подходы отмечаются кликом (.done), счётчик внизу считает их сам. */
+#wifi{width:30px;height:30px;flex:none;position:relative;margin-left:4px;color:var(--ok)}
+#wifi svg{width:30px;height:30px;display:block}
+#wifi:after{content:"";position:absolute;left:-1px;top:13px;width:32px;height:3.5px;border-radius:2px;background:var(--rm);
+  transform:rotate(-45deg) scaleX(0);transition:transform .3s}
+.s-off #wifi{color:var(--g3)} .s-off #wifi:after{transform:rotate(-45deg) scaleX(1)}
+
+#net{position:relative;height:96px;flex:none;border-radius:18px;overflow:hidden;opacity:0;transform:translateY(-12px);transition:opacity .35s,transform .35s}
+.s-off #net,.s-on #net,.s-sent #net{opacity:1;transform:none}
+#net .ns{position:absolute;inset:0;display:flex;align-items:center;gap:14px;padding:0 16px;transition:opacity .35s,transform .35s}
+#net .ns i{width:46px;height:46px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;font:800 24px Inter;color:#fff}
+#net .ns b{display:flex;align-items:center;gap:8px;font:800 20px Inter}
+#net .ns small{display:block;font:600 15px/1.3 Inter;margin-top:3px}
+#net .off{background:var(--ink);color:#fff} #net .off i{background:#3a3633} #net .off small{color:#cfc7bf}
+#net .on{background:var(--ok-a);color:var(--ok);border:2px solid #bfe6cf} #net .on i{background:var(--ok)} #net .on small{color:#2f6b4b}
+#net .on{opacity:0;transform:translateY(14px)}
+.s-on #net .off,.s-sent #net .off{opacity:0;transform:translateY(-14px)}
+.s-on #net .on,.s-sent #net .on{opacity:1;transform:none}
+#net .soon{background:var(--acc)}
+
+.day .hd{justify-content:space-between}
+.day .hd small{font:700 15px Inter;color:var(--acc)}
+.blk .hd{background:var(--g1);font-size:18px;padding:12px 16px}
+.blk .hd .chip{margin-left:auto}
+#sq .row.ex{font-size:19px}
+.set{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1.5px solid var(--g1);font:700 18px Inter;transition:background .3s}
+.set .n{width:28px;font:800 16px Inter;color:var(--tx2)}
+.set span{flex:1}
+.set .ck{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--g3);flex:none;position:relative;transition:background .25s,border-color .25s}
+.set .ck:after{content:"";position:absolute;left:10px;top:5px;width:8px;height:15px;border:solid #fff;border-width:0 3.5px 3.5px 0;transform:rotate(45deg) scale(0);transition:transform .25s}
+.set.done{background:var(--acc-a)}
+.set.done .ck{background:var(--acc);border-color:var(--acc)} .set.done .ck:after{transform:rotate(45deg) scale(1)}
+#am .row{font-size:17px;padding:10px 16px}
+
+.foot{height:74px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:#fff;border-top:1.5px solid var(--g1)}
+#q{display:flex;align-items:center;gap:10px;font:700 17px Inter;color:var(--tx2)}
+#q i{width:12px;height:12px;border-radius:50%;background:var(--g3);flex:none;transition:background .3s}
+.s-off #q.has i{background:var(--acc)}
+.s-on #q i,.s-sent #q i{background:var(--ok)}
+.foot .btn{margin-left:auto;height:46px}
+
+#sent{position:absolute;left:14px;right:14px;bottom:14px;border-radius:20px;background:#fff;border:2px solid var(--g2);
+  box-shadow:0 18px 40px rgba(20,20,20,.22);padding:14px 16px 16px;opacity:0;transform:translateY(60px);transition:opacity .4s,transform .4s}
+.s-sent #sent{opacity:1;transform:none}
+#sent .st{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+#sent .st .lbl{color:var(--ok)}
+#sent .st .bar{margin-left:auto;width:54px}
+#sent .ln{display:flex;gap:12px;align-items:flex-start}
+#sent .ln b{display:block;font:800 18px/1.25 Inter}
+#sent .ln .tx{font:700 17px/1.35 Inter}
+#sent .ln .tx em{font-style:normal;color:var(--acc)}
+#sent .ln small{display:block;font:600 14.5px/1.3 Inter;color:var(--tx2);margin-top:5px}
+</style>
+</head>
+<body>
+<main class="main">
+  <div id="net">
+    <div class="ns off"><i>!</i><div><b>Нет сети <span class="soon">Скоро</span></b><small>Тренировка на телефоне — отмечайте, всё сохранится</small></div></div>
+    <div class="ns on"><i>✓</i><div><b>Сеть есть</b><small>Результаты у тренера</small></div></div>
+  </div>
+  <div class="card day">
+    <div class="hd">Вторник, 14 октября<small>Сила + AMRAP</small></div>
+  </div>
+  <div class="card blk" id="sq">
+    <div class="hd">Силовая<span class="chip g">3 × 5</span></div>
+    <div class="row ex"><span>Присед со штангой</span><b class="chip">132,5 кг</b></div>
+    <div class="set" id="s1"><span class="n">1</span><span>5 × 132,5 кг</span><i class="ck"></i></div>
+    <div class="set" id="s2"><span class="n">2</span><span>5 × 132,5 кг</span><i class="ck"></i></div>
+    <div class="set" id="s3"><span class="n">3</span><span>5 × 132,5 кг</span><i class="ck"></i></div>
+  </div>
+  <div class="card blk" id="am">
+    <div class="hd">Комплекс<span class="chip">AMRAP 12</span></div>
+    <div class="row"><span>10 подтягиваний</span></div>
+    <div class="row"><span>15 махов гирей 24 кг</span></div>
+    <div class="row"><span>Бег 200 м</span></div>
+  </div>
+  <div id="sent">
+    <div class="st"><span class="lbl">✓ Пришло тренеру</span><i class="bar s"></i></div>
+    <div class="ln"><i class="av">ИП</i><div class="tx"><b>Иван Петров записал результат</b>Присед со штангой — <em>3 подхода × 5 по 132,5 кг</em><small>Пришло, как только появилась сеть</small></div></div>
+  </div>
+</main>
+<script>
+Kit.client({ who: 'Тренер Алексей', foot: '<div class="foot"><span id="q"><i></i><span id="qt">Отметьте подходы</span></span><i class="bar" style="width:70px;margin-left:auto"></i></div>' });
+document.querySelector('.ctop').insertAdjacentHTML('beforeend',
+  '<span id="wifi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M2.5 9a14 14 0 0 1 19 0M5.8 12.6a9 9 0 0 1 12.4 0M9.2 16.1a4 4 0 0 1 5.6 0"/><circle cx="12" cy="19.6" r="1.4" fill="currentColor" stroke="none"/></svg></span>');
+const q = document.getElementById('q'), qt = document.getElementById('qt');
+let st = '';
+function upd() {
+  const n = document.querySelectorAll('.set.done').length;
+  q.classList.toggle('has', n > 0);
+  if (st === 'on' || st === 'sent') qt.textContent = n ? 'Отправлено тренеру' : 'Всё отправлено';
+  else qt.textContent = n ? `Сохранено на телефоне: ${n}` : 'Отметьте подходы';
+}
+function go(s) { st = s; Kit.state(s); upd(); }
+window.ST = { off: () => go('off'), on: () => go('on'), sent: () => go('sent') };
+document.querySelectorAll('.set').forEach(e => e.onclick = () => { e.classList.toggle('done'); upd(); });
+</script>
+</body>
+</html>

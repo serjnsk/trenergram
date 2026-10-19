@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>24 · Таймер уже собран</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/24-timer.md (серия «Фичи с лендинга», вариант «схема»). Фича «скоро».
+// Экран schema/24-timer.html: конструктор тренера → приложение клиента → круговой таймер.
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/24-timer.html');
+
+let W;
+S.cue(.01, (d, w) => { W = w; });
+
+S.caption(.2, 6.3, '«EMOM 12» —\n*таймер готов*', { sub: 'Скоро в Тренерграме' });
+
+S.spot(1.0, 3.0, '#inp', { label: 'Пишете *«EMOM 12»*', dy: -40 });
+S.type(1.3, 2.4, '#tx', 'EMOM 12');
+S.cue(2.7, (d, w) => w.ST.ready());
+
+S.spot(3.2, 4.9, '#rdy', { label: 'Таймер *уже собран*', dy: 40 });
+S.tap(5.3, '#send');
+
+S.caption(6.6, 12.6, 'Клиент жмёт\n*«Старт»*', { sub: 'Раунды и отдых считаются сами' });
+
+S.spot(6.3, 8.0, '#start', { label: 'Таймер *из текста*', dy: -110, pad: 6 });
+S.tap(7.7, '#start');
+
+// после «Старта»: ускоренно до 7-го раунда (≈2,6 раунда в секунду), дальше — в реальном времени
+S.span(8.2, 10.6, p => W && W.ST.tick(371 * p));
+S.span(10.6, 12.6, p => W && W.ST.tick(371 + 2 * p));
+
+S.spot(8.6, 10.6, '#ring', { label: 'Раунды *считает сам*', dy: -150 });
+S.spot(10.8, 12.7, '#task', { label: 'Что делать *в эту минуту*', dy: 60 });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>13 · Массовое добавление программ</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/13-group.md (серия «Фичи с лендинга», вариант «схема»)
+// Схематичный экран schema/13-group.html: группа «Утро 7:00», присед 5 × 3 от 1ПМ,
+// ползунок нагрузки 70 → 75 % пересчитывает веса у всех, «Своя версия» — замена только у Марии.
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/13-group.html');
+
+let W;
+S.cue(.01, (d, w) => { W = w; });
+
+S.caption(.2, 6.9, 'Одна программа —\n*20 атлетов*', { sub: 'Написали раз — отдали всей группе' });
+
+S.spot(1.0, 2.6, '#grp', { label: 'Группа — *20 атлетов*', dy: 120 });
+
+S.spot(2.8, 5.5, '#load', { label: 'Тянете — *нагрузка 75 %*', dy: -115 });
+S.tap(3.25, '#knob');
+S.span(3.4, 4.9, p => W && W.ST.load(70 + 5 * p));
+S.cue(5.3, (d, w) => w.ST.cool());
+
+S.spot(5.6, 7.4, '#list', { label: 'Веса пересчитались *у всех*', side: 'left', dy: -230 });
+
+S.caption(7.2, 12.8, 'Своя правка —\n*только одному*', { sub: 'Травма? Поправьте только его день' });
+
+S.tap(8.55, '#own');
+
+S.spot(9.1, 10.9, '#mrow', { label: 'Замена *из-за травмы*', side: 'left', dy: -130 });
+S.spot(11.0, 12.8, '#rest', { label: 'У остальных *без изменений*', dy: -200 });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

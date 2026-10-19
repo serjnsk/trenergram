@@ -77,8 +77,9 @@ try {
     console.log('Кадр:', path.relative(process.cwd(), file));
   } else {
     const file = path.join(outDir, `${name}.mp4`);
+    const tmp = path.join(outDir, `.rendering-${name}.mp4`);         // студия не видит файл, пока он не дописан
     const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-i', '-',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', file],
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', tmp],
       { stdio: ['pipe', 'inherit', 'inherit'] });
     const total = Math.round((to - from) * fps);
     const started = Date.now();
@@ -90,9 +91,14 @@ try {
     }
     ff.stdin.end();
     await new Promise((r, j) => ff.on('close', c => (c ? j(new Error('ffmpeg ' + c)) : r())));
+    fs.renameSync(tmp, file);
     console.log(`\r${name}: готово за ${Math.round((Date.now() - started) / 1000)} с → ${path.relative(process.cwd(), file)}`);
   }
+} catch (e) {
+  console.error(e); process.exitCode = 1;
 } finally {
   await browser.close();
   server.close();
+  // Chrome оставляет помощников (crashpad), которые держат процесс живым, — выходим явно
+  process.exit();
 }

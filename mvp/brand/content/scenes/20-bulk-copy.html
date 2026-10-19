@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>20 · Массовое копирование тренировок</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/20-bulk-copy.md (серия «Фичи с лендинга», вариант «схема»)
+// Схематичный экран schema/20-bulk-copy.html: неделя Ивана Петрова, выделены Пн, Ср, Пт →
+// «Копировать» → шторка «Кому»: группа «Утро 7:00», Мария, Олег, Аня → «Скопировать» →
+// итог и неделя Марии с той же раскладкой по дням.
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/20-bulk-copy.html');
+
+S.caption(.2, 7.0, 'Выделили дни —\n*скопировали всем*', { sub: 'Любому числу клиентов и групп' });
+
+S.tap(.95, '#d1');
+S.cue(1.45, (d, w) => w.ST.pick(2));
+S.cue(1.9, (d, w) => w.ST.pick(3));
+S.spot(1.2, 3.4, '#week', { label: 'Выделили *3 дня*', dy: -80 });
+
+S.spot(3.6, 5.0, '#copy', { label: '*Копировать* или перенести', pad: 6 });
+S.tap(4.6, '#copy');
+
+S.spot(5.3, 7.7, '#to', { label: 'Клиенты *и группы*', dy: -60 });
+S.cue(5.6, (d, w) => w.ST.to(1));
+S.cue(5.95, (d, w) => w.ST.to(2));
+S.cue(6.3, (d, w) => w.ST.to(3));
+S.cue(6.65, (d, w) => w.ST.to(4));
+S.tap(8.0, '#go');
+
+S.caption(7.3, 12.8, 'Раскладка дней\n*сохранится*', { sub: 'Пн, Ср, Пт — у каждого так же' });
+
+S.spot(8.5, 10.4, '#res', { label: 'Всем — *за одно касание*' });
+S.spot(10.6, 12.8, '#mini', { label: 'Те же *дни недели*' });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

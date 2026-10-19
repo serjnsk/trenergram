@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Рекорды и замеры</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 22 «Рекорды и замеры». Состояния: (карточка) → chart (график приседа за полгода). */
+.cl{display:flex;flex-direction:column;gap:12px;flex:none}
+.cl .nm{display:flex;align-items:center;gap:12px}
+.cl .av{width:48px;height:48px;font-size:17px;line-height:48px}
+.cl .nm b{display:block;font:800 22px Inter}
+.cl .nm .bar{margin-top:7px}
+.tabs{display:flex;gap:6px;padding:4px;border-radius:14px;background:var(--g1)}
+.tabs span{flex:1;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font:700 16px Inter;color:var(--tx2)}
+.tabs span.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.sec .hd{justify-content:space-between;font-size:19px}
+.sec .hd .bar{width:64px}
+.rr{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1.5px solid var(--g1)}
+.rr .n{flex:1;min-width:0}
+.rr .n b{display:block;font:800 19px Inter}
+.rr .n small{display:block;font:700 14px Inter;color:var(--tx2);margin-top:2px}
+.rr .v{font:800 22px Inter;white-space:nowrap}
+#r1{background:var(--acc-a)}
+#r1 .v{color:var(--acc)}
+.plus5{padding:5px 9px;border-radius:9px;background:var(--acc);color:#fff;font:800 15px Inter;white-space:nowrap}
+.go{width:10px;height:10px;border-right:2.5px solid var(--g3);border-top:2.5px solid var(--g3);transform:rotate(45deg);flex:none;margin-left:2px}
+.ar{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:8px;font:800 14px Inter;white-space:nowrap}
+.ar.dn{background:var(--ok-a);color:var(--ok)} .ar.up{background:var(--ok-a);color:var(--ok)}
+.ar i{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent}
+.ar.dn i{border-top:7px solid currentColor} .ar.up i{border-bottom:7px solid currentColor}
+#meas .rr{padding:10px 16px}
+
+/* лист графика */
+#sheet{position:absolute;left:14px;right:14px;top:126px;bottom:14px;display:flex;flex-direction:column;
+  opacity:0;transform:translateY(40px);transition:opacity .35s,transform .4s;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+#sheet .hd{gap:12px}
+#sheet .bk{width:12px;height:12px;border-left:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:rotate(45deg);margin-left:4px}
+#sheet .hd small{margin-left:auto;font:800 14px Inter;color:var(--tx2)}
+.kpi{display:flex;align-items:center;gap:12px;padding:14px 18px 0}
+.kpi .big{font-size:40px;color:var(--ink)}
+.kpi .sub{margin-left:auto;text-align:right;font:700 14px/1.3 Inter;color:var(--tx2)}
+.kpi .sub b{display:block;font:800 18px Inter;color:var(--ok)}
+#chart{padding:6px 8px 0 4px}
+#chart svg{display:block;width:100%;height:auto;overflow:visible}
+#chart .gl{stroke:var(--g2);stroke-width:1.5;stroke-dasharray:4 5}
+#chart .yl{font:700 14px Inter;fill:#8a847e}
+#chart .xl{font:700 15px Inter;fill:var(--tx2)}
+#line{fill:none;stroke:var(--acc);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.8s linear}
+#area{fill:url(#ga);opacity:0;transition:opacity .6s 1.4s}
+.pt{fill:#fff;stroke:var(--acc);stroke-width:4;opacity:0;transition:opacity .2s}
+.pt:nth-of-type(2){transition-delay:.36s}.pt:nth-of-type(3){transition-delay:.72s}
+.pt:nth-of-type(4){transition-delay:1.08s}.pt:nth-of-type(5){transition-delay:1.44s}
+#last{opacity:0;transition:opacity .35s 1.8s}
+#last circle.h{fill:var(--acc);opacity:.18}
+#last circle.p{fill:var(--acc);stroke:#fff;stroke-width:4}
+#last rect{fill:var(--acc)}
+#last text{font:800 20px Inter;fill:#fff}
+.note{margin:18px 14px 14px;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--ok-a);color:var(--ok);font:700 16px Inter;
+  opacity:0;transform:translateY(10px);transition:opacity .35s 2s,transform .35s 2s}
+.note i{width:24px;height:24px;border-radius:50%;background:var(--ok);flex:none;position:relative}
+.note i:after{content:"";position:absolute;left:8px;top:5px;width:6px;height:11px;border-right:3px solid #fff;border-bottom:3px solid #fff;transform:rotate(45deg)}
+
+.sec{transition:opacity .35s}
+.s-chart .sec{opacity:.25}
+.s-chart #sheet{opacity:1;transform:none}
+.s-chart #line{stroke-dashoffset:0}
+.s-chart #area,.s-chart .pt,.s-chart #last,.s-chart .note{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="cl">
+    <div class="nm"><i class="av">ИП</i><div><b>Иван Петров</b><i class="bar s" style="width:130px"></i></div></div>
+    <div class="tabs" id="tabs"><span class="on">Обзор</span><span>События</span><span>Оплата</span></div>
+  </div>
+
+  <div class="card sec" id="rec">
+    <div class="hd">Рекорды<i class="bar o"></i></div>
+    <div class="rr" id="r1"><div class="n"><b>Присед</b><small>1ПМ</small></div><span class="plus5">+5 кг</span><span class="v">195 кг</span><i class="go"></i></div>
+    <div class="rr"><div class="n"><b>Жим</b><small>1ПМ</small></div><span class="v">120 кг</span><i class="go"></i></div>
+    <div class="rr"><div class="n"><b>Становая</b><small>3ПМ</small></div><span class="v">190 кг</span><i class="go"></i></div>
+  </div>
+
+  <div class="card sec" id="meas">
+    <div class="hd">Замеры<i class="bar"></i></div>
+    <div class="rr"><div class="n"><b>Вес</b></div><span class="ar dn"><i></i>1,2</span><span class="v">82,4 кг</span></div>
+    <div class="rr"><div class="n"><b>Талия</b></div><span class="ar dn"><i></i>2</span><span class="v">84 см</span></div>
+    <div class="rr"><div class="n"><b>Грудь</b></div><span class="ar up"><i></i>1</span><span class="v">104 см</span></div>
+  </div>
+
+  <div class="card" id="sheet">
+    <div class="hd"><i class="bk"></i>Присед со штангой<small>1ПМ</small></div>
+    <div class="kpi"><span class="big">195 кг</span><span class="plus5">+5 кг</span><span class="sub">за полгода<b>+20 кг</b></span></div>
+    <div id="chart">
+      <svg viewBox="0 0 334 250">
+        <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FC5200" stop-opacity=".18"/><stop offset="1" stop-color="#FC5200" stop-opacity="0"/></linearGradient></defs>
+        <!-- y = 220 − (кг − 170) × 190 / 30 -->
+        <line class="gl" x1="40" x2="326" y1="188.3" y2="188.3"/><text class="yl" x="0" y="193">175</text>
+        <line class="gl" x1="40" x2="326" y1="125" y2="125"/><text class="yl" x="0" y="130">185</text>
+        <line class="gl" x1="40" x2="326" y1="61.7" y2="61.7"/><text class="yl" x="0" y="67">195</text>
+        <path id="area" d="M50 188.3 L102 156.7 L154 140.8 L206 125 L258 93.3 L310 61.7 L310 222 L50 222 Z"/>
+        <path id="line" pathLength="1" d="M50 188.3 L102 156.7 L154 140.8 L206 125 L258 93.3 L310 61.7"/>
+        <g>
+          <circle class="pt" cx="50" cy="188.3" r="7"/><circle class="pt" cx="102" cy="156.7" r="7"/>
+          <circle class="pt" cx="154" cy="140.8" r="7"/><circle class="pt" cx="206" cy="125" r="7"/>
+          <circle class="pt" cx="258" cy="93.3" r="7"/>
+        </g>
+        <g id="last">
+          <circle class="h" cx="310" cy="61.7" r="20"/><circle class="p" cx="310" cy="61.7" r="10"/>
+          <rect x="262" y="4" width="66" height="34" rx="10"/><text x="295" y="28" text-anchor="middle">195</text>
+        </g>
+        <text class="xl" x="50" y="246" text-anchor="middle">май</text><text class="xl" x="102" y="246" text-anchor="middle">июн</text>
+        <text class="xl" x="154" y="246" text-anchor="middle">июл</text><text class="xl" x="206" y="246" text-anchor="middle">авг</text>
+        <text class="xl" x="258" y="246" text-anchor="middle">сен</text><text class="xl" x="310" y="246" text-anchor="middle">окт</text>
+      </svg>
+    </div>
+    <div class="note"><i></i>+5 кг к 1ПМ — веса пересчитаны</div>
+  </div>
+</main>
+<script>
+Kit.trainer({ title: 'Клиент', nav: 2 });
+window.ST = { chart: () => Kit.state('chart'), back: () => Kit.state('') };
+document.getElementById('r1').onclick = ST.chart;
+</script>
+</body>
+</html>

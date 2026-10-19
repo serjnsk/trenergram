@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Оплаты</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 18 «Оплаты» (СКОРО). Состояния: on (настройка включена) → late (срок истёк) → closed (доступ закрыт). */
+#sum{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
+#sum .t{display:flex;align-items:center;gap:10px}
+#sum .t .lbl{font-size:13.5px}
+#sum .t .soon{margin-left:auto}
+#sum .big{font-size:40px}
+#sum .ft{display:flex;align-items:center;gap:10px}
+#sum .ft .chip{font-size:16px}
+.list .hd{justify-content:space-between}
+.list .hd .bar{width:80px}
+.pr{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1.5px solid var(--g1);transition:background .35s}
+.pr .nm{flex:1;min-width:0}
+.pr .nm b{display:block;font:800 18px Inter;white-space:nowrap}
+.pr .nm small{display:block;font:600 14.5px Inter;color:var(--tx2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr .chip{font-size:14.5px;padding:6px 10px}
+#paid .pr:first-child{border-top:0}
+#paid{border-top:1.5px solid var(--g1)}
+/* статус Олега: три чипа в одной ячейке, видим один */
+.st{position:relative;display:grid;flex:none}
+.st .chip{grid-area:1/1;justify-self:end;transition:opacity .3s,transform .3s}
+.st .c2,.st .c3{opacity:0;transform:scale(.85)}
+.s-late .st .c1,.s-closed .st .c1,.s-closed .st .c2{opacity:0;transform:scale(.85)}
+.s-late .st .c2,.s-closed .st .c3{opacity:1;transform:none}
+.s-late #oleg{background:#FFF6F4}
+.s-closed #oleg{background:var(--rm-a)}
+.lock{display:inline-block;width:13px;height:10px;border-radius:2.5px;background:currentColor;position:relative;margin-right:6px;vertical-align:-1px}
+.lock:before{content:"";position:absolute;left:2.5px;top:-6px;width:5px;height:6px;border:2px solid currentColor;border-bottom:0;border-radius:5px 5px 0 0}
+#oleg small{transition:color .3s}
+.s-closed #oleg small{color:var(--rm)}
+/* настройка */
+#auto{display:flex;align-items:center;gap:12px;padding:14px 16px}
+#auto .tx{flex:1;min-width:0}
+#auto .tx b{display:block;font:800 17px Inter;line-height:1.25}
+#auto .tx small{display:block;font:600 14.5px Inter;color:var(--tx2);margin-top:3px}
+#sw{width:56px;height:32px;border-radius:16px;background:var(--g3);position:relative;flex:none;transition:background .3s}
+#sw:after{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .3s}
+.s-on #sw,.s-late #sw,.s-closed #sw{background:var(--acc)}
+.s-on #sw:after,.s-late #sw:after,.s-closed #sw:after{transform:translateX(24px)}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="card" id="sum">
+    <div class="t"><span class="lbl">Поступило в октябре</span><span class="soon">Скоро</span></div>
+    <div class="big">148 500 ₽</div>
+    <div class="ft"><span class="chip ok">+12 клиентов</span><i class="bar" style="width:90px"></i></div>
+  </div>
+  <div class="card list">
+    <div class="hd">Клиенты<i class="bar d"></i></div>
+    <div id="paid">
+      <div class="pr"><div class="nm"><b>Иван Петров</b><small>Онлайн-ведение · месяц</small></div><span class="chip ok">Оплачено</span></div>
+      <div class="pr"><div class="nm"><b>Мария Соколова</b><small>Группа «Утро 7:00»</small></div><span class="chip">Автопродление</span></div>
+    </div>
+    <div class="pr" id="oleg"><div class="nm"><b>Олег Руденко</b><small>Онлайн-ведение · месяц</small></div>
+      <div class="st"><span class="chip g c1">до 15 окт</span><span class="chip rm c2">Срок истёк</span><span class="chip rm c3"><i class="lock"></i>Доступ закрыт</span></div></div>
+    <div class="pr"><div class="nm"><b>Аня Ким</b><small>Курс «Подтягивания с нуля»</small></div><span class="chip g">Ждёт оплаты</span></div>
+  </div>
+  <div class="card" id="auto">
+    <div class="tx"><b>Закрывать доступ без оплаты</b><small>к новым тренировкам</small></div>
+    <i id="sw"></i>
+  </div>
+</main>
+<script>
+Kit.trainer({ title: 'Оплаты', nav: 3 });
+window.ST = { on: () => Kit.state('on'), late: () => Kit.state('late'), closed: () => Kit.state('closed') };
+document.getElementById('sw').onclick = ST.on;
+</script>
+</body>
+</html>

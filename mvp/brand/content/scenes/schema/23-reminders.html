@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Никого не забудете</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 23 «Никого не забудете». Состояния: (дашборд) → build (конструктор Ани на субботе 18 октября). */
+.hi{display:flex;flex-direction:column;gap:8px;flex:none}
+.hi .big{font-size:26px}
+.stats{display:flex;gap:10px;flex:none}
+.stats .card{flex:1;height:84px;padding:14px;display:flex;flex-direction:column;justify-content:space-between}
+.stats .card .bar.o{width:44px;height:22px;border-radius:7px}
+
+#att .hd{font-size:19px}
+#att .hd .cnt{margin-left:auto;min-width:30px;height:30px;border-radius:15px;background:var(--acc);color:#fff;font:800 16px/30px Inter;text-align:center}
+.sub{padding:12px 16px 4px;border-top:1.5px solid var(--g1)}
+.pr{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;border-top:1.5px solid var(--g1)}
+.sub + .pr{border-top:0}
+.pr .n{flex:1;min-width:0}
+.pr .n b{display:block;font:800 18px Inter;white-space:nowrap}
+.pr .n .chip{display:inline-block;margin-top:6px;font-size:14.5px}
+.chip.wn{background:#FFF0E0;color:#D97300}
+.pr .btn{height:42px;padding:0 14px;font-size:16px}
+.pr .btn.gh{border-width:2px}
+.more{padding:12px 16px 16px;border-top:1.5px solid var(--g1);display:flex;gap:10px;align-items:center}
+
+/* конструктор */
+#con{position:absolute;inset:14px 14px 0;display:flex;flex-direction:column;gap:12px;background:var(--bg);
+  opacity:0;transform:translateX(40px);transition:opacity .35s,transform .4s;pointer-events:none}
+.who{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;background:#fff;border:2px solid var(--acc-p)}
+.who b{font-size:18px;color:var(--acc)} .who .bar{margin-top:6px}
+.wk{display:flex;gap:6px}
+.wk span{flex:1;height:64px;border-radius:13px;background:#fff;border:1.5px solid var(--g1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font:700 13px Inter;color:var(--tx2)}
+.wk span b{font:800 19px Inter;color:var(--ink)}
+.wk span.f{background:var(--g1)}
+.wk span.f:after{content:"";width:16px;height:4px;border-radius:2px;background:var(--g3)}
+.wk span.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.wk span.on b{color:#fff}
+#day{flex:1;min-height:0;margin-bottom:14px}
+#day .hd{justify-content:space-between;font-size:20px}
+#day .hd small{font:800 13px Inter;color:var(--acc);background:#fff;padding:4px 9px;border-radius:8px}
+.emp{padding:18px 14px;display:flex;flex-direction:column;gap:12px}
+.ph{height:84px;border-radius:16px;border:2px dashed var(--g3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:700 17px Inter;color:var(--tx2)}
+.ph b{font:800 19px Inter;color:var(--ink)}
+.add{height:54px;border-radius:15px;border:2px solid var(--g2);background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px}
+.add .pl{width:26px;height:26px;border-radius:8px;background:var(--acc-a);position:relative;flex:none}
+.add .pl:before,.add .pl:after{content:"";position:absolute;left:7px;top:11.5px;width:12px;height:3px;border-radius:2px;background:var(--acc)}
+.add .pl:after{transform:rotate(90deg)}
+
+.dash{transition:opacity .3s,transform .35s}
+.s-build .dash{opacity:0;transform:translateX(-30px)}
+.s-build #con{opacity:1;transform:none}
+.ttl{transition:opacity .2s}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="dash hi"><span class="lbl">Четверг, 16 октября</span><span class="big">Привет, Алексей</span></div>
+  <div class="dash stats">
+    <div class="card"><i class="bar s" style="width:70px"></i><i class="bar o"></i></div>
+    <div class="card"><i class="bar s" style="width:56px"></i><i class="bar o"></i></div>
+    <div class="card"><i class="bar s" style="width:64px"></i><i class="bar o"></i></div>
+  </div>
+  <div class="dash card" id="att">
+    <div class="hd">Нужно внимание<span class="cnt">3</span></div>
+    <div class="sub"><span class="lbl">Кончается программа</span></div>
+    <div id="list">
+      <div class="pr" id="p1"><i class="av">АК</i><div class="n"><b>Аня Ким</b><span class="chip wn">программа до пт</span></div><span class="btn" id="go">Составить</span></div>
+      <div class="pr" id="p2"><i class="av">ОР</i><div class="n"><b>Олег Руденко</b><span class="chip rm">нет недели</span></div><span class="btn">Составить</span></div>
+      <div class="pr" id="p3"><i class="av">МС</i><div class="n"><b>Маша Соколова</b><span class="chip g">до 2 ноября</span></div><span class="btn gh">Составить</span></div>
+    </div>
+    <div class="more"><i class="bar" style="width:120px"></i><i class="bar s" style="width:70px"></i></div>
+  </div>
+
+  <div id="con">
+    <div class="who"><i class="av">АК</i><div><b>Аня Ким</b><i class="bar s" style="width:140px"></i></div></div>
+    <div class="wk" id="wk">
+      <span class="f">Ср<b>15</b></span><span class="f">Чт<b>16</b></span><span class="f">Пт<b>17</b></span>
+      <span class="on" id="d18">Сб<b>18</b></span><span>Вс<b>19</b></span><span>Пн<b>20</b></span>
+    </div>
+    <div class="card" id="day">
+      <div class="hd">Суббота, 18 октября<small>пусто</small></div>
+      <div class="emp">
+        <div class="ph"><b>Тренировки нет</b>первый день без программы</div>
+        <div class="add"><i class="pl"></i><i class="bar" style="width:120px"></i></div>
+        <div class="add"><i class="pl"></i><i class="bar" style="width:90px"></i></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+Kit.trainer({ title: 'Дашборд', nav: 0 });
+window.ST = {
+  build() {
+    Kit.state('build');
+    document.querySelector('.top .ttl').textContent = 'Конструктор';
+    document.querySelectorAll('.nav a').forEach((a, i) => a.classList.toggle('on', i === 1));
+  },
+};
+document.getElementById('go').onclick = ST.build;
+</script>
+</body>
+</html>

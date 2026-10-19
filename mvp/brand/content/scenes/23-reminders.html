@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>23 · Никого не забудете</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/23-reminders.md (серия «Фичи с лендинга», вариант «схема»)
+// Дашборд → «Нужно внимание» → «Составить» у Ани → конструктор на субботе 18 октября.
+const S = Scene({ format: '9:16', duration: 15 });
+S.phone('schema/23-reminders.html');
+
+S.caption(.2, 7.0, 'Кабинет\n*напомнит сам*', { sub: 'У кого кончается программа' });
+
+S.spot(1.0, 3.0, '#att', { label: 'Нужно *внимание*' });
+S.spot(3.1, 5.6, '#list', { label: 'Кончается *программа*' });
+S.spot(5.7, 6.65, '#go', { pad: 6, label: 'Составить' });
+S.tap(6.4, '#go');
+
+S.caption(7.2, 12.3, 'Конструктор —\n*на нужной дате*', { sub: 'Первый день без программы' });
+
+S.spot(7.6, 9.8, '#d18', { pad: 6, label: 'Суббота, *18 октября*' });
+S.spot(9.9, 12.3, '#day', { label: 'Открылся *на нужной дате*', dy: -80 });
+
+S.outro(12.4);
+S.start();
+</script>
+</body>
+</html>

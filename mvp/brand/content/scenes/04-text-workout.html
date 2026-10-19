@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>04 · Тренировка из текста</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/04-text-workout.md
+// Режим «телефон»: мобильная вёрстка конструктора целиком в кадре, без наездов.
+// Пустой день → «Блок текстом» → лист с кнопкой AI → AI раскладывает текст на блоки
+// и упражнения из базы, над ними плашка «Разобрано ИИ — проверьте» с «Принять».
+const TEXT = 'Разминка:\nБег 5 мин\nСиловая:\nПрисед 5×5 80 кг\nЖим лёжа 4×8 60 кг\nПланка 3 по 45 сек';
+const block = n => d => d.querySelectorAll('.blk')[n];
+
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('../../../constructor.html');
+// В мобильной вёрстке плашка AI сжата в строку, «Принять» уезжает за край — переносим кнопки вниз
+S.pageCss('.propose{flex-wrap:wrap;row-gap:10px}.propose .t{flex:1 1 100%}.propose .lnk{margin-right:auto}');
+
+S.caption(.2, 5.8, 'Пишите тренировку\n*как в заметках*', { sub: 'Как привыкли — без полей и форм' });
+
+// пустой день → «Блок текстом»
+S.spot(1.2, 2.7, '#add-blk-text', { label: 'Блок *текстом*' });
+S.tap(2.45, '#add-blk-text');
+
+// набор текста
+S.spot(3.0, 6.1, '.tbx', { label: 'Просто текст, как *в заметках*', dy: -40 });
+S.type(3.2, 5.8, '.tbx', TEXT);
+
+// кнопка AI
+S.spot(6.2, 7.6, '[data-aiblk]', { label: 'Кнопка *AI*' });
+S.tap(7.3, '[data-aiblk]');
+
+S.caption(7.0, 12.4, 'AI разложит\nпо *блокам*', { sub: 'Упражнения из базы, подходы и веса' });
+
+// результат и «Принять»
+S.spot(8.1, 9.7, '.propose', { label: 'Упражнения *из базы*' });
+S.spot(9.8, 10.55, '#pd-yes', { pad: 6 });
+S.tap(10.3, '#pd-yes');
+
+// принятая тренировка: силовой блок со схемой и весом
+S.scroll(10.8, 11.6, 250);
+S.spot(11.4, 12.8, block(1), { label: 'Подходы и вес — *уже на месте*' });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

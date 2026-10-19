@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>21 · Перенос программ со скриншота</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/21-screenshot.md (серия «Фичи с лендинга», вариант «схема»)
+// Схематичный экран schema/21-screenshot.html: пустой день → вставлен скриншот таблицы →
+// полоса сканирования → программа текстом в листе → AI раскладывает по блокам.
+const S = Scene({ format: '9:16', duration: 15 });
+S.phone('schema/21-screenshot.html');
+
+S.caption(.2, 6.1, 'Старые программы\n*скриншотом*', { sub: 'Из таблицы, заметок или чата' });
+
+S.spot(1.1, 2.6, '#paste', { label: 'Вставить *скриншот*' });
+S.tap(2.35, '#paste');
+
+S.spot(2.9, 5.4, '#shot', { label: 'Скрин *из таблицы*', dy: -40 });
+S.cue(5.5, (d, w) => w.ST.text());
+
+S.caption(6.4, 12.1, 'Распознаем и добавим\n*текстом*', { sub: 'Вся программа — сразу в листе' });
+
+S.spot(6.0, 8.3, '#note', { label: 'Распознано *текстом*', dy: -40 });
+
+S.spot(8.5, 9.8, '#ai', { label: 'Дальше — *AI*' });
+S.tap(9.5, '#ai');
+
+S.spot(10.3, 12.2, '#b1', { label: 'Разложено *по блокам*' });
+
+S.outro(12.4);
+S.start();
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Лента событий</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 15 «Лента событий». Состояния: reply (поле ответа открыто) → done (ответ отправлен). */
+.greet{display:flex;align-items:center;gap:12px;padding:2px 2px 0}
+.greet .big{font-size:26px}
+.greet small{display:block;font:600 14px Inter;color:var(--tx2);margin-top:4px}
+.flt{display:flex;gap:6px;flex:none}
+.flt span{height:38px;padding:0 11px;border-radius:19px;background:#fff;border:1.5px solid var(--g2);font:700 14.5px Inter;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.flt span.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.flt em{font-style:normal;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:var(--acc);color:#fff;font:800 13px/22px Inter;text-align:center}
+
+.ev{padding:14px 16px;display:flex;flex-direction:column;gap:8px;flex:none;transition:border-color .3s,background .3s}
+.ev .eh{display:flex;align-items:center;gap:10px}
+.ev .eh b{font-size:17px}
+.ev .eh time{margin-left:auto;font:600 14px Inter;color:var(--tx2);white-space:nowrap}
+.ev .ex{font:700 15px Inter;color:var(--tx2)}
+.ev .et{font:700 18px/1.3 Inter}
+.ev .et i{font-style:normal;color:var(--ok)}
+.chip.qq{background:var(--acc);color:#fff}
+
+/* поле ответа */
+.rep{display:flex;align-items:flex-end;gap:8px;margin-top:2px}
+#ans{flex:1;min-width:0;min-height:46px;border-radius:13px;border:2px solid var(--g2);background:var(--bg);padding:10px 12px;font:600 17px/1.35 Inter;position:relative;transition:border-color .25s,background .25s}
+#ans .ph{color:#9a938c}
+#ansTx{white-space:pre-wrap}
+#ansTx:empty{display:none}
+#ansTx:after{content:"";display:inline-block;width:2.5px;height:19px;margin-left:2px;vertical-align:-3px;background:var(--acc);opacity:0}
+#send{flex:none;height:46px;padding:0 16px;font-size:16px}
+.s-reply #ans{border-color:var(--acc);background:#fff}
+.s-reply #ansTx:after{opacity:1}
+.s-reply #ans .ph{display:none}
+/* после набора ответ занимает всю строку, кнопка под ним */
+.s-reply .rep{flex-wrap:wrap}
+.s-reply #ans{flex-basis:100%}
+.s-reply #send{margin-left:auto}
+
+/* отправлено */
+.sent{display:none;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:13px;background:var(--ok-a);font:600 17px/1.35 Inter}
+.sent .av{width:30px;height:30px;font-size:12px;line-height:30px;background:var(--ink)}
+#okc{display:none}
+.s-done .rep{display:none}
+.s-done .sent{display:flex;animation:in .35s ease-out}
+.s-done #okc{display:inline-block;animation:in .35s ease-out}
+.s-done #qtag{display:none}
+.s-done #q{border-color:var(--ok)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.n2,.n1{display:inline}
+.n1{display:none} .s-done .n1{display:inline} .s-done .n2{display:none}
+
+.more{padding:14px 16px;display:flex;align-items:center;gap:10px}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="greet"><div><div class="big">Доброе утро</div><small>Лента событий · сегодня</small></div></div>
+  <div class="flt">
+    <span class="on">Все</span>
+    <span>Вопросы <em><b class="n2">2</b><b class="n1">1</b></em></span>
+    <span>Рекорды</span>
+    <span>Пропуски</span>
+  </div>
+
+  <div class="card ev" id="q">
+    <div class="eh"><span class="chip qq" id="qtag">Вопрос</span><span class="chip ok" id="okc">✓ Отвечено</span><b>Мария Соколова</b><time>8 мин</time></div>
+    <div class="ex">Жим лёжа</div>
+    <div class="et">Плечо побаливает на последнем подходе, снизить вес?</div>
+    <div class="rep">
+      <div id="ans"><span class="ph">Ответить…</span><span id="ansTx"></span></div>
+      <span class="btn" id="send">Отправить</span>
+    </div>
+    <div class="sent"><i class="av">А</i><span>Да, сними 5 кг на последнем подходе</span></div>
+  </div>
+
+  <div class="card ev" id="pr">
+    <div class="eh"><span class="chip ok">Рекорд</span><b>Иван Петров</b><time>1 ч</time></div>
+    <div class="et">Присед 195 кг</div>
+    <div class="ex"><i style="font-style:normal;color:var(--ok)">+5 кг к 1ПМ</i> — веса пересчитаны</div>
+  </div>
+
+  <div class="card ev" id="ms">
+    <div class="eh"><span class="chip rm">Пропуск</span><b>Олег Руденко</b><time>утром</time></div>
+    <div class="et">Не тренировался 5 дней</div>
+  </div>
+
+  <div class="card more"><i class="bar" style="width:70px;height:26px;border-radius:9px"></i><i class="bar" style="width:120px"></i><i class="bar s" style="width:40px;margin-left:auto"></i></div>
+</main>
+<script>
+Kit.trainer({ title: 'Дашборд', nav: 0 });
+window.ST = { reply: () => Kit.state('reply'), send: () => Kit.state('done') };
+document.getElementById('ans').onclick = ST.reply;
+document.getElementById('send').onclick = ST.send;
+</script>
+</body>
+</html>

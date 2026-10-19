@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Телефон: установка Тренерграма</title>
+<!-- Экран телефона для роликов 02/03 «Иконка на экран» (?os=ios | android).
+     Чат Telegram, рабочий стол и браузер — упрощённые макеты; вход по номеру —
+     живое клиентское приложение (client/app.html) во фрейме. Сцена управляет
+     телефоном через window.ST: tap(), show(), type()… Время сцены — общее:
+     CSS-анимации этой страницы движок ставит на паузу и двигает кадрами. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:360px;height:780px;overflow:hidden;background:#000;font:400 15px/1.35 -apple-system,"Inter",sans-serif;color:#111;-webkit-font-smoothing:antialiased}
+svg{display:block}
+.L{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .45s cubic-bezier(.2,.8,.2,1)}
+.L.on{opacity:1;pointer-events:auto}
+.ov{position:absolute;inset:0;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:20}
+.ov.on{opacity:1}
+/* статус-бар */
+.sb{position:absolute;left:0;right:0;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;font-weight:600;pointer-events:none}
+.ios .sb{height:50px;padding:6px 30px 0 38px;font-size:16px}
+.ios .sb::after{content:"";position:absolute;left:50%;top:11px;width:112px;height:32px;margin-left:-56px;border-radius:20px;background:#000}
+.and .sb{height:28px;padding:0 14px;font:500 13px "Roboto","Inter",sans-serif}
+.sb.light{color:#fff}
+.sb i{display:flex;gap:5px;align-items:center}
+.hi{position:absolute;left:50%;bottom:8px;width:128px;height:5px;margin-left:-64px;border-radius:3px;background:#111;z-index:30}
+.and .hi{width:100px;height:4px;margin-left:-50px;bottom:6px;opacity:.55}
+.hi.light{background:#fff}
+
+/* ── Telegram ── */
+#tg{background:#DCE6C9}
+#tg .wall{position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 30%,rgba(255,255,255,.35) 0 2px,transparent 3px) 0 0/38px 38px,
+  linear-gradient(160deg,#D7E3C2,#C9DBB4 50%,#DCE5C5)}
+.ios #tg .hd{position:absolute;left:0;right:0;top:0;height:104px;padding:50px 12px 0;display:flex;align-items:center;gap:10px;
+  background:rgba(247,247,247,.94);border-bottom:.5px solid rgba(0,0,0,.15)}
+.ios #tg .bk{color:#2481CC;font-size:17px;display:flex;align-items:center;gap:2px;width:78px}
+.ios #tg .nm{flex:1;text-align:center}
+.and #tg .hd{position:absolute;left:0;right:0;top:0;height:84px;padding:28px 12px 0;display:flex;align-items:center;gap:14px;background:#517DA2;color:#fff}
+.and #tg .nm{flex:1}
+#tg .nm b{display:block;font-weight:600;font-size:16px}
+#tg .nm s{display:block;text-decoration:none;font-size:12.5px;opacity:.6}
+.av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font:700 14px Inter,sans-serif;color:#fff;
+  background:linear-gradient(135deg,#FF8A3D,#E24400)}
+#tg .msgs{position:absolute;left:10px;right:44px;top:122px}
+.and #tg .msgs{top:100px}
+.bub{position:relative;background:#fff;border-radius:16px 16px 16px 4px;padding:9px 12px 20px;font-size:14px;line-height:1.38;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+.bub .tm{position:absolute;right:10px;bottom:5px;font-size:11px;color:#8E9AA6}
+.bub .ln{color:#2481CC;text-decoration:underline;border-radius:4px;transition:background .2s}
+.bub .ln.sel{background:rgba(36,129,204,.22)}
+.bub p+p{margin-top:8px}
+#tg .inp{position:absolute;left:0;right:0;bottom:0;height:86px;padding:8px 10px 0;display:flex;gap:8px;align-items:flex-start;background:rgba(247,247,247,.96);border-top:.5px solid rgba(0,0,0,.12)}
+.and #tg .inp{height:66px;background:#fff}
+#tg .inp span{flex:1;height:36px;border-radius:18px;background:#fff;border:.5px solid rgba(0,0,0,.15);padding:0 14px;display:flex;align-items:center;color:#9AA3AD}
+#tg .inp i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#8E9AA6}
+/* контекстное меню ссылки */
+#tgmenu{background:rgba(30,30,30,.18);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#tgmenu .card{position:absolute;left:24px;top:360px;width:230px;background:rgba(250,250,250,.97);border-radius:14px;overflow:hidden;box-shadow:0 12px 40px -8px rgba(0,0,0,.35);
+  transform:scale(.85);transform-origin:20% 0;transition:transform .3s cubic-bezier(.2,1.4,.4,1)}
+#tgmenu.on .card{transform:none}
+#tgmenu .card div{display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 16px;font-size:16px;border-top:.5px solid rgba(0,0,0,.12)}
+#tgmenu .card div:first-child{border-top:0}
+#tgmenu .url{font-size:13px!important;color:#8E9AA6;height:38px!important}
+.toast{position:absolute;left:16px;right:16px;top:58px;padding:12px 14px;border-radius:14px;background:rgba(40,40,40,.92);color:#fff;font-size:14px;display:flex;gap:10px;align-items:center;
+  transform:translateY(-20px)}
+.toast.on{transform:none}
+.and .toast{top:auto;bottom:90px;border-radius:8px}
+
+/* ── рабочий стол ── */
+#home{background:linear-gradient(165deg,#5B6FA8 0%,#9D86B4 45%,#E3A98C 100%)}
+.and #home{background:linear-gradient(165deg,#2E4A6B,#577C8F 55%,#C9A27A)}
+.grid{position:absolute;left:22px;right:22px;top:74px;display:grid;grid-template-columns:repeat(4,1fr);gap:22px 14px}
+.and .grid{top:56px}
+.ic{display:flex;flex-direction:column;align-items:center;gap:5px;color:#fff;font-size:11.5px;font-weight:500;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.ic b{width:60px;height:60px;border-radius:14px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.and .ic b{border-radius:50%}
+.ic b svg{width:34px;height:34px}
+.ic.blank b{background:rgba(255,255,255,.28);box-shadow:none}
+.ic.blank span{width:36px;height:6px;border-radius:3px;background:rgba(255,255,255,.35)}
+.dock{position:absolute;left:12px;right:12px;bottom:22px;height:84px;border-radius:30px;background:rgba(255,255,255,.22);display:flex;justify-content:space-around;align-items:center}
+.and .dock{background:none;bottom:30px}
+.dock .ic span{display:none}
+#me{opacity:0;transform:scale(.2)}
+#me.on{opacity:1;transform:none;transition:transform .7s cubic-bezier(.2,1.6,.4,1),opacity .2s}
+#me .mk{width:60px;height:60px}
+.and #me .mk rect{rx:50}
+#me .glow{position:absolute;width:60px;height:60px;border-radius:14px;box-shadow:0 0 0 3px #fff,0 0 0 7px #FC5200;opacity:0}
+#me.on .glow{animation:glow 1.6s ease 0.6s both}
+.and #me .glow{border-radius:50%}
+@keyframes glow{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+/* ── браузер ── */
+#br{background:#fff}
+#br iframe{position:absolute;left:0;border:0;width:360px;background:#F7F3EF;opacity:0;transition:opacity .4s}
+#br iframe.on{opacity:1}
+.ios #br iframe{top:0;height:696px}
+.and #br iframe{top:80px;height:684px}
+.start{position:absolute;left:0;right:0;padding:0 22px;transition:opacity .3s}
+.ios .start{top:90px}
+.and .start{top:110px}
+.start h4{font:700 20px -apple-system,Inter,sans-serif;margin-bottom:16px}
+.start .fav{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 10px}
+.start .fav i{display:block;width:58px;height:58px;border-radius:12px;background:#EEF0F3;margin:0 auto}
+.start.off{opacity:0}
+.sbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:rgba(248,248,248,.96);border-top:.5px solid rgba(0,0,0,.1);display:flex;align-items:flex-start;gap:8px;padding:10px 12px 0}
+.rb{width:44px;height:44px;flex:none;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.14);color:#111}
+.pill{flex:1;height:44px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.14);font-size:15px;color:#111}
+.pill .ph{color:#8E8E93}
+.cbar{position:absolute;left:0;right:0;top:28px;height:52px;background:#fff;display:flex;align-items:center;gap:6px;padding:0 6px 0 12px;border-bottom:1px solid #E6E6E6}
+.cbar .pill{justify-content:flex-start;padding:0 14px;background:#F1F3F4;box-shadow:none;height:40px;font-size:14.5px}
+.cbar .rb{background:none;box-shadow:none}
+.focus .pill{box-shadow:0 0 0 2px #0A84FF}
+.and .focus .pill{box-shadow:0 0 0 2px #1A73E8}
+/* «Вставить и перейти» */
+#paste{position:absolute;z-index:5;inset:auto}
+.ios #paste{left:96px;bottom:96px;padding:11px 16px;border-radius:12px;background:#2C2C2E;color:#fff;font-size:15px;transform:translateY(8px)}
+.ios #paste::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:#2C2C2E}
+.and #paste{left:0;right:0;top:80px;background:#fff;padding:12px 16px;display:flex;gap:14px;align-items:center;border-bottom:1px solid #EEE;transform:translateY(-6px)}
+.and #paste b{display:block;font-weight:500;font-size:14px}
+.and #paste s{display:block;text-decoration:none;font-size:12.5px;color:#1A73E8}
+#paste.on{transform:none}
+/* меню браузера */
+.menu{position:absolute;width:236px;background:rgba(252,252,252,.98);border-radius:14px;overflow:hidden;box-shadow:0 12px 36px -6px rgba(0,0,0,.32),0 0 0 .5px rgba(0,0,0,.08);
+  transform:scale(.9);transition:transform .28s cubic-bezier(.2,1.3,.4,1)}
+.ios .menu{right:12px;bottom:92px;transform-origin:90% 100%}
+.and .menu{right:6px;top:32px;border-radius:6px;width:226px;transform-origin:90% 0}
+.ov.on .menu{transform:none}
+.menu div{display:flex;justify-content:space-between;align-items:center;height:46px;padding:0 16px;font-size:15.5px;border-top:.5px solid rgba(0,0,0,.1)}
+.and .menu div{border-top:0;height:46px}
+.menu div:first-child{border-top:0}
+.menu svg,.list svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* шит «Поделиться» */
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+.sh{position:absolute;left:0;right:0;bottom:0;background:#F2F2F7;border-radius:14px 14px 0 0;padding:14px 14px 40px;transform:translateY(40%);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+.ov.on .sh{transform:none}
+.sh .hd2{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.sh .hd2 b{display:block;font-weight:600}
+.sh .hd2 s{display:block;text-decoration:none;font-size:12.5px;color:#8E8E93}
+.apps{display:flex;gap:14px;margin-bottom:14px}
+.apps i{width:56px;height:56px;border-radius:14px;background:#DADAE0}
+.list{background:#fff;border-radius:12px;overflow:hidden}
+.list div{display:flex;justify-content:space-between;align-items:center;height:46px;padding:0 14px;font-size:15.5px;border-top:.5px solid rgba(0,0,0,.1)}
+.list div:first-child{border-top:0}
+.mk{display:block}
+/* «На экран „Домой“» */
+#addsh .sh{top:58px;padding-top:0;background:#F2F2F7}
+.nav{display:flex;justify-content:space-between;align-items:center;height:52px;font-size:16px;color:#0A84FF}
+.nav b{color:#111;font-weight:600}
+.card2{display:flex;gap:12px;align-items:center;background:#fff;border-radius:12px;padding:12px;margin-top:6px}
+.card2 b{display:block;font-weight:600;font-size:16px}
+.card2 s{display:block;text-decoration:none;color:#8E8E93;font-size:13px}
+.tgl{width:51px;height:31px;border-radius:16px;background:#34C759;position:relative}
+.tgl::after{content:"";position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+/* Android: окно установки */
+.dlg{position:absolute;left:28px;right:28px;top:250px;background:#fff;border-radius:26px;padding:22px 22px 16px;box-shadow:0 20px 50px -10px rgba(0,0,0,.4);transform:scale(.92);transition:transform .3s cubic-bezier(.2,1.3,.4,1)}
+.ov.on .dlg{transform:none}
+.dlg b{display:block;font:500 20px "Roboto","Inter",sans-serif;margin:14px 0 4px}
+.dlg s{display:block;text-decoration:none;color:#5F6368}
+.dlg .bt{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;color:#0B57D0;font-weight:600}
+.dlg .bt span{padding:10px 14px;border-radius:20px}
+/* приложение с иконки */
+#app{background:#F7F3EF;transform:scale(.18);transform-origin:var(--ox,50%) var(--oy,50%);border-radius:40px;overflow:hidden}
+#app.on{transform:none;border-radius:0}
+#app iframe{position:absolute;inset:0;width:360px;height:780px;border:0}
+/* касание пальцем */
+.tap{position:absolute;z-index:50;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;pointer-events:none;
+  background:rgba(255,255,255,.55);box-shadow:0 0 0 2px rgba(20,20,20,.55),0 4px 14px rgba(0,0,0,.25);animation:tap .7s ease both}
+.tap.hold{animation:taphold 1.3s ease both}
+@keyframes tap{0%{opacity:0;transform:scale(1.5)}25%{opacity:1;transform:scale(.85)}55%{opacity:1;transform:scale(.85)}100%{opacity:0;transform:scale(1.2)}}
+@keyframes taphold{0%{opacity:0;transform:scale(1.5)}12%{opacity:1;transform:scale(.85)}85%{opacity:1;transform:scale(.85);box-shadow:0 0 0 2px rgba(20,20,20,.55),0 0 0 14px rgba(252,82,0,.25)}100%{opacity:0;transform:scale(1.1)}}
+.hl{box-shadow:inset 0 0 0 2px #FC5200!important;color:#E24400!important;font-weight:600}
+</style>
+</head>
+<body>
+<script>
+const OS = new URLSearchParams(location.search).get('os') === 'android' ? 'and' : 'ios';
+document.documentElement.className = OS;
+const IOS = OS === 'ios', LINK = 'https://trenergram.app/j/K7F2QX';
+const I = (d, w = 20) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const MARK = '<svg class="mk" viewBox="0 0 100 100" width="60" height="60"><rect width="100" height="100" rx="' + (IOS ? 22.5 : 50) + '" fill="#FC5200"/><path fill="#fff" d="M12 32H46V42H34V66L28 72H24V42H12Z"/><path fill="#fff" d="M52 32H62L71 50L80 32H90V72H81V49L73 64H69L61 49V72H52Z"/></svg>';
+const SB = light => `<div class="sb${light ? ' light' : ''}"><span>9:41</span><i>${IOS ? '<svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" width="3" height="11" rx="1"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x=".5" y=".5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="1.6"/></svg>'
+  : '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor"><path d="M14 0v12H0z"/></svg><svg width="8" height="13" viewBox="0 0 8 13" fill="currentColor"><rect x="2" width="4" height="1.5"/><rect y="1.5" width="8" height="11.5" rx="1"/></svg>'}</i></div>`;
+
+/* иконки рабочего стола: цветной квадрат + простой знак */
+const APP = {
+  tg: ['Telegram', '#2AABEE', '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M4 11.5 19 5l-2.6 13-4.6-3.6-2.5 2.4.4-3.8 6.4-5.8-8 5z" fill="#fff"/></svg>'],
+  safari: ['Safari', '#fff', '<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="10" fill="#1E90FF"/><circle cx="12" cy="12" r="8.4" fill="#fff"/><path d="M15.5 8.5 13 13l-4.5 2.5L11 11z" fill="#FF3B30"/><path d="M8.5 15.5 11 11l2 2z" fill="#8E8E93"/></svg>'],
+  chrome: ['Chrome', '#fff', '<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="10" fill="#DB4437"/><path d="M12 12 3.3 7A10 10 0 0 0 7 20.7z" fill="#0F9D58"/><path d="M12 12h10a10 10 0 0 1-15 8.7z" fill="#F4B400"/><circle cx="12" cy="12" r="4.6" fill="#fff"/><circle cx="12" cy="12" r="3.6" fill="#4285F4"/></svg>'],
+  cam: ['Камера', '#8E8E93', I('<path d="M4 8h3l2-3h6l2 3h3v11H4z" stroke="#fff"/><circle cx="12" cy="13" r="3.5" stroke="#fff"/>', 30)],
+  photo: ['Фото', '#fff', '<svg viewBox="0 0 24 24" width="36" height="36"><g opacity=".9"><ellipse cx="12" cy="6.5" rx="2.6" ry="4" fill="#FFCC00"/><ellipse cx="17.5" cy="12" rx="4" ry="2.6" fill="#34C759"/><ellipse cx="12" cy="17.5" rx="2.6" ry="4" fill="#5AC8FA"/><ellipse cx="6.5" cy="12" rx="4" ry="2.6" fill="#FF3B30"/></g></svg>'],
+  set: ['Настройки', '#8E8E93', I('<circle cx="12" cy="12" r="3" stroke="#fff"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="#fff"/>', 30)],
+  map: ['Карты', '#34C759', I('<path d="M9 4 4 6v14l5-2 6 2 5-2V4l-5 2z" stroke="#fff"/><path d="M9 4v14M15 6v14" stroke="#fff"/>', 30)],
+  mus: ['Музыка', '#FF2D55', I('<path d="M9 18V6l10-2v12" stroke="#fff"/><circle cx="7" cy="18" r="2.4" stroke="#fff"/><circle cx="17" cy="16" r="2.4" stroke="#fff"/>', 30)],
+  ph: ['Телефон', '#34C759', I('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" stroke="#fff"/>', 30)],
+  msg: ['Сообщения', '#34C759', I('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z" stroke="#fff"/>', 30)],
+};
+const BR = IOS ? 'safari' : 'chrome';
+const ic = (k, id) => `<div class="ic"${id ? ` id="${id}"` : ''}><b style="background:${APP[k][1]}">${APP[k][2]}</b><span>${APP[k][0]}</span></div>`;
+const blank = '<div class="ic blank"><b></b><span></span></div>';
+
+document.body.innerHTML = `
+<!-- Telegram -->
+<section class="L on" id="tg"><div class="wall"></div>
+  <div class="hd">${IOS ? `<span class="bk">${I('<path d="M15 5l-7 7 7 7"/>', 22)}Чаты</span><div class="nm"><b>Ваш тренер</b><s>был(а) недавно</s></div><span class="av">Т</span>`
+    : `${I('<path d="M19 12H5M11 6l-6 6 6 6"/>', 24)}<span class="av">Т</span><div class="nm"><b>Ваш тренер</b><s>был(а) недавно</s></div>${I('<circle cx="12" cy="5" r="1.2" fill="#fff"/><circle cx="12" cy="12" r="1.2" fill="#fff"/><circle cx="12" cy="19" r="1.2" fill="#fff"/>', 24)}`}</div>
+  <div class="msgs"><div class="bub">
+    <p>Привет! Это твой тренер. Зову тебя в Тренерграм — тут будут твои тренировки, а отговорка «забыл, что сегодня» больше не работает 😄</p>
+    <p>Как подключиться:<br>1. Открой ссылку в браузере телефона (Safari или Chrome, не из мессенджера):<br><span class="ln" id="link">${LINK}</span><br>2. Введи номер телефона — и ты у меня в списке</p>
+    <span class="tm">10:24</span></div></div>
+  <div class="inp"><i>${I('<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7L10.2 17.7a1.7 1.7 0 0 1-2.4-2.4L15.5 7.6"/>', 22)}</i><span>Сообщение</span><i>${I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 22)}</i></div>
+</section>
+<div class="ov" id="tgmenu"><div class="card" id="tgcard">
+  <div class="url">${LINK.replace('https://', '')}</div>
+  <div>Открыть ${I('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>')}</div>
+  <div id="copy">Копировать ${I('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>')}</div>
+  <div>Поделиться ${I('<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/>')}</div>
+</div></div>
+<div class="ov" id="toast"><div class="toast">${I('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>')}Ссылка скопирована</div></div>
+
+<!-- рабочий стол -->
+<section class="L" id="home">
+  <div class="grid">${ic('cam')}${ic('photo')}${ic('map')}${ic('set')}${ic('mus')}${ic('tg')}${blank}${blank}
+    <div class="ic" id="me"><span class="glow"></span>${MARK}<span>Тренерграм</span></div></div>
+  <div class="dock">${ic('ph')}${ic('msg')}${ic(BR, 'brIcon')}${ic('tg')}</div>
+</section>
+
+<!-- браузер -->
+<section class="L" id="br">
+  <div class="start" id="start"><h4>${IOS ? 'Избранное' : ''}</h4><div class="fav">${'<i></i>'.repeat(8)}</div></div>
+  <iframe id="web" title="Тренерграм в браузере"></iframe>
+  ${IOS ? `<div class="sbar" id="bar"><span class="rb">${I('<path d="M15 5l-7 7 7 7"/>', 22)}</span><span class="pill" id="addr"><span class="ph">Поиск или имя сайта</span></span><span class="rb" id="more">${I('<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>', 22)}</span></div>`
+    : `<div class="cbar" id="bar"><span class="pill" id="addr"><span class="ph">Введите запрос или URL</span></span><span class="rb" id="more">${I('<circle cx="12" cy="6" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="18" r="1.3" fill="currentColor"/>', 22)}</span></div>`}
+  <div class="ov" id="paste">${IOS ? 'Вставить и перейти' : `${I('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>', 22)}<span><b>Ссылка, которую вы скопировали</b><s>${LINK.replace('https://', '')}</s></span>`}</div>
+</section>
+<!-- меню браузера -->
+<div class="ov" id="bmenu"><div class="menu">${IOS
+  ? `<div id="mShare">Поделиться ${I('<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/>')}</div><div>Добавить в закладки ${I('<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/>')}</div><div>Найти на странице ${I('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>')}</div>`
+  : `<div>Новая вкладка</div><div>История</div><div id="mShare">Добавить на гл. экран</div><div>Настройки</div>`}</div></div>
+<div class="ov" id="share"><div class="dim"></div><div class="sh">
+  <div class="hd2">${MARK.replace('width="60" height="60"', 'width="44" height="44"')}<span><b>Тренерграм</b><s>trenergram.app</s></span></div>
+  <div class="apps"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="list"><div>Скопировать ${I('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>')}</div><div>Добавить в Избранное ${I('<path d="M12 4l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/>')}</div><div id="toHome">На экран «Домой» ${I('<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>')}</div><div>Напечатать ${I('<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="6"/>')}</div></div>
+</div></div>
+<div class="ov" id="addsh"><div class="dim"></div><div class="sh">
+  <div class="nav"><span>Отменить</span><b>На экран «Домой»</b><span id="addBtn" style="font-weight:600;padding:4px 6px;border-radius:8px">Добавить</span></div>
+  <div class="card2">${MARK}<span><b>Тренерграм</b><s>trenergram.app</s></span></div>
+  <div class="card2" style="justify-content:space-between;margin-top:14px"><span>Открывать как веб-приложение</span><i class="tgl"></i></div>
+</div></div>
+<div class="ov" id="inst"><div class="dim"></div><div class="dlg">${MARK.replace('width="60" height="60"', 'width="48" height="48"')}
+  <b>Установить приложение?</b><s>Тренерграм · trenergram.app</s>
+  <div class="bt"><span>Отмена</span><span id="instBtn">Установить</span></div></div></div>
+
+<!-- приложение с иконки -->
+<section class="L" id="app"><iframe id="appf" title="Тренерграм"></iframe></section>
+${SB(false).replace('class="sb"', 'class="sb" id="sb"')}
+<i class="hi" id="hi"></i>`;
+
+const $ = s => document.querySelector(s);
+const web = $('#web');
+const APPURL = '../../../client/app.html';
+web.src = `${APPURL}?frame=${IOS ? 'iphone' : 'android'}-web&p=platform:web,where:browser,user:invite,mem:yes#/phone?v=invite`;
+/* приложение «с иконки» грузим сразу — к запуску оно уже готово */
+$('#appf').src = `${APPURL}?frame=${IOS ? 'iphone' : 'android'}&p=platform:web,where:pwa,user:logged,mem:yes#/home?v=base`;
+/* Ролик уходит клиентам заранее — тренер в нём без имени: «Ваш тренер» */
+const NEUTRAL = "TRAINER.n='Ваш тренер';TRAINER.ini='Т';TRAINER.city='';clCur='';clRender()";
+const ready = Promise.all([web, $('#appf')].map(f => new Promise(r => f.addEventListener('load', () => {
+  try { f.contentWindow.eval(NEUTRAL); } catch (e) {} setTimeout(r, 300); }, { once: true }))));
+
+const ST = window.ST = {
+  ready,
+  /* один слой на экране: tg, home, br, app */
+  show(id) { document.querySelectorAll('.L').forEach(l => l.classList.toggle('on', l.id === id));
+    const light = id === 'home' || (id === 'tg' && !IOS);
+    $('#sb').classList.toggle('light', light); $('#hi').classList.toggle('light', id === 'home');
+    /* в открытой странице и в приложении статус-бар рисует само приложение */
+    $('#sb').style.display = (id === 'br' && IOS && web.classList.contains('on')) || id === 'app' ? 'none' : '';
+    $('#hi').style.display = id === 'app' ? 'none' : ''; },
+  on(id, v = true) { $('#' + id).classList.toggle('on', v); },
+  hl(sel, v = true) { const e = typeof sel === 'string' ? (document.querySelector(sel) || this.inApp(sel)) : sel; if (e) e.classList.toggle('hl', v); },
+  /* касание: точка в центре элемента (этой страницы или приложения в браузере) */
+  tap(sel, hold) {
+    let r, e = document.querySelector(sel);
+    if (e) r = e.getBoundingClientRect();
+    else { const a = this.inApp(sel); if (!a) return; const o = web.getBoundingClientRect(), q = a.getBoundingClientRect(); r = { left: o.left + q.left, top: o.top + q.top, width: q.width, height: q.height }; }
+    const t = document.createElement('i'); t.className = 'tap' + (hold ? ' hold' : '');
+    t.style.left = r.left + r.width / 2 + 'px'; t.style.top = r.top + r.height / 2 + 'px';
+    document.body.appendChild(t); setTimeout(() => t.remove(), 4000);
+  },
+  sel() { $('#link').classList.add('sel'); },                 /* ссылка выделена долгим нажатием */
+  focus() { $('#bar').classList.add('focus'); },               /* адресная строка в фокусе */
+  inApp(sel) { try { return web.contentDocument.querySelector(sel); } catch (e) { return null; } },
+  /* браузер: адрес вставлен, открылся вход по ссылке тренера */
+  open() { $('#addr').innerHTML = `${I('<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>', 15)}trenergram.app`;
+    $('#bar').classList.remove('focus'); $('#start').classList.add('off'); web.classList.add('on'); if (IOS) $('#sb').style.display = 'none'; },
+  /* набор в поле приложения посимвольно */
+  type(sel, s) { const d = web.contentDocument, e = d.querySelector(sel); if (!e) return;
+    e.value = s; e.dispatchEvent(new Event('input', { bubbles: true })); },
+  appClick(sel) { const e = this.inApp(sel); if (e) e.click(); },
+  /* после кода — сразу главная (анкета нового клиента в ролик не входит) */
+  skipWizard() { const w = web.contentWindow; w.eval("{const g=clGo; clGo=(id,v,r)=>g(/^wiz|^$/.test(id||'')?'home':id, /^wiz|^$/.test(id||'')?'base':v, r)}"); },
+  goHome() { web.contentWindow.clGo('home', 'base'); },
+  /* значок появился на рабочем столе */
+  addIcon() { $('#me').classList.add('on'); },
+  /* запуск с иконки: приложение раскрывается из значка */
+  launch() { const m = $('#me').getBoundingClientRect(); const a = $('#app');
+    a.style.setProperty('--ox', m.left + m.width / 2 + 'px'); a.style.setProperty('--oy', m.top + m.height / 2 + 'px');
+    try { $('#appf').contentWindow.clGo('home', 'base'); } catch (e) {}      /* после входа — та же главная */
+    this.show('app'); }
+};
+</script>
+</body>
+</html>

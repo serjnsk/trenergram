@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Массовое копирование тренировок</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 20 «Массовое копирование тренировок».
+   Неделя Ивана Петрова → выделены Пн, Ср, Пт (класс .sel у дня, ST.pick(n)) → панель «Выбрано 3» →
+   «Копировать» → шторка «Кому» (ST.to(n) отмечает получателей) → «Скопировать» → состояние done:
+   итог и неделя Марии Соколовой с той же раскладкой. */
+.who{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;background:#fff;border:2px solid var(--acc-p)}
+.who b{font-size:19px} .who .chip{margin-left:auto}
+
+#week .hd{justify-content:space-between;font-size:18px;background:var(--g1)}
+#week .hd small{font:600 15px Inter;color:var(--tx2)}
+.day{display:flex;align-items:center;gap:12px;height:58px;padding:0 14px;border-top:1.5px solid var(--g1);transition:background .25s}
+.day .dn{width:44px;flex:none;font:800 17px/1.05 Inter}
+.day .dn small{display:block;font:600 13px Inter;color:var(--tx2)}
+.day .wk{flex:1;min-width:0;height:40px;border-radius:11px;background:var(--g1);display:flex;align-items:center;padding:0 12px;
+  font:700 17px Inter;white-space:nowrap;overflow:hidden;transition:background .25s,color .25s}
+.day .wk.m{background:var(--acc-a)}
+.day.rest .wk{background:none}
+.ck{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--g3);flex:none;position:relative;background:#fff;transition:background .2s,border-color .2s}
+.ck:after{content:"";position:absolute;left:8px;top:3.5px;width:7px;height:13px;border:solid #fff;border-width:0 3.5px 3.5px 0;transform:rotate(45deg) scale(0);transition:transform .2s}
+.on > .ck,.sel > .ck{background:var(--acc);border-color:var(--acc)}
+.on > .ck:after,.sel > .ck:after{transform:rotate(45deg) scale(1)}
+.day.sel{background:var(--acc-a)}
+.day.sel .wk{background:var(--acc);color:#fff}
+
+/* панель выбора */
+#bar{position:absolute;left:14px;right:14px;bottom:12px;height:72px;border-radius:20px;background:var(--ink);color:#fff;
+  display:flex;align-items:center;gap:6px;padding:0 8px 0 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);
+  opacity:0;transform:translateY(30px);transition:opacity .3s,transform .3s}
+#bar .n{font:800 16px Inter;white-space:nowrap;margin-right:auto}
+#bar .btn{height:48px;padding:0 10px;font-size:16px}
+#bar .btn.gh{background:transparent;color:#fff;border-color:#55504b}
+.s-pick #bar{opacity:1;transform:none}
+
+/* шторка «Кому» */
+#dimbg{position:absolute;inset:0;background:rgba(20,20,20,.35);opacity:0;transition:opacity .3s;pointer-events:none}
+#sheet{position:absolute;left:0;right:0;bottom:0;border-radius:26px 26px 0 0;background:#fff;padding:10px 14px 14px;
+  transform:translateY(105%);transition:transform .4s;box-shadow:0 -10px 30px rgba(0,0,0,.12)}
+#sheet .grip{width:44px;height:5px;border-radius:3px;background:var(--g2);margin:0 auto 12px}
+#sheet .st{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 10px}
+#sheet .st b{font-size:26px} #sheet .st small{font:600 15px Inter;color:var(--tx2)}
+#to{border-radius:18px;border:1.5px solid var(--g1);overflow:hidden}
+.rc{display:flex;align-items:center;gap:12px;height:62px;padding:0 14px;border-top:1.5px solid var(--g1);font:700 18px Inter;transition:background .25s}
+.rc:first-child{border-top:0}
+.rc .nm{flex:1;min-width:0;white-space:nowrap}
+.rc .nm small{display:block;font:600 13.5px Inter;color:var(--tx2);margin-top:1px}
+.rc.on{background:var(--acc-a)}
+.rc .av{width:40px;height:40px;line-height:40px}
+#go{width:100%;height:56px;margin-top:12px;font-size:19px;border-radius:16px}
+.s-sheet #dimbg{opacity:1} .s-sheet #sheet{transform:none}
+
+/* итог */
+#res,#mini{display:none}
+.s-done .who,.s-done #week{display:none}
+.s-done #res,.s-done #mini{display:block}
+#res{border-radius:20px;background:var(--ok-a);border:2px solid #BFE8D2;padding:16px 18px;animation:pop .45s both}
+#res .ok{display:flex;align-items:center;gap:12px}
+#res .ok i{width:40px;height:40px;border-radius:50%;background:var(--ok);flex:none;position:relative}
+#res .ok i:after{content:"";position:absolute;left:14px;top:7px;width:9px;height:18px;border:solid #fff;border-width:0 4px 4px 0;transform:rotate(45deg)}
+#res .ok b{font-size:24px;line-height:1.1}
+#res p{margin-top:10px;font:700 18px Inter;color:var(--ink)}
+#res .rcp{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#res .rcp .chip{background:#fff;color:var(--ink);font-size:15px}
+#mini{animation:pop .45s .15s both}
+#mini .hd{font-size:18px}
+#mini .hd .av{width:34px;height:34px;line-height:34px;font-size:13px}
+#mini .hd small{margin-left:auto;font:600 14px Inter;color:var(--tx2)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:14px 14px 6px}
+.grid div{text-align:center;font:800 14px Inter;color:var(--tx2)}
+.grid div i{display:block;height:46px;margin-top:6px;border-radius:10px;background:var(--g1)}
+.grid div.f{color:var(--ink)} .grid div.f i{background:var(--acc)}
+#mini .row{font-size:17px;padding:10px 16px}
+#mini .row .chip{min-width:44px;text-align:center}
+@keyframes pop{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="who"><i class="av">ИП</i><b>Иван Петров</b><span class="chip g">Неделя</span></div>
+  <div class="card" id="week">
+    <div class="hd">13–19 октября<small>7 дней</small></div>
+    <div class="day" id="d1"><i class="ck"></i><span class="dn">Пн<small>13</small></span><span class="wk m">Ноги и кор</span></div>
+    <div class="day"><i class="ck"></i><span class="dn">Вт<small>14</small></span><span class="wk"><i class="bar d" style="width:110px"></i></span></div>
+    <div class="day" id="d3"><i class="ck"></i><span class="dn">Ср<small>15</small></span><span class="wk m">Кардио-комплекс</span></div>
+    <div class="day rest"><i class="ck"></i><span class="dn">Чт<small>16</small></span><span class="wk"><i class="bar s" style="width:60px"></i></span></div>
+    <div class="day" id="d5"><i class="ck"></i><span class="dn">Пт<small>17</small></span><span class="wk m">Спина и жим</span></div>
+    <div class="day"><i class="ck"></i><span class="dn">Сб<small>18</small></span><span class="wk"><i class="bar d" style="width:90px"></i></span></div>
+    <div class="day rest"><i class="ck"></i><span class="dn">Вс<small>19</small></span><span class="wk"><i class="bar s" style="width:60px"></i></span></div>
+  </div>
+
+  <div id="res">
+    <div class="ok"><i></i><b>Скопировано<br>3 тренировки</b></div>
+    <p>3 клиентам и группе</p>
+    <div class="rcp"><span class="chip">Мария С.</span><span class="chip">Олег Р.</span><span class="chip">Аня К.</span><span class="chip">Утро 7:00</span></div>
+  </div>
+  <div class="card" id="mini">
+    <div class="hd"><i class="av">МС</i>Мария Соколова<small>13–19 окт</small></div>
+    <div class="grid">
+      <div class="f">Пн<i></i></div><div>Вт<i></i></div><div class="f">Ср<i></i></div><div>Чт<i></i></div>
+      <div class="f">Пт<i></i></div><div>Сб<i></i></div><div>Вс<i></i></div>
+    </div>
+    <div class="row"><b class="chip">Пн</b><span>Ноги и кор</span></div>
+    <div class="row"><b class="chip">Ср</b><span>Кардио-комплекс</span></div>
+    <div class="row"><b class="chip">Пт</b><span>Спина и жим</span></div>
+  </div>
+
+  <div id="bar"><span class="n" id="cnt">Выбрано 1</span><span class="btn" id="copy">Копировать</span><span class="btn gh">Перенести</span></div>
+
+  <div id="dimbg"></div>
+  <div id="sheet">
+    <div class="grip"></div>
+    <div class="st"><b>Кому</b><small>3 дня · Пн, Ср, Пт</small></div>
+    <div id="to">
+      <div class="rc" id="r1"><i class="ck"></i><i class="av">У</i><span class="nm">Утро 7:00<small>Группа</small></span></div>
+      <div class="rc" id="r2"><i class="ck"></i><i class="av">МС</i><span class="nm">Мария Соколова</span></div>
+      <div class="rc" id="r3"><i class="ck"></i><i class="av">ОР</i><span class="nm">Олег Руденко</span></div>
+      <div class="rc" id="r4"><i class="ck"></i><i class="av">АК</i><span class="nm">Аня Ким</span></div>
+      <div class="rc"><i class="ck"></i><i class="av g"></i><span class="nm"><i class="bar" style="width:150px"></i></span></div>
+    </div>
+    <span class="btn" id="go">Скопировать</span>
+  </div>
+</main>
+<script>
+Kit.trainer({ title: 'Календарь', nav: 1 });
+const $ = id => document.getElementById(id);
+const DAYS = ['d1', 'd3', 'd5'];
+window.ST = {
+  // выделить n-й день (1..3) из Пн, Ср, Пт
+  pick(n) { DAYS.slice(0, n).forEach(id => $(id).classList.add('sel')); $('cnt').textContent = 'Выбрано ' + n; Kit.state('pick'); },
+  sheet: () => Kit.state('sheet'),
+  to(n) { for (let i = 1; i <= n; i++) $('r' + i).classList.add('on'); },
+  done: () => Kit.state('done'),
+};
+$('d1').onclick = () => ST.pick(1);
+$('copy').onclick = ST.sheet;
+$('go').onclick = ST.done;
+</script>
+</body>
+</html>

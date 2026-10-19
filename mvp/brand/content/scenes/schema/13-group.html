@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Массовое добавление программ</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 13 «Массовое добавление программ». Нагрузка ST.load(pct) пересчитывает веса у всех;
+   касание «Своя версия» у Марии → состояние own: замена только у неё. */
+#grp{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:#fff;border:2px solid var(--acc-p)}
+#grp .av{width:46px;height:46px;font-size:16px;line-height:46px}
+#grp .gt{flex:1;min-width:0}
+#grp b{display:block;font-size:20px}
+#grp .gl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#grp small{white-space:nowrap;display:block;font:600 15px Inter;color:var(--tx2);margin-top:3px}
+#grp .chip{font-size:16px}
+
+#ex .hd{justify-content:space-between;font-size:20px}
+#ex .hd .chip{font-size:17px;background:#fff}
+#ex .from{padding:12px 16px 2px;font:600 16px Inter;color:var(--tx2)}
+#load{padding:10px 16px 16px}
+#load .lt{display:flex;align-items:baseline;justify-content:space-between}
+#load .lt span{font:700 18px Inter}
+#pct{font:800 30px Inter;color:var(--acc);letter-spacing:-.02em}
+.trk{position:relative;height:30px;margin-top:6px}
+.trk:before{content:"";position:absolute;left:0;right:0;top:12px;height:8px;border-radius:4px;background:var(--g1)}
+#fill{position:absolute;left:0;top:12px;height:8px;border-radius:4px;background:var(--acc)}
+#knob{position:absolute;top:0;width:30px;height:30px;margin-left:-15px;border-radius:50%;background:#fff;border:4px solid var(--acc);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+
+#list .hd{background:var(--g1);font-size:17px;justify-content:space-between}
+#list .hd small{font:600 14px Inter;color:var(--tx2)}
+.ath{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1.5px solid var(--g1);font:700 18px Inter;min-height:58px}
+.ath .nm{flex:1;min-width:0;white-space:nowrap}
+.ath .nm small{display:block;font:600 13.5px Inter;color:var(--tx2);margin-top:1px}
+.ath .w{font-size:17px;min-width:76px;text-align:center;transition:background .25s}
+.ath .w.hot{background:var(--acc-p)}
+.ath .ph{width:34px;height:26px;border-radius:8px;background:var(--g1);flex:none}
+.more{display:flex;align-items:center;gap:10px;padding:14px 16px;border-top:1.5px solid var(--g1);font:700 16px Inter;color:var(--tx2)}
+
+/* Мария: своя версия */
+#mrow{display:block;padding:0;transition:background .3s}
+#mrow .l1{display:flex;align-items:center;gap:8px;padding:10px 14px;min-height:58px}
+#mrow .rm{display:none}
+.s-own #mrow .rm{display:inline-block}
+#own{height:36px;padding:0 9px;border-radius:10px;border:2px solid var(--g2);background:#fff;font:800 14.5px Inter;white-space:nowrap;flex:none;transition:background .3s,color .3s,border-color .3s}
+#mrow .w{min-width:66px;padding:5px 8px;transition:opacity .25s,width .3s,min-width .3s,padding .3s}
+#mrow .l2{display:flex;align-items:center;gap:8px;padding:0 14px 0 16px;height:0;opacity:0;overflow:hidden;transition:height .35s,opacity .3s,padding .35s}
+#mrow .l2 s{font:600 16px Inter;color:var(--tx2);white-space:nowrap}
+#mrow .l2 span{font:800 17px Inter;color:var(--acc)}
+#mrow .l2 b{font:800 18px Inter;white-space:nowrap}
+.s-own #mrow{background:var(--acc-a)}
+.s-own #own{background:var(--acc);border-color:var(--acc);color:#fff}
+.s-own #mrow .w{opacity:0;min-width:0;width:0;padding:0;overflow:hidden}
+.s-own #mrow .l2{height:48px;opacity:1;padding-bottom:10px}
+#swap{display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<main class="main">
+  <div id="grp"><i class="av">У</i>
+    <div class="gt"><div class="gl"><b>Утро 7:00</b><span class="chip">20 атлетов</span></div><small>Тренировка группы · Вт, 14 октября</small></div></div>
+
+  <div class="card" id="ex">
+    <div class="hd">Присед со штангой<span class="chip">5 × 3</span></div>
+    <div class="from">от 1ПМ каждого атлета</div>
+    <div id="load">
+      <div class="lt"><span>Нагрузка</span><b id="pct">70 %</b></div>
+      <div class="trk"><i id="fill"></i><i id="knob"></i></div>
+    </div>
+  </div>
+
+  <div class="card" id="list">
+    <div class="hd">Атлеты<small>ещё 16 ниже</small></div>
+    <div class="ath" id="mrow">
+      <div class="l1"><i class="av">МС</i><div class="nm">Мария С.<small>1ПМ 110 кг</small></div>
+        <b class="chip w" data-rm="110"></b><span id="own">Своя версия</span></div>
+      <div class="l2"><s>Присед 5 × 3</s><span>→</span><b>Жим ногами 4 × 8</b></div>
+    </div>
+    <div id="rest">
+      <div class="ath"><i class="av">ИП</i><div class="nm">Иван П.<small>1ПМ 190 кг</small></div><b class="chip w" data-rm="190"></b><i class="ph"></i></div>
+      <div class="ath"><i class="av">ОР</i><div class="nm">Олег Р.<small>1ПМ 160 кг</small></div><b class="chip w" data-rm="160"></b><i class="ph"></i></div>
+      <div class="ath"><i class="av">АК</i><div class="nm">Аня К.<small>1ПМ 90 кг</small></div><b class="chip w" data-rm="90"></b><i class="ph"></i></div>
+    </div>
+  </div>
+</main>
+<script>
+Kit.trainer({ title: 'Группа', nav: 2 });
+const MIN = 50, MAX = 100;
+let shown = null;
+function load(p) {
+  const x = (p - MIN) / (MAX - MIN) * 100;
+  document.getElementById('fill').style.width = x + '%';
+  document.getElementById('knob').style.left = x + '%';
+  const v = Math.round(p);
+  document.getElementById('pct').textContent = v + ' %';
+  if (v === shown) return; const first = shown === null; shown = v;
+  document.querySelectorAll('.w[data-rm]').forEach(c => {
+    const kg = Math.round(+c.dataset.rm * v / 100 / 2.5) * 2.5;
+    c.textContent = String(kg).replace('.', ',') + ' кг';
+    if (!first) c.classList.add('hot');
+  });
+}
+load(70);
+window.ST = { load, cool: () => document.querySelectorAll('.w.hot').forEach(c => c.classList.remove('hot')), own: () => Kit.state('own') };
+document.getElementById('own').onclick = ST.own;
+</script>
+</body>
+</html>

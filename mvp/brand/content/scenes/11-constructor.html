@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>11 · Конструктор тренировок</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/11-constructor.md (серия «Фичи с лендинга», вариант «схема»)
+// Схематичный экран schema/11-constructor.html: неделя → день → шторка «Мои блоки» → блок в дне.
+const S = Scene({ format: '9:16', duration: 15.2 });
+S.phone('schema/11-constructor.html');
+
+S.caption(.2, 6.9, 'Неделя клиента\n*на одном экране*', { sub: 'Дни, блоки, упражнения из базы' });
+
+S.spot(1.0, 3.0, '#week', { label: 'Вся неделя *на одном экране*' });
+S.tap(3.4, '#d2');
+
+S.spot(4.4, 6.4, '#mine', { label: 'Шторка *«Мои блоки»*', pad: 6 });
+S.tap(6.0, '#mine');
+
+S.caption(7.0, 12.5, 'Готовые блоки —\n*в один тап*', { sub: 'Без таблиц и формул' });
+
+S.spot(7.0, 8.8, '#sheet', { label: 'Ваши *заготовки*', dy: -40 });
+S.spot(8.9, 9.8, '#pick', { pad: 6 });
+S.tap(9.5, '#pick');
+
+S.spot(10.4, 12.5, '#b3', { label: 'Блок *уже в дне*' });
+
+S.outro(12.6);
+S.start();
+</script>
+</body>
+</html>

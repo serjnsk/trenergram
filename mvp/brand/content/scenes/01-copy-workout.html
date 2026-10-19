@@ -10,7 +10,10 @@
 <script>
 // Сценарий: ../scripts/01-copy-workout.md
 const btn = text => d => [...d.querySelectorAll('button')].find(b => b.textContent.trim().startsWith(text));
-const day = n => d => [...d.querySelectorAll('.rail button')].find(b => b.textContent.trim() === String(n));
+// Демо-данные прототипа считаются от сегодняшней даты, поэтому день не фиксирован:
+// берём ближайший прошлый день с тренировкой перед открытым в конструкторе (.cur)
+const lastDay = d => { const bs = [...d.querySelectorAll('.rail button')].filter(b => /^\d+$/.test(b.textContent.trim()));
+  return bs.slice(0, bs.findIndex(b => b.classList.contains('cur'))).reverse().find(b => b.classList.contains('has')); };
 
 const S = Scene({ format: '9:16', duration: 13.5 });
 S.screen('../../../constructor.html');
@@ -18,8 +21,8 @@ S.screen('../../../constructor.html');
 S.caption(.2, 4.6, 'Тренировка\nв *один клик*', { sub: 'Любой прошлый день клиента — прямо в конструктор' });
 
 S.focus(1.2, 2.6, '.rail', { pad: 30 });
-S.cursor(2.2, 3.3, day(24));
-S.click(3.45, day(24));
+S.cursor(2.2, 3.3, lastDay);
+S.click(3.45, lastDay);
 S.highlight(3.7, 5.2, '.csrc', { pad: 8 });
 S.cursor(4.6, 5.5, '#cs-copy');
 S.click(5.7, '#cs-copy');

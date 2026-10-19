@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Студия · Тренерграм</title>
+<link rel="icon" href="../logo/trenergram-mark.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Студия — локальный просмотр роликов. Запуск: npm run studio (см. studio.mjs).
+   Тёмный нейтральный фон, чтобы честно видеть цвета ролика; акцент — оранжевый бренда. */
+:root{
+  --bg:#0f0f10; --p1:#161618; --p2:#1d1d20; --p3:#26262a; --line:#2a2a2e;
+  --tx:#f1f1f2; --tx2:#a1a1a8; --tx3:#6d6d74; --acc:#FC5200; --acc-a:rgba(252,82,0,.14);
+  --ok:#2fbf71; --warn:#e8a33a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:500 13px/1.4 Inter,system-ui,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input{font:inherit;color:inherit}
+svg{display:block}
+.app{display:grid;grid-template-columns:360px 1fr 330px;grid-template-rows:56px 1fr;height:100%}
+
+/* шапка */
+header{grid-column:1/-1;display:flex;align-items:center;gap:20px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--p1)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;min-width:328px}
+.brand img{height:22px}
+.brand span{color:var(--tx2);font-weight:500}
+.seg{display:flex;background:var(--p2);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:6px 11px;border-radius:7px;color:var(--tx2);font-weight:600;white-space:nowrap}
+.seg button:hover{color:var(--tx)}
+.seg button.on{background:var(--p3);color:var(--tx);box-shadow:0 1px 0 rgba(255,255,255,.04) inset}
+.grp{display:flex;align-items:center;gap:8px}
+.grp>label{color:var(--tx3);font-size:12px;font-weight:600}
+.sp{flex:1}
+.tog{display:flex;align-items:center;gap:7px;color:var(--tx2);font-weight:600;cursor:pointer;user-select:none}
+.tog i{width:30px;height:18px;border-radius:9px;background:var(--p3);position:relative;transition:.15s}
+.tog i:after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#bdbdc3;transition:.15s}
+.tog.on{color:var(--tx)} .tog.on i{background:var(--acc)} .tog.on i:after{left:14px;background:#fff}
+
+/* колонки */
+aside{background:var(--p1);display:flex;flex-direction:column;min-height:0}
+aside.l{border-right:1px solid var(--line)}
+aside.r{border-left:1px solid var(--line)}
+.ah{padding:14px 16px 10px;display:flex;align-items:center;gap:8px}
+.ah h2{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);font-weight:700}
+.ah .n{color:var(--tx3);font-weight:600}
+.search{margin:0 16px 10px;position:relative}
+.search input{width:100%;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--p2);padding:0 10px 0 32px;outline:0}
+.search input:focus{border-color:var(--acc)}
+.search svg{position:absolute;left:10px;top:9px;color:var(--tx3)}
+.list{flex:1;overflow:auto;padding:0 8px 16px}
+.list::-webkit-scrollbar{width:8px}.list::-webkit-scrollbar-thumb{background:var(--p3);border-radius:4px}
+.fold{padding:12px 8px 6px;color:var(--tx3);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.vi{display:flex;gap:12px;padding:8px;border-radius:10px;cursor:pointer;align-items:center;width:100%;text-align:left}
+.vi:hover{background:var(--p2)}
+.vi.on{background:var(--acc-a);box-shadow:inset 0 0 0 1px rgba(252,82,0,.45)}
+.th{width:48px;height:72px;border-radius:6px;background:var(--p3) center/cover no-repeat;flex:none;position:relative;overflow:hidden}
+.th.wide{height:48px}
+.th b{position:absolute;right:3px;bottom:3px;background:rgba(0,0,0,.72);border-radius:4px;padding:1px 4px;font-size:10px;font-weight:600}
+.vm{min-width:0;flex:1}
+.vm .t{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vm .s{color:var(--tx2);font-size:12px;margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+.vm .d{color:var(--tx3);font-size:11.5px;margin-top:2px}
+.badge{display:inline-block;padding:1px 6px;border-radius:5px;background:var(--p3);color:var(--tx2);font-size:11px;font-weight:700}
+.new{background:var(--acc);color:#fff}
+.empty{padding:24px 16px;color:var(--tx2);line-height:1.6}
+.empty code{background:var(--p2);padding:2px 6px;border-radius:5px;color:var(--tx)}
+
+/* центр: телефон и плеер */
+main{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
+.stagebox{flex:1;position:relative;min-height:0}
+.fit{position:absolute;left:50%;top:50%;transform-origin:center}
+.device{position:relative;background:#050506;box-shadow:0 0 0 1.5px #3a3a40, 0 0 0 5px #121214, 0 30px 80px rgba(0,0,0,.6)}
+.screen{position:absolute;overflow:hidden;background:#000}
+.area{position:absolute;left:0;right:0;top:0;overflow:hidden;background:#000}
+.area video{position:absolute;left:0;top:0;transform-origin:0 0}
+.island{position:absolute;left:50%;transform:translateX(-50%);background:#000;border-radius:20px;z-index:5}
+.punch{position:absolute;left:50%;transform:translateX(-50%);background:#000;border-radius:50%;z-index:5}
+.homebtn{position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;border:2px solid #2c2c31}
+.sbar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;padding:0 30px;color:#fff;font:600 16px/1 Inter;z-index:4;pointer-events:none;text-shadow:0 0 6px rgba(0,0,0,.25)}
+.sbar .ic{display:flex;gap:6px;align-items:center}
+.homeind{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:#fff;z-index:6;pointer-events:none}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:3;color:#fff}
+.guide{position:absolute;border:1.5px dashed rgba(64,220,255,.95);background:rgba(64,220,255,.06);z-index:2;pointer-events:none}
+.guide span{position:absolute;left:4px;top:-18px;font:600 10px/1 Inter;color:#40dcff;white-space:nowrap}
+.raw{background:none;box-shadow:none}
+.raw .screen{border-radius:6px!important;box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(0,0,0,.5)}
+.nothing{position:absolute;inset:0;display:grid;place-items:center;color:var(--tx3);text-align:center;line-height:1.6;padding:24px}
+
+.player{flex:none;padding:10px 24px 18px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.scrub{width:min(620px,100%);height:18px;position:relative;cursor:pointer;display:flex;align-items:center}
+.scrub .tr{position:absolute;left:0;right:0;height:4px;border-radius:2px;background:var(--p3)}
+.scrub .bf{position:absolute;left:0;height:4px;border-radius:2px;background:var(--acc)}
+.scrub .kn{position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;margin-left:-6px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.ctrl{width:min(620px,100%);display:flex;align-items:center;gap:6px}
+.ctrl .ib{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--tx2)}
+.ctrl .ib:hover{background:var(--p2);color:var(--tx)}
+.ctrl .ib.on{color:var(--acc)}
+.ctrl .play{width:42px;height:42px;border-radius:50%;background:var(--tx);color:#000;display:grid;place-items:center}
+.ctrl .play:hover{background:#fff}
+.time{font:600 13px/1 Inter;font-variant-numeric:tabular-nums;color:var(--tx2);min-width:150px}
+.time b{color:var(--tx)}
+.ctrl .seg button{padding:5px 9px}
+.keys{color:var(--tx3);font-size:11.5px}
+.keys kbd{font:600 10.5px Inter;background:var(--p2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--tx2)}
+
+/* справа: сцены и сведения */
+.sc{padding:10px 8px 10px 12px;margin:0 8px;border-radius:10px;display:flex;gap:10px;align-items:center}
+.sc:hover{background:var(--p2)}
+.sc .vm .t{font-size:13px}
+.st{font-size:11.5px;font-weight:600}
+.st.ok{color:var(--ok)} .st.old{color:var(--warn)} .st.no{color:var(--tx3)}
+.btn{height:30px;padding:0 11px;border-radius:7px;background:var(--p3);font-weight:600;font-size:12.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--tx)}
+.btn:hover{background:#303036}
+.btn.pri{background:var(--acc);color:#fff}
+.btn.pri:hover{background:#ff6418}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.prog{height:3px;border-radius:2px;background:var(--p3);margin-top:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--acc);transition:width .3s}
+.info{border-top:1px solid var(--line);padding:14px 16px 18px}
+.info dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:10px 0 14px}
+.info dt{color:var(--tx3)} .info dd{margin:0;word-break:break-all}
+.info .warn{color:var(--warn);font-size:12px;margin:-4px 0 12px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#fff;color:#111;padding:10px 16px;border-radius:9px;font-weight:600;opacity:0;transition:.2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.offline{position:fixed;inset:0;background:var(--bg);display:none;place-items:center;text-align:center;line-height:1.7;color:var(--tx2);z-index:60;padding:24px}
+.offline h1{color:var(--tx);font-size:22px;margin:0 0 8px}
+.offline code{background:var(--p2);padding:3px 8px;border-radius:6px;color:var(--tx)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><img src="../logo/trenergram-logo-on-dark.svg" alt="Тренерграм"><span>Студия</span></div>
+    <div class="grp"><label>Устройство</label><div class="seg" id="devSeg"></div></div>
+    <div class="grp"><label>Площадка</label><div class="seg" id="ovSeg"></div></div>
+    <div class="sp"></div>
+    <div class="tog" id="tGuide" title="Безопасная зона площадки — титры и важное держать внутри (G)"><i></i>Безопасная зона</div>
+    <div class="tog" id="tFill" title="Вертикальное видео на вытянутом экране площадки обрезают по бокам (F)"><i></i>Обрезать как в ленте</div>
+  </header>
+
+  <aside class="l">
+    <div class="ah"><h2>Видео</h2><span class="n" id="vCount"></span></div>
+    <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Поиск по названию и папке"></div>
+    <div class="list" id="vList"></div>
+  </aside>
+
+  <main>
+    <div class="stagebox" id="stagebox"><div class="fit" id="fit"></div></div>
+    <div class="player">
+      <div class="scrub" id="scrub"><div class="tr"></div><div class="bf" id="bf"></div><div class="kn" id="kn"></div></div>
+      <div class="ctrl">
+        <button class="ib" id="bPrevF" title="Кадр назад (←)"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14l-10-7z"/></svg></button>
+        <button class="play" id="bPlay" title="Пуск / пауза (пробел)"></button>
+        <button class="ib" id="bNextF" title="Кадр вперёд (→)"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10-7z"/></svg></button>
+        <div class="time" id="time"><b>0:00.0</b> / 0:00.0</div>
+        <div class="sp"></div>
+        <div class="seg" id="spdSeg"></div>
+        <button class="ib" id="bLoop" title="Повтор (L)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></button>
+        <button class="ib" id="bMute" title="Звук (M)"></button>
+      </div>
+      <div class="keys"><kbd>Пробел</kbd> пуск · <kbd>←</kbd><kbd>→</kbd> кадр · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> секунда · <kbd>↑</kbd><kbd>↓</kbd> соседнее видео · <kbd>1</kbd>–<kbd>5</kbd> устройство</div>
+    </div>
+  </main>
+
+  <aside class="r">
+    <div class="ah"><h2>Сцены</h2><span class="n" id="sCount"></span><div class="sp"></div><button class="btn" id="bRenderStale" title="Отрендерить все устаревшие и новые сцены">Все устаревшие</button></div>
+    <div class="list" id="sList" style="padding:0 0 12px"></div>
+    <div class="info" id="info"></div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+<div class="offline" id="offline"><div><h1>Студия работает только локально</h1>Запустите на своём компьютере в папке <code>mvp/brand/content</code>:<br><code>npm run studio</code></div></div>
+
+<script>
+// ───── устройства: размеры экрана в точках CSS, рамка, вырез ─────
+const DEVICES = {
+  se:    { name: 'iPhone SE',      w: 375, h: 667, r: 0,  bz: [16, 100], cut: 'home', sb: 20,  home: false },
+  i15:   { name: 'iPhone 15',      w: 393, h: 852, r: 55, bz: [14, 14],  cut: 'island', sb: 54, home: true },
+  pm:    { name: 'iPhone 15 Pro Max', w: 430, h: 932, r: 55, bz: [14, 14], cut: 'island', sb: 54, home: true },
+  pixel: { name: 'Pixel 8',        w: 412, h: 915, r: 34, bz: [12, 12],  cut: 'punch', sb: 40,  home: false },
+  raw:   { name: 'Без рамки' },
+};
+// ───── площадки: нижняя панель навигации и безопасная зона (в пикселях кадра 1080×1920, ориентир) ─────
+const PLATFORMS = {
+  none:   { name: 'Нет' },
+  reels:  { name: 'Reels',  nav: 50, safe: { t: 220, b: 450, l: 60, r: 130 } },
+  tiktok: { name: 'TikTok', nav: 50, safe: { t: 130, b: 370, l: 60, r: 130 } },
+  shorts: { name: 'Shorts', nav: 50, safe: { t: 160, b: 380, l: 60, r: 140 } },
+};
+const SPEEDS = [0.25, 0.5, 1, 2];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem('studio.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem('studio.' + k, JSON.stringify(v)); } catch (e) {} } };
+
+const st = {
+  videos: [], scenes: [], queue: { current: null, waiting: [] },
+  sel: store.get('sel', null), dev: store.get('dev', 'i15'), plat: store.get('plat', 'reels'),
+  guide: store.get('guide', false), fill: store.get('fill', true), loop: store.get('loop', true),
+  speed: 1, muted: store.get('muted', false), q: '', seen: new Set(store.get('seen', [])), autoSelect: null,
+};
+const video = document.createElement('video');
+video.playsInline = true; video.preload = 'auto';
+
+// ───── форматирование ─────
+const fmtT = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s.toFixed(1).padStart(4, '0')}`; };
+const fmtDur = t => { t = Math.round(t || 0); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+const fmtSize = b => b > 1e9 ? (b / 1e9).toFixed(1) + ' ГБ' : b > 1e6 ? (b / 1e6).toFixed(1) + ' МБ' : Math.round(b / 1e3) + ' КБ';
+const ratio = (w, h) => { const r = w / h, list = [['9:16', 9 / 16], ['4:5', .8], ['1:1', 1], ['16:9', 16 / 9], ['3:4', .75], ['4:3', 4 / 3]];
+  const hit = list.find(([, v]) => Math.abs(v - r) < .02); return hit ? hit[0] : `${w}×${h}`; };
+function ago(ms) {
+  const d = (Date.now() - ms) / 1000;
+  if (d < 60) return 'только что'; if (d < 3600) return Math.floor(d / 60) + ' мин назад';
+  const dt = new Date(ms), now = new Date(), hm = dt.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  if (dt.toDateString() === now.toDateString()) return 'сегодня, ' + hm;
+  const y = new Date(now); y.setDate(y.getDate() - 1);
+  if (dt.toDateString() === y.toDateString()) return 'вчера, ' + hm;
+  return dt.toLocaleDateString('ru', { day: 'numeric', month: 'short' }) + ', ' + hm;
+}
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('show'), 2400); }
+
+// ───── шапка ─────
+function seg(el, items, cur, on) {
+  el.innerHTML = (items instanceof Map ? [...items] : Object.entries(items)).map(([k, v]) => `<button data-k="${k}" class="${k === cur ? 'on' : ''}">${esc(v.name ?? v)}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if (b) on(b.dataset.k); };
+}
+function renderHeader() {
+  seg($('#devSeg'), DEVICES, st.dev, k => { st.dev = k; store.set('dev', k); renderHeader(); renderStage(); });
+  seg($('#ovSeg'), PLATFORMS, st.plat, k => { st.plat = k; store.set('plat', k); renderHeader(); renderStage(); });
+  seg($('#spdSeg'), new Map(SPEEDS.map(s => ['x' + s, s + '×'])), 'x' + st.speed, k => { st.speed = +k.slice(1); video.playbackRate = st.speed; renderHeader(); });
+  $('#tGuide').classList.toggle('on', st.guide);
+  $('#tFill').classList.toggle('on', st.fill);
+  $('#bLoop').classList.toggle('on', st.loop);
+  $('#bMute').innerHTML = st.muted
+    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6M16 9l6 6"/></svg>'
+    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
+  video.muted = st.muted; video.loop = st.loop;
+}
+$('#tGuide').onclick = () => { st.guide = !st.guide; store.set('guide', st.guide); renderHeader(); renderStage(); };
+$('#tFill').onclick = () => { st.fill = !st.fill; store.set('fill', st.fill); renderHeader(); renderStage(); };
+$('#bLoop').onclick = () => { st.loop = !st.loop; store.set('loop', st.loop); renderHeader(); };
+$('#bMute').onclick = () => { st.muted = !st.muted; store.set('muted', st.muted); renderHeader(); };
+
+// ───── список видео ─────
+function renderList() {
+  const q = st.q.trim().toLowerCase();
+  const vs = st.videos.filter(v => !q || (v.name + ' ' + v.folder).toLowerCase().includes(q));
+  $('#vCount').textContent = st.videos.length || '';
+  if (!st.videos.length) {
+    $('#vList').innerHTML = `<div class="empty">Пока пусто. Отрендерите сцену справа или положите видео в папку <code>exports/</code>, подпапки тоже читаются. Список обновляется сам.</div>`;
+    return;
+  }
+  const groups = {};
+  for (const v of vs) (groups[v.folder] ||= []).push(v);
+  const keys = Object.keys(groups).sort((a, b) => a === '' ? -1 : b === '' ? 1 : a.localeCompare(b));   // корень exports/ первым
+  $('#vList').innerHTML = keys.map(f => (f ? `<div class="fold">${esc(f)}</div>` : '') + groups[f].map(v => {
+    const isNew = !st.seen.has(v.path + ':' + v.mtime) && Date.now() - v.mtime < 6 * 3600e3;
+    const wide = v.w >= v.h;
+    return `<button class="vi ${v.path === st.sel ? 'on' : ''}" data-p="${esc(v.path)}">
+      <div class="th ${wide ? 'wide' : ''}" style="background-image:url('/thumb/${encodeURI(v.path)}?m=${v.mtime}')"><b>${fmtDur(v.duration)}</b></div>
+      <div class="vm"><div class="t">${esc(v.name)}</div>
+        <div class="s"><span class="badge">${ratio(v.w, v.h)}</span>${isNew ? '<span class="badge new">новое</span>' : ''}<span>${v.w}×${v.h} · ${fmtSize(v.size)}</span></div>
+        <div class="d">${ago(v.mtime)}</div></div></button>`;
+  }).join('')).join('') || `<div class="empty">Ничего не нашлось.</div>`;
+}
+$('#vList').onclick = e => { const b = e.target.closest('.vi'); if (b) select(b.dataset.p, true); };
+$('#q').oninput = e => { st.q = e.target.value; renderList(); };
+
+function cur() { return st.videos.find(v => v.path === st.sel); }
+function select(p, play) {
+  const v = st.videos.find(x => x.path === p); if (!v) return;
+  st.sel = p; store.set('sel', p);
+  st.seen.add(v.path + ':' + v.mtime); store.set('seen', [...st.seen].slice(-300));
+  const src = `/video/${encodeURI(v.path)}?m=${v.mtime}`;
+  if (video.dataset.src !== src) {
+    const keep = video.dataset.path === v.path ? video.currentTime : 0;   // перерендер того же ролика — остаёмся на месте
+    video.dataset.src = src; video.dataset.path = v.path; video.src = src;
+    video.addEventListener('loadedmetadata', () => { if (keep) video.currentTime = Math.min(keep, video.duration - .05); }, { once: true });
+  }
+  video.playbackRate = st.speed;
+  if (play) video.play().catch(() => {});
+  renderList(); renderStage(); renderInfo();
+  const el = document.querySelector(`.vi[data-p="${CSS.escape(p)}"]`); if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
+// ───── телефон ─────
+function renderStage() {
+  const fit = $('#fit'), v = cur();
+  if (!v) { fit.innerHTML = ''; $('#stagebox').querySelector('.nothing')?.remove();
+    $('#stagebox').insertAdjacentHTML('beforeend', `<div class="nothing">${st.videos.length ? 'Выберите видео слева' : 'Здесь появится видео'}</div>`); return; }
+  $('#stagebox').querySelector('.nothing')?.remove();
+  const D = DEVICES[st.dev], P = PLATFORMS[st.plat];
+  let html, W, H, sw, sh;
+  if (st.dev === 'raw') {
+    sw = v.w; sh = v.h; W = sw; H = sh;
+    html = `<div class="device raw" style="width:${W}px;height:${H}px"><div class="screen" style="left:0;top:0;width:${sw}px;height:${sh}px"><div class="area" id="area" style="height:${sh}px"></div></div></div>`;
+  } else {
+    sw = D.w; sh = D.h; const [bx, by] = D.bz; W = sw + 2 * bx; H = sh + 2 * by;
+    const cut = D.cut === 'island' ? `<div class="island" style="top:11px;width:124px;height:36px"></div>`
+              : D.cut === 'punch' ? `<div class="punch" style="top:14px;width:22px;height:22px"></div>` : '';
+    const nav = P.nav ? P.nav + (D.home ? 34 : 0) : 0;
+    html = `<div class="device" style="width:${W}px;height:${H}px;border-radius:${D.r ? D.r + bx : 52}px">
+      ${D.cut === 'home' ? `<div class="homebtn" style="bottom:${(by - 54) / 2}px;width:54px;height:54px"></div>` : ''}
+      <div class="screen" style="left:${bx}px;top:${by}px;width:${sw}px;height:${sh}px;border-radius:${D.r}px">
+        <div class="area" id="area" style="height:${sh - nav}px"></div>
+        ${statusBar(D)}${cut}${overlay(st.plat, D, sw, sh, nav)}${D.home ? '<div class="homeind"></div>' : ''}
+      </div></div>`;
+  }
+  fit.innerHTML = html;
+  const area = $('#area'); area.appendChild(video);
+  layoutVideo(v, area, sw, area.clientHeight);
+  fitStage(W, H);
+}
+// видео в области экрана: обрезать по бокам (как лента) или вписать целиком
+function layoutVideo(v, area, aw, ah) {
+  const vert = v.h > v.w, cover = st.dev !== 'raw' && st.fill && vert;
+  const s = cover ? Math.max(aw / v.w, ah / v.h) : Math.min(aw / v.w, ah / v.h);
+  const w = v.w * s, h = v.h * s, x = (aw - w) / 2, y = (ah - h) / 2;
+  Object.assign(video.style, { width: v.w + 'px', height: v.h + 'px', transform: `translate(${x}px,${y}px) scale(${s})` });
+  area.querySelectorAll('.guide').forEach(e => e.remove());
+  const P = PLATFORMS[st.plat];
+  if (st.guide && P.safe) {
+    const k = v.w / 1080, g = P.safe;               // безопасная зона в пикселях кадра 1080×1920
+    const box = document.createElement('div'); box.className = 'guide';
+    Object.assign(box.style, { left: x + g.l * k * s + 'px', top: y + g.t * k * s + 'px',
+      width: (v.w - (g.l + g.r) * k) * s + 'px', height: (v.h - (g.t + g.b) * k) * s + 'px' });
+    box.innerHTML = `<span>безопасная зона ${P.name}</span>`;
+    area.appendChild(box);
+  }
+  st.crop = cover ? Math.round(Math.max(0, (w - aw) / s / 2)) : 0;    // сколько пикселей кадра срезано с каждой стороны
+}
+function fitStage(W, H) {
+  const box = $('#stagebox'), pad = 36;
+  const k = Math.min((box.clientWidth - pad * 2) / W, (box.clientHeight - pad * 2) / H, st.dev === 'raw' ? 1 : 1.25);
+  $('#fit').style.transform = `translate(-50%,-50%) scale(${k})`;
+  $('#fit').style.width = W + 'px'; $('#fit').style.height = H + 'px';
+}
+addEventListener('resize', () => renderStage());
+
+function statusBar(D) {
+  return `<div class="sbar" style="height:${D.sb}px;padding-top:${D.cut === 'island' ? 4 : 0}px">
+    <span>9:41</span><span class="ic">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .7 10.4 10.4 0 0 0 .8 3.6L2 4.9a8.6 8.6 0 0 1 6-2.4zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.7 6.7 0 0 0 8 4.3a6.7 6.7 0 0 0-4.6 1.8l1.2 1.3c.9-.8 2.1-1.3 3.4-1.3zm0 3.6c.4 0 .8.2 1.1.4L8 11.3 6.9 10.1c.3-.2.7-.4 1.1-.4z"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#fff" opacity=".5"/><rect x="2" y="2" width="18" height="8" rx="2" fill="#fff"/><rect x="23.5" y="4" width="1.8" height="4" rx=".9" fill="#fff" opacity=".5"/></svg>
+    </span></div>`;
+}
+
+// ───── наложения интерфейса площадок (схематично, для проверки перекрытий) ─────
+const I = {
+  heart: '<path d="M12 20.5s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1z"/>',
+  comment: '<path d="M20.5 11.6a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.3-4.6A8.5 8.5 0 1 1 20.5 11.6z"/>',
+  send: '<path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5z"/>',
+  dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  vdots: '<circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/>',
+  share: '<path d="M14 5l7 7-7 7v-4c-6 0-9 1.5-11 5 .5-6 3.5-10 11-11z"/>',
+  book: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+  dislike: '<path d="M7 14V4M7 14l3.5 6.5a2 2 0 0 0 3.5-1.6L13 15h5.5a2 2 0 0 0 2-2.4l-1.4-7A2 2 0 0 0 17.2 4H7"/>',
+  like: '<path d="M7 10v10M7 10l3.5-6.5a2 2 0 0 1 3.5 1.6L13 9h5.5a2 2 0 0 1 2 2.4l-1.4 7a2 2 0 0 1-1.9 1.6H7"/>',
+  remix: '<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
+  home: '<path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/>', search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>',
+  plus: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>', reels: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 9h16M9 4l2.5 5M14 4l2.5 5M10.5 12.5v5l4.5-2.5z"/>',
+  user: '<circle cx="12" cy="12" r="9"/>', inbox: '<path d="M4 13h4l1.5 3h5L16 13h4M4 13l2-8h12l2 8v6H4z"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0"/>', music: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  cam: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+};
+const ic = (k, s = 28, sw = 2, fill = 'none') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${fill}" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
+const col = (items, style) => `<div style="position:absolute;display:flex;flex-direction:column;align-items:center;gap:16px;${style}">${items.map(([k, n, f]) =>
+  `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">${ic(k, 30, 1.9, f || 'none')}${n ? `<span style="font:600 12px Inter">${n}</span>` : ''}</div>`).join('')}</div>`;
+const navBar = (nav, items, bg) => `<div style="position:absolute;left:0;right:0;bottom:0;height:${nav}px;background:${bg};display:flex;justify-content:space-around;padding-top:12px">${items.join('')}</div>`;
+const ava = (s = 32) => `<div style="width:${s}px;height:${s}px;border-radius:50%;background:#FC5200 url(../logo/trenergram-mark-letters-white.svg) center/70% no-repeat;flex:none;border:1.5px solid #fff"></div>`;
+const cap = 'Тренировка в один клик: копируем прошлый день…';
+
+function overlay(p, D, sw, sh, nav) {
+  const top = D.sb + 8, vb = nav;                        // vb — низ области видео
+  if (PLATFORMS[p]?.nav) return overlayUI(p, D, top, vb, nav).replace('<div class="ov">', `<div class="ov">
+    <div style="position:absolute;left:0;right:0;top:0;height:${top + 70}px;background:linear-gradient(rgba(0,0,0,.38),transparent)"></div>
+    <div style="position:absolute;left:0;right:0;bottom:${vb}px;height:280px;background:linear-gradient(transparent,rgba(0,0,0,.5))"></div>`);
+  return '';
+}
+function overlayUI(p, D, top, vb, nav) {
+  if (p === 'reels') return `<div class="ov">
+    <div style="position:absolute;left:16px;right:16px;top:${top}px;display:flex;justify-content:space-between;align-items:center;font:700 22px Inter;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">Reels ${ic('cam', 28, 1.9)}</div>
+    ${col([['heart', '12,4 тыс.'], ['comment', '318'], ['send', '1 204'], ['dots', '']], `right:10px;bottom:${vb + 86}px`)}
+    <div style="position:absolute;right:12px;bottom:${vb + 18}px;width:28px;height:28px;border-radius:6px;border:2px solid #fff;background:#333"></div>
+    <div style="position:absolute;left:14px;right:70px;bottom:${vb + 16}px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">
+      <div style="display:flex;align-items:center;gap:9px;font:600 14px Inter">${ava()}trenergram<span style="border:1px solid rgba(255,255,255,.7);border-radius:8px;padding:4px 10px;font-size:13px">Подписаться</span></div>
+      <div style="font:400 14px/1.35 Inter;margin-top:10px">${cap}</div>
+      <div style="font:400 13px Inter;margin-top:8px;display:flex;gap:6px;align-items:center">${ic('music', 13, 2)}trenergram · Оригинальный звук</div></div>
+    ${navBar(nav, ['home', 'search', 'plus', 'reels', 'user'].map(k => ic(k, 26, 1.9)), '#000')}</div>`;
+  if (p === 'tiktok') return `<div class="ov">
+    <div style="position:absolute;left:0;right:0;top:${top}px;display:flex;justify-content:center;gap:18px;font:600 16px Inter;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"><span style="opacity:.7">Подписки</span><span style="border-bottom:2.5px solid #fff;padding-bottom:5px">Рекомендации</span></div>
+    <div style="position:absolute;right:16px;top:${top}px">${ic('search', 24, 2.2)}</div>
+    <div style="position:absolute;right:8px;bottom:${vb + 210}px;display:flex;flex-direction:column;align-items:center">${ava(44)}<div style="margin-top:-10px;width:20px;height:20px;border-radius:50%;background:#fe2c55;display:grid;place-items:center;font:700 15px/1 Inter">+</div></div>
+    ${col([['heart', '12,4K', '#fff'], ['comment', '318', '#fff'], ['book', '902', '#fff'], ['share', '1204', '#fff']], `right:12px;bottom:${vb + 58}px`)}
+    <div style="position:absolute;right:12px;bottom:${vb + 12}px;width:38px;height:38px;border-radius:50%;background:#222;border:7px solid #111"></div>
+    <div style="position:absolute;left:12px;right:80px;bottom:${vb + 14}px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">
+      <div style="font:700 16px Inter">trenergram</div>
+      <div style="font:400 14.5px/1.35 Inter;margin-top:6px">${cap} <b>#тренер</b></div>
+      <div style="font:400 13px Inter;margin-top:8px;display:flex;gap:6px;align-items:center">${ic('music', 13, 2)}оригинальный звук — trenergram</div></div>
+    ${navBar(nav, [ic('home', 26, 1.9), ic('search', 26, 1.9), `<div style="width:44px;height:28px;border-radius:8px;background:#fff;color:#000;display:grid;place-items:center;font:700 20px/1 Inter;box-shadow:-3px 0 0 #25f4ee,3px 0 0 #fe2c55">+</div>`, ic('inbox', 26, 1.9), ic('user', 26, 1.9)], '#000')}</div>`;
+  if (p === 'shorts') return `<div class="ov">
+    <div style="position:absolute;right:14px;top:${top}px;display:flex;gap:22px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">${ic('search', 24, 2.2)}${ic('vdots', 24, 2.2)}</div>
+    ${col([['like', '12 тыс.'], ['dislike', 'Не нравится'], ['comment', '318'], ['share', 'Поделиться'], ['remix', 'Ремикс']], `right:8px;bottom:${vb + 76}px`)}
+    <div style="position:absolute;right:12px;bottom:${vb + 18}px;width:36px;height:36px;border-radius:8px;background:#333;border:2px solid #fff"></div>
+    <div style="position:absolute;left:12px;right:80px;bottom:${vb + 16}px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">
+      <div style="display:flex;align-items:center;gap:9px;font:600 14px Inter">${ava()}@trenergram<span style="background:#fff;color:#000;border-radius:16px;padding:6px 12px;font-size:13px">Подписаться</span></div>
+      <div style="font:400 14.5px/1.35 Inter;margin-top:10px">${cap}</div></div>
+    ${navBar(nav, ['home', 'reels', 'plus', 'bell', 'user'].map(k => ic(k, 26, 1.9)), '#0f0f0f')}</div>`;
+  return '';
+}
+
+// ───── плеер ─────
+const PLAY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const PAUSE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+const fps = () => cur()?.fps || 30;
+function tick() {
+  const d = video.duration || cur()?.duration || 0, t = video.currentTime || 0;
+  $('#time').innerHTML = `<b>${fmtT(t)}</b> / ${fmtT(d)} <span style="color:var(--tx3)">· кадр ${Math.round(t * fps())}</span>`;
+  const p = d ? t / d * 100 : 0;
+  $('#bf').style.width = p + '%'; $('#kn').style.left = p + '%';
+  $('#bPlay').innerHTML = video.paused ? PLAY : PAUSE;
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+const toggle = () => { if (!cur()) return; video.paused ? video.play().catch(() => {}) : video.pause(); };
+const step = dt => { video.pause(); video.currentTime = Math.max(0, Math.min((video.duration || 0) - .001, video.currentTime + dt)); };
+$('#bPlay').onclick = toggle;
+$('#bPrevF').onclick = () => step(-1 / fps());
+$('#bNextF').onclick = () => step(1 / fps());
+video.addEventListener('click', toggle);
+(() => {
+  const sc = $('#scrub'); let drag = false, was;
+  const at = e => { const r = sc.getBoundingClientRect(); video.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (video.duration || 0); };
+  sc.onpointerdown = e => { drag = true; was = !video.paused; video.pause(); sc.setPointerCapture(e.pointerId); at(e); };
+  sc.onpointermove = e => drag && at(e);
+  sc.onpointerup = () => { drag = false; if (was) video.play().catch(() => {}); };
+})();
+
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
+  const vs = [...document.querySelectorAll('.vi')].map(b => b.dataset.p), i = vs.indexOf(st.sel);
+  if (e.code === 'Space') { e.preventDefault(); toggle(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); step(e.shiftKey ? -1 : -1 / fps()); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); step(e.shiftKey ? 1 : 1 / fps()); }
+  else if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); select(vs[i - 1], true); }
+  else if (e.key === 'ArrowDown' && i < vs.length - 1) { e.preventDefault(); select(vs[i + 1], true); }
+  else if (/^[1-5]$/.test(e.key)) { st.dev = Object.keys(DEVICES)[+e.key - 1]; store.set('dev', st.dev); renderHeader(); renderStage(); }
+  else if (e.code === 'KeyM') $('#bMute').click();
+  else if (e.code === 'KeyL') $('#bLoop').click();
+  else if (e.code === 'KeyG') $('#tGuide').click();
+  else if (e.code === 'KeyF') $('#tFill').click();
+  else if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
+});
+
+// ───── сцены и рендер ─────
+function renderScenes() {
+  const q = st.queue, busy = s => q.current?.scene === s || q.waiting.includes(s);
+  $('#sCount').textContent = st.scenes.length || '';
+  const todo = st.scenes.filter(s => !s.video || s.stale);
+  $('#bRenderStale').disabled = !todo.filter(s => !busy(s.file)).length;
+  $('#sList').innerHTML = st.scenes.map(s => {
+    const running = q.current?.scene === s.file, waiting = q.waiting.includes(s.file);
+    const status = running ? `<span class="st old">Рендер ${q.current.pct}%</span>` : waiting ? '<span class="st no">В очереди</span>'
+      : !s.video ? '<span class="st no">Не отрендерено</span>' : s.stale ? '<span class="st old">Устарело — сцена менялась</span>' : '<span class="st ok">Готово</span>';
+    return `<div class="sc"><div class="vm"><div class="t">${esc(s.title)}</div>
+        <div class="s"><span class="badge">${s.format}</span>${s.duration ? `<span>${fmtDur(s.duration)}</span>` : ''}${status}</div>
+        ${running ? `<div class="prog"><i style="width:${q.current.pct}%"></i></div>` : ''}</div>
+      <a class="btn" href="scenes/${encodeURI(s.file)}" target="_blank" title="Открыть сцену в браузере — играет вживую">Сцена</a>
+      <button class="btn ${!s.video || s.stale ? 'pri' : ''}" data-r="${esc(s.file)}" ${running || waiting ? 'disabled' : ''}>Рендер</button></div>`;
+  }).join('') || '<div class="empty">Сцен пока нет — см. README.</div>';
+}
+async function render(scene) { st.autoSelect = scene.replace(/\.html$/, '.mp4'); await fetch('/api/render?scene=' + encodeURIComponent(scene), { method: 'POST' }); }
+$('#sList').onclick = e => { const b = e.target.closest('[data-r]'); if (b) render(b.dataset.r); };
+$('#bRenderStale').onclick = () => st.scenes.filter(s => !s.video || s.stale).forEach(s => render(s.file));
+
+function renderInfo() {
+  const v = cur();
+  if (!v) { $('#info').innerHTML = ''; return; }
+  const D = DEVICES[st.dev];
+  $('#info').innerHTML = `<div class="ah" style="padding:0"><h2>Файл</h2></div>
+    <dl><dt>Название</dt><dd>${esc(v.name)}</dd><dt>Путь</dt><dd>exports/${esc(v.path)}</dd>
+      <dt>Кадр</dt><dd>${v.w}×${v.h} · ${ratio(v.w, v.h)} · ${v.fps} fps</dd><dt>Длина</dt><dd>${fmtT(v.duration)}</dd>
+      <dt>Звук</dt><dd>${v.audio ? 'есть' : 'нет'}</dd><dt>Размер</dt><dd>${fmtSize(v.size)}</dd><dt>Изменён</dt><dd>${ago(v.mtime)}</dd></dl>
+    ${st.crop ? `<div class="warn">На ${esc(D.name)} в ленте срежется по ${st.crop} px кадра с каждой стороны — держите титры дальше от краёв.</div>` : ''}
+    <button class="btn" id="bReveal">Показать в Finder</button>`;
+  $('#bReveal').onclick = () => fetch('/api/reveal?path=' + encodeURIComponent(v.path), { method: 'POST' });
+}
+
+// ───── данные ─────
+function apply(d) {
+  st.videos = d.videos; st.scenes = d.scenes; if (d.queue) st.queue = d.queue;
+  if (st.autoSelect && st.videos.some(v => v.path === st.autoSelect && Date.now() - v.mtime < 60e3)) { const p = st.autoSelect; st.autoSelect = null; select(p, true); }
+  else if (st.sel && st.videos.some(v => v.path === st.sel)) select(st.sel, false);
+  else if (st.videos.length) select(st.videos[0].path, false);
+  else { st.sel = null; renderStage(); renderInfo(); }
+  renderList(); renderScenes();
+}
+(async () => {
+  renderHeader();
+  let d;
+  try { const r = await fetch('/api/library'); if (!r.ok) throw 0; d = await r.json(); }
+  catch (e) { $('#offline').style.display = 'grid'; return; }
+  apply(d);
+  const es = new EventSource('/api/events');
+  es.addEventListener('library', e => apply(JSON.parse(e.data)));
+  es.addEventListener('queue', e => { st.queue = JSON.parse(e.data); renderScenes(); });
+  es.addEventListener('rendered', e => { const r = JSON.parse(e.data); toast(r.ok ? `Готово: ${r.scene.replace('.html', '')}` : `Ошибка рендера: ${r.scene}`); if (!r.ok) console.error(r.log); });
+  setInterval(renderList, 60e3);                        // «5 мин назад» обновляется
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>08 · База из 1300+ упражнений</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/08-exercises.md
+// Элементы ищем по признакам, а не по позиции: строка — по названию упражнения,
+// пункт выпадающего списка — по тексту.
+const EX_NAME = 'Приседания со штангой';
+const row = d => [...d.querySelectorAll('tr[data-row]')].find(tr => tr.querySelector('.n')?.textContent.trim() === EX_NAME);
+const eqBtn = 'button.dsel[data-for="eq"]';
+const eqItem = text => d => [...d.querySelectorAll('.sug.dsl .row')].find(r => r.querySelector('.dsel-t')?.textContent.trim() === text);
+// Страница упражнения. Движок берёт новый документ iframe только на load, а load
+// ждёт шрифты и GIF из сети — в рендере это позже, чем нужен первый наезд.
+// Поэтому после перехода ищем в текущем документе iframe напрямую.
+const live = () => document.querySelector('iframe.app').contentDocument;
+// Карточки на странице во всю ширину (1250 px) — наезжаем на их левую часть.
+// Рамку считаем по живым элементам в момент перед наездом (cue), камера берёт её на старте.
+const R = (e, w, h) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: w ?? r.width, h: h ?? r.height }; };
+const GIF = {}, MUS = {}, CHIPS = {}, STEPS = {};
+const measure = (box, fn) => () => { try { Object.assign(box, fn()); } catch (e) { console.warn('[scene] не найдено:', fn.toString()); } };
+const gifBox = () => { const c = live().querySelector('.egif').closest('.card'), r = R(c); return { ...r, h: Math.max(r.h, r.w * 1.05) }; };   // GIF мог ещё не догрузиться
+const musBox = () => { const r = R(live().querySelector('.kv')); return { x: r.x - 12, y: r.y - 12, w: 600, h: r.h + 24 }; };
+const stepsBox = () => R(live().querySelector('.rsteps').closest('.card'), 640);
+const chipsBox = () => { const cs = [...live().querySelectorAll('.kv b .chip')], a = R(cs[0]), b = R(cs.at(-1)); return { x: a.x, y: a.y, w: b.x + b.w - a.x, h: a.h }; };   // вспомогательные мышцы
+// Полоса поиска и фильтров + верх таблицы
+const TOOLBAR = { x: 262, y: 86, w: 700, h: 420 };
+
+const S = Scene({ format: '9:16', duration: 15.4 });
+S.screen('../../../exercises.html');
+
+S.caption(.2, 6.3, '*1300+* упражнений\nпод рукой', { sub: 'Превью, GIF, мышцы, техника' });
+
+// Поиск: «присед»
+// GIF лежит на CDN (jsDelivr): грузим заранее, к переходу он уже в кэше
+S.cue(.5, (d, w) => { const g = w.eval(`EX.find(e => e.ru === ${JSON.stringify(EX_NAME)})?.gif`); if (g) new Image().src = g; });
+S.focus(1.0, 2.1, TOOLBAR, { pad: 20 });
+S.cursor(1.6, 2.4, '#q', { ax: .3 });
+S.click(2.5, '#q');
+S.type(2.6, 3.5, '#q', 'присед');
+
+// Фильтр по оснащению: «Штанга»
+S.cursor(3.7, 4.3, eqBtn);
+S.click(4.4, eqBtn);
+// Баг прототипа: выпадающий список сначала вставляется в конец <body>, и scrollIntoView
+// прокручивает страницу в самый низ — а заодно и окно сцены вокруг iframe. Возвращаем на место.
+const unscroll = () => {
+  const d = live(); if (d.scrollingElement.scrollTop) d.scrollingElement.scrollTop = 0;
+  for (const e of [document.scrollingElement, ...document.querySelectorAll('.stage, .viewport, .camera')])
+    if (e.scrollTop || e.scrollLeft) { e.scrollTop = 0; e.scrollLeft = 0; }
+};
+S.span(4.42, 6.8, unscroll);
+S.span(6.8, Infinity, () => { for (const e of [document.scrollingElement, ...document.querySelectorAll('.stage, .viewport, .camera')]) if (e.scrollTop || e.scrollLeft) { e.scrollTop = 0; e.scrollLeft = 0; } });
+S.cursor(4.6, 5.1, eqItem('Штанга'), { ax: .25 });
+S.click(5.25, eqItem('Штанга'));
+
+// Открыть упражнение
+S.focus(5.5, 6.4, d => row(d)?.querySelector('.n'), { pad: 200 });
+S.cursor(5.6, 6.4, d => row(d)?.querySelector('.n'), { ax: .4 });
+S.highlight(6.0, 7.0, d => row(d)?.querySelector('.n'), { pad: 8 });
+S.click(6.75, row);
+S.hideCursor(6.9, .2);
+
+// Страница упражнения: GIF → мышцы → техника
+S.caption(7.0, 12.5, 'GIF и техника\n*на русском*', { sub: 'Плюс ваши свои упражнения' });
+S.cue(7.55, measure(GIF, gifBox));
+S.focus(7.6, 8.7, GIF, { pad: 24 });
+S.cue(9.35, measure(MUS, musBox));
+S.focus(9.4, 10.4, MUS, { pad: 24 });
+S.cue(10.25, measure(CHIPS, chipsBox));
+S.highlight(10.3, 11.1, CHIPS, { pad: 6 });
+S.cue(11.05, measure(STEPS, stepsBox));
+S.focus(11.1, 12.2, STEPS, { pad: 10 });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>17 · Офлайн-режим</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/17-offline.md (серия «Фичи с лендинга», вариант «схема»)
+// Фича «скоро»: бейдж «Скоро» на плашке «Нет сети» и слово «скоро» в первой подписи.
+// Экран клиента (schema/17-offline.html): связь пропала → подходы отмечаются →
+// сеть вернулась → результат пришёл тренеру.
+const S = Scene({ format: '9:16', duration: 15 });
+S.phone('schema/17-offline.html');
+
+S.caption(.2, 7.3, 'Нет сети —\n*тренировка есть*', { sub: 'Офлайн-режим — скоро в приложении' });
+
+S.cue(.7, (d, w) => w.ST.off());
+S.spot(1.1, 3.0, '#net', { label: 'Нет сети — *всё на месте*' });
+
+S.spot(3.2, 6.0, '#sq', { label: 'Подходы *отмечаются*' });
+S.tap(3.7, '#s1');
+S.tap(4.4, '#s2');
+S.tap(5.1, '#s3');
+
+S.spot(6.1, 7.4, '.foot', { label: 'Сохранено *на телефоне*' });
+
+S.cue(7.6, (d, w) => w.ST.on());
+S.caption(7.5, 12.3, 'Сеть вернулась —\n*всё у тренера*', { sub: 'Результаты уйдут сами, без кнопок' });
+S.spot(7.9, 9.3, '#net', { label: 'Сеть *вернулась*' });
+
+S.cue(9.5, (d, w) => w.ST.sent());
+S.spot(9.9, 12.3, '#sent', { label: 'Пришло *тренеру*' });
+
+S.outro(12.4);
+S.start();
+</script>
+</body>
+</html>

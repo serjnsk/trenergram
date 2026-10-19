@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>05 · Месяц клиента одним экраном</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/05-calendar.md
+// Демо-данные считаются от сегодняшней даты, поэтому дни ищем по признакам:
+// сегодняшняя клетка (.day.today) и ряд недели под ней, где есть галочки выбора (.bk-box).
+const R = e => e.getBoundingClientRect();
+const box = (x, y, w, h) => ({ getBoundingClientRect: () => ({ left: x, top: y, width: w, height: h }) });
+const union = els => { const rs = els.map(R), x = Math.min(...rs.map(r => r.left)), y = Math.min(...rs.map(r => r.top));
+  return box(x, y, Math.max(...rs.map(r => r.right)) - x, Math.max(...rs.map(r => r.bottom)) - y); };
+
+// Статусы: сегодняшний день и две клетки рядом (справа, если неделя позволяет)
+const statusZone = d => { const t = d.querySelector('.day.today');
+  const row = [...d.querySelectorAll('.day[data-date]')].filter(c => Math.abs(R(c).top - R(t).top) < 4);
+  const i = row.indexOf(t), a = Math.max(0, Math.min(i, row.length - 3));
+  return union(row.slice(a, a + 3)); };
+// Ряд недели после сегодняшней: три дня с тренировкой подряд (или первые три)
+const nextRow = d => { const t = R(d.querySelector('.day.today')).top;
+  const bs = [...d.querySelectorAll('.bk-box')].filter(b => R(b).top > t + 10);
+  const top = Math.min(...bs.map(b => R(b).top));
+  const row = bs.filter(b => Math.abs(R(b).top - top) < 4);
+  const i = Math.max(0, row.findIndex((b, k) => row[k + 2] && R(row[k + 2]).left - R(b).left < 2.5 * 240));
+  return row.slice(i, i + 3); };
+const selFirst = d => nextRow(d)[0], selLast = d => nextRow(d)[2];
+const selZone = d => union(nextRow(d).map(b => b.closest('.day')));
+const barZone = d => union([d.querySelector('.bk-bar .bk-n'), d.querySelector('.bk-bar [data-bka="del"]')]);
+
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.screen('../../../calendar.html?client=c1&view=compact');   // вид «Свёрнуто»: весь месяц на одном экране
+
+S.caption(.2, 4.9, 'Месяц клиента\n*одним экраном*', { sub: 'Статусы всех дней — сразу' });
+
+S.focus(1.0, 2.2, '.mon:has(.day.today) .days', { pad: 10 });     // весь месяц
+S.focus(2.6, 3.8, statusZone, { pad: 30 });                        // наезд на статусы
+S.highlight(3.9, 5.2, statusZone, { pad: 6 });
+
+// Выбор нескольких дней: галочка, затем Shift+клик по последнему дню
+S.focus(5.0, 6.2, selZone, { pad: 40 });
+S.cursor(5.4, 6.2, selFirst);
+S.click(6.35, selFirst);
+S.cursor(6.6, 7.4, selLast);
+S.span(7.47, 7.77, (p, rel) => (S.cur.press = Math.sin(Math.PI * Math.min(rel / .3, 1))));
+S.cue(7.55, (doc, win) => { const b = selLast(doc); if (!b) return console.warn('[scene] не найдено: последний день');
+  b.dispatchEvent(new win.MouseEvent('click', { bubbles: true, cancelable: true, view: win, shiftKey: true })); });
+
+S.caption(5.6, 12.2, 'Несколько дней —\n*одним действием*', { sub: 'Перенос, копия, публикация' });
+
+// Строка массовых действий
+S.focus(8.0, 9.2, barZone, { pad: 30 });
+S.highlight(9.0, 10.2, barZone, { pad: 8 });
+S.cursor(9.2, 10.1, '.bk-bar [data-bka="move"]');
+S.click(10.3, '.bk-bar [data-bka="move"]');
+
+// Окно переноса: куда и как раскладывать
+S.focus(10.6, 11.8, '.bk-dlg .bkmd', { pad: 24 });
+S.cursor(11.6, 12.5, d => [...d.querySelectorAll('.bk-dlg button')].find(b => b.textContent.trim() === 'Переместить'));
+S.hideCursor(12.6);
+
+S.outro(13.0);
+S.start();
+</script>
+</body>
+</html>

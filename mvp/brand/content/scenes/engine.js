@@ -41,11 +41,15 @@
     // ───── сцена: подпись сверху, окно экрана ниже ─────
     document.documentElement.classList.add('scn-root', 'theme-' + o.theme);
     if (RENDER) document.documentElement.classList.add('render');
-    const stage = el('div', 'stage');
+    const stage = el('div', 'stage ' + (vertical ? 'v' : SH === SW ? 'sq' : 'h'));
     stage.style.width = SW + 'px'; stage.style.height = SH + 'px';
     document.body.appendChild(stage);
 
-    const view = o.view || (vertical ? { x: 0, y: 520, w: SW, h: SH - 520 } :
+    // 9:16 — безопасные зоны Reels/TikTok/Shorts: сверху ~220 px занимает шапка
+    // площадки, снизу ~420 px — подпись поста и кнопки. Заголовок — с 230 px,
+    // экран — между ним и нижней зоной (проверка — студия, «Безопасная зона»).
+    const SAFE = { top: 220, bottom: 420 };
+    const view = o.view || (vertical ? { x: 0, y: 620, w: SW, h: SH - 620 - SAFE.bottom } :
                             SH === SW ? { x: 0, y: 300, w: SW, h: SH - 300 } :
                             { x: 0, y: 0, w: SW, h: SH });
     const vp = el('div', 'viewport', stage);
@@ -55,7 +59,7 @@
     const capBox = el('div', 'captions', stage);
     const outroBox = el('div', 'outro', stage);
 
-    let W = 1920, H = 1080, frame, win, doc, cursorEl, ringEl, pad;
+    let W = 1920, H = 1080, frame, win, doc, cursorEl, ringEl, pad, PH = null, extraCss = '';
     const base = () => Math.min((view.w - 2 * pad) / W, (view.h - 2 * pad) / H);
     const C = { cx: 0, cy: 0, z: 1 };       // камера: центр в пикселях экрана и зум
 
@@ -83,17 +87,76 @@
         C.cx = W / 2; C.cy = H / 2; C.z = 1;
         S.cur = { x: W * .62, y: H * .7, o: 0, press: 0 };
         S.ring = { x: 0, y: 0, w: 0, h: 0, o: 0 };
-        frame.addEventListener('load', async () => {
-          win = frame.contentWindow; doc = frame.contentDocument;
-          const st = doc.createElement('style');           // в ролике полос прокрутки нет
-          st.textContent = '::-webkit-scrollbar{display:none}html{scrollbar-width:none}';
-          doc.head.appendChild(st);
-          try { await doc.fonts.ready; } catch (e) {}
-          await new Promise(r => setTimeout(r, opt.settle ?? 400));
-          readyResolve();
-        });
+        onLoad(opt);
         return S;
       },
+
+      // ───── режим «телефон» (9:16) ─────
+      // Мобильная вёрстка кабинета (ширина 390 — включается mobile.css) целиком
+      // в рамке телефона, без наездов камеры. Фичу выделяют S.spot (затемнение
+      // вокруг, оранжевая рамка, стикер-выноска) и S.tap (касание пальцем).
+      //   S.phone('../../../constructor.html');
+      //   S.tap(2.5, '#add-blk-text');
+      //   S.spot(3, 6, '.tbx', { label: 'Пишите как в заметках', side: 'right' });
+      phone(src, opt = {}) {
+        PH = Object.assign({ x: 70, y: 590, k: 1.5, w: 390, h: 800, sb: 44, bez: 16 }, opt);
+        PH.spots = []; PH.taps = [];
+        S.cur = { x: 0, y: 0, o: 0, press: 0 }; S.ring = { x: 0, y: 0, w: 0, h: 0, o: 0 };   // курсора нет — касания
+        W = PH.w; H = PH.h;
+        document.documentElement.classList.add('phone-mode');
+        vp.style.display = 'none';
+        const k = PH.k, b = PH.bez, sw = PH.w * k, sh = (PH.h + PH.sb) * k;
+        PH.deco = el('div', 'deco', stage);
+        PH.deco.innerHTML = '<i class="d1"></i><i class="d2"></i><i class="d3"></i>';
+        stage.insertBefore(PH.deco, stage.firstChild);
+        PH.el = el('div', 'ph', stage);
+        Object.assign(PH.el.style, px({ left: PH.x, top: PH.y, width: sw + 2 * b, height: sh + 2 * b, borderRadius: 52 * k + b }));
+        const scr = el('div', 'ph-scr', PH.el);
+        Object.assign(scr.style, px({ left: b, top: b, width: sw, height: sh, borderRadius: 52 * k }));
+        scr.innerHTML = `<div class="ph-sb" style="height:${PH.sb * k}px;font-size:${16 * k}px;padding:0 ${30 * k}px">` +
+          `<span>9:41</span><i class="ph-isl" style="width:${120 * k}px;height:${34 * k}px;top:${10 * k}px;border-radius:${17 * k}px"></i>` +
+          `<span class="ph-ic"><svg viewBox="0 0 44 12" width="${44 * k}" height="${12 * k}"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/><rect x="22" y=".5" width="19" height="11" rx="3" fill="none" stroke="currentColor"/><rect x="24" y="2.5" width="14" height="7" rx="1.5"/></svg></span></div>`;
+        const holder = el('div', 'ph-app', scr);
+        Object.assign(holder.style, px({ top: PH.sb * k, width: PH.w, height: PH.h }));
+        holder.style.transform = `scale(${k})`;
+        frame = el('iframe', 'app', holder);
+        frame.style.width = PH.w + 'px'; frame.style.height = PH.h + 'px';
+        frame.src = src;
+        el('i', 'ph-home', scr).style.cssText = `width:${134 * k}px;height:${5 * k}px;bottom:${8 * k}px;margin-left:${-67 * k}px`;
+        PH.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        PH.svg.setAttribute('class', 'ph-fx');
+        PH.svg.setAttribute('viewBox', `0 0 ${SW} ${SH}`);
+        stage.appendChild(PH.svg);
+        PH.tapBox = el('div', 'ph-taps', stage);
+        PH.org = { x: PH.x + b, y: PH.y + b + PH.sb * k };
+        PH.scr = { x: PH.x + b, y: PH.y + b, w: sw, h: sh, r: 52 * k };
+        stage.appendChild(capBox); stage.appendChild(outroBox);   // подписи и заставка — поверх телефона
+        onLoad(opt);
+        return S;
+      },
+
+      // Выделить элемент экрана: затемнение вокруг, рамка, стикер с подписью.
+      // opt: label, side ('right' | 'left'), pad, dy (сдвиг стикера), dim (0..1)
+      spot(t0, t1, target, opt = {}) {
+        const s = Object.assign({ t0, t1, target, pad: 8, side: 'right', dy: 0, dim: .55 }, opt);
+        if (s.label) {
+          s.card = el('div', 'sticker', stage);
+          s.card.innerHTML = `<i></i><span>${mark(s.label)}</span>`;
+        }
+        PH.spots.push(s);
+        return S;
+      },
+
+      // Касание: палец появляется над элементом, нажимает, расходится волна; клик уходит в страницу
+      tap(t, target, opt = {}) {
+        const tp = { t, target, dot: el('div', 'tap', PH.tapBox), wave: el('div', 'tap-wave', PH.tapBox) };
+        PH.taps.push(tp);
+        return S.click(t, target, opt);
+      },
+
+      // Стили, которые подставляются в страницу прототипа при каждой загрузке
+      // (поправить вёрстку для кадра, не трогая прототип)
+      pageCss(text) { extraCss += text + '\n'; return S; },
 
       // Отрезок времени: fn(p, rel) вызывается, пока t внутри [t0, t1];
       // init() — один раз при входе (запомнить стартовые значения)
@@ -251,7 +314,77 @@
 
     // ───── внутреннее ─────
     function fit() { draw(); }
+    function onLoad(opt) {
+      frame.addEventListener('load', async () => {
+        win = frame.contentWindow; doc = frame.contentDocument;
+        const st = doc.createElement('style');           // в ролике полос прокрутки нет
+        st.textContent = '::-webkit-scrollbar{display:none}html{scrollbar-width:none}' + extraCss;
+        doc.head.appendChild(st);
+        try { await doc.fonts.ready; } catch (e) {}
+        await new Promise(r => setTimeout(r, opt.settle ?? 400));
+        readyResolve();
+      });
+    }
+    // прямоугольник элемента экрана телефона — в пикселях кадра
+    function phRect(target, dy) {
+      const e = resolve(target); if (!e) return null;
+      const r = e.getBoundingClientRect(), k = PH.k;
+      return { x: PH.org.x + r.left * k, y: PH.org.y + r.top * k + dy, w: r.width * k, h: r.height * k };
+    }
+    const rr = (x, y, w, h, r) => `M${x + r},${y}H${x + w - r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + h - r}A${r},${r} 0 0 1 ${x + w - r},${y + h}H${x + r}A${r},${r} 0 0 1 ${x},${y + h - r}V${y + r}A${r},${r} 0 0 1 ${x + r},${y}Z`;
+    function drawPhone() {
+      const t = T, dy = Math.sin(t * 2 * Math.PI / 6) * 5;        // телефон чуть «дышит»
+      PH.el.style.transform = `translateY(${dy}px)`;
+      PH.deco.style.setProperty('--t', t);
+      const sc = PH.scr;
+      let dim = 0, holes = '', rings = '', lines = '';
+      for (const s of PH.spots) {
+        const a = Math.min(clamp((t - s.t0) / .35, 0, 1), clamp((s.t1 - t) / .3, 0, 1));
+        if (s.card) s.card.style.opacity = 0;
+        if (a <= 0 || !doc) continue;
+        const r = phRect(s.target, dy) || s.last; if (!r) { warn(s.target); continue; }
+        s.last = r;                                   // элемент исчез после нажатия — рамка гаснет на месте
+        const p = s.pad * PH.k / 1.5, x = r.x - p, y = r.y - p, w = r.w + 2 * p, h = r.h + 2 * p, rad = 18;
+        dim = Math.max(dim, a * s.dim);
+        holes += rr(x, y, w, h, rad);
+        const e = EASE.out(a);
+        rings += `<path d="${rr(x, y, w, h, rad)}" fill="none" stroke="rgba(252,82,0,${.22 * e})" stroke-width="18"/>` +
+                 `<path d="${rr(x, y, w, h, rad)}" fill="none" stroke="#FC5200" stroke-width="5" opacity="${e}"/>`;
+        if (s.card) {
+          const c = s.card, cw = c.offsetWidth, ch = c.offsetHeight;
+          const cx = s.side === 'left' ? 40 : SW - 40 - cw;
+          const cy = clamp(y + h / 2 - ch / 2 + s.dy, 250, SH - 440 - ch);
+          const pop = EASE.out(clamp((t - s.t0 - .15) / .4, 0, 1));
+          c.style.opacity = Math.min(a, pop * 1.2);
+          c.style.transform = `translate(${cx}px,${cy + (1 - pop) * 30}px) scale(${.9 + .1 * pop})`;
+          // линия от рамки к стикеру
+          const ax = s.side === 'left' ? x : x + w, ay = clamp(cy + ch / 2, y + 10, y + h - 10);
+          const bx = s.side === 'left' ? cx + cw : cx, by = cy + ch / 2;
+          const len = Math.hypot(bx - ax, by - ay) * pop;
+          if (Math.abs(bx - ax) > 24) lines += `<path d="M${ax},${ay} L${bx},${by}" stroke="#FC5200" stroke-width="5" stroke-linecap="round" stroke-dasharray="${len} 9999" fill="none"/>` +
+            `<circle cx="${ax}" cy="${ay}" r="${9 * pop}" fill="#FC5200"/>`;
+        }
+      }
+      const clip = rr(sc.x, sc.y + dy, sc.w, sc.h, sc.r);
+      PH.svg.innerHTML = (dim > 0 ? `<path d="${clip} ${holes}" fill="rgba(20,20,20,${dim})" fill-rule="evenodd"/>` : '') + rings + lines;
+      for (const tp of PH.taps) {
+        const rel = t - tp.t, on = rel > -.45 && rel < .6;
+        tp.dot.style.opacity = tp.wave.style.opacity = 0;
+        if (!on || !doc) continue;
+        const r = phRect(tp.target, dy) || tp.last; if (!r) continue;
+        tp.last = r;
+        const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+        const inA = EASE.out(clamp((rel + .45) / .3, 0, 1)), outA = 1 - clamp((rel - .25) / .3, 0, 1);
+        const press = rel > -.08 && rel < .2 ? Math.sin(Math.PI * (rel + .08) / .28) : 0;
+        tp.dot.style.opacity = Math.min(inA, outA);
+        tp.dot.style.transform = `translate(${cx}px,${cy}px) scale(${(1.25 - .25 * inA) * (1 - .2 * press)})`;
+        const w = clamp(rel / .5, 0, 1);
+        tp.wave.style.opacity = rel > 0 ? (1 - w) * .9 : 0;
+        tp.wave.style.transform = `translate(${cx}px,${cy}px) scale(${.6 + 1.6 * EASE.out(w)})`;
+      }
+    }
     function draw() {
+      if (PH) { if (frame) drawPhone(); return; }
       if (!frame) return;
       const s = base() * C.z;
       // не показываем пустоту за краем экрана, если он больше окна
@@ -301,7 +434,7 @@
     // предпросмотр в окне браузера — вписать сцену целиком
     function fitWindow() {
       const k = Math.min((innerWidth - 40) / SW, (innerHeight - 40) / SH, 1);
-      stage.style.transform = `scale(${k})`;
+      stage.style.transform = `translate(-50%,-50%) scale(${k})`;
       document.body.style.setProperty('--k', k);
     }
     return S;

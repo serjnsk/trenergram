@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Упражнения с анимацией</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 19 «1 300 упражнений с анимацией». Состояния: found (поиск «присед») → open (карточка упражнения). */
+/* фигурка-схема: путь ног и корпуса, рука, голова и блин штанги; присед вверх-вниз CSS-анимацией */
+.fig{fill:none;stroke:var(--ink);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.fig .gr{stroke:var(--g3);stroke-width:4}
+.fig .bd{d:path("M100 196 L102 152 L98 110 L100 56");animation:sqB 2.2s ease-in-out infinite}
+.fig .ar{d:path("M100 60 L84 80 L101 64");stroke-width:6;animation:sqA 2.2s ease-in-out infinite}
+.fig .ft{stroke-width:7}
+.fig .up{animation:sqU 2.2s ease-in-out infinite}
+.fig .hed{fill:var(--ink);stroke:none}
+.fig .pl{fill:var(--acc);stroke:none} .fig .pc{fill:#fff;stroke:none}
+.fig.fr .ar{d:path("M100 60 L116 70 L106 60");animation-name:sqAf}
+@keyframes sqB{0%,12%,100%{d:path("M100 196 L102 152 L98 110 L100 56")}45%,62%{d:path("M100 196 L128 163 L84 156 L110 106")}}
+@keyframes sqA{0%,12%,100%{d:path("M100 60 L84 80 L101 64")}45%,62%{d:path("M110 110 L94 130 L111 114")}}
+@keyframes sqAf{0%,12%,100%{d:path("M100 60 L116 70 L106 60")}45%,62%{d:path("M110 110 L126 120 L116 110")}}
+@keyframes sqU{0%,12%,100%{transform:translate(0,0)}45%,62%{transform:translate(10px,50px)}}
+.thumb .fig{stroke-width:11} .thumb .fig .ar{stroke-width:10} .thumb .fig .gr{stroke-width:7}
+
+/* поиск */
+#q{height:58px;flex:none;border-radius:16px;background:#fff;border:2px solid var(--g2);display:flex;align-items:center;gap:12px;padding:0 16px;transition:border-color .3s}
+#q svg{width:24px;height:24px;flex:none;stroke:var(--tx2);stroke-width:2.4;fill:none}
+#qt{font:700 20px Inter;white-space:nowrap}
+#qt:empty:before{content:"Поиск упражнения";color:#a39d97;font-weight:600}
+#qt:after{content:"";display:inline-block;width:2.5px;height:22px;margin-left:2px;vertical-align:-4px;background:var(--acc)}
+.s-found #q{border-color:var(--acc)}
+.s-open #qt:after{display:none}
+.cnt{display:flex;align-items:center;gap:10px;padding:0 2px}
+.cnt .chip{margin-left:auto}
+
+/* список */
+.lists{position:relative;flex:1;min-height:0}
+#all,#res{position:absolute;left:0;right:0;top:0;transition:opacity .3s,transform .35s}
+.ex{display:flex;align-items:center;gap:14px;padding:12px 14px;border-top:1.5px solid var(--g1)}
+.ex:first-child{border-top:0}
+.thumb{width:62px;height:62px;flex:none;border-radius:14px;background:var(--g1);display:flex;align-items:center;justify-content:center;position:relative}
+.thumb svg{width:52px;height:52px}
+.thumb.g{background:var(--g1)}
+.thumb.g i{width:30px;height:30px;border-radius:50%;background:var(--g2)}
+.ex .nm{flex:1;min-width:0}
+.ex .nm b{display:block;font:800 18px/1.2 Inter}
+.ex .nm small{display:flex;gap:6px;margin-top:6px}
+.ex .gif{position:absolute;right:-5px;bottom:-5px;padding:2px 5px;border-radius:6px;background:var(--acc);color:#fff;font:800 10.5px Inter;letter-spacing:.04em}
+#r1{transition:background .3s}
+#res{opacity:0;transform:translateY(14px)}
+.s-found #all,.s-open #all{opacity:0;transform:translateY(-10px)}
+.s-found #res{opacity:1;transform:none}
+#res .ex{opacity:0;transform:translateX(-10px);transition:opacity .3s,transform .3s}
+.s-found #res .ex{opacity:1;transform:none}
+#res .ex:nth-child(2){transition-delay:.1s}#res .ex:nth-child(3){transition-delay:.2s}
+.s-open .lst{opacity:0;transform:translateX(-30px)}
+.lst{transition:opacity .3s,transform .35s;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+
+/* карточка упражнения */
+#card{position:absolute;inset:14px 14px 0;display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateX(40px);transition:opacity .35s,transform .4s}
+.s-open #card{opacity:1;transform:none}
+#card .tt{display:flex;align-items:center;gap:12px}
+#card .tt .bk{width:40px;height:40px;border-radius:12px;background:var(--g1);flex:none;position:relative}
+#card .tt .bk:after{content:"";position:absolute;left:16px;top:13px;width:11px;height:11px;border-left:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:rotate(45deg)}
+#card .tt b{font:800 23px/1.15 Inter}
+#anim{height:250px;flex:none;border-radius:20px;background:#fff;border:2px solid var(--g1);position:relative;display:flex;align-items:center;justify-content:center;
+  background-image:linear-gradient(var(--g1) 1.5px,transparent 1.5px),linear-gradient(90deg,var(--g1) 1.5px,transparent 1.5px);background-size:28px 28px;background-position:center}
+#anim svg{width:220px;height:230px}
+#anim .tag{position:absolute;left:12px;top:12px;padding:5px 10px;border-radius:9px;background:var(--acc);color:#fff;font:800 13px Inter;letter-spacing:.05em}
+#anim .sp{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;align-items:center;gap:4px;font:800 13px Inter;color:var(--acc)}
+#info{display:flex;flex-direction:column;gap:12px}
+#mus{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#mus .chip{font-size:17px;padding:7px 12px}
+#steps{border-radius:18px;background:#fff;border:1.5px solid var(--g1)}
+.st{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1.5px solid var(--g1);font:700 17px Inter}
+.st:first-child{border-top:0}
+.st i{width:30px;height:30px;border-radius:50%;background:var(--acc-a);color:var(--acc);font:800 15px/30px Inter;font-style:normal;text-align:center;flex:none}
+
+/* нижняя кнопка */
+.foot{height:76px;flex:none;display:flex;align-items:center;padding:0 14px;background:#fff;border-top:1.5px solid var(--g1)}
+#own{width:100%;height:52px;font-size:19px;font-weight:800}
+#own b{font-size:24px;font-weight:800;margin-top:-2px}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="lst">
+    <div id="q"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20" stroke-linecap="round"/></svg><div id="qt"></div></div>
+    <div class="cnt"><span class="lbl">База на русском</span><span class="chip">1 300 упражнений</span></div>
+    <div class="lists">
+      <div class="card" id="all">
+        <div class="ex"><span class="thumb g"><i></i></span><div class="nm"><i class="bar" style="width:170px;height:14px"></i><small><i class="bar s" style="width:80px"></i></small></div></div>
+        <div class="ex"><span class="thumb g"><i></i></span><div class="nm"><i class="bar" style="width:130px;height:14px"></i><small><i class="bar s" style="width:100px"></i></small></div></div>
+        <div class="ex"><span class="thumb g"><i></i></span><div class="nm"><i class="bar" style="width:190px;height:14px"></i><small><i class="bar s" style="width:70px"></i></small></div></div>
+        <div class="ex"><span class="thumb g"><i></i></span><div class="nm"><i class="bar" style="width:150px;height:14px"></i><small><i class="bar s" style="width:90px"></i></small></div></div>
+        <div class="ex"><span class="thumb g"><i></i></span><div class="nm"><i class="bar" style="width:120px;height:14px"></i><small><i class="bar s" style="width:85px"></i></small></div></div>
+      </div>
+      <div class="card" id="res">
+        <div class="ex" id="r1"><span class="thumb">FIG<span class="gif">GIF</span></span><div class="nm"><b>Приседания со штангой</b><small><span class="chip g">Ноги</span><span class="chip g">Штанга</span></small></div></div>
+        <div class="ex"><span class="thumb">FIGF<span class="gif">GIF</span></span><div class="nm"><b>Фронтальный присед</b><small><span class="chip g">Ноги</span><span class="chip g">Штанга</span></small></div></div>
+        <div class="ex"><span class="thumb">FIGF<span class="gif">GIF</span></span><div class="nm"><b>Гоблет-присед</b><small><span class="chip g">Ноги</span><span class="chip g">Гиря</span></small></div></div>
+      </div>
+    </div>
+  </div>
+  <div id="card">
+    <div class="tt"><i class="bk"></i><b>Приседания со штангой</b></div>
+    <div id="anim"><span class="tag">GIF</span>FIG</div>
+    <div id="info">
+      <div id="mus"><span class="chip">Квадрицепсы</span><span class="chip">Ягодицы</span><span class="chip g">Кор</span></div>
+      <div id="steps">
+        <div class="st"><i>1</i>Штанга на трапециях</div>
+        <div class="st"><i>2</i>Таз назад, колени над носками</div>
+        <div class="st"><i>3</i>Вниз до параллели и вверх</div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+// схематичная фигурка: вид сбоку, штанга (оранжевый блин) на плечах
+const FIG = fr => `<svg class="fig${fr ? ' fr' : ''}" viewBox="40 10 130 196"><path class="gr" d="M52 200 H158"/>` +
+  `<path class="ft" d="M94 196 H122"/><path class="bd"/><path class="ar"/>` +
+  `<g class="up"><circle class="hed" cx="104" cy="34" r="13"/>` +
+  (fr ? '' : '<circle class="pl" cx="98" cy="58" r="15"/><circle class="pc" cx="98" cy="58" r="4"/>') + `</g></svg>`;
+document.querySelectorAll('.thumb, #anim').forEach(el => {
+  el.innerHTML = el.innerHTML.replace('FIGF', FIG(true)).replace('FIG', FIG(false));
+});
+Kit.trainer({ title: 'Упражнения', nav: 3,
+  foot: '<div class="foot"><span class="btn" id="own"><b>+</b>Своё упражнение</span></div>' });
+window.ST = { found: () => Kit.state('found'), open: () => Kit.state('open') };
+document.getElementById('qt').addEventListener('input', e => {
+  if (e.target.textContent.length >= 3 && !document.body.className) ST.found();
+});
+document.getElementById('r1').onclick = ST.open;
+</script>
+</body>
+</html>

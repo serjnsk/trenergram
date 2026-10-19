@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>15 · Лента событий</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/15-feed.md (серия «Фичи с лендинга», вариант «схема»)
+// Схематичный экран: schema/15-feed.html — дашборд с лентой событий.
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/15-feed.html');
+
+S.caption(.2, 6.9, 'Утром —\n*всё важное сразу*', { sub: 'Вопросы, рекорды и пропуски' });
+
+S.spot(1.0, 2.4, '#q', { label: '*Вопрос* по тренировке' });
+S.spot(2.5, 3.9, '#pr', { label: 'Новый *рекорд*' });
+S.spot(4.0, 5.4, '#ms', { label: 'Кто *пропал*' });
+
+S.spot(5.6, 9.3, '#ans', { label: 'Ответ *в одно касание*', pad: 6 });
+S.tap(6.6, '#ans');
+
+S.caption(7.0, 12.4, 'Ответ\n*прямо из ленты*', { sub: 'Без чата и карточки клиента' });
+
+S.type(7.1, 9.2, '#ansTx', 'Да, сними 5 кг на последнем подходе');
+
+S.spot(9.4, 10.4, '#send', { pad: 6 });
+S.tap(10.0, '#send');
+
+S.spot(10.8, 12.7, '#q', { label: 'Вопрос *закрыт*' });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

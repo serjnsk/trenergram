@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Google Play — графика</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+<style>
+/* Генератор графики для Google Play.
+   ?shot=home|workout|feed|profile — скриншот 360×640 css px (снимать при DPR 3 → 1080×1920)
+   ?shot=feature — обложка 1024×500 css px (снимать при DPR 2, затем уменьшить до 1024×500) */
+:root { --acc: #FC5200; --ink: #1A1715; --app: #F7F3EF; }
+* { box-sizing: border-box; margin: 0; }
+html, body { overflow: hidden; background: var(--app); }
+.shot { position: relative; width: 360px; height: 640px; overflow: hidden; background: var(--app); }
+.shot.alt { background: var(--acc); }
+.cap { position: absolute; left: 24px; right: 24px; top: 34px; font: 900 27px/1.08 Montserrat, sans-serif;
+  text-transform: uppercase; letter-spacing: -.01em; color: var(--ink); }
+.cap em { font-style: normal; color: var(--acc); }
+.alt .cap, .alt .cap em { color: #fff; }
+.sub { margin-top: 10px; font: 500 14px/1.35 Inter, sans-serif; text-transform: none; letter-spacing: 0; color: #6B635C; }
+.alt .sub { color: rgba(255,255,255,.85); }
+/* Телефон: приложение 360×720 в рамке, уходит за нижний край */
+.phone { position: absolute; left: 50%; top: 168px; width: 300px; height: 600px; transform: translateX(-50%);
+  border-radius: 34px; background: #111; padding: 7px; box-shadow: 0 18px 44px rgba(40,25,10,.22); }
+.phone .scr { width: 100%; height: 100%; border-radius: 28px; overflow: hidden; position: relative; background: #fff; }
+.phone iframe { position: absolute; left: 0; top: 0; width: 360px; height: 720px; border: 0;
+  transform: scale(.7944); transform-origin: 0 0; }
+
+.feature { position: relative; width: 1024px; height: 500px; overflow: hidden; background: var(--acc); }
+.feature .logo { position: absolute; left: 64px; top: 92px; width: 400px; }
+.feature h1 { position: absolute; left: 64px; top: 170px; width: 470px; font: 900 46px/1.05 Montserrat, sans-serif;
+  text-transform: uppercase; color: #fff; letter-spacing: -.01em; }
+.feature p { position: absolute; left: 64px; top: 340px; width: 440px; font: 500 20px/1.4 Inter, sans-serif; color: rgba(255,255,255,.9); }
+.feature .phone { top: 60px; width: 230px; height: 460px; border-radius: 28px; padding: 6px; transform: none;
+  box-shadow: 0 20px 50px rgba(60,20,0,.35); }
+.feature .phone .scr { border-radius: 23px; }
+.feature .phone iframe { transform: scale(.6056); }
+.feature .p1 { left: 560px; top: 78px; }
+.feature .p2 { left: 760px; top: 30px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const SHOTS = {
+  home:    { cap: 'Программа <em>от&nbsp;тренера</em> на&nbsp;всю неделю', sub: 'Тренировка дня — на главном экране' },
+  workout: { cap: 'Каждая тренировка <em>по&nbsp;блокам</em>', sub: 'Упражнения, подходы, веса и&nbsp;совет тренера', alt: true },
+  feed:    { cap: 'Тренер <em>на&nbsp;связи</em>', sub: 'Комментарии к&nbsp;упражнениям и&nbsp;ответы в&nbsp;ленте' },
+  profile: { cap: 'Рекорды, замеры <em>и&nbsp;прогресс</em>', sub: 'Рабочие веса считаются от&nbsp;максимумов', alt: true }
+};
+const APP = s => `../../client/app.html?frame=android&p=platform:app,user:logged,mem:yes#/${s}`;
+const phone = (s, cls = '') => `<div class="phone ${cls}"><div class="scr"><iframe src="${APP(s)}"></iframe></div></div>`;
+const shot = new URLSearchParams(location.search).get('shot') || 'home';
+const root = document.getElementById('root');
+/* Кадр для магазина: ближайший день с обычной тренировкой (сегодня в демо —
+   тестовая «Все виды записей») и без чек-листа «Первые шаги» */
+const PREP = `(() => {
+  const st = document.createElement('style'); st.textContent = '.card.steps{display:none!important}'; document.head.appendChild(st);
+  for (let k = 1; k < 21; k++) { const d = addDays(TODAY, k), x = clDayAt(d);
+    if (!x.rest && x.blocks.length >= 3) { clDate = d; break; } }
+  clCur = ''; clRender();
+})()`;
+addEventListener('load', () => document.querySelectorAll('iframe').forEach(f => { try { f.contentWindow.eval(PREP); } catch (e) {} }));
+if (shot === 'feature') {
+  root.innerHTML = `<div class="feature">
+    <img class="logo" src="../logo/trenergram-logo-white.svg" alt="Тренерграм">
+    <h1>Тренировки с&nbsp;тренером — в&nbsp;телефоне</h1>
+    <p>Программа, результаты и связь с тренером в одном приложении</p>
+    ${phone('home', 'p1')}${phone('workout', 'p2')}
+  </div>`;
+} else {
+  const d = SHOTS[shot];
+  root.innerHTML = `<div class="shot ${d.alt ? 'alt' : ''}">
+    <div class="cap">${d.cap}<div class="sub">${d.sub}</div></div>${phone(shot)}</div>`;
+}
+</script>
+</body>
+</html>

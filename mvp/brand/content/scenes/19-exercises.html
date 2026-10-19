@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>19 · 1 300 упражнений с анимацией</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/19-exercises.md (серия «Фичи с лендинга», вариант «схема»)
+// Схематичный экран schema/19-exercises.html: поиск «присед» → список с превью → карточка с анимацией техники.
+const S = Scene({ format: '9:16', duration: 15.2 });
+S.phone('schema/19-exercises.html');
+
+S.caption(.2, 6.6, '1 300 упражнений\n*с анимацией*', { sub: 'База на русском, превью и техника' });
+
+S.spot(1.0, 3.3, '#q', { label: 'Поиск *по базе*' });
+S.type(1.4, 2.8, '#qt', 'присед');
+
+S.spot(3.4, 5.2, '#res', { label: 'Превью *у каждого*' });
+S.spot(5.3, 6.3, '#r1', { pad: 4 });
+S.tap(6.0, '#r1');
+
+S.caption(6.8, 12.4, 'Клиент видит\n*технику*', { sub: 'Анимация, мышцы и шаги по порядку' });
+
+S.spot(6.9, 8.7, '#anim', { label: 'Техника *в анимации*' });
+S.spot(8.8, 10.4, '#info', { label: 'Мышцы и *шаги*', dy: -40 });
+S.spot(10.5, 12.5, '#own', { label: 'Свои — *за секунду*', dy: -70 });
+
+S.outro(12.6);
+S.start();
+</script>
+</body>
+</html>

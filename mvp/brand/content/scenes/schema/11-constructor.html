@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Конструктор тренировок</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 11 «Конструктор тренировок». Состояния: (неделя) → day → sheet → done. */
+.who{display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:16px;background:#fff;border:2px solid var(--acc-p);flex:none}
+.who b{font-size:17px;color:var(--acc)}
+.who .bar{margin-left:auto}
+.stage{position:relative;flex:1;min-height:0}
+.lay{position:absolute;left:0;right:0;top:0;transition:opacity .35s,transform .35s}
+
+/* неделя целиком */
+#week .hd{justify-content:space-between}
+#week .hd small{font:700 14px Inter;color:var(--tx2)}
+.d{display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;border-top:1.5px solid var(--g1);font:700 18px Inter}
+.d em{font-style:normal;width:38px;font:800 17px Inter;color:var(--tx2)}
+.d span{flex:1}
+.d .bar{width:46px}
+.d.rest span{color:#a59e97;font-weight:600}
+.d.rest .bar{display:none}
+#d2{background:#fff}
+
+/* полоса недели + день */
+#strip{display:flex;gap:6px}
+#strip i{flex:1;height:58px;border-radius:14px;background:#fff;border:1.5px solid var(--g1);font:800 16px/1 Inter;font-style:normal;color:var(--tx2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+#strip i:after{content:"";width:8px;height:8px;border-radius:50%;background:var(--acc-p)}
+#strip i.r:after{background:var(--g2)}
+#strip i.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#strip i.on:after{background:#fff}
+#day{top:70px}
+#day > .hd{font-size:19px}
+#day > .hd small{margin-left:auto;font:700 15px Inter;color:var(--acc)}
+.blks{padding:10px;display:flex;flex-direction:column;gap:10px}
+.blk .hd{background:var(--g1);font-size:17px;padding:11px 14px}
+.blk .row{padding:10px 14px}
+.blk .hd .chip{margin-left:auto}
+#b3{border:2px solid var(--acc);transition:opacity .35s,transform .35s,max-height .4s;max-height:0;opacity:0;transform:translateY(-8px)}
+#b3 .hd{background:var(--acc-a)}
+#mine{height:52px;border-radius:14px;border:2px dashed var(--acc);color:var(--acc);display:flex;align-items:center;justify-content:center;gap:8px;font:800 18px Inter;
+  transition:opacity .3s}
+
+/* шторка «Мои блоки» */
+#dim{position:absolute;inset:0;background:rgba(20,20,20,.35);opacity:0;transition:opacity .3s;z-index:5}
+#sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:#fff;border-radius:24px 24px 0 0;padding:10px 14px 22px;
+  transform:translateY(105%);transition:transform .4s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 30px rgba(0,0,0,.12)}
+#sheet .grab{width:44px;height:5px;border-radius:3px;background:var(--g2);margin:0 auto 14px}
+#sheet .sh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#sheet .sh b{font-size:22px}
+#sheet .sh .chip{margin-left:auto}
+.it{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1.5px solid var(--g1);margin-top:10px}
+.it .ic{width:42px;height:42px;border-radius:12px;background:var(--g1);flex:none}
+.it b{display:block;font-size:18px}
+.it small{display:block;font:600 15px Inter;color:var(--tx2);margin-top:3px}
+.it .add{margin-left:auto;width:36px;height:36px;border-radius:11px;background:var(--acc-a);position:relative;flex:none}
+.it .add:before,.it .add:after{content:"";position:absolute;left:10px;top:16px;width:16px;height:4px;border-radius:2px;background:var(--acc)}
+.it .add:after{transform:rotate(90deg)}
+#pick{border:2px solid var(--acc-p)}
+#pick .ic{background:var(--acc-a)}
+
+/* состояния */
+#strip,#day{opacity:0;transform:translateY(16px)}
+.s-day #week,.s-sheet #week,.s-done #week{opacity:0;transform:translateY(-14px)}
+.s-day #strip,.s-sheet #strip,.s-done #strip,.s-day #day,.s-sheet #day,.s-done #day{opacity:1;transform:none}
+#day{transition-delay:.08s}
+.s-sheet #dim{opacity:1}
+.s-sheet #sheet{transform:none}
+.s-done #b3{max-height:200px;opacity:1;transform:none}
+.s-done #mine{opacity:0}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="who"><i class="av">ИП</i><b>Иван Петров</b><i class="bar" style="width:70px"></i></div>
+  <div class="stage">
+    <div class="card lay" id="week">
+      <div class="hd">Неделя<small>13–19 октября</small></div>
+      <div class="d"><em>Пн</em><span>Сила</span><i class="bar"></i></div>
+      <div class="d" id="d2"><em>Вт</em><span>Сила + AMRAP</span><i class="bar"></i></div>
+      <div class="d rest"><em>Ср</em><span>Отдых</span><i class="bar"></i></div>
+      <div class="d"><em>Чт</em><span>Тяга + EMOM</span><i class="bar"></i></div>
+      <div class="d"><em>Пт</em><span>Гимнастика</span><i class="bar"></i></div>
+      <div class="d"><em>Сб</em><span>Меткость</span><i class="bar"></i></div>
+      <div class="d rest"><em>Вс</em><span>Отдых</span><i class="bar"></i></div>
+    </div>
+    <div class="lay" id="strip"><i>Пн</i><i class="on">Вт</i><i class="r">Ср</i><i>Чт</i><i>Пт</i><i>Сб</i><i class="r">Вс</i></div>
+    <div class="card lay" id="day">
+      <div class="hd">Вторник<small>Сила + AMRAP</small></div>
+      <div class="blks">
+        <div class="card blk" id="b1"><div class="hd">Разминка</div>
+          <div class="row"><span>Гребля</span><b class="chip">500 м</b></div></div>
+        <div class="card blk" id="b2"><div class="hd">Силовая</div>
+          <div class="row"><span>Присед со штангой</span><b class="chip">5×5</b><b class="chip">70 %</b></div>
+          <div class="row"><span>Жим лёжа</span><b class="chip">4×6</b><b class="chip">75 %</b></div></div>
+        <div class="card blk" id="b3"><div class="hd">Комплекс<span class="chip">AMRAP 12</span></div>
+          <div class="row"><span>Подтягивания</span><b class="chip">10</b></div>
+          <div class="row"><span>Махи гирей</span><b class="chip">15</b><b class="chip">24 кг</b></div></div>
+        <div id="mine">+ Мои блоки</div>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="dim"></div>
+<div id="sheet">
+  <div class="grab"></div>
+  <div class="sh"><b>Мои блоки</b><span class="chip g">Шаблоны</span></div>
+  <div class="it"><i class="ic"></i><div><b>Разминка «Утро»</b><small>гребля, мобилити</small></div><i class="add"></i></div>
+  <div class="it" id="pick"><i class="ic"></i><div><b>AMRAP 12 «Классика»</b><small>подтягивания, махи</small></div><i class="add"></i></div>
+  <div class="it"><i class="ic"></i><div><b>Силовая · присед</b><small>5×5 от ПМ</small></div><i class="add"></i></div>
+  <div class="it"><i class="ic"></i><div><b>Заминка</b><small>растяжка 10 мин</small></div><i class="add"></i></div>
+</div>
+<script>
+Kit.trainer({ title: 'Конструктор' });
+window.ST = { day: () => Kit.state('day'), sheet: () => Kit.state('sheet'), done: () => Kit.state('done') };
+document.getElementById('d2').onclick = ST.day;
+document.getElementById('mine').onclick = ST.sheet;
+document.getElementById('pick').onclick = ST.done;
+</script>
+</body>
+</html>

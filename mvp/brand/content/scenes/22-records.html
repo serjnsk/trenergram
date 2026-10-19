@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>22 · Рекорды и замеры</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/22-records.md (серия «Фичи с лендинга», вариант «схема»)
+// Экран schema/22-records.html: карточка Ивана Петрова, рекорды и замеры, график приседа за полгода.
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/22-records.html');
+
+S.caption(.2, 6.6, 'Рекорды и замеры\n*в карточке*', { sub: '1ПМ, 3ПМ, вес и обхваты клиента' });
+
+S.spot(1.0, 3.3, '#rec', { label: 'Рекорды *1ПМ и 3ПМ*' });
+S.spot(3.5, 5.6, '#meas', { label: 'Вес и *обхваты*', dy: -40 });
+
+S.spot(5.8, 6.9, '#r1', { pad: 6 });
+S.tap(6.5, '#r1');
+
+S.caption(7.0, 12.6, 'Прогресс —\n*на графике*', { sub: 'Присед за полгода: 175 → 195 кг' });
+
+S.spot(7.4, 10.0, '#chart', { label: 'Полгода *прогресса*' });
+S.spot(10.2, 12.7, '#last', { label: 'Рекорд *195 кг*', pad: 10 });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

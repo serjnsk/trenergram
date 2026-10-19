@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>18 · Оплаты (скоро)</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/18-payments.md (серия «Фичи с лендинга», вариант «схема»)
+// Фича ещё не готова: бейдж «Скоро» на экране, слово «скоро» в первой подписи.
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/18-payments.html');
+
+S.caption(.2, 7.3, 'Оплаты —\n*в одном кабинете*', { sub: 'Скоро в Тренерграме' });
+
+S.spot(1.0, 2.8, '#sum', { label: '*148 500 ₽* за октябрь' });
+S.spot(3.0, 4.9, '#paid', { label: 'Подписка и *автопродление*' });
+
+S.spot(5.1, 7.2, '#auto', { label: 'Ваша *настройка*' });
+S.tap(6.2, '#sw');
+
+S.caption(7.5, 12.6, 'Не оплатил —\n*доступ закрыт*', { sub: 'Новые тренировки не откроются' });
+
+S.cue(8.3, (d, w) => w.ST.late());
+S.spot(7.9, 9.9, '#oleg', { label: 'Срок оплаты *истёк*' });
+S.cue(10.0, (d, w) => w.ST.closed());
+S.spot(10.1, 12.7, '#oleg', { label: 'Закрылся *сам*' });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

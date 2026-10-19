@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>06 · Дашборд: кому что нужно сегодня</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/06-dashboard.md
+// Демо-данные считаются от сегодняшней даты: имена и числа не фиксированы,
+// карточку ищем по заголовку, вопрос — первый в ленте (.fev2.t-q)
+const kpi = title => d => [...d.querySelectorAll('.kpi')].find(k => k.querySelector('.k')?.textContent.trim().startsWith(title));
+const firstQ = d => d.querySelector('.fev2.t-q');
+const answerBtn = d => d.querySelector('.fev2.t-q .fact');
+const replyInput = d => d.querySelector('.fev2 .reply input');
+const sendBtn = d => d.querySelector('.fev2 .reply [data-send]');
+// Прямоугольник от левого края элемента: геттеры считаются в момент входа в отрезок
+const area = (target, w, h, dy = 0) => ({
+  get r() { return target(S.doc).getBoundingClientRect(); },
+  get x() { return this.r.left - 10; }, get y() { return this.r.top + dy; }, w, h,
+});
+
+const S = Scene({ format: '9:16', duration: 15 });
+S.screen('../../../index.html');
+
+S.caption(.2, 5.6, 'Кому что нужно\n*сегодня*', { sub: 'Вопросы, программы на исходе, пропуски — сразу' });
+
+// 1. Карточки «Нужно внимание» и «Ждут ответа»
+S.focus(1.0, 2.4, d => d.querySelector('.dkpis'), { pad: 10, max: 99, zoom: 1 });
+S.focus(2.6, 3.6, { x: 676, y: 160, w: 810, h: 156 }, { pad: 24 });
+S.cursor(3.0, 4.0, kpi('Ждут ответа'), { ax: .3, ay: .45 });
+S.click(4.15, kpi('Ждут ответа'));
+S.highlight(4.3, 5.4, '.tabs2 button.on', { pad: 6 });
+
+// Клик по карточке плавно прокручивает ленту, а focus() поля ответа двигает и страницу,
+// и окно сцены вокруг iframe. Держим всё на месте, камера работает сама.
+S.span(4.1, 12.6, () => {
+  S.win.scrollTo({ top: 0, behavior: 'instant' });
+  for (let e = document.querySelector('iframe'); e; e = e.parentElement) e.scrollLeft = e.scrollTop = 0;
+});
+
+// 2. Лента: только вопросы, первый — крупно
+S.focus(4.8, 6.0, area(firstQ, 760, 140, -40), { pad: 14 });
+S.cursor(5.4, 6.4, answerBtn);
+S.click(6.55, answerBtn);
+
+S.caption(6.3, 12.0, 'Ответ прямо\n*из ленты*', { sub: 'Без перехода в карточку клиента' });
+
+S.focus(6.7, 7.5, area(firstQ, 760, 150, -20), { pad: 14 });
+S.type(7.3, 9.0, replyInput, 'Замени на гоблет-присед, вес тот же');
+S.focus(9.1, 9.7, sendBtn, { pad: 200 });                     // «Отправить» у правого края ленты
+S.cursor(9.15, 9.8, sendBtn);
+S.click(9.95, sendBtn);
+
+// 3. Вопрос ушёл, в карточке «Ждут ответа» на один меньше
+S.focus(10.3, 11.2, kpi('Ждут ответа'), { pad: 120 });
+S.highlight(11.0, 12.4, kpi('Ждут ответа'), { pad: 6 });
+S.hideCursor(11.2);
+
+S.outro(12.5);
+S.start();
+</script>
+</body>
+</html>

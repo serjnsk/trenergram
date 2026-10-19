@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Таймер уже собран</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 24 «Таймер уже собран» (скоро). Состояния: ready → client → run.
+   Первая половина — конструктор тренера, вторая — приложение клиента (оболочка .capp поверх). */
+.who{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;background:#fff;border:2px solid var(--acc-p)}
+.who b{font-size:16px;color:var(--acc)}
+.day .hd{justify-content:space-between}
+.day .body{padding:14px;display:flex;flex-direction:column;gap:12px}
+.ph{height:74px;border-radius:16px;border:1.5px solid var(--g1);display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 16px}
+#blk{border:2px solid var(--acc-p)}
+#blk .hd{background:var(--g1);font-size:18px}
+#inp{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1.5px solid var(--g1)}
+#inp .lbl{flex:none}
+#tx{flex:1;height:44px;border-radius:12px;border:2px solid var(--acc);padding:0 12px;font:800 22px/40px Inter;letter-spacing:.01em}
+#tx:after{content:"";display:inline-block;width:2.5px;height:24px;margin-left:2px;vertical-align:-4px;background:var(--acc)}
+.s-ready #tx,.s-client #tx,.s-run #tx{border-color:var(--g2)}
+.s-ready #tx:after{display:none}
+#rdy{display:flex;align-items:center;gap:10px;padding:0 16px;height:0;overflow:hidden;opacity:0;transition:height .35s,opacity .35s,padding .35s}
+#chip{font-size:17px;padding:7px 12px}
+.s-ready #rdy,.s-client #rdy,.s-run #rdy{height:62px;opacity:1;border-top:1.5px solid var(--g1)}
+.foot{height:68px;flex:none;display:flex;align-items:center;gap:12px;padding:0 14px;background:#fff;border-top:1.5px solid var(--g1)}
+.foot .btn{margin-left:auto;height:46px}
+
+/* приложение клиента */
+.app{transition:opacity .3s}
+.s-client .app,.s-run .app{opacity:0}
+.capp{z-index:5;opacity:0;transform:translateX(40px);transition:opacity .4s,transform .4s;pointer-events:none}
+.s-client .capp,.s-run .capp{opacity:1;transform:none;pointer-events:auto}
+.ctop .who{all:unset;margin-left:auto;font:600 13px Inter;color:var(--tx2)}
+.cm{flex:1;position:relative;padding:14px;background:var(--bg)}
+#wo{position:absolute;inset:14px;display:flex;flex-direction:column;gap:12px;transition:opacity .35s,transform .35s}
+.dt{font:700 15px Inter;color:var(--tx2)}
+#wo h1{font:800 26px/1.1 Inter;letter-spacing:-.02em;margin-top:2px}
+#cx .hd{font-size:19px}
+#cx .hd .soon{margin-left:auto}
+#start{width:100%;height:58px;font-size:19px;border-radius:15px}
+.gcard{padding:16px;display:flex;flex-direction:column;gap:10px}
+
+/* таймер */
+#tm{position:absolute;inset:14px;display:flex;flex-direction:column;align-items:center;gap:16px;opacity:0;transform:scale(.94);transition:opacity .4s,transform .4s}
+.s-run #wo{opacity:0;transform:translateX(-40px)}
+.s-run #tm{opacity:1;transform:none}
+#tm .tt{align-self:stretch;display:flex;align-items:center;justify-content:space-between}
+#tm .tt b{font:800 20px Inter}
+#ring{position:relative;width:300px;height:300px}
+#ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+#ring .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#clk{font:800 76px/1 Inter;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#rnd{margin-top:10px;font:800 22px Inter;color:var(--acc)}
+#task{align-self:stretch}
+#task .row{font-size:19px}
+#task .row.cur{background:var(--acc-a)}
+#task .row.cur span{color:var(--ink)}
+#task .row:not(.cur) span{color:var(--tx2)}
+.ctl{display:flex;gap:12px;align-self:stretch}
+.ctl .btn{flex:1;height:52px}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="who"><i class="av">ИП</i><b>Иван Петров</b><i class="bar s" style="width:90px;margin-left:auto"></i></div>
+  <div class="card day">
+    <div class="hd">Четверг, 16 октября<i class="bar o" style="width:70px"></i></div>
+    <div class="body">
+      <div class="ph"><i class="bar" style="width:110px"></i><i class="bar s" style="width:220px"></i></div>
+      <div class="card" id="blk">
+        <div class="hd">Комплекс</div>
+        <div id="inp"><span class="lbl">Формат</span><div id="tx"></div></div>
+        <div class="row"><span>Взятие на грудь</span><b class="chip">3</b><b class="chip">95 кг</b></div>
+        <div class="row"><span>Бёрпи через штангу</span><b class="chip">6</b></div>
+        <div id="rdy"><span class="chip ok" id="chip">⏱ Таймер готов</span><span class="soon">Скоро</span></div>
+      </div>
+      <div class="ph"><i class="bar" style="width:90px"></i><i class="bar s" style="width:180px"></i></div>
+    </div>
+  </div>
+</main>
+
+<div class="capp">
+  <div class="ctop"><img class="mk" src="../../../logo/trenergram-mark.svg" alt=""><span class="nm">Тренерграм</span><span class="who">Тренер Алексей</span></div>
+  <div class="cm">
+    <div id="wo">
+      <div><div class="dt">Четверг, 16 октября</div><h1>Сила + комплекс</h1></div>
+      <div class="card gcard"><i class="bar" style="width:120px"></i><i class="bar s" style="width:230px"></i><i class="bar s" style="width:190px"></i></div>
+      <div class="card" id="cx">
+        <div class="hd">Комплекс EMOM 12<span class="soon">Скоро</span></div>
+        <div class="row"><span>3 взятия на грудь</span><b class="chip">95 кг</b></div>
+        <div class="row"><span>6 бёрпи через штангу</span></div>
+        <div class="row"><span class="btn" id="start">▶ Запустить таймер · 12:00</span></div>
+      </div>
+    </div>
+    <div id="tm">
+      <div class="tt"><b>Комплекс EMOM 12</b><span class="soon">Скоро</span></div>
+      <div id="ring">
+        <svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="134" fill="none" stroke="var(--g1)" stroke-width="18"/>
+          <circle id="arc" cx="150" cy="150" r="134" fill="none" stroke="var(--acc)" stroke-width="18" stroke-linecap="round" stroke-dasharray="842" stroke-dashoffset="0"/></svg>
+        <div class="in"><div id="clk">01:00</div><div id="rnd">EMOM 1/12</div></div>
+      </div>
+      <div class="card" id="task">
+        <div class="row cur"><span>3 взятия на грудь 95 кг</span></div>
+        <div class="row"><span>6 бёрпи через штангу</span></div>
+      </div>
+      <div class="ctl"><span class="btn gh">Пауза</span><span class="btn gh">Стоп</span></div>
+    </div>
+  </div>
+</div>
+<script>
+Kit.trainer({ title: 'Конструктор', foot: '<div class="foot"><i class="bar" style="width:110px"></i><span class="btn" id="send">Отправить</span></div>' });
+const C = 2 * Math.PI * 134;
+window.ST = {
+  ready: () => Kit.state('ready'),
+  client: () => Kit.state('client'),
+  run: () => Kit.state('run'),
+  // e — секунды от старта комплекса (0…720): раунд, остаток минуты, кольцо
+  tick: e => {
+    const r = Math.min(12, Math.floor(e / 60) + 1), left = 60 * r - e, sec = Math.min(60, Math.max(1, Math.ceil(left - 1e-6)));
+    document.getElementById('clk').textContent = sec === 60 ? '01:00' : '00:' + String(sec).padStart(2, '0');
+    document.getElementById('rnd').textContent = 'EMOM ' + r + '/12';
+    document.getElementById('arc').style.strokeDashoffset = (C * (1 - left / 60)).toFixed(1);
+  },
+};
+document.getElementById('arc').style.strokeDasharray = C.toFixed(1);
+ST.tick(0);
+document.getElementById('send').onclick = ST.client;
+document.getElementById('start').onclick = ST.run;
+</script>
+</body>
+</html>

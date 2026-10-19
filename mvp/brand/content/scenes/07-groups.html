@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>07 · Одна программа на группу</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/07-groups.md
+// Путь: groups.html → «Календарь» у группы ЛФК → день с тренировкой → конструктор группы.
+// Демо-данные считаются от сегодняшней даты, поэтому день ищем по признаку:
+// первый день с тренировкой в левой части месяца, видимый на экране.
+const rectEl = r => ({ getBoundingClientRect: () => ({ left: r.x, top: r.y, width: r.w, height: r.h }) });
+const grpRow = d => [...d.querySelectorAll('[data-tbl="grp"] tr[data-row]')].find(tr => tr.textContent.includes('ЛФК'));
+const calBtn = d => { const tr = grpRow(d); return tr && tr.querySelector('a[href*="calendar.html?group="]'); };
+const grpDay = d => [...d.querySelectorAll('.day[data-date]')].find(e => {
+  if (/\b(rest|empty|void)\b/.test(e.className)) return false;
+  const r = e.getBoundingClientRect(); return r.left < 1000 && r.top > 150 && r.bottom < 1000;
+});
+// участники и кнопка «Календарь» в строке группы
+const rowRight = d => { const tr = grpRow(d); if (!tr) return null; const r = tr.getBoundingClientRect();
+  return rectEl({ x: r.right - 440, y: r.top - 6, w: 430, h: r.height + 12 }); };
+// селектор группы + неделя с выбранным днём
+const calArea = d => { const c = d.querySelector('#cli'), day = grpDay(d); if (!c || !day) return null;
+  const a = c.getBoundingClientRect(), b = day.getBoundingClientRect();
+  return rectEl({ x: a.left - 8, y: a.top - 8, w: 700, h: b.bottom - a.top + 16 }); };
+// полоса участников группы в конструкторе: левая и правая половины
+const strip = (k) => d => { const g = d.querySelector('.gpanel'); if (!g) return null; const r = g.getBoundingClientRect();
+  return rectEl({ x: k ? r.left + 420 : r.left, y: r.top, w: k ? 760 : 640, h: r.height }); };
+
+// Переход по ссылке внутри iframe: кадр после клика ждёт загрузки новой страницы,
+// иначе в ролик попадёт пустой белый экран (в рендере seek ждёт возвращённый промис)
+let pending = null;
+const nav = (t, target) => {
+  S.click(t, target);
+  S.cue(t, () => {
+    const f = document.querySelector('iframe.app');
+    pending = new Promise(res => f.addEventListener('load', async () => {
+      try { await f.contentDocument.fonts.ready; } catch (e) {}
+      setTimeout(() => { pending = null; res(); }, 900);
+    }, { once: true }));
+  });
+};
+
+const S = Scene({ format: '9:16', duration: 15 });
+S.screen('../../../groups.html');
+
+S.caption(.2, 5.6, 'Одна программа —\n*десять* человек', { sub: 'Тренировку пишете один раз' });
+
+S.focus(1.0, 2.2, rowRight, { pad: 80 });                 // 10 участников и «Календарь»
+S.cursor(1.9, 2.9, calBtn);
+nav(3.1, calBtn);                                          // → календарь группы
+
+S.focus(3.2, 4.4, calArea, { pad: 20 });                  // «ЛФК · 10 участников» и тренировки месяца
+S.cursor(4.6, 5.6, grpDay, { ay: .35 });
+nav(5.85, grpDay);                                         // → конструктор этого дня
+
+S.focus(5.95, 7.0, strip(0), { pad: 24 });                // «10 участников · Стоит у всех»
+S.caption(6.3, 11.6, 'Правка —\n*у всех* сразу', { sub: 'Встаёт в календарь каждому' });
+S.hideCursor(6.0);
+S.focus(7.7, 9.3, strip(1), { pad: 24 });                 // панорама по именам участников
+S.focus(9.9, 11.0, '.gpanel', { pad: 14 });               // все десять разом
+S.highlight(10.5, 12.1, '.gpanel', { pad: 6 });
+
+S.outro(12.4);
+S.start();
+
+// рендер: кадр после перехода ждёт новую страницу
+const sc = window.__scene, seek0 = sc.seek;
+sc.seek = t => { seek0(t); return pending || undefined; };
+</script>
+</body>
+</html>

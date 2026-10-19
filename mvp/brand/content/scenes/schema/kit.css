@@ -1,0 +1,54 @@
+/* Схематичный интерфейс Тренерграма для роликов по фичам (вариант «схема»).
+   Узнаваемая оболочка — логотип, шапка, нижняя панель, оранжевые кнопки —
+   и упрощённое содержимое: второстепенное серыми плашками, слова только у главного.
+   Экран 390×800 (режим S.phone). Оболочку строит kit.js: Kit.trainer() / Kit.client(). */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Montserrat:wght@900&display=swap');
+:root{--acc:#FC5200;--acc-d:#D94600;--acc-a:#FFF1EA;--acc-p:#FFE4D6;--ink:#141414;--tx2:#5c5751;
+  --g1:#F3EFEB;--g2:#E6E0DA;--g3:#CFC7BF;--bg:#FAF8F6;--ok:#1A9E5C;--ok-a:#E9F7EF;--rm:#C0392B;--rm-a:#FDECEA}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--ink);overflow:hidden}
+b,strong{font-weight:800}
+
+/* плашки вместо второстепенного текста */
+.bar{display:block;height:12px;border-radius:6px;background:var(--g2);flex:none}
+.bar.s{height:9px;background:var(--g1)} .bar.o{background:var(--acc-p)} .bar.d{background:var(--g3)}
+
+/* оболочка кабинета */
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.top{height:62px;flex:none;display:flex;align-items:center;gap:12px;padding:0 14px 0 16px;background:#fff;border-bottom:1.5px solid var(--g1)}
+.top .logo{height:17px;display:block}
+.top .ttl{font:800 17px Inter;color:var(--ink);padding-left:12px;border-left:1.5px solid var(--g2);white-space:nowrap}
+.top .plus{margin-left:auto;width:40px;height:40px;border-radius:12px;background:var(--acc);position:relative;flex:none}
+.top .plus:before,.top .plus:after{content:"";position:absolute;left:12px;top:18px;width:16px;height:4px;border-radius:2px;background:#fff}
+.top .plus:after{transform:rotate(90deg)}
+.main{flex:1;min-height:0;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden;position:relative}
+.nav{height:66px;flex:none;display:flex;justify-content:space-around;align-items:center;background:#fff;border-top:1.5px solid var(--g1)}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font:600 11.5px Inter;color:#8a847e;text-decoration:none}
+.nav svg{width:24px;height:24px;stroke-width:1.7}
+.nav a.on{color:var(--acc)}
+
+/* оболочка клиентского приложения */
+.capp{position:absolute;inset:0;display:flex;flex-direction:column;background:#fff}
+.ctop{height:60px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1.5px solid var(--g1)}
+.ctop .mk{width:34px;height:34px;border-radius:10px;display:block}
+.ctop .nm{font:800 16px Inter}
+.ctop .who{margin-left:auto;font:600 13px Inter;color:var(--tx2)}
+
+/* общие детали */
+.card{border-radius:18px;background:#fff;border:1.5px solid var(--g1);overflow:hidden}
+.hd{padding:14px 16px;background:var(--acc-a);display:flex;align-items:center;gap:10px;font:800 18px Inter}
+.av{width:38px;height:38px;border-radius:50%;background:var(--acc);color:#fff;font:800 14px/38px Inter;text-align:center;flex:none}
+.av.g{background:var(--g2);color:var(--tx2)}
+.row{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1.5px solid var(--g1);font:700 17px Inter}
+.row > span{flex:1;min-width:0}
+.chip{padding:5px 10px;border-radius:9px;background:var(--acc-a);color:var(--acc);font:800 15px Inter;white-space:nowrap}
+.chip.g{background:var(--g1);color:var(--tx2)} .chip.ok{background:var(--ok-a);color:var(--ok)} .chip.rm{background:var(--rm-a);color:var(--rm)}
+.btn{height:46px;padding:0 20px;border-radius:13px;background:var(--acc);color:#fff;font:700 17px Inter;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0}
+.btn.gh{background:#fff;color:var(--ink);border:2px solid var(--g2)}
+.lbl{font:800 12.5px Inter;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2)}
+.big{font:800 30px/1.05 Inter;letter-spacing:-.02em}
+.soon{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:7px;background:var(--ink);color:#fff;font:800 11.5px Inter;letter-spacing:.06em;text-transform:uppercase}
+
+/* переходы между состояниями (в рендере движок шагает их по времени сцены) */
+.fx{transition:opacity .35s, transform .35s}
+.hide{opacity:0;transform:translateY(14px)}

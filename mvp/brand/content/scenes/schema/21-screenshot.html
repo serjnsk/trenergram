@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Перенос программ со скриншота</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 21 «Перенос ранее написанных программ». Состояния: shot → text → done.
+   shot — в лист вставлен скриншот таблицы, по нему идёт полоса сканирования (CSS-анимация);
+   text — скриншот распознан, программа в листе текстом; done — AI разложил по блокам. */
+.who{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;background:#fff;border:2px solid var(--acc-p)}
+.who b{font-size:16px;color:var(--acc)} .who small{display:block;margin-top:6px}
+.day .hd{justify-content:space-between}
+.body{padding:14px;position:relative;min-height:480px}
+.empty{display:flex;flex-direction:column;gap:12px;transition:opacity .3s,transform .3s}
+.ph{height:92px;border-radius:16px;border:2px dashed var(--g2);display:flex;align-items:center;gap:12px;padding:0 18px}
+.opt{height:58px;border-radius:16px;border:2px solid var(--g2);background:#fff;display:flex;align-items:center;justify-content:center;gap:12px;font:700 19px Inter}
+#paste{border-color:var(--acc);color:var(--acc)}
+#paste i{width:24px;height:20px;border:3px solid var(--acc);border-radius:5px;position:relative}
+#paste i:before{content:"";position:absolute;left:3px;bottom:2px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid var(--acc)}
+#paste i:after{content:"";position:absolute;right:3px;top:2px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
+
+/* скриншот таблицы */
+#shot{position:absolute;left:22px;right:22px;top:20px;border-radius:12px;background:#fff;border:1.5px solid var(--g2);
+  box-shadow:0 14px 34px rgba(20,20,20,.18);overflow:hidden;opacity:0;transform:translateY(30px) rotate(-2deg) scale(.94);
+  transition:opacity .35s,transform .45s}
+#shot .sh{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#EEF6F0;border-bottom:1.5px solid #D5E7DA}
+#shot .sh .tg{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:7px;background:#1E8E4E;color:#fff;font:800 13px Inter}
+#shot .sh .tg i{width:12px;height:12px;border:2px solid #fff;border-radius:2px;background:linear-gradient(#fff,#fff) 50% 0/2px 100% no-repeat,linear-gradient(#fff,#fff) 0 50%/100% 2px no-repeat}
+#shot .sh .bar{background:#D5E7DA}
+.grid{display:grid;grid-template-columns:30px 1.6fr 1fr 1fr;font:600 17px Inter;color:#2b2b2b}
+.grid > *{height:44px;display:flex;align-items:center;padding:0 9px;border-right:1px solid #E3E3E3;border-bottom:1px solid #E3E3E3}
+.grid .c{background:#F4F4F4;color:#9a9a9a;font:600 13px Inter;justify-content:center;height:28px}
+.grid .n{background:#F4F4F4;color:#9a9a9a;font:600 13px Inter;justify-content:center;padding:0}
+.grid .h{font-weight:800;color:#5f5f5f;font-size:14px}
+#scan{position:absolute;left:0;right:0;top:0;height:46px;pointer-events:none;opacity:0;
+  background:linear-gradient(rgba(252,82,0,0),rgba(252,82,0,.22));border-bottom:3px solid var(--acc);box-shadow:0 6px 16px rgba(252,82,0,.35)}
+@keyframes scan{0%{transform:translateY(-46px)}100%{transform:translateY(250px)}}
+.s-shot #scan{opacity:1;animation:scan 1.15s .35s ease-in-out 2 alternate both}
+#rec{position:absolute;left:0;right:0;top:332px;display:flex;justify-content:center;opacity:0;transition:opacity .3s}
+#rec span{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 16px;border-radius:20px;background:var(--acc-a);color:var(--acc);font:800 16px Inter}
+#rec span i{width:16px;height:16px;border-radius:50%;border:3px solid var(--acc-p);border-top-color:var(--acc);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.s-shot #rec{opacity:1}
+
+/* лист с распознанным текстом */
+#note{position:absolute;left:14px;right:14px;top:14px;border-radius:18px;border:2.5px solid var(--acc);background:#fff;padding:16px 18px 20px;
+  opacity:0;transform:translateY(16px) scale(.98);transition:opacity .35s,transform .35s}
+#note .nh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#note .nh .chip{font-size:14px}
+#tx{font:600 20px/1.6 Inter}
+#tx div{opacity:0;transform:translateX(-12px);transition:opacity .3s,transform .3s}
+#tx div:nth-child(2){transition-delay:.15s} #tx div:nth-child(3){transition-delay:.3s}
+#ai{margin-left:auto;height:42px;padding:0 16px;border-radius:21px;display:flex;align-items:center;gap:7px;font:800 17px Inter;
+  border:3px solid transparent;background:linear-gradient(#fff,#fff) padding-box,conic-gradient(#3FD3E6,#6A8BFF,#B37BFF,#FF6FA8,#FF9F43,#F7D54A,#8FE36B,#3FD3E6) border-box}
+#ai b{color:var(--acc);font-size:18px}
+
+/* блоки после AI */
+#res{position:absolute;left:14px;right:14px;top:14px;display:flex;flex-direction:column;gap:12px}
+.blk{opacity:0;transform:translateY(18px);transition:opacity .35s,transform .35s}
+.blk .hd{background:var(--g1);font-size:18px}
+.blk .hd .chip{margin-left:auto}
+.blk .row{opacity:0;transform:translateX(-12px);transition:opacity .3s,transform .3s}
+.blk .row:nth-child(3){transition-delay:.15s}.blk .row:nth-child(4){transition-delay:.25s}
+
+.foot{height:64px;flex:none;display:flex;align-items:center;gap:12px;padding:0 14px;background:#fff;border-top:1.5px solid var(--g1)}
+.foot .sw{width:44px;height:26px;border-radius:13px;background:var(--g2)}
+.foot .btn{margin-left:auto;height:44px}
+
+/* состояния */
+.s-shot .empty,.s-text .empty,.s-done .empty{opacity:0;transform:translateY(-10px)}
+.s-shot #shot{opacity:1;transform:none}
+.s-text #shot,.s-done #shot{opacity:0;transform:scale(.9)}
+.s-text #note{opacity:1;transform:none}
+.s-text #tx div{opacity:1;transform:none}
+.s-done #note{opacity:0;transform:scale(.96)}
+.s-done .blk,.s-done .blk .row{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="who"><i class="av">ИП</i><div><b>Иван Петров</b><i class="bar s" style="width:170px"></i></div></div>
+  <div class="card day">
+    <div class="hd">Новая программа<i class="bar o" style="width:70px"></i></div>
+    <div class="body">
+      <div class="empty">
+        <div class="ph"><i class="bar" style="width:60px"></i><i class="bar s" style="width:150px"></i></div>
+        <div class="opt"><i class="bar d" style="width:22px;height:16px"></i><i class="bar" style="width:130px;height:14px"></i></div>
+        <div class="opt" id="paste"><i></i>Вставить скриншот</div>
+      </div>
+      <div id="shot">
+        <div class="sh"><span class="tg"><i></i>Таблица</span><i class="bar" style="width:90px"></i></div>
+        <div class="grid">
+          <span class="c"></span><span class="c">A</span><span class="c">B</span><span class="c">C</span>
+          <span class="n">1</span><span class="h">Упражн.</span><span class="h">Схема</span><span class="h">Вес</span>
+          <span class="n">2</span><span>Присед</span><span>5×5</span><span>80</span>
+          <span class="n">3</span><span>Жим</span><span>4×8</span><span>60</span>
+          <span class="n">4</span><span>Тяга</span><span>3×5</span><span>100</span>
+          <span class="n">5</span><span></span><span></span><span></span>
+        </div>
+        <div id="scan"></div>
+      </div>
+      <div id="rec"><span><i></i>Распознаём…</span></div>
+      <div id="note">
+        <div class="nh"><span class="chip ok">✓ Со скриншота</span><div id="ai"><b>✦</b>AI</div></div>
+        <div id="tx"><div>Присед 5×5 80 кг</div><div>Жим 4×8 60 кг</div><div>Тяга 3×5 100 кг</div></div>
+      </div>
+      <div id="res">
+        <div class="card blk" id="b1"><div class="hd">Силовая<span class="chip">Силовая</span></div>
+          <div class="row"><span>Присед со штангой</span><b class="chip">5×5</b><b class="chip">80 кг</b></div>
+          <div class="row"><span>Жим лёжа</span><b class="chip">4×8</b><b class="chip">60 кг</b></div>
+          <div class="row"><span>Становая тяга</span><b class="chip">3×5</b><b class="chip">100 кг</b></div></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+Kit.trainer({ title: 'Конструктор', foot: '<div class="foot"><i class="sw"></i><i class="bar" style="width:90px"></i><span class="btn">Сохранить</span></div>' });
+window.ST = { shot: () => Kit.state('shot'), text: () => Kit.state('text'), done: () => Kit.state('done') };
+document.getElementById('paste').onclick = ST.shot;
+document.getElementById('ai').onclick = ST.done;
+</script>
+</body>
+</html>

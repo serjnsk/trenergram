@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>14 · Ввод текстом и AI</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/14-ai-text.md (серия «Фичи с лендинга», вариант «схема»)
+// Вместо живого конструктора в телефоне схематичный экран (schema/14-ai-text.html):
+// второстепенное — серые плашки, слова только у главного.
+const TEXT = 'Разминка:\nБег 5 мин\nСиловая:\nПрисед 5×5 80 кг\nЖим лёжа 4×8 60 кг\nПланка 3 по 45 сек';
+
+const S = Scene({ format: '9:16', duration: 15.5 });
+S.phone('schema/14-ai-text.html');
+
+S.caption(.2, 5.8, 'Пишите тренировку\n*как в заметках*', { sub: 'Как привыкли — без полей и форм' });
+
+S.spot(1.2, 2.7, '#btn', { label: 'Блок *текстом*' });
+S.tap(2.45, '#btn');
+
+S.spot(3.0, 6.1, '#note', { label: 'Просто текст, как *в заметках*', dy: -60 });
+S.type(3.2, 5.8, '#tx', TEXT);
+
+S.spot(6.2, 7.6, '#ai', { label: 'Кнопка *AI*' });
+S.tap(7.3, '#ai');
+
+S.caption(7.0, 12.4, 'AI разложит\nпо *блокам*', { sub: 'Упражнения из базы, подходы и веса' });
+
+S.spot(8.1, 9.7, '#res', { label: 'Блоки и упражнения *из базы*' });
+S.spot(9.8, 10.55, '#yes', { pad: 6 });
+S.tap(10.3, '#yes');
+
+S.spot(11.2, 12.8, '#b2', { label: 'Подходы и вес — *уже на месте*' });
+
+S.outro(12.9);
+S.start();
+</script>
+</body>
+</html>

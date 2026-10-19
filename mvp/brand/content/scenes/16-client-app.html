@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>16 · Приложение клиента</title>
+<link rel="stylesheet" href="engine.css">
+<script src="engine.js"></script>
+</head>
+<body>
+<script>
+// Сценарий: ../scripts/16-client-app.md (серия «Фичи с лендинга», вариант «схема»)
+// Экран клиента (schema/16-client-app.html): уведомление → тренировка → подходы → рекорд.
+const S = Scene({ format: '9:16', duration: 16 });
+S.phone('schema/16-client-app.html');
+
+S.caption(.2, 7.5, 'Тренировка —\n*в телефоне клиента*', { sub: 'Веса, техника, заметки тренера' });
+
+S.cue(.5, (d, w) => w.ST.notif());
+S.spot(1.0, 2.6, '#notif', { label: 'Новая *тренировка*', dy: 120 });
+S.tap(2.3, '#notif');
+
+S.spot(3.0, 5.2, '#str', { label: 'Веса — *в кг*' });
+S.spot(5.4, 6.7, '#start', { pad: 6 });
+S.tap(6.4, '#start');
+
+S.caption(7.5, 13.4, 'Подходы и рекорды —\n*вам в ленту*', { sub: 'Клиентам — бесплатно' });
+
+S.spot(7.3, 10.5, '#sets', { label: 'Отмечает *подходы*' });
+[1, 2, 3, 4, 5].forEach((n, i) => S.cue(7.8 + i * .4, (d, w) => w.ST.set(n)));
+S.tap(10.0, '#pr1');
+S.cue(10.5, (d, w) => w.ST.pr());
+
+S.spot(10.8, 13.3, '#rec', { label: 'Тренеру — *в ленту*' });
+
+S.outro(13.4);
+S.start();
+</script>
+</body>
+</html>

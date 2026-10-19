@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Приложение клиента</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 16 «Приложение клиента». Состояния: notif → open → go → (сеты по одному) → pr. */
+/* главная клиента — до уведомления, всё серое */
+#home{display:flex;flex-direction:column;gap:12px;transition:opacity .3s,transform .3s}
+#home .card{padding:16px;display:flex;flex-direction:column;gap:10px}
+#home .ln{display:flex;align-items:center;gap:12px}
+.dk{position:absolute;inset:0;background:rgba(20,20,20,.28);opacity:0;transition:opacity .3s;z-index:4;pointer-events:none}
+
+/* уведомление */
+#notif{position:absolute;left:10px;right:10px;top:8px;z-index:5;border-radius:22px;background:rgba(255,255,255,.97);
+  box-shadow:0 12px 34px rgba(20,20,20,.22);padding:14px 16px 15px;display:flex;gap:12px;
+  transform:translateY(-140%);opacity:0;transition:transform .45s cubic-bezier(.2,.9,.3,1.15),opacity .3s}
+#notif img{width:42px;height:42px;border-radius:11px;flex:none}
+#notif .nt{min-width:0}
+#notif .nm{font:700 13.5px Inter;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px}
+#notif .nm span{text-transform:none;letter-spacing:0;font-weight:600}
+#notif b{display:block;font:800 17px/1.25 Inter;margin-top:3px}
+#notif p{font:600 15.5px/1.3 Inter;color:var(--tx2);margin-top:2px}
+.s-notif #notif{transform:none;opacity:1}
+.s-open #notif,.s-go #notif,.s-pr #notif{transform:translateY(-12px) scale(.97);opacity:0}
+.s-notif .dk{opacity:1}
+
+/* тренировка */
+#wo{position:absolute;left:14px;right:14px;top:12px;display:flex;flex-direction:column;gap:10px;opacity:0;transform:translateY(18px);transition:opacity .35s,transform .35s}
+.dt{font:700 15px Inter;color:var(--tx2)}
+#wo h1{font:800 26px/1.1 Inter;letter-spacing:-.02em;margin-top:2px}
+#wo .card .hd{padding:11px 16px;font-size:17px}
+#wo .row{padding:10px 16px}
+.nt2{padding:9px 16px 11px;border-top:1.5px solid var(--g1);font:600 15px Inter;color:var(--acc-d);display:flex;gap:8px;align-items:center}
+.hd .chip{margin-left:auto}
+.s-open #home,.s-go #home,.s-pr #home{opacity:0;transform:translateY(-10px)}
+.s-open #wo{opacity:1;transform:none}
+
+/* режим тренировки: подходы */
+#run{position:absolute;left:14px;right:14px;top:12px;display:flex;flex-direction:column;gap:10px;opacity:0;transform:translateX(40px);transition:opacity .35s,transform .35s}
+.s-go #run,.s-pr #run{opacity:1;transform:none}
+.s-go #wo,.s-pr #wo{opacity:0;transform:translateX(-40px)}
+#run h2{font:800 24px/1.1 Inter;letter-spacing:-.02em}
+.anim{height:136px;border-radius:18px;background:var(--g1);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.anim svg{width:110px;height:110px}
+.anim .pl{position:absolute;right:12px;bottom:12px;height:28px;padding:0 10px;border-radius:9px;background:#fff;font:700 13.5px Inter;color:var(--tx2);display:flex;align-items:center}
+.note{border-radius:14px;background:var(--acc-a);padding:10px 14px;font:600 15.5px/1.3 Inter;color:var(--acc-d)}
+.note b{color:var(--ink)}
+#sets .row{padding:9px 14px;font-size:17px}
+#sets .row span small{font:700 14px Inter;color:var(--tx2);margin-right:6px}
+.ck{width:32px;height:32px;border-radius:10px;border:2.5px solid var(--g3);flex:none;position:relative;transition:background .2s,border-color .2s}
+.ck:after{content:"";position:absolute;left:9px;top:3px;width:8px;height:15px;border:solid #fff;border-width:0 3.5px 3.5px 0;transform:rotate(45deg) scale(0);transition:transform .25s}
+.row.on .ck{background:var(--ok);border-color:var(--ok)}
+.row.on .ck:after{transform:rotate(45deg) scale(1)}
+.row.on{background:var(--ok-a)}
+.row{transition:background .25s}
+#pr1 span{color:var(--acc)}
+
+/* рекорд */
+#rec{position:absolute;left:24px;right:24px;top:210px;z-index:6;border-radius:24px;background:#fff;box-shadow:0 18px 50px rgba(20,20,20,.3);
+  padding:22px 20px 20px;text-align:center;opacity:0;transform:scale(.8);transition:opacity .3s,transform .4s cubic-bezier(.2,.9,.3,1.3)}
+#rec .cup{font-size:44px;line-height:1}
+#rec .t{font:800 26px Inter;color:var(--acc);margin-top:8px}
+#rec .e{font:700 18px Inter;margin-top:6px}
+#rec .w{font:800 40px/1.1 Inter;letter-spacing:-.02em;margin-top:4px}
+#rec .was{font:600 15px Inter;color:var(--tx2);margin-top:4px}
+.s-pr #rec{opacity:1;transform:none}
+.s-pr .dk{opacity:1}
+
+.foot{height:78px;flex:none;display:flex;align-items:center;padding:0 14px;background:#fff;border-top:1.5px solid var(--g1)}
+.foot .btn{width:100%;height:54px;font-size:19px;border-radius:15px;transition:opacity .3s}
+.s-go .foot .btn,.s-pr .foot .btn{background:var(--g1);color:var(--tx2)}
+</style>
+</head>
+<body>
+<main class="main">
+  <div id="home">
+    <div class="lbl">Сегодня</div>
+    <div class="card"><div class="ln"><i class="av g"></i><i class="bar" style="width:150px"></i></div><i class="bar s" style="width:220px"></i><i class="bar s" style="width:170px"></i></div>
+    <div class="lbl">На неделе</div>
+    <div class="card"><i class="bar" style="width:120px"></i><i class="bar s" style="width:240px"></i></div>
+    <div class="card"><i class="bar" style="width:140px"></i><i class="bar s" style="width:200px"></i></div>
+    <div class="card"><i class="bar" style="width:100px"></i><i class="bar s" style="width:230px"></i></div>
+  </div>
+
+  <div id="wo">
+    <div><div class="dt">Вторник, 14 октября</div><h1>Сила + AMRAP</h1></div>
+    <div class="card"><div class="hd">Разминка</div>
+      <div class="row"><span>Гребля</span><b class="chip">500 м</b></div></div>
+    <div class="card" id="str"><div class="hd">Силовая</div>
+      <div class="row"><span>Присед со штангой</span><b class="chip">5×5</b><b class="chip">132,5 кг</b></div>
+      <div class="row"><span>Жим лёжа</span><b class="chip">4×6</b><b class="chip">90 кг</b></div>
+      <div class="nt2">✎ В конце — проба 1ПМ</div></div>
+    <div class="card"><div class="hd">Комплекс<span class="chip">AMRAP 12</span></div>
+      <div class="row"><span>Подтягивания</span><b class="chip">10</b></div>
+      <div class="row"><span>Махи гирей</span><b class="chip">15</b><b class="chip">24 кг</b></div>
+      <div class="row"><span>Бег</span><b class="chip">200 м</b></div></div>
+  </div>
+
+  <div id="run">
+    <h2>Присед со штангой</h2>
+    <div class="anim">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#9a928a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 30h64" stroke-width="6"/><rect x="12" y="20" width="8" height="20" rx="2" fill="#9a928a"/><rect x="80" y="20" width="8" height="20" rx="2" fill="#9a928a"/>
+        <circle cx="50" cy="20" r="7"/><path d="M50 30v24M50 54l-14 12 6 22M50 54l14 12-6 22"/></svg>
+      <span class="pl">▶ Техника</span>
+    </div>
+    <div class="note"><b>Тренер:</b> спина ровная, глубина — до параллели</div>
+    <div class="card" id="sets">
+      <div class="row" id="s1"><span><small>Подход 1</small>5 × 132,5 кг</span><i class="ck"></i></div>
+      <div class="row" id="s2"><span><small>Подход 2</small>5 × 132,5 кг</span><i class="ck"></i></div>
+      <div class="row" id="s3"><span><small>Подход 3</small>5 × 132,5 кг</span><i class="ck"></i></div>
+      <div class="row" id="s4"><span><small>Подход 4</small>5 × 132,5 кг</span><i class="ck"></i></div>
+      <div class="row" id="s5"><span><small>Подход 5</small>5 × 132,5 кг</span><i class="ck"></i></div>
+      <div class="row" id="pr1"><span><small>Проба 1ПМ</small>1 × 195 кг</span><i class="ck"></i></div>
+    </div>
+  </div>
+</main>
+<div class="dk"></div>
+<div id="notif"><img src="../../../logo/trenergram-mark.svg" alt=""><div class="nt">
+  <div class="nm">Тренерграм <span>· сейчас</span></div>
+  <b>Новая тренировка на вторник</b>
+  <p>Тренер Алексей опубликовал «Сила + AMRAP»</p></div></div>
+<div id="rec"><div class="cup">🏆</div><div class="t">Новый рекорд!</div><div class="e">Присед со штангой</div><div class="w">195 кг</div><div class="was">было 190 кг</div></div>
+<script>
+Kit.client({ who: 'Тренер Алексей', foot: '<div class="foot"><span class="btn" id="start">Начать тренировку</span></div>' });
+window.ST = {
+  notif: () => Kit.state('notif'),
+  open: () => Kit.state('open'),
+  go: () => { Kit.state('go'); document.getElementById('start').textContent = 'Завершить тренировку'; },
+  set: n => document.getElementById('s' + n).classList.add('on'),
+  pr: () => Kit.state('pr'),
+};
+document.getElementById('notif').onclick = ST.open;
+document.getElementById('start').onclick = ST.go;
+document.getElementById('pr1').onclick = () => document.getElementById('pr1').classList.add('on');
+</script>
+</body>
+</html>

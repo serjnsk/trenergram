@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Схема · Авторасчёт весов</title>
+<link rel="stylesheet" href="kit.css">
+<script src="kit.js"></script>
+<style>
+/* Ролик 12 «Авторасчёт весов». Состояния: calc → record → recalc.
+   Арифметика (80 %, округление до 2,5 кг): 210→167,5 · 125→100 · 170→135, после рекорда 180→145 · 95→75 */
+.grp{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;background:#fff;border:2px solid var(--acc-p)}
+.grp b{font-size:17px} .grp small{display:block;font:600 13px Inter;color:var(--tx2);margin-top:2px}
+.grp .av{width:40px;height:40px;line-height:40px}
+.blk .hd{font-size:20px}
+.blk .hd .chip{margin-left:auto}
+#scheme{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1.5px solid var(--g1)}
+#scheme .lbl{flex:none}
+#tx{flex:1;height:48px;border-radius:13px;border:2.5px solid var(--acc);background:#fff;padding:0 14px;display:flex;align-items:center;font:800 22px Inter;white-space:nowrap}
+#tx:after{content:"";display:inline-block;width:2.5px;height:24px;margin-left:2px;background:var(--acc)}
+.s-calc #tx:after,.s-record #tx:after,.s-recalc #tx:after{display:none}
+.s-calc #tx,.s-record #tx,.s-recalc #tx{border-color:var(--g2)}
+.base{display:flex;align-items:center;gap:8px;padding:10px 16px 14px}
+.base .chip{font-size:16px;padding:6px 12px}
+
+#tbl .th,#tbl .tr{display:grid;grid-template-columns:1fr 92px 104px;align-items:center;padding:0 16px}
+#tbl .th{height:38px;background:var(--g1);font:800 13px Inter;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2)}
+#tbl .th span:not(:first-child),#tbl .tr > :not(:first-child){text-align:right}
+#tbl .tr{height:56px;border-top:1.5px solid var(--g1);font:700 18px Inter;position:relative}
+#tbl .tr .nm{display:flex;align-items:center;gap:10px}
+#tbl .tr .av{width:34px;height:34px;line-height:34px;font-size:13px}
+.pm{color:var(--tx2);position:relative}
+.w{position:relative;height:36px}
+.w .bar{position:absolute;right:0;top:12px;width:62px;transition:opacity .25s}
+.w b{position:absolute;right:0;top:3px;height:30px;padding:0 9px;border-radius:9px;background:var(--acc-a);color:var(--acc);font:800 18px/30px Inter;white-space:nowrap;
+  opacity:0;transform:translateX(14px);transition:opacity .3s,transform .3s,background .3s,color .3s}
+.s-calc .w .bar,.s-record .w .bar,.s-recalc .w .bar{opacity:0}
+.s-calc .w b.v,.s-record .w b.v,.s-recalc .w b.v{opacity:1;transform:none}
+#tbl .tr:nth-child(3) b,#tbl .tr:nth-child(3) .bar{transition-delay:.35s}
+#tbl .tr:nth-child(4) b,#tbl .tr:nth-child(4) .bar{transition-delay:.7s}
+#tbl .tr:nth-child(5) b,#tbl .tr:nth-child(5) .bar{transition-delay:1.05s}
+
+/* Олег: 1ПМ 170 → рекорд 180, вес 135 → 145 */
+.pm i{font-style:normal;transition:opacity .3s,transform .3s;display:inline-block}
+.pm .n{position:absolute;right:0;top:0;opacity:0;transform:translateY(10px);color:var(--acc)}
+.s-recalc .pm .o{opacity:0;transform:translateY(-10px)} .s-recalc .pm .n{opacity:1;transform:none;transition-delay:.0s}
+#r3 .w b.n{opacity:0;transform:translateY(10px)}
+#r3 .w b.v{transition-delay:.7s}
+.s-recalc #r3 .w b.v{opacity:0;transform:translateY(-10px);transition-delay:.3s}
+.s-recalc #r3 .w b.n{opacity:1;transform:none;background:var(--acc);color:#fff;transition-delay:.45s}
+#r3{transition:background .4s}
+.s-recalc #r3{background:var(--acc-a)}
+#r3 .rec{position:absolute;left:58px;top:34px;font:800 11px Inter;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);opacity:0;transition:opacity .3s}
+.s-recalc #r3 .rec{opacity:1}
+.s-recalc #r3 .nm span{transform:translateY(-6px)}
+#r3 .nm span{transition:transform .3s;display:inline-block}
+
+#toast{position:absolute;left:14px;right:14px;top:14px;z-index:2;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--ink);color:#fff;
+  opacity:0;transform:translateY(16px);transition:opacity .35s,transform .35s}
+#toast .ic{width:40px;height:40px;border-radius:12px;background:var(--acc);display:flex;align-items:center;justify-content:center;font:800 20px Inter;flex:none}
+#toast b{font-size:17px} #toast small{display:block;font:600 14px Inter;color:#d9d4cf;margin-top:2px}
+.s-record #toast,.s-recalc #toast{opacity:1;transform:none}
+.grp{transition:opacity .3s}.s-record .grp,.s-recalc .grp{opacity:0}
+#toast{transform:translateY(-16px)}
+
+.foot{height:64px;flex:none;display:flex;align-items:center;gap:12px;padding:0 14px;background:#fff;border-top:1.5px solid var(--g1)}
+.foot .btn{margin-left:auto;height:46px}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="grp"><i class="av">7:00</i><div><b>Тренировка группы</b><small>Утро 7:00 · 4 атлета</small></div></div>
+  <div class="card blk">
+    <div class="hd">Становая тяга<span class="chip">Силовая</span></div>
+    <div id="scheme"><span class="lbl">Схема</span><div id="tx"></div></div>
+    <div class="base"><span class="lbl">от</span><span class="chip">1ПМ</span><span class="chip g">3ПМ</span><span class="chip g">Рекорд</span></div>
+    <div id="tbl">
+      <div class="th"><span>Атлет</span><span>1ПМ</span><span>Вес</span></div>
+      <div class="tr" id="r1"><div class="nm"><i class="av">ИП</i>Иван П.</div><span class="pm">210</span><div class="w"><i class="bar"></i><b class="v">167,5 кг</b></div></div>
+      <div class="tr" id="r2"><div class="nm"><i class="av">МС</i>Мария С.</div><span class="pm">125</span><div class="w"><i class="bar"></i><b class="v">100 кг</b></div></div>
+      <div class="tr" id="r3"><div class="nm"><i class="av">ОР</i><span>Олег Р.</span></div><span class="pm"><i class="o">170</i><i class="n">180</i></span><div class="w"><i class="bar"></i><b class="v">135 кг</b><b class="n">145 кг</b></div><span class="rec">рекорд</span></div>
+      <div class="tr" id="r4"><div class="nm"><i class="av">АК</i>Аня К.</div><span class="pm">95</span><div class="w"><i class="bar"></i><b class="v">75 кг</b></div></div>
+    </div>
+  </div>
+  <div id="toast"><span class="ic">★</span><div><b>Олег Руденко</b><small>Рекорд: становая 180 кг</small></div></div>
+</main>
+<script>
+Kit.trainer({ title: 'Конструктор', foot: '<div class="foot"><i class="bar" style="width:110px"></i><span class="btn" id="calc">Рассчитать</span></div>' });
+window.ST = { calc: () => Kit.state('calc'), record: () => Kit.state('record'), recalc: () => Kit.state('recalc') };
+document.getElementById('calc').onclick = ST.calc;
+</script>
+</body>
+</html>
