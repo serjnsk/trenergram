@@ -48,6 +48,8 @@ const CL_SVG = {
   book: '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10"/>',
   search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/>',
+  clip: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5V3h6v1.5"/><path d="M9 13l2 2 4-4.5"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>'
 };
 /* Отдых — та же иконка, что в календаре кабинета тренера (из брифа) */
@@ -56,7 +58,7 @@ const clI = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 2
 
 /* ── состояние клиента ── */
 const clS = (() => {
-  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '', set: {}, ach: {} };
+  const def = { phone: '', prof: {}, goal: '', goal2: '', done: {}, notes: {}, sent: {}, dayDone: {}, open: {}, hideTasks: false, read: {}, meas: [], pmh: {}, photo: '', set: {}, ach: {}, res: {} };
   try { return Object.assign(def, JSON.parse(localStorage.getItem('trenergram.client') || '{}')); } catch (e) { return def; }
 })();
 const clSave = () => { try { localStorage.setItem('trenergram.client', JSON.stringify(clS)); } catch (e) {} };
@@ -160,6 +162,45 @@ function clBlockBody(b, pm) {
   flush();
   return seg;
 }
+/* Короткие подписи вкладок блока: иконка и слово в строку влезают в четверть 360 px */
+const CL_TAB_SHORT = { chat: 'Чат', tech: 'Техника', res: 'Итог', rec: 'ПМ' };
+
+/* ═══ Результат блока ═══
+   Вкладка «Результат» внизу блока: что записывается — строка формата комплекса
+   (AMRAP — раунды + повторы, на время — мин:сек…) или строки с весом силового
+   блока. Записанное — значением с галочкой, кружок блока заполняется. */
+const CL_RES_FMT = {
+  'AMRAP':     { f: [['r', 'раундов'], ['p', 'повторов']], v: r => `${r.r || 0} + ${r.p || 0}` },
+  'FOR TIME':  { f: [['m', 'мин'], ['s', 'сек']], v: r => `${r.m || 0}:${String(r.s || 0).padStart(2, '0')}` },
+  'EMOM':      { f: [['r', 'из %n раундов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` },
+  'DEATH BY':  { f: [['r', 'раундов']], v: r => `${r.r || 0} раундов` },
+  'TABATA':    { f: [['r', 'повторов всего']], v: r => `${r.r || 0} повт.` },
+  'ИНТЕРВАЛЫ': { f: [['r', 'из %n интервалов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` },
+  'РАУНДЫ':    { f: [['r', 'из %n раундов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` }
+};
+const CL_RES_KG = { f: [['w', 'кг']], v: (r, o) => clNum(r.w) + ' кг' + (String(clNum(r.w)) + ' кг' === o.plan ? ' ✓' : '') };
+const clResSpec = (key, o) => { const d = o.k === 'kg' ? CL_RES_KG : CL_RES_FMT[o.k], r = (clS.res || {})[key];
+  return { d, r, val: r ? d.v(r, o.f || o) : '' }; };
+/* Поля результата одной строки */
+function clResFields(key, o) {
+  const { d, r } = clResSpec(key, o), ph = o.k === 'kg' ? String(o.plan).replace(/\s*кг$/, '') : '';
+  const u = x => x.replace('%n', (o.f || {}).rounds || '');
+  return `<div class="rflds">${d.f.map(([k, x]) => `<label class="rfld"><input inputmode="decimal" data-rf="${k}" value="${r && r[k] != null ? clEsc(r[k]) : ''}" placeholder="${clEsc(ph)}" aria-label="${clEsc(u(x))}"><i>${clEsc(u(x))}</i></label>`).join('')}</div>`;
+}
+/* Что в блоке записывается: строка формата комплекса или строки с весом силового блока */
+function clResEntries(b, pm, bk) {
+  const fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null;
+  if (fmt) return CL_RES_FMT[fmt.k] ? [{ key: bk + ':f', label: fmtLabel(fmt), o: { k: fmt.k, f: fmt } }] : [];
+  const its = b.items || [];
+  return its.filter(it => !it.ss && !it.chain && itemHas(it) && /кг/.test(clLoad(it, pm))).map(it => {
+    const e = it.exId ? byId(it.exId) : null;
+    return { key: bk + ':i' + its.indexOf(it), label: [it.scheme, e ? e.ru : it.raw].filter(Boolean).join(' '), o: { k: 'kg', plan: clLoad(it, pm) } };
+  });
+}
+const clResTab = (ents, bk) => ents.map(x => { const { val } = clResSpec(x.key, x.o);
+  return `<div class="rent" data-rpan="${x.key}"><div class="rl"><span>${clEsc(x.label)}</span>${val ? `<s>${clI('check')}${clEsc(val)}</s>` : ''}</div>${clResFields(x.key, x.o)}</div>`; }).join('') +
+  `<button class="btn pri rsave" data-rsaveall="${bk}">Записать</button>`;
+
 /* Ключи 1ПМ упражнений блока — для вкладки «Рекорд»: только те, от чьего
    максимума считается вес (штанга, гантели), без повторов */
 const clBlockPm = b => [...new Set(clBlockEx(b).map(pmKey).filter(Boolean))];
@@ -359,11 +400,15 @@ const CL_UI = {
         /* Рекорд — прямо в тренировке: в профиль за этим никто не пойдёт.
            Только упражнения, от 1ПМ которых считается вес; новый 1ПМ сразу
            пересчитывает веса этой и следующих тренировок. */
-        clBlockPm(b).length ? ['rec', 'Рекорд', 'trophy', clBlockPm(b).map(k => `<div class="recr">
+        clBlockPm(b).length ? ['rec', 'Новый 1ПМ', 'trophy', clBlockPm(b).map(k => `<div class="recr">
             <span><b>${clEsc(clPmName(k))}</b><s>${pm[k] ? '1ПМ сейчас ' + clNum(pm[k]) + '\u00a0кг' : '1ПМ ещё нет'}</s></span>
             <label class="recin"><input inputmode="decimal" data-pmin="${k}" placeholder="${pm[k] ? clNum(pm[k]) : '1ПМ'}" aria-label="Новый 1ПМ, ${clEsc(clPmName(k))}"><i>кг</i></label>
             <button class="snd recok" data-pmset="${k}" aria-label="Записать рекорд" disabled>${clI('check')}</button></div>`).join('')] : null
       ].filter(Boolean);
+      /* Вкладки: обсуждение, техника, результат, ПМ */
+      const ents = clResEntries(b, pm, bk);
+      if (ents.length) rows.splice(rows.findIndex(r => r[0] === 'rec') < 0 ? rows.length : rows.findIndex(r => r[0] === 'rec'), 0, ['res', 'Результат', 'clip', clResTab(ents, bk)]);
+      const got = ents.length && ents.every(x => (clS.res || {})[x.key]);
       const tab = rows.some(r => r[0] === clS.open[bk + ':tab']) ? clS.open[bk + ':tab'] : '';
       /* Точка — в обсуждении есть сообщение тренера, а клиент его ещё не открывал */
       const has = { chat: !!b.note && !clS.open[bk + ':seen'] };
@@ -374,8 +419,10 @@ const CL_UI = {
         </div>
         ${open ? `<div class="card bcard">
           <div class="segs">${clBlockBody(b, pm).map(h => `<div class="seg">${h}</div>`).join('')}</div>
-          <div class="sect" style="grid-template-columns:repeat(${rows.length},1fr)">${rows.map(([id, t, ic]) =>
-            `<button class="${tab === id ? 'on' : ''}" data-tab="${bk}:${id}" aria-expanded="${tab === id}"><span class="sic">${clI(ic)}${has[id] ? '<i class="dot" aria-label="новое"></i>' : ''}</span><span>${t}</span></button>`).join('')}</div>
+          <div class="sect row">${rows.map(([id, t, ic]) => {
+            /* иконка и короткая подпись в строку: Чат · Техника · Итог · ПМ; полное название — для VoiceOver */
+            const dot = has[id] ? '<i class="dot" aria-label="новое"></i>' : '';
+            return `<button class="${tab === id ? 'on' : ''}${id === 'res' && got ? ' got' : ''}" data-tab="${bk}:${id}" aria-expanded="${tab === id}" aria-label="${t}"><span class="sic">${clI(ic)}${dot}</span><span class="lb">${CL_TAB_SHORT[id]}</span></button>`; }).join('')}</div>
           ${tab ? `<div class="rb">${rows.find(r => r[0] === tab)[3]}</div>` : ''}
         </div>` : ''}
       </section>`;
@@ -507,6 +554,14 @@ const CL_UI_MOUNT = {
   workout(scr) {
     const key = clDayKey(clDate);
     scr.addEventListener('click', e => {
+      /* «Записать» во вкладке «Результат» — все строки блока разом */
+      const ra = e.target.closest('[data-rsaveall]');
+      if (ra) { let n = 0; ra.parentElement.querySelectorAll('[data-rpan]').forEach(pan => { const r = {};
+          pan.querySelectorAll('[data-rf]').forEach(i => { const v = +String(i.value || i.placeholder).replace(',', '.').trim(); if (String(i.value || i.placeholder).trim() !== '' && isFinite(v)) r[i.dataset.rf] = v; });
+          if (Object.keys(r).length) { (clS.res ||= {})[pan.dataset.rpan] = r; n++; } });
+        if (!n) { ra.parentElement.querySelector('[data-rf]').focus(); return; }
+        clS.done[ra.dataset.rsaveall] = true; clSave(); clRepaint(scr, 'workout'); clToast('Результат записан'); return; }
+      if (e.target.closest('.rent')) return;
       const t = e.target.closest('[data-bdone]');
       if (t) { const k = t.dataset.bdone; clS.done[k] = !clS.done[k]; if (!clS.done[k]) delete clS.dayDone[key]; clSave(); clRepaint(scr, 'workout'); return; }
       const o = e.target.closest('[data-bopen]');

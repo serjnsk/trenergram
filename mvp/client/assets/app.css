@@ -922,3 +922,24 @@ html.f-tg.f-iphone{--sa-t:0px;--sa-b:34px}
 /* Фото тренера в карточках клиента */
 .invc .av img,.pav img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .invc .av{overflow:hidden}
+
+/* ── Вкладка «Результат» блока: поля с единицами справа ── */
+.rflds{display:flex;gap:8px}
+.rfld{flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:44px;padding:0 12px;border-radius:8px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--c-edge)}
+.rfld:focus-within{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.rfld input{flex:1;min-width:0;width:100%;border:0;background:none;outline:0;font:600 17px var(--ui);color:var(--ink);text-align:right}
+.rfld input::placeholder{color:var(--tx3);font-weight:400}
+.rfld i{font-style:normal;font-size:14px;color:var(--tx2);white-space:nowrap}
+
+/* Вкладки блока: иконка и короткая подпись в строку — «Чат · Техника · Итог · ПМ» */
+.sect.row{display:flex}
+.sect.row button{flex:1 1 auto;min-width:44px;gap:5px;padding:0 8px;font:600 13.5px/1.2 var(--ui);color:var(--tx2);white-space:nowrap}
+.sect.row .i{width:17px;height:17px}
+.sect button.got,.sect button.got .i{color:var(--acc-d)}
+.rent{display:flex;flex-direction:column;gap:6px;padding-bottom:10px}
+.rent+.rent{padding-top:10px;border-top:1px solid var(--c-line)}
+.rl{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font:500 15px/1.3 var(--ui);color:var(--ink)}
+.rl s{flex:none;display:inline-flex;align-items:center;gap:3px;text-decoration:none;font:600 13px var(--ui);color:var(--acc-d)}
+.rl s .i{width:14px;height:14px;stroke-width:2.6}
+.rb .rsave{width:100%;margin:4px 0 8px}
+
