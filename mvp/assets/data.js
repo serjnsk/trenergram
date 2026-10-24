@@ -1265,10 +1265,10 @@ CLIENTS.push({id:'c7', n:'Илья Соколов', ini:'ИС', sex:'м', born:'
    составлять тренировки. Сверх лимита — те, кто пришёл последними. */
 const subNow = () => (STATE.profile || PROFILE_DEF).sub;
 const planNow = () => PLANS.find(x => x.id === subNow().plan) || PLANS[0];
-function overLimit(){
-  const lim = planNow().limit;
-  return CLIENTS.length <= lim ? [] : [...CLIENTS].sort((a, b) => (a.since || '').localeCompare(b.since || '')).slice(lim);
-}
+/* Ограничения по числу клиентов в прототипе нет: тариф задаёт только цену.
+   Алерт перерасхода, метка «сверх лимита» и запрет составлять тренировки
+   держатся на overLimit() — пустой список выключает их все. */
+const overLimit = () => [];
 const isOver = cid => overLimit().some(c => c.id === cid);
 
 /* Контакты в мессенджерах — демо: ник из транслита фамилии. */
@@ -1539,7 +1539,9 @@ if(STATE.profile && !STATE.profile.sub) STATE.profile = Object.assign(JSON.parse
   else Object.assign(p.sub, {until:addDays(TODAY, 30), canceled:false, trial:false});
   saveState();
 })();
-let SUBRO = daysBetween(TODAY, subNow().until) < 0;
+/* Режим «только просмотр» после конца подписки в прототипе выключен — без
+   плашек «Продлить подписку»; срок подписки только показывается в профиле. */
+let SUBRO = false;
 (function restoreWmsg(){
   if(!STATE.wmsg) return;
   Object.values(TALK.workout).forEach(arr => { const i = arr.findIndex(m => m.who === 'trainer'); if(i >= 0) arr.splice(i, 1) });

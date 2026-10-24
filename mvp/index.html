@@ -49,7 +49,7 @@ function stats(){
      rows: ending.length+idl.length ? [['Программа на исходе', ending.length], ['Нет тренировок 3+ дня', idl.length]] : null,
      d: ending.length+idl.length ? '' : 'все клиенты в графике'},
     {k:'Ждут ответа', ic:ICON.chat, feed:'q', v:q, acc:q>0, d: q ? 'вопросов клиентов — показать в ленте' : 'вопросов без ответа нет'},
-    {k:'Аккаунт', ic:ICON.users, href:'profile.html', v:`${n} из ${pl.t}`, warn:n>=pl.limit*0.9,
+    {k:'Аккаунт', ic:ICON.users, href:'profile.html', v:n,
      d:`${pl.price.toLocaleString('ru-RU')} ₽ в месяц · ${SUBRO ? (sub.trial ? 'пробный период закончился' : 'подписка закончилась') : sub.trial ? 'пробный период до' : sub.canceled ? 'подписка отменена, доступ до' : 'подписка до'} ${humanDate(sub.until)}`},
   ];
 }

@@ -112,12 +112,12 @@ function profileTab(){
 const PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
 const dnum = iso => iso.split('-').reverse().join('.');
 function billingTab(){
-  const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until), over = used > pl.limit;
+  const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until);
   const trial = !!P.sub.trial, nocard = !/\d/.test(P.sub.card||''), hist = payHist();
   /* Отменённая подписка: доступ до конца оплаченного срока, списаний больше нет.
      Сверху карточки — плашка с датой и «Возобновить», точка у даты жёлтая,
      в полосе снизу вместо следующего платежа — «списаний не будет». */
-  const ended = left < 0, off = !!P.sub.canceled && !trial && !ended;
+  const ended = SUBRO, off = !!P.sub.canceled && !trial && !ended;
   /* Срок прошёл (оплата не прошла, подписку отменили или кончился пробный) —
      кабинет только для просмотра (SUBRO, data.js); здесь — «Продлить». */
   const brand = (P.sub.card||'').split(' ')[0];
@@ -130,7 +130,7 @@ function billingTab(){
         : off?`<div class="bnote"><span><b>Подписка отменена.</b> Доступ сохранится до ${dlong(P.sub.until)}, потом кабинет станет только для просмотра.</span><button class="btn sm" id="btnResume">Возобновить</button></div>`:''}
         <div class="bstats">
           ${cell('Текущий тариф', trial?'Пробный период':esc(pl.n), 'pl')}
-          ${cell('Клиентов', `${used}<i> / ${pl.t}</i>`, over?'over':'')}
+          ${cell('Клиентов', used)}
           ${cell('Стоимость', `${trial&&!ended?0:pl.price.toLocaleString('ru-RU')}<i> ₽/мес</i>`)}
           ${cell('Действует до', `<span class="dot ${left>0?(left<=3||off?'warn':'ok'):'rm'}"></span>${dnum(P.sub.until)}`)}
         </div>
@@ -196,14 +196,13 @@ function planModal(){
     <div class="hint" id="tpNote"></div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPlan"></button>`});
   const set = k => {
-    i = k; const x = PLANS[k], same = k === cur, short = used > x.limit;
+    i = k; const x = PLANS[k], same = k === cur;
     $('#tpRange').value = k; $('#tpRange').style.setProperty('--p', k/(PLANS.length-1)*100 + '%');
     $('#tpPrice').textContent = rub(x.price); $('#tpLim').textContent = x.n;
     $$('[data-tp]').forEach((b,n)=>b.classList.toggle('on', n===k));
     $('#tpNote').innerHTML = same ? 'Это ваш текущий тариф.'
-      : short ? `<span class="warn">У вас ${used} ${plural(used,'клиент','клиента','клиентов')} — ${used-x.limit} ${plural(used-x.limit,'окажется','окажутся','окажутся')} сверх лимита.</span>`
       : P.sub.trial ? `После пробного периода — ${rub(x.price)} в месяц, с ${dlong(P.sub.until)}.`
-      : `Лимит изменится сразу, новая цена — со следующего платежа, ${dlong(P.sub.until)}.`;
+      : `Новая цена — со следующего платежа, ${dlong(P.sub.until)}.`;
     $('#mdPlan').disabled = same; $('#mdPlan').textContent = same ? 'Текущий тариф' : 'Перейти на ' + rub(x.price) + ' в месяц';
   };
   $('#tpRange').oninput = e => set(+e.target.value);
