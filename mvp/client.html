@@ -215,7 +215,7 @@ function render(){
       <div class="sechead"><span class="t">Рекорды</span><span class="ln"></span></div>
       ${pmHTML()}
     </section>` : V.tab==='events' ? `<section class="csec" id="events">
-      <div class="card cb flush cev"><div class="feed1" style="margin:0">${feedHTML(events(C.id))}</div></div>
+      <div class="card cb flush cev"><div class="feed1" style="margin:0">${feedHTML(feedEvents(C.id))}</div></div>
     </section>` : `<section class="csec" id="pay">
       <div class="sechead"><span class="t">Оплата занятий</span><span class="ln"></span><span class="n">деньги клиент переводит вам сам — здесь срок и отметки</span></div>
       ${payHTML()}

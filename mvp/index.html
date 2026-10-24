@@ -53,7 +53,7 @@ function stats(){
      d:`${pl.price.toLocaleString('ru-RU')} ₽ в месяц · ${SUBRO ? (sub.trial ? 'пробный период закончился' : 'подписка закончилась') : sub.trial ? 'пробный период до' : sub.canceled ? 'подписка отменена, доступ до' : 'подписка до'} ${humanDate(sub.until)}`},
   ];
 }
-const kpiHTML = s => { const tag = s.href ? `a href="${s.href}"` : `button type="button" data-feed="${s.feed}"`, on = s.feed && F.t===s.feed;
+const kpiHTML = s => { const tag = s.href ? `a href="${s.href}"` : `button type="button" data-feed="${s.feed}"`, on = s.feed && F.types.size === 1 && F.types.has(s.feed);
   return `<${tag} class="kpi lnk${on?' on':''}"><span class="k">${s.ic} ${esc(s.k)}</span><div class="v ${s.acc?'acc':s.warn?'warn':''}">${s.v}</div>
     ${s.bar!=null?`<div class="kbar"><i style="width:${Math.round(s.bar*100)}%"></i></div>`:''}
     ${s.d?`<div class="d">${esc(s.d)}</div>`:''}
@@ -67,23 +67,80 @@ const actionsHTML = () => { const ev = events(); const un = ev.filter(e=>e.t==='
 
 
 /* Одна лента, как в соцсети: хронология по дням, тип события — подписью и
-   цветом у каждой записи; фильтр по типу — чипами над лентой. */
-const F = { t: 'all' };
+   цветом у каждой записи. Над лентой два раскрывающихся фильтра: типы
+   событий (несколько сразу) и период. Пустой выбор типов — все. */
+const F = { types: new Set(), from: null, to: null, per: 'all' };
+const PERIODS = [['all','За всё время'],['today','Сегодня'],['yest','Вчера'],['7','7 дней'],['30','30 дней']];
+function perRange(k){ return k === 'today' ? [TODAY, TODAY] : k === 'yest' ? [addDays(TODAY,-1), addDays(TODAY,-1)] : k === '7' ? [addDays(TODAY,-6), TODAY] : k === '30' ? [addDays(TODAY,-29), TODAY] : [null, null] }
+const inRange = e => (!F.from || e.d >= F.from) && (!F.to || e.d <= F.to);
+const typeLabel = () => !F.types.size ? 'Все события' : F.types.size === 1 ? TYPES[[...F.types][0]] : TYPES[[...F.types][0]] + ' и ещё ' + (F.types.size - 1);
+const perLabel = () => F.per !== 'custom' ? PERIODS.find(p => p[0] === F.per)[1]
+  : F.from && F.to && F.from === F.to ? humanDate(F.from) : (F.from ? 'с ' + dm(F.from) : '') + (F.to ? ' по ' + dm(F.to) : '');
+const DDCHEV = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>';
+let EV = [];
 function render(){
-  const ev = events();
-  const list = F.t==='all' ? ev : ev.filter(e=>e.t===F.t);
-  const types = [['all','Все',ev.length], ...Object.keys(TYPES).filter(t=>ev.some(e=>e.t===t)).map(t=>[t,TYPES[t],ev.filter(e=>e.t===t).length])];
+  EV = feedEvents(); feedNewSet();
   const st = stats(), ob = onbHTML(), nw = feedNew();
   setTopTitle('Дашборд');
   $('#page').innerHTML = limitAlertHTML() + ob + `<div class="dkpis">${st.map(kpiHTML).join('')}</div>` + `
       <div class="feedh"><h2>Лента событий <span class="fnew">(${nw ? nw + ' ' + plural(nw,'новое','новых','новых') : 'новых событий нет'})</span></h2></div>
-      <div class="tabs2">${types.map(([k,n,c])=>`<button data-t="${k}" class="${F.t===k?'on':''}">${n}<s>${c}</s></button>`).join('')}</div>
-      <div class="feed1">${feedHTML(list)}</div>`;
-  $$('.tabs2 [data-t]').forEach(b=>b.onclick=()=>{ F.t=b.dataset.t; render() });
-  $$('.kpi[data-feed]').forEach(b=>b.onclick=()=>{ const on = F.t===b.dataset.feed; F.t = on ? 'all' : b.dataset.feed; render(); if(!on) $('.feedh').scrollIntoView({behavior:'smooth', block:'start'}) });
+      <div class="ffl">
+        <div class="fdd"><button class="fddb${F.types.size ? ' on' : ''}" id="fT" aria-haspopup="true" aria-expanded="false"><span>${esc(typeLabel())}</span>${DDCHEV}</button></div>
+        <div class="fdd"><button class="fddb${F.per !== 'all' ? ' on' : ''}" id="fD" aria-haspopup="true" aria-expanded="false"><span>${esc(perLabel())}</span>${DDCHEV}</button></div>
+        ${F.types.size || F.per !== 'all' ? '<button class="fclr" id="fX">Сбросить</button>' : ''}
+      </div>
+      <div class="feed1" id="feedList"></div>`;
+  renderList();
+  $('#fT').onclick = e => { e.stopPropagation(); togglePop('fT', typePop) };
+  $('#fD').onclick = e => { e.stopPropagation(); togglePop('fD', datePop) };
+  const x = $('#fX'); if(x) x.onclick = () => { F.types.clear(); F.per = 'all'; F.from = F.to = null; render() };
+  $$('.kpi[data-feed]').forEach(b=>b.onclick=()=>{ const on = F.types.size === 1 && F.types.has(b.dataset.feed); F.types = new Set(on ? [] : [b.dataset.feed]); render(); if(!on) $('.feedh').scrollIntoView({behavior:'smooth', block:'start'}) });
   onbBind(render);
+}
+function renderList(){
+  const list = EV.filter(e => (!F.types.size || F.types.has(e.t)) && inRange(e));
+  $('#feedList').innerHTML = feedHTML(list);
   $$('.fev.t-pr .btn, .fev2.t-pr .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Проценты в назначенных тренировках пересчитаны от нового рекорда') });
 }
+/* Раскрывающийся список под кнопкой фильтра; закрывается по клику мимо и Esc. */
+function togglePop(id, fill){
+  const open = document.querySelector('.fpop'), was = open && open.dataset.for === id;
+  closePop(); if(was) return;
+  const b = $('#' + id), box = document.createElement('div'); box.className = 'fpop'; box.dataset.for = id;
+  b.parentElement.appendChild(box); b.setAttribute('aria-expanded', 'true'); fill(box);
+  setTimeout(() => { document.addEventListener('click', popOut, true); document.addEventListener('keydown', popKey, true) });
+}
+function closePop(){ const p = document.querySelector('.fpop'); if(p){ const b = $('#' + p.dataset.for); if(b) b.setAttribute('aria-expanded', 'false'); p.remove() }
+  document.removeEventListener('click', popOut, true); document.removeEventListener('keydown', popKey, true) }
+const popOut = e => { if(!e.target.closest('.fpop, .fddb, .dpick')) closePop() };
+const popKey = e => { if(e.key === 'Escape') closePop() };
+/* Типы — галочками, несколько сразу; число — сколько таких в выбранном периоде. */
+function typePop(box){
+  const cnt = t => EV.filter(e => e.t === t && inRange(e)).length;
+  const ts = Object.keys(TYPES).filter(t => EV.some(e => e.t === t));
+  box.innerHTML = `<label class="fopt all"><input type="checkbox" data-all ${F.types.size ? '' : 'checked'}><span>Все события</span><s>${EV.filter(inRange).length}</s></label>
+    ${ts.map(t => `<label class="fopt"><input type="checkbox" data-ty="${t}" ${F.types.has(t) ? 'checked' : ''}><span>${TYPES[t]}</span><s>${cnt(t)}</s></label>`).join('')}`;
+  box.querySelector('[data-all]').onchange = () => { F.types.clear(); sync() };
+  box.querySelectorAll('[data-ty]').forEach(i => i.onchange = () => { i.checked ? F.types.add(i.dataset.ty) : F.types.delete(i.dataset.ty); sync() });
+  /* Список остаётся открытым — выбирают несколько типов подряд; лента и подпись кнопки обновляются сразу. */
+  const sync = () => { box.querySelector('[data-all]').checked = !F.types.size; box.querySelectorAll('[data-ty]').forEach(i => i.checked = F.types.has(i.dataset.ty));
+    $('#fT span').textContent = typeLabel(); $('#fT').classList.toggle('on', !!F.types.size); renderList(); clrBtn() };
+}
+/* Период — быстрые варианты и свой диапазон «с … по …» тем же календариком. */
+function datePop(box){
+  const draw = () => { box.innerHTML = `${PERIODS.map(([k, t]) => `<button class="fopt${F.per === k ? ' sel' : ''}" data-per="${k}"><span>${t}</span></button>`).join('')}
+    <div class="frng"><span>Период</span><button class="fdt" data-end="from">${F.from && F.per === 'custom' ? dm(F.from) : 'с …'}</button><button class="fdt" data-end="to">${F.to && F.per === 'custom' ? dm(F.to) : 'по …'}</button></div>`;
+    box.querySelectorAll('[data-per]').forEach(b => b.onclick = () => { F.per = b.dataset.per; [F.from, F.to] = perRange(F.per); closePop(); render() });
+    box.querySelectorAll('[data-end]').forEach(b => b.onclick = e => { e.stopPropagation(); const end = b.dataset.end;
+      openDatePicker(b, (end === 'from' ? F.from : F.to) || TODAY, d => {
+        if(F.per !== 'custom'){ F.per = 'custom'; F.from = F.to = null }
+        F[end] = d; if(F.from && F.to && F.from > F.to) [F.from, F.to] = [F.to, F.from];
+        $('#fD span').textContent = perLabel(); $('#fD').classList.add('on'); renderList(); clrBtn(); draw() }) }) };
+  draw();
+}
+function clrBtn(){ const has = F.types.size || F.per !== 'all', x = $('#fX');
+  if(has && !x){ $('.ffl').insertAdjacentHTML('beforeend', '<button class="fclr" id="fX">Сбросить</button>'); $('#fX').onclick = () => { F.types.clear(); F.per = 'all'; F.from = F.to = null; render() } }
+  if(!has && x) x.remove() }
 render();
 initShell({page:'index.html', title:'Дашборд'});
 </script>

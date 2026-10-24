@@ -414,7 +414,7 @@ function talkEvents(){
 }
 const idle = () => CLIENTS.filter(c=>c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 const noProg = () => CLIENTS.filter(c=>!c.prog);
-const TYPES = {pr:'Рекорды', q:'Вопросы', qa:'Отвеченные', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', start:'Первые шаги', done:'Результаты', pay:'Подписка'};
+const TYPES = {q:'Вопросы', qa:'Отвеченные', pr:'Рекорды', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', start:'Первые шаги', done:'Результаты', pay:'Подписка'};
 const TICON = {pr:ICON.star, q:ICON.chat, qa:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:ICON.wallet, new:ICON.users, start:ICON.chk, done:ICON.chk, pay:ICON.folder};
 
 /* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
@@ -474,25 +474,50 @@ const evWho = e => !e.c ? null : e.c.members ? 'groups.html' : 'client.html?id='
    Прежний вид — ?feed=old. */
 const FEED_OLD = /[?&]feed=old\b/.test(location.search);
 const ev2HTML = e => { const who = evWho(e), name = e.c && e.sub ? e.title.slice(0, -(' · ' + e.sub).length) : e.title;
-  return `<div class="fev2 t-${e.t}" data-key="${e.key||''}">
+  const fresh = e.id && FEED_NEWSET && FEED_NEWSET.has(e.id);
+  return `<div class="fev2 t-${e.t}${fresh ? ' fresh' : ''}" data-key="${e.key||''}">
     ${who ? `<a class="avl" href="${who}" title="${esc(name)}">${avaHTML(e.c)}</a>` : `<span class="avl">${avaHTML(null)}</span>`}
     <div class="c">
-      <div class="h">${who ? `<a class="who" href="${who}">${esc(name)}</a>` : `<b class="who">${esc(name)}</b>`}<span class="tchip t-${e.t}">${TLABEL[e.t]}</span></div>
+      <div class="h">${who ? `<a class="who" href="${who}">${esc(name)}</a>` : `<b class="who">${esc(name)}</b>`}<span class="tchip t-${e.t}">${TLABEL[e.t]}</span>${fresh ? '<span class="fnewm">новое</span>' : ''}</div>
       <div class="tx">${e.sub ? `<span class="ex">${esc(e.sub)}:</span> ` : ''}${e.tx}</div>
       <div class="fa">${e.fee ? `<button class="fact" data-fee="${e.fee}">${e.act}</button>` : `<a class="fact" href="${e.href}">${e.act}</a>`}</div>
     </div>
   </div>` };
 /* Новые события — те, что тренер ещё не видел на дашборде (STATE.feedSeen). Счётчик
    считается один раз при открытии страницы и сразу обнуляется на следующий визит. */
-const evKey = e => [e.t, e.c ? e.c.id : '', e.d, e.key || '', String(e.tx).replace(/<[^>]+>/g, '').slice(0, 40)].join('|');
-let FEED_NEW = null;
-function feedNew(){
-  if(FEED_NEW !== null) return FEED_NEW;
-  const seen = new Set(STATE.feedSeen || []), keys = events().map(evKey);
-  FEED_NEW = keys.filter(k => !seen.has(k)).length;
-  STATE.feedSeen = keys; saveState();
-  return FEED_NEW;
+/* ─── Журнал ленты ───
+   События считаются из текущих данных и пропадали, как только условие уходило
+   (результат — на следующий день, рекорд — через две недели, вопрос — сменив
+   тип на «отвечено»). Теперь каждое показанное событие запоминается
+   (STATE.feedLog) и остаётся в ленте навсегда; у живого — свежий текст.
+   Ключ стабилен: тип без «отвечено», клиент, дата, ветка или начало текста. */
+const evId = e => [e.t === 'qa' ? 'q' : e.t, e.c ? e.c.id : '', e.key || String(e.tx).replace(/<[^>]+>/g, '').slice(0, 40), e.key ? '' : e.d].join('|');
+const evSnap = e => ({t:e.t, d:e.d, cid:e.c ? e.c.id : null, title:e.title, sub:e.sub || null, tx:e.tx, act:e.act, href:e.href, key:e.key || null, fee:e.fee || null});
+function feedEvents(cid){
+  const log = STATE.feedLog ||= {}, live = events(cid), ids = new Set();
+  live.forEach(e => { const id = evId(e); ids.add(id); e.id = id; log[id] = evSnap(e) });
+  const old = Object.entries(log).filter(([id, x]) => !ids.has(id) && (!cid || x.cid === cid))
+    .map(([id, x]) => ({...x, id, c: x.cid ? who(x.cid) : null, fee: null, act: x.fee ? 'Открыть профиль' : x.act, gone: true}));
+  /* Журнал не растёт бесконечно в хранилище: держим 600 последних по дате. */
+  const all = Object.entries(log); if(all.length > 600){ all.sort((a, b) => b[1].d.localeCompare(a[1].d)).slice(600).forEach(([id]) => delete log[id]) }
+  saveState();
+  const order = {q:0, fee:1, prog:2, pr:3, miss:4, qa:5, new:6, start:7, done:8, pay:9};
+  return live.concat(old).sort((a, b) => b.d.localeCompare(a.d) || order[a.t] - order[b.t]);
 }
+/* Новые — те, которых не было при прошлом открытии дашборда (STATE.feedSeen).
+   Множество считается один раз на загрузку страницы: пока тренер здесь,
+   выделение не гаснет; при следующем заходе эти события уже не новые. */
+let FEED_NEWSET = null;
+function feedNewSet(){
+  if(FEED_NEWSET) return FEED_NEWSET;
+  const seen = new Set(STATE.feedSeen || []), ids = feedEvents().map(e => e.id);
+  /* Нет отметки или она в прежнем формате (ключ из пяти частей) — первый заход: ничего не выделяем. */
+  const first = !STATE.feedSeen || STATE.feedSeen.some(k => k.split('|').length === 5);
+  FEED_NEWSET = new Set(first ? [] : ids.filter(id => !seen.has(id)));
+  STATE.feedSeen = ids; saveState();
+  return FEED_NEWSET;
+}
+const feedNew = () => feedNewSet().size;
 function feedHTML(list, withDays=true){
   if(!list.length) return '<div class="empty"><div class="t">Тихо</div><div class="d">Новых событий нет</div></div>';
   let out='', day=null;
