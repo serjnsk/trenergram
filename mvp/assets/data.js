@@ -1958,7 +1958,8 @@ const chainText = it => { const prm = [loadText(it), chainScheme(it)].filter(Boo
 const dayMsg = (sid, date) => !sid ? '' : ((TALK.workout[talkKey(sid, date)] || []).find(m => m.who === 'trainer') || {}).text || '';
 /* sid — чей день (клиент или группа): по нему находится сообщение тренера к
    тренировке, оно стоит первым, над блоками, — так его читает и клиент. */
-function blocksDetail(x, cid, sid = cid){
+/* extra(b, i) — что дописать под блоком (итог и переписка в просмотре тренировки). */
+function blocksDetail(x, cid, sid = cid, extra = null){
   const pm = cid ? pmOf(cid) : null;
   const has = itemHas;
   const bs = (x.blocks||[]).filter(blockHas); if(!bs.length) return '';
@@ -1978,8 +1979,212 @@ function blocksDetail(x, cid, sid = cid){
       k++;
     }
     return h };
-  return `<div class="bxs">${msg ? `<div class="bxmsg" title="${esc(msg)}">${CHATICON}<span>${esc(msg)}</span></div>` : ''}${bs.map((b,i)=>`<div class="bx">
+  return `<div class="bxs">${msg ? `<div class="bxmsg" title="${esc(msg)}">${CHATICON}<span>${esc(msg)}</span></div>` : ''}${bs.map((b,i)=>`<div class="bx" id="b${i}">
     <div class="bxh"><s>${i+1}</s><b>${esc(b.title || blockTypeLabel(b) || (isTextBlock(b) ? 'Блок текстом' : 'Блок'))}</b>${b.fmt && b.title ? `<i>${esc(fmtLabel(b.fmt))}</i>` : ''}</div>
-    ${body(b)}
+    ${body(b)}${extra ? extra(b, i) : ''}
   </div>`).join('')}</div>`;
 }
+
+/* ═══════════ ТРЕНИРОВКА КЛИЕНТА: ОБСУЖДЕНИЕ БЛОКОВ, ИТОГ, НОВЫЕ 1ПМ ═══════════
+   Одна модель на кабинет и клиентское приложение. Клиент пишет в «Чат» блока,
+   записывает «Итог» и новый 1ПМ — тренер видит это в просмотре тренировки
+   (workout.html), в ленте и в правой панели конструктора и отвечает там же.
+   Ответ не исчезает: ветка блока хранит всю переписку.
+   Ключ блока — «клиент@дата#номер», номер — среди непустых блоков дня, как их
+   видит клиент. Записанное лежит в STATE (общее хранилище кабинета и
+   приложения), демо-история — ниже, в координатах сегодняшнего дня. */
+const blkKey = (cid, date, bi) => cid + '@' + date + '#' + bi;
+const blkParse = k => { const m = /^(.+)@(\d{4}-\d{2}-\d{2})#(\d+)/.exec(k); return m ? {cid:m[1], date:m[2], bi:+m[3]} : null };
+
+/* День глазами клиента: только опубликованное, у черновика — прошлый слепок.
+   План собирается долго — держим его, пока идёт одна отрисовка. */
+const CPLAN = {};
+const cliPlan = pid => { if(!CPLAN[pid]){ CPLAN[pid] = buildPlan(pid); setTimeout(() => { delete CPLAN[pid] }, 0) } return CPLAN[pid] };
+function cliDay(cid, date){
+  const c = client(cid), p = c && program(c.prog);
+  const base = {date, title:'Отдых', rest:true, comp:false, blocks:[]};
+  if(!p) return base;
+  const i = daysBetween(p.start, date), x = i >= 0 ? cliPlan(c.prog)[i] : null;
+  if(!x) return base;
+  let title = x.title, blocks = x.blocks, comp = x.comp;
+  if(x.draft){ if(!x.pub) return base; const r = JSON.parse(x.pub); title = r.t; comp = !!r.c; blocks = restoreBlocks(r) }
+  blocks = (blocks || []).filter(blockHas);
+  return {date, title: blocks.length ? title : (comp ? title : 'Отдых'), rest: !blocks.length && !comp, comp, blocks};
+}
+/* Соседние дни с тренировкой — листать историю клиента. */
+function cliDayStep(cid, date, dir){
+  for(let k = 1; k <= 90; k++){ const d = addDays(date, dir * k); if(cliDay(cid, d).blocks.length) return d }
+  return null;
+}
+
+/* ─── Итог блока ───
+   Что записывается: строка формата комплекса (AMRAP — раунды + повторы, на
+   время — мин:сек…) или строки с весом силового блока. */
+const itemLoadKg = (it, pm) => it.pct != null ? (k => k ? k + ' кг' : '')(kgText(it, pm)) : it.val ? loadText(it) : '';
+const RES_FMT = {
+  'AMRAP':     { f: [['r', 'раундов'], ['p', 'повторов']], v: r => `${r.r || 0} + ${r.p || 0}` },
+  'FOR TIME':  { f: [['m', 'мин'], ['s', 'сек']], v: r => `${r.m || 0}:${String(r.s || 0).padStart(2, '0')}` },
+  'EMOM':      { f: [['r', 'из %n раундов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` },
+  'DEATH BY':  { f: [['r', 'раундов']], v: r => `${r.r || 0} раундов` },
+  'TABATA':    { f: [['r', 'повторов всего']], v: r => `${r.r || 0} повт.` },
+  'ИНТЕРВАЛЫ': { f: [['r', 'из %n интервалов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` },
+  'РАУНДЫ':    { f: [['r', 'из %n раундов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` }
+};
+/* План по подходам. В суперсете упражнение с повторами без «×» делается
+   каждый круг: «Жим лёжа 5» в сете на 5 кругов — пять подходов по 5. */
+function planSets(it, its, pm){
+  const out = buildSets(it, pm).map(x => ({w: x.kg, r: x.reps}));
+  if(it.sub && out.length === 1 && /^\d+$/.test(it.scheme || '')){
+    let h = its.indexOf(it); while(h > 0 && !its[h].ss) h--;
+    const n = its[h] && its[h].ss ? +its[h].rounds || 1 : 1;
+    return Array.from({length: n}, () => ({...out[0]}));
+  }
+  return out;
+}
+/* Силовое упражнение записывается по подходам: {sets:[{w, r}]} — вес и повторы
+   каждого подхода. Старая запись одним весом ({w}) читается как этот вес во всех
+   подходах плана. */
+const resSets = (r, o) => !r ? [] : r.sets ? r.sets : r.w != null ? (o.sets || [{r:null}]).map(x => ({w:r.w, r:x.r})) : [];
+const setTxt = x => (x.w != null ? fmtNum(x.w) : '—') + (x.r != null ? '×' + x.r : '');
+const RES_KG = { f: [['w', 'кг']], v: (r, o) => resSets(r, o).map(setTxt).join(' · ') };
+function resEntries(b, pm, bk){
+  const fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null;
+  if(fmt) return RES_FMT[fmt.k] ? [{key: bk + ':f', label: fmtLabel(fmt), o: {k: fmt.k, f: fmt}}] : [];
+  const its = b.items || [];
+  return its.filter(it => !it.ss && !it.chain && itemHas(it) && /кг/.test(itemLoadKg(it, pm))).map(it => {
+    const e = it.exId ? byId(it.exId) : null;
+    return {key: bk + ':i' + its.indexOf(it), label: [it.scheme, e ? e.ru : it.raw].filter(Boolean).join(' '),
+      o: {k: 'kg', plan: itemLoadKg(it, pm), sets: planSets(it, its, pm)}};
+  });
+}
+/* Клиент отзанимался: в демо — дни его программы до последнего визита. */
+const demoDone = (cid, date) => { const c = client(cid); return !!(c && c.last && date < TODAY && date <= c.last && date >= addDays(c.last, -20)) };
+const keyHash = k => { let h = 0; for(const ch of k) h = (h * 31 + ch.charCodeAt(0)) % 9973; return h };
+function resDemo(key){
+  const m = /^(.+#\d+):(f|i(\d+))$/.exec(key), p = m && blkParse(m[1]);
+  if(!p || !demoDone(p.cid, p.date)) return null;
+  const b = cliDay(p.cid, p.date).blocks[p.bi]; if(!b) return null;
+  const h = keyHash(key);
+  if(m[2] === 'f'){ const f = b.fmt; if(!f || typeof f !== 'object') return null; const n = +f.rounds || 10, r = h % 3 ? n : n - 1;
+    return {AMRAP:{r:4 + h % 5, p:h % 12}, 'FOR TIME':{m:7 + h % 8, s:h % 60}, EMOM:{r}, 'DEATH BY':{r:8 + h % 6}, TABATA:{r:70 + h % 40}, 'ИНТЕРВАЛЫ':{r}, 'РАУНДЫ':{r}}[f.k] || null }
+  const it = !b.fmt && (b.items || [])[+m[3]]; if(!it) return null;   /* у комплекса итог один — на весь блок */
+  /* Как в плане, иногда последний подход недобран — на повтор или на 2,5 кг. */
+  const sets = planSets(it, b.items, pmOf(p.cid)); if(!sets.length || !(sets[0].w > 0)) return null;
+  const l = sets[sets.length - 1];
+  if(h % 3 === 0 && l.r > 1) l.r--; else if(h % 3 === 1) l.w -= 2.5;
+  return {sets};
+}
+const resRec = key => (STATE.res || {})[key] || resDemo(key);
+function resSet(key, r){ (STATE.res ||= {})[key] = r; saveState() }
+const resVal = (key, o) => { const d = o.k === 'kg' ? RES_KG : RES_FMT[o.k], r = resRec(key); return r ? d.v(r, o.f || o) : '' };
+/* Тренировка выполнена: клиент её завершил, записал итог — или демо. */
+const dayDoneBy = (cid, date) => !!(STATE.ddone || {})[cid + '@' + date] || demoDone(cid, date)
+  || Object.keys(STATE.res || {}).some(k => k.startsWith(cid + '@' + date + '#'));
+
+/* ─── Новые 1ПМ, записанные в тренировке ─── */
+function dayPms(cid, date){
+  const c = client(cid), out = [];
+  if(c && c.pr && shiftDate(c.pr.at) === date) out.push({k:c.pr.ex, v:c.pr.v, prev:c.pr.prev});
+  (STATE.pmLog || []).filter(x => x.cid === cid && x.d === date).forEach(x => out.push(x));
+  return out;
+}
+const pmName = k => PMNAMES[k] || (byId(k) || {}).ru || k;
+
+/* ─── Обсуждение блока ───
+   Ветка «клиент + блок дня»: первым стоит заметка тренера к блоку (b.note),
+   дальше сообщения обоих. Сообщение — {who:'client'|'trainer', text, d, at}. */
+const nowHM = () => { const n = new Date(); return String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') };
+/* Вопрос из демо-данных клиента (comments: дата и упражнение) — к блоку, где
+   это упражнение есть; в день отдыха — к ближайшей тренировке до него. */
+function cmBlock(cid, d, ex){
+  const q = ex ? norm(ex).split(' ')[0] : null, has = b => (b.items || []).some(it => (it.chain ? it.parts || [] : [it]).some(p => { const e = p.exId && byId(p.exId); return e && norm(e.ru).includes(q) }));
+  let near = null;
+  for(let k = 0; k <= 10; k++){ const date = addDays(d, -k), bs = cliDay(cid, date).blocks; if(!bs.length) continue;
+    near ||= {date, bi: Math.max(0, bs.findLastIndex(b => b.kind !== 'cooldown'))};   /* без упражнения — к последнему рабочему блоку, не к заминке */
+    if(!q) return near;
+    const bi = bs.findIndex(has); if(bi >= 0) return {date, bi};
+  }
+  return near;
+}
+let TSEED = null;
+function talkSeeds(){
+  if(TSEED) return TSEED; TSEED = {};
+  const put = (cid, at, msgs) => { if(at) (TSEED[blkKey(cid, at.date, at.bi)] ||= []).push(...msgs) };
+  CLIENTS.forEach(c => (c.comments || []).forEach((cm, i) => put(c.id, cmBlock(c.id, cm.d, cm.ex),
+    [{who:'client', text:cm.tx, d:cm.d, at:'19:' + String(12 + i * 7).padStart(2, '0')}]
+      .concat(cm.reply ? [{who:'trainer', text:cm.reply, d:cm.d, at:'21:05'}] : []))));
+  /* История Артёма: прошлые тренировки с вопросами, на которые тренер уже ответил, —
+     ответ остаётся в ветке, его видно и через неделю. */
+  const c = client('c1');
+  if(c && c.last){
+    /* Ближайший прошлый день, где есть комплекс (cx) или силовой блок с процентами. */
+    const find = (cx, skip) => { for(let d = addDays(c.last, -2); d >= addDays(c.last, -16); d = addDays(d, -1)){ if(d === skip) continue;
+      const i = cliDay('c1', d).blocks.findIndex(b => cx ? b.fmt && typeof b.fmt === 'object' : !b.fmt && (b.items || []).some(it => it.pct != null));
+      if(i >= 0) return {date:d, bi:i} } return null };
+    const a = find(true), b = find(false, a && a.date), done = [a && a.date, b && b.date], pick = (date, cx) => cx ? a : b;
+    if(done[0]) put('c1', pick(done[0], true), [
+      {who:'client', text:'Комплекс сделал, но на последнем раунде дважды вставал — дыхание не держу.', d:done[0], at:'19:40'},
+      {who:'trainer', text:'Для этого объёма нормально. В следующий раз первый раунд спокойнее, держи ровный темп — встанешь меньше.', d:done[0], at:'21:12'}]);
+    if(done[1]) put('c1', pick(done[1], false), [
+      {who:'client', text:'Последний подход шёл тяжело. Вес оставить или снизить?', d:done[1], at:'20:15'},
+      {who:'trainer', text:'Оставляем. Через неделю добавим 2,5 кг, если техника будет такой же.', d:done[1], at:'20:48'}]);
+  }
+  Object.values(TSEED).forEach(a => a.sort((x, y) => (x.d + x.at).localeCompare(y.d + y.at)));
+  return TSEED;
+}
+const talkOf = k => [...(talkSeeds()[k] || []), ...((STATE.talk || {})[k] || [])];
+function talkAdd(k, who, text){ ((STATE.talk ||= {})[k] ||= []).push({who, text, d:TODAY, at:nowHM()}); saveState() }
+const talkKeys = () => [...new Set([...Object.keys(talkSeeds()), ...Object.keys(STATE.talk || {})])];
+/* Ждёт ответа — последнее слово в ветке за клиентом. */
+const talkWaits = k => { const t = talkOf(k); return !!t.length && t[t.length - 1].who === 'client' };
+const talkWhen = m => (m.d === TODAY ? 'сегодня' : m.d === addDays(TODAY, -1) ? 'вчера' : dm(m.d)) + (m.at ? ', ' + m.at : '');
+
+/* ─── Обсуждение блока: список «дата · кто: текст» ───
+   Ждёт ответа — открыто, последний вопрос отмечен; отвечено — свёрнуто в
+   строку. reply — с полем ответа (просмотр тренировки) или только чтение. */
+function talkHTML(cid, date, bi, reply){
+  const k = blkKey(cid, date, bi), t = talkOf(k), c = client(cid), wait = talkWaits(k);
+  if(!t.length) return reply ? `<div class="wtd wnew" hidden>${talkInput(k, c, false)}</div>` : '';
+  const nm = esc((c ? c.n : 'Клиент').split(' ')[0]);
+  const st = wait ? '<i class="wst q">ждёт ответа</i>' : t.some(m => m.who === 'client') ? '<i class="wst">отвечено</i>' : '';
+  return `<details class="wtd${wait ? ' wait' : ''}"${reply ? ' open' : ''}>
+    <summary>${CHATICON}<b>Чат · ${t.length}</b>${st}</summary>
+    <div class="wtl">${t.map((m, j) => `<div class="wtm${wait && j === t.length - 1 ? ' q' : ''}"><s>${talkWhen(m)} · ${m.who === 'trainer' ? 'Вы' : nm}:</s> ${esc(m.text)}</div>`).join('')}
+    ${reply ? talkInput(k, c, wait) : ''}</div>
+  </details>`;
+}
+const talkInput = (k, c, wait) => `<div class="wrin"><input class="inp" data-rk="${k}" placeholder="${wait ? 'Ответить' : 'Сообщение клиенту к блоку'}" aria-label="Сообщение клиенту"><button class="btn sm" data-rsend="${k}" disabled>Отправить</button></div>`;
+
+/* ─── Блок в просмотре тренировки: данные для раскладки ───
+   Строки блока с планом и фактом по подходам; как их расположить — решает
+   страница (workout.html). */
+function blkModel(cid, date, b, bi){
+  const k = blkKey(cid, date, bi), pm = pmOf(cid), fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null, its = b.items || [];
+  const plan = it => { if(it.chain){ const kg = kgText(it, pm); return [loadText(it), kg ? kg + ' кг' : '', chainScheme(it)].filter(Boolean).join(' · ') }
+    const e = it.exId && byId(it.exId), kg = e ? kgText(it, pm) : null; return [itemLabel(it), kg != null ? kg + ' кг' : ''].filter(Boolean).join(' · ') };
+  const nm = it => it.chain ? chainNames(it) : it.exId ? (byId(it.exId) || {}).ru || '' : it.raw || '';
+  /* Строка как у клиента: «3×5 Становая тяга 132,5 кг» — схема, упражнение, нагрузка. */
+  const line = it => it.chain ? chainText(it) : it.txt ? nm(it) + ' — ' + it.txt : [it.scheme, nm(it), itemLoadKg(it, pm)].filter(Boolean).join(' ');
+  const row = (it, sub) => { const ps = fmt ? [] : planSets(it, its, pm), r = fmt ? null : resRec(k + ':i' + its.indexOf(it));
+    return {it, sub, name: nm(it), plan: plan(it), line: line(it), ps, got: resSets(r, {sets: ps})} };
+  const rows = [];
+  if(isTextBlock(b)) textLines(b.text).forEach(l => rows.push({txt:l}));
+  else for(let q = 0; q < its.length;){ const it = its[q];
+    if(it.ss){ const j = ssEnd(its, q), mem = its.slice(q + 1, j).filter(itemHas); if(mem.length){ rows.push({ss:ssLabel(it)}); mem.forEach(m => rows.push(row(m, true))) } q = j; continue }
+    if(itemHas(it)) rows.push(row(it)); q++ }
+  const tl = blockTypeLabel(b);
+  return {k, bi, name: b.title || tl || (isTextBlock(b) ? 'Блок текстом' : 'Блок'), fmt: fmt && b.title ? fmtLabel(fmt) : '',
+    type: b.title ? [norm(tl || '') === norm(b.title) ? '' : tl, fmt && !String(b.title).includes(fmtLabel(fmt)) ? fmtLabel(fmt) : ''].filter(Boolean).join(' · ') : '',
+    fres: fmt && RES_FMT[fmt.k] ? resVal(k + ':f', {k:fmt.k, f:fmt}) : '', note: b.note || '', rows, talk: talkOf(k)};
+}
+/* Подход относительно плана: lo — меньше веса или повторов, hi — больше. */
+const setCmp = (x, pl = {}) => { const dw = pl.w != null && x.w != null ? x.w - pl.w : 0, dr = pl.r != null && x.r != null ? x.r - pl.r : 0;
+  return dw < 0 || dr < 0 ? 'lo' : dw > 0 || dr > 0 ? 'hi' : 'ok' };
+
+/* Правая панель конструктора: итог и обсуждение под блоком, только чтение. */
+function blkExtraHTML(cid, date, b, bi){
+  const k = blkKey(cid, date, bi);
+  const res = resEntries(b, pmOf(cid), k).map(x => [x, resVal(x.key, x.o)]).filter(([, v]) => v);
+  return `${res.length ? `<div class="wres"><b>Итог</b>${res.map(([x, v]) => `<span><s>${esc(x.label)}</s> <em>${esc(v)}</em></span>`).join('')}</div>` : ''}${talkHTML(cid, date, bi, false)}`;
+}
+const workoutHref = (cid, date, bi) => `workout.html?client=${cid}&date=${date}${bi != null ? '#b' + bi : ''}`;

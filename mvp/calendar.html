@@ -85,6 +85,10 @@ function monthHTML(y, m, ctx){
     const href = `constructor.html?${subjQ(C.cid)}&date=${date}`;   /* любой день можно составить — границ у программы нет */
     if(!inPlan) return `<a class="day empty rest${cls}" href="${href}" data-date="${date}" title="Составить этот день">${head}${restCell()}</a>`;
     const x = plan[i];
+    /* Прошедший или выполненный день клиента открывается на чтение — с итогом и
+       перепиской; составлять его — «Редактировать» уже там. */
+    const ro = !G && cliDay(c.id, date).blocks.length && (date < TODAY || dayDoneBy(c.id, date));
+    const dhref = ro ? workoutHref(c.id, date) : href;
     const n = dayCount(x);
     const bl = x.blocks.filter(blockHas).length;
     const title = !x.title || x.title==='Отдых' || x.title==='—' ? 'Без названия' : x.title;
@@ -95,9 +99,9 @@ function monthHTML(y, m, ctx){
     const tag = st === 'rest' ? '' : G ? grpStatTag(G, date) : grpTag(x);
     /* Галочка массового выбора — только у дней с тренировкой или соревнованием. */
     const hs = st === 'rest' ? head : head.replace('<span class="d">', '<span class="d">' + bulkBox(date)), sc = st === 'rest' ? '' : bulkCls(date);
-    if(compact) return `<a class="day cmp ${st}${cls}${sc}" href="${href}" data-date="${date}">${hs}${mark}
+    if(compact) return `<a class="day cmp ${st}${cls}${sc}" href="${dhref}" data-date="${date}">${hs}${mark}
       ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}</a>`;
-    return `<a class="day ${st}${cls}${sc}" href="${href}" data-date="${date}">${hs}${mark}
+    return `<a class="day ${st}${cls}${sc}" href="${dhref}" data-date="${date}">${hs}${mark}
       ${st==='rest' ? restCell() : `<span class="t">${esc(tt)}</span>`}${tag}
       ${blocks || (st==='comp' ? compCell() : '')}</a>`;
   });

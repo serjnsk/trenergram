@@ -82,12 +82,6 @@ function render(){
   $$('.tabs2 [data-t]').forEach(b=>b.onclick=()=>{ F.t=b.dataset.t; render() });
   $$('.kpi[data-feed]').forEach(b=>b.onclick=()=>{ const on = F.t===b.dataset.feed; F.t = on ? 'all' : b.dataset.feed; render(); if(!on) $('.feedh').scrollIntoView({behavior:'smooth', block:'start'}) });
   onbBind(render);
-  /* Ответ на вопрос — прямо в ленте, без перехода в карточку. */
-  $$('.fev.t-q .btn, .fev2.t-q .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); const row=b.closest('.fev, .fev2'); if(row.querySelector('.reply')) return;
-    const key=row.dataset.key; row.querySelector('.c').insertAdjacentHTML('beforeend', `<div class="reply"><input placeholder="Ответить…" data-key="${key}"><button class="btn gh sm" data-send="${key}">Отправить</button></div>`);
-    row.querySelector('input').focus();
-    row.querySelector('[data-send]').onclick=()=>{ const v=row.querySelector('input').value.trim(); if(!v) return; const [cid,i]=key.split(':'); client(cid).comments[+i].reply=v; STATE.replied[key]=true; saveState(); toast('Ответ отправлен'); render() };
-  });
   $$('.fev.t-pr .btn, .fev2.t-pr .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Проценты в назначенных тренировках пересчитаны от нового рекорда') });
 }
 render();

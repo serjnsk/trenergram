@@ -62,6 +62,13 @@ const clS = (() => {
   try { return Object.assign(def, JSON.parse(localStorage.getItem('trenergram.client') || '{}')); } catch (e) { return def; }
 })();
 const clSave = () => { try { localStorage.setItem('trenergram.client', JSON.stringify(clS)); } catch (e) {} };
+/* Сообщения и итог раньше лежали только у клиента (clS.sent, clS.res) — переносим
+   в общее хранилище, чтобы их видел тренер. Один раз. */
+if (Object.keys(clS.sent || {}).length || Object.keys(clS.res || {}).length) {
+  Object.entries(clS.sent || {}).forEach(([k, arr]) => arr.forEach(m => ((STATE.talk ||= {})[k] ||= []).push({ who: 'client', text: m.tx, d: (blkParse(k) || {}).date || TODAY, at: m.at })));
+  Object.entries(clS.res || {}).forEach(([k, r]) => { (STATE.res ||= {})[k] ||= r; });
+  clS.sent = {}; clS.res = {}; saveState(); clSave();
+}
 
 /* ── тема: как в системе, светлая или тёмная (P1 «Настройки») ── */
 const CL_THEMES = [['system', 'Как в системе'], ['light', 'Светлая'], ['dark', 'Тёмная']];
@@ -87,23 +94,9 @@ let clCalOpen = false;
    а если тренер ещё ни разу не публиковал день — его нет. */
 /* План собирается долго (весь контейнер дней) — держим его в памяти, пока
    идёт одна отрисовка: месяц в календаре — это 30 дней подряд */
-let clPlanMemo = null;
-const clPlan = pid => { if (!clPlanMemo) { clPlanMemo = buildPlan(pid); setTimeout(() => { clPlanMemo = null; }, 0); } return clPlanMemo; };
-function clDayAt(date) {
-  const c = client(CL_ME), p = program(c.prog);
-  const i = daysBetween(p.start, date);
-  const x = i >= 0 ? clPlan(c.prog)[i] : null;
-  const base = { date, title: 'Отдых', rest: true, comp: false, blocks: [] };
-  if (!x) return base;
-  let title = x.title, blocks = x.blocks, comp = x.comp;
-  if (x.draft) {
-    if (!x.pub) return base;
-    const r = JSON.parse(x.pub);
-    title = r.t; comp = !!r.c; blocks = restoreBlocks(r);
-  }
-  blocks = (blocks || []).filter(blockHas);
-  return { date, title: blocks.length ? title : (comp ? title : 'Отдых'), rest: !blocks.length && !comp, comp, blocks };
-}
+/* День клиента — общий с кабинетом тренера (cliDay в data.js): тренер в
+   просмотре тренировки видит те же блоки и номера блоков. */
+const clDayAt = date => cliDay(CL_ME, date);
 const clDayKey = date => CL_ME + '@' + date;
 const WD_FULL = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
 const clDateLong = date => { const d = D(date); return WD_FULL[dowMon(date)] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; };
@@ -169,36 +162,26 @@ const CL_TAB_SHORT = { chat: 'Чат', tech: 'Техника', res: 'Итог', 
    Вкладка «Результат» внизу блока: что записывается — строка формата комплекса
    (AMRAP — раунды + повторы, на время — мин:сек…) или строки с весом силового
    блока. Записанное — значением с галочкой, кружок блока заполняется. */
-const CL_RES_FMT = {
-  'AMRAP':     { f: [['r', 'раундов'], ['p', 'повторов']], v: r => `${r.r || 0} + ${r.p || 0}` },
-  'FOR TIME':  { f: [['m', 'мин'], ['s', 'сек']], v: r => `${r.m || 0}:${String(r.s || 0).padStart(2, '0')}` },
-  'EMOM':      { f: [['r', 'из %n раундов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` },
-  'DEATH BY':  { f: [['r', 'раундов']], v: r => `${r.r || 0} раундов` },
-  'TABATA':    { f: [['r', 'повторов всего']], v: r => `${r.r || 0} повт.` },
-  'ИНТЕРВАЛЫ': { f: [['r', 'из %n интервалов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` },
-  'РАУНДЫ':    { f: [['r', 'из %n раундов']], v: (r, f) => `${r.r || 0} из ${f.rounds}` }
-};
-const CL_RES_KG = { f: [['w', 'кг']], v: (r, o) => clNum(r.w) + ' кг' + (String(clNum(r.w)) + ' кг' === o.plan ? ' ✓' : '') };
-const clResSpec = (key, o) => { const d = o.k === 'kg' ? CL_RES_KG : CL_RES_FMT[o.k], r = (clS.res || {})[key];
+/* Форматы итога и сам записанный итог — общие с кабинетом (RES_FMT, resRec в
+   data.js): что клиент записал, тренер видит в просмотре тренировки. */
+const CL_RES_FMT = RES_FMT, CL_RES_KG = RES_KG;
+const clResSpec = (key, o) => { const d = o.k === 'kg' ? CL_RES_KG : CL_RES_FMT[o.k], r = resRec(key);
   return { d, r, val: r ? d.v(r, o.f || o) : '' }; };
 /* Поля результата одной строки */
 function clResFields(key, o) {
   const { d, r } = clResSpec(key, o), ph = o.k === 'kg' ? String(o.plan).replace(/\s*кг$/, '') : '';
+  /* Силовое — по подходам: вес и повторы, подсказка из плана. Оставил пустым —
+     значит сделал как в плане; правит только то, что отличалось. */
+  if (o.k === 'kg' && o.sets && o.sets.length) { const got = resSets(r, o);
+    return `<div class="rsets">${o.sets.map((x, i) => { const g = got[i] || {};
+      const f = (k, v, pv, u) => `<label class="rfld"><input inputmode="decimal" data-rf="${k}${i}" value="${v != null && r ? clEsc(clNum(v)) : ''}" placeholder="${pv != null ? clEsc(clNum(pv)) : ''}" aria-label="Подход ${i + 1}, ${u}"><i>${u}</i></label>`;
+      return `<div class="rset"><span class="rn">${i + 1}</span>${f('w', g.w, x.w, 'кг')}${f('r', g.r, x.r, 'повт')}</div>`; }).join('')}</div>`; }
   const u = x => x.replace('%n', (o.f || {}).rounds || '');
   return `<div class="rflds">${d.f.map(([k, x]) => `<label class="rfld"><input inputmode="decimal" data-rf="${k}" value="${r && r[k] != null ? clEsc(r[k]) : ''}" placeholder="${clEsc(ph)}" aria-label="${clEsc(u(x))}"><i>${clEsc(u(x))}</i></label>`).join('')}</div>`;
 }
-/* Что в блоке записывается: строка формата комплекса или строки с весом силового блока */
-function clResEntries(b, pm, bk) {
-  const fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null;
-  if (fmt) return CL_RES_FMT[fmt.k] ? [{ key: bk + ':f', label: fmtLabel(fmt), o: { k: fmt.k, f: fmt } }] : [];
-  const its = b.items || [];
-  return its.filter(it => !it.ss && !it.chain && itemHas(it) && /кг/.test(clLoad(it, pm))).map(it => {
-    const e = it.exId ? byId(it.exId) : null;
-    return { key: bk + ':i' + its.indexOf(it), label: [it.scheme, e ? e.ru : it.raw].filter(Boolean).join(' '), o: { k: 'kg', plan: clLoad(it, pm) } };
-  });
-}
+const clResEntries = resEntries;
 const clResTab = (ents, bk) => ents.map(x => { const { val } = clResSpec(x.key, x.o);
-  return `<div class="rent" data-rpan="${x.key}"><div class="rl"><span>${clEsc(x.label)}</span>${val ? `<s>${clI('check')}${clEsc(val)}</s>` : ''}</div>${clResFields(x.key, x.o)}</div>`; }).join('') +
+  return `<div class="rent" data-rpan="${x.key}"><div class="rl"><span>${clEsc(x.label)}</span>${val ? `<s>${clI('check')}${clEsc(x.o.k === 'kg' ? 'записано' : val)}</s>` : ''}</div>${clResFields(x.key, x.o)}</div>`; }).join('') +
   `<button class="btn pri rsave" data-rsaveall="${bk}">Записать</button>`;
 
 /* Ключи 1ПМ упражнений блока — для вкладки «Рекорд»: только те, от чьего
@@ -389,7 +372,9 @@ const CL_UI = {
          заметка тренера к блоку, дальше сообщения клиента, внизу поле ввода */
       const thread = (b.note ? `<div class="msgt"><span class="av">${clEsc(TRAINER.ini)}</span>
             <div class="bub"><s>${clEsc(TRAINER.n)}</s><p>${clEsc(b.note)}</p></div></div>` : '') +
-        (clS.sent[bk] || []).map(m => `<div class="msgc"><div class="bub"><p>${clEsc(m.tx)}</p><s>${clEsc(m.at)}</s></div></div>`).join('');
+        talkOf(bk).map(m => m.who === 'trainer'
+          ? `<div class="msgt"><span class="av">${clEsc(TRAINER.ini)}</span><div class="bub"><s>${clEsc(TRAINER.n)} · ${clEsc(talkWhen(m))}</s><p>${clEsc(m.text)}</p></div></div>`
+          : `<div class="msgc"><div class="bub"><p>${clEsc(m.text)}</p><s>${clEsc(talkWhen(m))}</s></div></div>`).join('');
       const rows = [
         ['chat', 'Обсуждение', 'msg', `${thread ? `<div class="thr">${thread}</div>` : ''}
           <div class="rin"><textarea class="inp ta" data-note="${bk}" rows="2" placeholder="Веса, повторы, время, вопрос тренеру…">${clEsc(clS.notes[bk] || '')}</textarea>
@@ -408,10 +393,11 @@ const CL_UI = {
       /* Вкладки: обсуждение, техника, результат, ПМ */
       const ents = clResEntries(b, pm, bk);
       if (ents.length) rows.splice(rows.findIndex(r => r[0] === 'rec') < 0 ? rows.length : rows.findIndex(r => r[0] === 'rec'), 0, ['res', 'Результат', 'clip', clResTab(ents, bk)]);
-      const got = ents.length && ents.every(x => (clS.res || {})[x.key]);
+      const got = ents.length && ents.every(x => resRec(x.key));
       const tab = rows.some(r => r[0] === clS.open[bk + ':tab']) ? clS.open[bk + ':tab'] : '';
       /* Точка — в обсуждении есть сообщение тренера, а клиент его ещё не открывал */
-      const has = { chat: !!b.note && !clS.open[bk + ':seen'] };
+      const nTr = (b.note ? 1 : 0) + talkOf(bk).filter(m => m.who === 'trainer').length;
+      const has = { chat: nTr > 0 && clS.open[bk + ':seen'] !== nTr };
       return `<section class="blk${done ? ' done' : ''}">
         <div class="bh">
           <button class="bt" data-bopen="${bk}" aria-expanded="${open}"><b>${clEsc(clBlockName(b))}</b>${clI('down', open ? 'up' : '')}</button>
@@ -558,7 +544,10 @@ const CL_UI_MOUNT = {
       const ra = e.target.closest('[data-rsaveall]');
       if (ra) { let n = 0; ra.parentElement.querySelectorAll('[data-rpan]').forEach(pan => { const r = {};
           pan.querySelectorAll('[data-rf]').forEach(i => { const v = +String(i.value || i.placeholder).replace(',', '.').trim(); if (String(i.value || i.placeholder).trim() !== '' && isFinite(v)) r[i.dataset.rf] = v; });
-          if (Object.keys(r).length) { (clS.res ||= {})[pan.dataset.rpan] = r; n++; } });
+          /* Подходы (w0, r0, w1…) — в список {sets:[{w, r}]} */
+          const si = Object.keys(r).filter(k => /^[wr]\d+$/.test(k)).map(k => +k.slice(1));
+          const rec = si.length ? { sets: Array.from({ length: Math.max(...si) + 1 }, (_, i) => ({ w: r['w' + i] ?? null, r: r['r' + i] ?? null })) } : r;
+          if (Object.keys(r).length) { resSet(pan.dataset.rpan, rec); n++; } });
         if (!n) { ra.parentElement.querySelector('[data-rf]').focus(); return; }
         clS.done[ra.dataset.rsaveall] = true; clSave(); clRepaint(scr, 'workout'); clToast('Результат записан'); return; }
       if (e.target.closest('.rent')) return;
@@ -573,13 +562,14 @@ const CL_UI_MOUNT = {
       if (wk) { clDate = addDays(clDate, +wk.dataset.week); clRepaint(scr, 'workout'); scr.scrollTop = 0; return; }
       const sd = e.target.closest('[data-send]');
       if (sd) { const k = sd.dataset.send, tx = (clS.notes[k] || '').trim(); if (!tx) return;
-        const n = new Date(); (clS.sent[k] ||= []).push({ tx, at: String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') });
+        talkAdd(k, 'client', tx);
         clS.notes[k] = ''; clSave(); clRepaint(scr, 'workout'); return; }
       const mg = e.target.closest('[data-msg]');
       if (mg) { const k = mg.dataset.msg + ':msg'; clS.open[k] = clS.open[k] === false; clSave(); clRepaint(scr, 'workout'); return; }
       const tb = e.target.closest('[data-tab]');
       if (tb) { const [b, id] = tb.dataset.tab.split(':'); const k = b + ':tab'; clS.open[k] = clS.open[k] === id ? '' : id;
-        if (id === 'chat') clS.open[b + ':seen'] = true;
+        if (id === 'chat') { const bl = blkParse(b), x = bl && clDayAt(bl.date).blocks[bl.bi];
+          clS.open[b + ':seen'] = (x && x.note ? 1 : 0) + talkOf(b).filter(m => m.who === 'trainer').length; }
         clSave(); clRepaint(scr, 'workout'); return; }
       const r = e.target.closest('[data-row]');
       if (r) { const k = r.dataset.row; clS.open[k] = !clS.open[k]; clSave(); clRepaint(scr, 'workout'); return; }
@@ -588,12 +578,12 @@ const CL_UI_MOUNT = {
       const ps = e.target.closest('[data-pmset]');
       if (ps) { const k = ps.dataset.pmset, inp = ps.parentElement.querySelector('[data-pmin]');
         const v = parseFloat(String(inp.value).replace(',', '.')); if (!(v > 0)) return;
-        const pm = pmOf(CL_ME); pm[k] = v; (clS.pmh[k] ||= []).push([TODAY, v]);
+        const pm = pmOf(CL_ME); (STATE.pmLog ||= []).push({ cid: CL_ME, k, v, prev: pm[k] || null, d: clDate }); pm[k] = v; (clS.pmh[k] ||= []).push([TODAY, v]);
         saveState(); clSave(); clRepaint(scr, 'workout'); clToast('Рекорд записан — веса пересчитаны'); return; }
       /* Завершить — просто отметка и назад на главную; снять отметку — на месте */
       if (e.target.closest('#dayDone')) {
-        if (clS.dayDone[key]) { delete clS.dayDone[key]; clSave(); clRepaint(scr, 'workout'); return; }
-        clS.dayDone[key] = true; clSave(); clToast('Тренировка завершена'); clGo('home'); }
+        if (clS.dayDone[key]) { delete clS.dayDone[key]; delete (STATE.ddone || {})[key]; saveState(); clSave(); clRepaint(scr, 'workout'); return; }
+        clS.dayDone[key] = true; (STATE.ddone ||= {})[key] = true; saveState(); clSave(); clToast('Тренировка завершена'); clGo('home'); }
     });
     /* Пока не отправлено — черновик; кнопка «Отправить» активна, когда есть текст */
     scr.addEventListener('input', e => {
@@ -1003,8 +993,10 @@ function clEvents() {
     const d = /вчера/.test(m.at || '') ? addDays(date, -1) : date;
     if (d <= TODAY) ev.push({ k: 'msg@' + key, t: 'msg', d, time: tm, date, go: 'workout', title: TRAINER.n, text: m.text, quote: 'к тренировке на ' + clDateLong(date) });
   });
-  (c.comments || []).filter(x => x.reply).forEach((x, i) => ev.push({ k: 'reply@' + x.d + i, t: 'reply', d: x.d, date: x.d, go: 'workout',
-    title: TRAINER.n, text: x.reply, quote: 'Вы: «' + x.tx + '»' }));
+  /* Ответы тренера в обсуждении блоков — с цитатой вопроса, на который он ответил */
+  talkKeys().filter(k => k.startsWith(CL_ME + '@')).forEach(k => { const t = talkOf(k), date = blkParse(k).date;
+    t.forEach((m, j) => { if (m.who !== 'trainer' || m.d > TODAY) return; const q = t.slice(0, j).reverse().find(x => x.who === 'client');
+      ev.push({ k: 'reply@' + k + ':' + j, t: 'reply', d: m.d, time: m.at, date, go: 'workout', title: TRAINER.n, text: m.text, quote: q ? 'Вы: «' + q.text + '»' : 'к тренировке на ' + clDateLong(date) }); }); });
   if (c.pr) {
     const e = byId(c.pr.ex), d = shiftDate(c.pr.at);
     if (d <= TODAY) ev.push({ k: 'pr@' + c.pr.ex + c.pr.v, t: 'pr', d, go: 'profile', title: (PMNAMES[c.pr.ex] || (e && e.ru) || '') + ' — ' + fmtNum(c.pr.v) + '\u00a0кг',
@@ -1289,7 +1281,7 @@ const CL_SET = [
 const clSet = (k, def) => clS.set[k] == null ? def : clS.set[k];
 /* Последний опубликованный день плана — докуда тренировки есть без интернета */
 function clOfflineTill() {
-  const pl = clPlan(client(CL_ME).prog);
+  const pl = cliPlan(client(CL_ME).prog);
   for (let i = pl.length - 1; i >= 0; i--) if (!clDayAt(pl[i].date).rest) return pl[i].date;
   return null;
 }

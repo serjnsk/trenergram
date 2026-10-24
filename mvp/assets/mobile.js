@@ -200,7 +200,7 @@
 
   /* Страницы-потомки: слева в шапке — «назад». Возвращаемся туда, откуда пришли
      (из ленты, календаря или списка), а если зашли по прямой ссылке — в свой раздел. */
-  const BACK = {'client.html':'clients.html', 'exercise.html':'exercises.html', 'program.html':'programs.html', 'constructor.html':'index.html'};
+  const BACK = {'client.html':'clients.html', 'exercise.html':'exercises.html', 'program.html':'programs.html', 'constructor.html':'index.html', 'workout.html':'clients.html'};
   function backBtn(){
     const file = location.pathname.split('/').pop() || 'index.html', tb = document.getElementById('topbar');
     if(!tb || !BACK[file] || tb.querySelector('.mback')) return;

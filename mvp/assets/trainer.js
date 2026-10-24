@@ -974,7 +974,8 @@ function csrcCopyWorkout(){
 }
 const csrcItemHTML = (it, bi, k, sub) => { const e = it.exId ? byId(it.exId) : null, chip = it.exId ? itemChip(it) : '';
   return `<div class="csi ${sub ? 'sub' : ''}" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(it.chain ? chainText(it) : e ? e.ru : it.raw || '')}</span>${chip ? `<em>${esc(chip)}</em>` : ''}<button class="add" data-ciadd="${bi}:${k}" title="Добавить в тренировку">${ICON.plus}</button></div>` };
-function csrcBlockHTML(b, bi){
+/* extra — итог и переписка клиента к этому блоку (только чтение). */
+function csrcBlockHTML(b, bi, extra = ''){
   const rows = []; let k = 0;
   /* Блок текстом берут только целиком: его строки — текст, а не отдельные записи. */
   if(isTextBlock(b)) textLines(b.text).forEach(l => rows.push(`<div class="csi txl"><span class="nm">${esc(l)}</span></div>`));
@@ -989,7 +990,7 @@ function csrcBlockHTML(b, bi){
   }
   return `<div class="csb" draggable="true" data-cblk="${bi}">
     <div class="csb-h"><span class="gr">${ICON.grip}</span><span class="tt"><b>${esc(b.title || blockTypeLabel(b) || (isTextBlock(b) ? 'Блок текстом' : 'Блок'))}</b>${typeNote(b) && b.title ? `<s class="ty">${esc(typeNote(b))}</s>` : ''}</span><button class="add" data-cbadd="${bi}" title="Добавить блок в тренировку">${ICON.plus}</button></div>
-    ${rows.join('')}
+    ${rows.join('')}${extra}
   </div>`;
 }
 function renderCalSrc(){
@@ -1001,11 +1002,17 @@ function renderCalSrc(){
   }
   const cur = day(), cd = D(cur.date), xd = D(x.date), same = CSRC.cid === S.cid && x.date === cur.date;
   const nb = x.blocks.filter(blockHas).length;
+  /* У клиента под блоками — его итог и переписка к этой тренировке: пишешь
+     новую и видишь, как прошла прошлая и что он о ней сказал. */
+  const cid = client(CSRC.cid) ? CSRC.cid : null, pub = cid ? cliDay(cid, x.date).blocks : [];
+  const extra = bi => { if(!pub.length) return ''; const fi = x.blocks.slice(0, bi).filter(blockHas).length;
+    return pub[fi] ? blkExtraHTML(cid, x.date, pub[fi], fi) : '' };
   box.innerHTML = `<div class="csrc">
     <div class="csrc-h"><b>${esc(x.title && !REST_TITLES.has(x.title) ? x.title : 'Тренировка')}</b>
-      <s>${RU[dowMon(x.date)]}, ${xd.getDate()} ${MON[xd.getMonth()]} · ${nb} ${plural(nb, 'блок', 'блока', 'блоков')}</s></div>
+      <s>${RU[dowMon(x.date)]}, ${xd.getDate()} ${MON[xd.getMonth()]} · ${nb} ${plural(nb, 'блок', 'блока', 'блоков')}${pub.length && dayDoneBy(cid, x.date) ? ' · выполнена' : ''}</s>
+      ${pub.length ? `<a class="csrc-open" href="${workoutHref(cid, x.date)}">Открыть тренировку и переписку</a>` : ''}</div>
     <button class="btn sm csrc-copy" id="cs-copy" ${same ? 'disabled title="Этот день открыт в конструкторе"' : ''}>${ICON.copy} Скопировать в ${RU[dowMon(cur.date)]}, ${cd.getDate()} ${MON[cd.getMonth()]}</button>
-    ${x.blocks.map((b, bi) => blockHas(b) ? csrcBlockHTML(b, bi) : '').join('')}
+    ${x.blocks.map((b, bi) => blockHas(b) ? csrcBlockHTML(b, bi, extra(bi)) : '').join('')}
   </div>`;
 }
 

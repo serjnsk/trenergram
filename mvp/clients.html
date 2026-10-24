@@ -40,7 +40,7 @@
    у кого пора платить — «Получил оплату» прямо в строке. */
 const CS = {k:'pay', dir:1};
 const V = {q:'', f:'all'};
-const unreadOf = c => c.comments.filter((cm,i)=>!cm.reply && !STATE.replied[c.id+':'+i]).length;
+const unreadOf = c => unread().filter(x => x.c === c).length;
 const needsAttention = c => unreadOf(c)>0 || (c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 const runway = c => { if(!c.prog) return null; const n = composedDays(c.prog); return daysBetween(TODAY, dayDate(c.prog, Math.max(0, n-1))) };
 const runwayChip = c => { const r = runway(c);

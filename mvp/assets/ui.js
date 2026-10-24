@@ -398,17 +398,30 @@ const byStr = k => (a,b) => String(a[k]||'').localeCompare(String(b[k]||''));
 const byNum = f => (a,b) => (f(a)||0) - (f(b)||0);
 
 /* ═══════════ ЛЕНТА СОБЫТИЙ — общая для дашборда и карточки клиента ═══════════ */
-const unread = () => { const out=[]; CLIENTS.forEach(c=>c.comments.forEach((cm,i)=>{ if(!cm.reply && !STATE.replied[c.id+':'+i]) out.push({c,cm,key:c.id+':'+i}) })); return out };
+/* Вопросы клиентов — ветки блоков, где последнее слово за клиентом (см. talkOf в data.js). */
+const unread = () => talkKeys().filter(talkWaits).map(key => ({key, c: client(blkParse(key).cid)})).filter(x => x.c);
+/* Ветки с вопросами за две недели: ждущие ответа и отвеченные. Отвеченный вопрос
+   из ленты не пропадает — остаётся с пометкой и ссылкой на тренировку. */
+function talkEvents(){
+  const out = [];
+  talkKeys().forEach(key => { const p = blkParse(key), c = p && client(p.cid), t = talkOf(key);
+    const qi = t.map(m => m.who).lastIndexOf('client'); if(!c || qi < 0 || t[qi].d < addDays(TODAY, -14)) return;
+    const b = cliDay(c.id, p.date).blocks[p.bi], wait = qi === t.length - 1, ans = wait ? null : t[t.length - 1];
+    out.push({t: wait ? 'q' : 'qa', d: t[qi].d, c, key, title: c.n + (b ? ' · ' + blockName(b) : ''), sub: b ? blockName(b) : null,
+      tx: esc(t[qi].text) + (ans ? `<span class="fans">Вы: ${esc(ans.text)}</span>` : ''),
+      act: wait ? 'Ответить' : 'Открыть тренировку', href: workoutHref(c.id, p.date, p.bi)}) });
+  return out;
+}
 const idle = () => CLIENTS.filter(c=>c.prog && c.last && daysBetween(c.last,TODAY)>=3);
 const noProg = () => CLIENTS.filter(c=>!c.prog);
-const TYPES = {pr:'Рекорды', q:'Вопросы', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', start:'Первые шаги', done:'Результаты', pay:'Подписка'};
-const TICON = {pr:ICON.star, q:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:ICON.wallet, new:ICON.users, start:ICON.chk, done:ICON.chk, pay:ICON.folder};
+const TYPES = {pr:'Рекорды', q:'Вопросы', qa:'Отвеченные', miss:'Пропуски', prog:'Программы', fee:'Оплата', new:'Новые клиенты', start:'Первые шаги', done:'Результаты', pay:'Подписка'};
+const TICON = {pr:ICON.star, q:ICON.chat, qa:ICON.chat, miss:ICON.clock, prog:ICON.prog, fee:ICON.wallet, new:ICON.users, start:ICON.chk, done:ICON.chk, pay:ICON.folder};
 
 /* Лента: всё, что изменилось и на что стоит отреагировать, — по дням. */
 function events(cid){
   const ev = [];
   CLIENTS.forEach(c=>{ if(c.pr && daysBetween(c.pr.at,TODAY)<=14) ev.push({t:'pr', d:c.pr.at, c, title:c.n, tx:`Новый рекорд: ${esc(PMNAMES[c.pr.ex]||c.pr.ex)} ${c.pr.v} кг (было ${c.pr.prev})`, act:'Пересчитать проценты', href:'client.html?id='+c.id}) });
-  unread().forEach(({c,cm,key})=>ev.push({t:'q', d:cm.d, c, key, title:c.n + (cm.ex?' · '+cm.ex:''), sub:cm.ex, tx:cm.tx, act:'Ответить', href:'client.html?id='+c.id}));
+  talkEvents().forEach(e => ev.push(e));
   idle().forEach(c=>ev.push({t:'miss', d:c.last, c, title:c.n, tx:`Не появлялся ${ago(c.last)} — серия прервана`, act:'Открыть профиль', href:'client.html?id='+c.id}));
   composeQueue().filter(x=>x.runway<=7).forEach(x=>{
     /* Группа в очереди — одной строкой: писать нужно ей, а не каждому участнику. */
@@ -427,9 +440,12 @@ function events(cid){
      Отметку пишет клиентское приложение (STATE.steps), у демо-клиента — в данных. */
   CLIENTS.forEach(c=>{ const s = (STATE.steps || {})[c.id] || c.steps; if(s && daysBetween(s.d,TODAY)<=14)
     ev.push({t:'start', d:s.d, c, title:c.n, tx:(c.sex==='ж' ? 'Прошла' : 'Прошёл') + ' первые шаги в приложении и получил' + (c.sex==='ж' ? 'а' : '') + ' достижение «Курс молодого бойца»: рекорды, замеры, фото профиля и первая тренировка', act:'Открыть профиль', href:'client.html?id='+c.id}) });
-  CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:'client.html?id='+c.id}));
+  CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:workoutHref(c.id, TODAY)}));
+  /* В карточке клиента — все его выполненные тренировки за две недели, каждая ведёт в просмотр. */
+  if(cid){ const c = client(cid); if(c && c.prog) for(let k = 1; k <= 14; k++){ const d = addDays(TODAY, -k), x = cliDay(cid, d);
+    if(x.blocks.length && dayDoneBy(cid, d)) ev.push({t:'done', d, c, title:c.n, tx:'Тренировка «' + esc(x.title) + '» выполнена', act:'Посмотреть', href:workoutHref(cid, d)}) } }
   if(!NEWTR) ev.push({t:'pay', d:addDays(TODAY,-1), title:'Подписка продлена', tx:'3 990 ₽ списаны с карты •••• 4242 · следующий платёж через месяц', act:'Подписка', href:'profile.html#billing'});
-  const order = {q:0, fee:1, prog:2, pr:3, miss:4, new:5, start:6, done:7, pay:8};
+  const order = {q:0, fee:1, prog:2, pr:3, miss:4, qa:5, new:6, start:7, done:8, pay:9};
   const list = cid ? ev.filter(e=>e.c && e.c.id===cid) : ev;
   return list.sort((a,b)=> b.d.localeCompare(a.d) || order[a.t]-order[b.t]);
 }
@@ -487,7 +503,7 @@ function feedHTML(list, withDays=true){
   return out + '</div>';
 }
 
-const TLABEL = {pr:'Рекорд', q:'Вопрос', miss:'Пропуск', prog:'Программа', fee:'Оплата', new:'Новый клиент', start:'Первые шаги', done:'Результат', pay:'Подписка'};
+const TLABEL = {pr:'Рекорд', q:'Вопрос', qa:'Отвечено', miss:'Пропуск', prog:'Программа', fee:'Оплата', new:'Новый клиент', start:'Первые шаги', done:'Результат', pay:'Подписка'};
 
 /* ═══════════ ОПЛАТА ЗАНЯТИЙ (PAY-9) — окно тренера ═══════════
    pay — «Получил оплату»: сумма и новая дата «оплачено до», по умолчанию месяц

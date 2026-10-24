@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Тренировка клиента · Тренерграм</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/base-trainer.css">
+<link rel="stylesheet" href="assets/theme-01-strava.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/mobile.css">
+<script src="assets/mobile.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page"><div class="pagewrap"><div id="page"></div></div></div>
+  </div>
+</div>
+<div class="ov" id="ov"></div>
+<script src="assets/exdb.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/nav.js"></script>
+<script src="assets/dd.js"></script>
+<script src="assets/ui.js"></script>
+<script>
+/* ═══════════ ТРЕНИРОВКА КЛИЕНТА — ПРОСМОТР ═══════════
+   Выполненная или назначенная тренировка так, как её видит клиент, — не
+   конструктор. Под каждым блоком — что клиент записал в «Итог» и вся
+   переписка блока: вопросы, ответы тренера, заметка к блоку. Отвечать —
+   здесь же; отвеченное остаётся в ветке. Править тренировку — «Редактировать»,
+   это конструктор на тот же день. Стрелки листают тренировки клиента. */
+const Q = new URLSearchParams(location.search);
+const C = client(Q.get('client')) || CLIENTS[0];
+let DATE = /^\d{4}-\d{2}-\d{2}$/.test(Q.get('date') || '') ? Q.get('date') : TODAY;
+
+/* ─── Чат блока — отдельная панель, как в мессенджере ───
+   Клиент слева, тренер справа; поле ввода внизу. Ждёт ответа — пометка в
+   заголовке и обводка последнего вопроса. Чата ещё нет — панель скрыта,
+   открывается иконкой в шапке блока. */
+function chatHTML(m){
+  const k = m.k, t = m.talk, wait = talkWaits(k), nm = esc(C.n.split(' ')[0]);
+  const bub = (x, j) => `<div class="cb ${x.who === 'trainer' ? 'me' : 'them'}">
+    <div class="cbm">${x.who === 'trainer' ? 'Вы' : nm} · ${talkWhen(x)}</div><div class="cbt">${esc(x.text)}</div></div>`;
+  return `<details class="wsec wchat" id="tk${m.bi}" open${t.length ? '' : ' hidden'}>
+    <summary><b>Чат</b>${t.length ? `<span class="t3">${t.length}</span>` : ''}${wait ? '<i class="wst q">ждёт ответа</i>' : ''}</summary>
+    <div class="chat">
+      ${t.length ? `<div class="cbs">${t.map(bub).join('')}</div>` : ''}
+      <div class="wrin"><input class="inp" data-rk="${k}" placeholder="${wait ? 'Ответить' : 'Сообщение клиенту'}" aria-label="Сообщение клиенту"><button class="btn sm" data-rsend="${k}" disabled>Отправить</button></div>
+    </div>
+  </details>`;
+}
+
+/* ─── Блок — журнал подходов ───
+   Таблица «упражнение · план · 1 · 2 · 3…»: каждый подход клиента в своей
+   колонке. Три стиля текста на всё: заголовок блока, основной, вторичный
+   (серый мелкий). Цвет — только смысловой: как в плане — зелёный, недобор —
+   жёлтый со стрелкой. */
+const nb = bi => `<button class="wnb" data-wnew="${bi}" title="Написать клиенту к этому блоку" aria-label="Написать клиенту к этому блоку">${CHATICON}</button>`;
+function blockHTML(m){
+  /* Блок — аккордеон с шапкой на сером фоне; внутри — разделы-аккордеоны
+     «Упражнения» и «Обсуждение» со своими заголовками. Всё раскрыто сразу. */
+  const nex = m.rows.filter(r => r.it).length;
+  return `<details class="wb" id="b${m.bi}" open>
+    <summary class="wbh"><span class="wbn">${m.bi + 1}</span><b class="t1">${esc(m.name)}</b>${m.type ? `<span class="t3">${esc(m.type)}</span>` : ''}
+      <span class="sp"></span>${m.fres ? `<span class="t2 ok">Итог ${esc(m.fres)} ✓</span>` : ''}${m.talk.length ? '' : nb(m.bi)}<i class="wch" aria-hidden="true"></i></summary>
+    <div class="wbb">
+      <details class="wsec" open>
+        <summary><b>Упражнения</b>${nex ? `<span class="t3">${nex}</span>` : ''}</summary>
+        <div class="wsc">
+          ${m.note ? `<p class="t3 wbnote" title="Комментарий к блоку">${CHATICON}${esc(m.note)}</p>` : ''}
+          <div class="wls">${m.rows.map(r => r.txt ? `<div class="wl">${esc(r.txt)}</div>`
+            : r.ss ? `<div class="wl ss">${esc(r.ss)}</div>`
+            : `<div class="wl${r.sub ? ' sub' : ''}">${esc(r.line)}${r.got.length ? `<ol class="wsets">${r.got.map((x, q) => { const c = setCmp(x, r.ps[q]);
+                return `<li class="${c}"><s>${q + 1}</s><span>${x.w != null ? fmtNum(x.w) : '—'}${x.r != null ? ' × ' + x.r : ''}</span><i>${c === 'lo' ? '↓' : c === 'hi' ? '↑' : '✓'}</i></li>` }).join('')}</ol>` : ''}</div>`).join('')}</div>
+        </div>
+      </details>
+      ${chatHTML(m)}
+    </div>
+  </details>`;
+}
+function blocksHTML(x){
+  const msg = dayMsg(C.id, DATE);
+  return `<div class="wv">${msg ? `<div class="bxmsg">${CHATICON}<span>${esc(msg)}</span></div>` : ''}${x.blocks.map((b, i) => blockHTML(blkModel(C.id, DATE, b, i))).join('')}</div>`;
+}
+
+const dlong = d => { const x = D(d); return ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(d)] + ', ' + x.getDate() + ' ' + MONTHS[x.getMonth()] };
+/* Статус для тренера: выполнена · пропущена · сегодня · запланирована; черновик — клиент не видит. */
+function status(x){
+  const p = program(C.prog), i = p ? daysBetween(p.start, DATE) : -1, raw = i >= 0 ? cliPlan(C.prog)[i] : null;
+  const draft = raw && raw.draft;
+  if(!x.blocks.length) return draft && dayHas(raw) ? ['draft', 'Черновик — клиент не видит'] : null;
+  const st = dayDoneBy(C.id, DATE) ? ['done', 'Выполнена'] : DATE < TODAY ? ['miss', 'Не отмечена'] : DATE === TODAY ? ['today', 'Сегодня'] : ['plan', 'Запланирована'];
+  return draft ? [st[0], st[1] + ' · есть неопубликованные правки'] : st;
+}
+
+function render(){
+  history.replaceState(null, '', `workout.html?client=${C.id}&date=${DATE}${location.hash}`);
+  const x = cliDay(C.id, DATE), st = status(x), pms = dayPms(C.id, DATE);
+  const prev = cliDayStep(C.id, DATE, -1), next = cliDayStep(C.id, DATE, 1);
+  const edit = `constructor.html?client=${C.id}&date=${DATE}`;
+  $('#page').innerHTML = `
+    <div class="wvh">
+      <a class="wvc" href="client.html?id=${C.id}">${avaHTML(C)}<span><b>${esc(C.n)}</b><s>${esc((program(C.prog) || {}).title || 'Тренировки')}</s></span></a>
+      <div class="wvd">
+        <button class="btn gh sm ib" id="wPrev" ${prev ? `title="Предыдущая тренировка · ${dm(prev)}"` : 'disabled'} aria-label="Предыдущая тренировка">‹</button>
+        <div class="wvdt"><b>${dlong(DATE)}</b>${x.blocks.length || x.comp ? `<s>${esc(x.title)}</s>` : ''}</div>
+        <button class="btn gh sm ib" id="wNext" ${next ? `title="Следующая тренировка · ${dm(next)}"` : 'disabled'} aria-label="Следующая тренировка">›</button>
+      </div>
+      ${st ? `<span class="wvst ${st[0]}">${st[1]}</span>` : ''}
+      ${SUBRO || !x.blocks.length ? '' : `<a class="btn gh wve" href="${edit}">${ICON.build} Редактировать</a>`}
+    </div>
+    ${pms.length ? `<div class="wvpm">${ICON.star}<span>Новый 1ПМ: ${pms.map(r => `<b>${esc(pmName(r.k))} ${fmtNum(r.v)} кг</b>${r.prev ? ` (было ${fmtNum(r.prev)})` : ''}`).join(', ')}</span></div>` : ''}
+    ${x.blocks.length
+      ? blocksHTML(x)
+      : `<div class="card empty">${x.comp ? 'Соревнование — тренировка не расписана' : 'На этот день тренировки нет'}${SUBRO ? '' : `<a class="btn gh sm" href="${edit}">Составить</a>`}</div>`}`;
+  $('#wPrev').onclick = () => { DATE = prev; location.hash = ''; render(); scrollTo(0, 0) };
+  $('#wNext').onclick = () => { DATE = next; location.hash = ''; render(); scrollTo(0, 0) };
+  $$('[data-rk]').forEach(inp => {
+    const b = inp.parentElement.querySelector('[data-rsend]');
+    inp.oninput = () => { b.disabled = !inp.value.trim() };
+    inp.onkeydown = e => { if(e.key === 'Enter' && inp.value.trim()) b.click() };
+  });
+  /* Написать к блоку без переписки — поле открывается по иконке в заголовке. */
+  $$('[data-wnew]').forEach(b => b.onclick = e => { e.preventDefault();   /* кнопка в шапке блока — не сворачивать его */
+    const w = $('#tk' + b.dataset.wnew); w.hidden = !w.hidden; if(!w.hidden){ w.scrollIntoView({block:'nearest'}); w.querySelector('input').focus() } });
+  $$('[data-rsend]').forEach(b => b.onclick = () => {
+    const inp = b.parentElement.querySelector('[data-rk]'), v = inp.value.trim(); if(!v) return;
+    talkAdd(b.dataset.rsend, 'trainer', v); toast('Ответ отправлен'); render();
+  });
+}
+render();
+/* Пришли из ленты к конкретному блоку — к нему и прокручиваем, поле ответа в фокусе. */
+const jump = /^#b(\d+)$/.exec(location.hash);
+if(jump){ const bx = document.getElementById('b' + jump[1]), tk = document.getElementById('tk' + jump[1]); if(bx) bx.scrollIntoView({block:'start'});
+  if(tk){ tk.open = true; const i = tk.querySelector('[data-rk]'); if(i) i.focus({preventScroll:true}) } }
+initShell({page:'clients.html', title:'Тренировка'});
+</script>
+</body>
+</html>
