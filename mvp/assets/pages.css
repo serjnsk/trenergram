@@ -788,3 +788,25 @@ a.who:hover{color:var(--acc);text-decoration:underline}
 .wsets i{font-style:normal}
 .wsets li.ok i,.wsets li.hi i{color:var(--ok)}
 .wsets li.lo{color:var(--warn)}
+/* ─── Просмотр тренировки на телефоне ───
+   Шапка в три строки: клиент · даты со стрелками · статус и «Редактировать»
+   по краям. Зоны нажатия — не меньше 40 px; поле чата 16 px, чтобы iOS не
+   увеличивал страницу при вводе. */
+@media (max-width:640px){
+  .wvh{gap:8px 10px;margin-bottom:10px}
+  .wvd .ib{width:40px;height:40px;font-size:22px}
+  .wvdt b{font-size:16px}
+  .wvst{order:3}
+  .wve{order:4;margin-left:auto;height:40px}
+  .wv{gap:10px}
+  .wbh{padding:6px 14px 6px 12px;gap:8px;min-height:52px}
+  .wbh .wnb{width:40px;height:40px}
+  .wbb{padding:4px 12px 12px}
+  .wsec > summary,.wv .wbd .wtd > summary{padding:10px 0;font-size:15px}
+  .wsc,.wv .wbd .wtl{padding-left:0}
+  .wsets{margin-left:12px}
+  .chat{margin-left:0;padding:10px;border-radius:12px}
+  .chat .wrin .inp{font-size:16px;height:44px}
+  .chat .wrin .btn{height:44px}
+  .cb{max-width:85%}
+}
