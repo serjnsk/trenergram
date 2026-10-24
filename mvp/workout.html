@@ -88,6 +88,7 @@ function blocksHTML(x){
   return `<div class="wv">${msg ? `<div class="bxmsg">${CHATICON}<span>${esc(msg)}</span></div>` : ''}${x.blocks.map((b, i) => blockHTML(blkModel(C.id, DATE, b, i))).join('')}</div>`;
 }
 
+const CHEV = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>';
 const dlong = d => { const x = D(d); return ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][dowMon(d)] + ', ' + x.getDate() + ' ' + MONTHS[x.getMonth()] };
 /* Статус для тренера: выполнена · пропущена · сегодня · запланирована; черновик — клиент не видит. */
 function status(x){
@@ -103,21 +104,29 @@ function render(){
   const x = cliDay(C.id, DATE), st = status(x), pms = dayPms(C.id, DATE);
   const prev = cliDayStep(C.id, DATE, -1), next = cliDayStep(C.id, DATE, 1);
   const edit = `constructor.html?client=${C.id}&date=${DATE}`;
+  /* Шапка — как в конструкторе: дата в заголовке страницы (выбор по нажатию),
+     карточка клиента со стрелками к соседним тренировкам, шапка дня со
+     статусом и названием; «Редактировать» — вместо меню действий. */
+  const ST = {done:['pub', DAYICON.pub], miss:['draft', DAYICON.draft], draft:['draft', DAYICON.draft], today:['plan', ''], plan:['plan', '']};
+  const pt = $('#ptitle'); if(pt) pt.innerHTML = `Тренировка<button class="ptd" id="ptd" title="Выбрать дату">${esc(dlong(DATE))}${CHEV}</button>`;
   $('#page').innerHTML = `
-    <div class="wvh">
-      <a class="wvc" href="client.html?id=${C.id}">${avaHTML(C)}<span><b>${esc(C.n)}</b><s>${esc((program(C.prog) || {}).title || 'Тренировки')}</s></span></a>
-      <div class="wvd">
-        <button class="btn gh sm ib" id="wPrev" ${prev ? `title="Предыдущая тренировка · ${dm(prev)}"` : 'disabled'} aria-label="Предыдущая тренировка">‹</button>
-        <div class="wvdt"><b>${dlong(DATE)}</b>${x.blocks.length || x.comp ? `<s>${esc(x.title)}</s>` : ''}</div>
-        <button class="btn gh sm ib" id="wNext" ${next ? `title="Следующая тренировка · ${dm(next)}"` : 'disabled'} aria-label="Следующая тренировка">›</button>
+    <section class="wk wvwk"><div class="wkh one">
+      <a class="cliSel" href="client.html?id=${C.id}" title="Карточка клиента">${whoBtnHTML(C)}</a>
+      <div class="dates"><span class="wkn">
+        <button id="wPrev" ${prev ? `title="Предыдущая тренировка · ${dm(prev)}"` : 'disabled'} aria-label="Предыдущая тренировка">${ICON.back}</button>
+        <button id="wNext" ${next ? `title="Следующая тренировка · ${dm(next)}"` : 'disabled'} aria-label="Следующая тренировка">${ICON.arr}</button>
+      </span></div>
+    </div></section>
+    ${pms.length ? `<div class="wvpm">${ICON.star}<span>Новый 1ПМ: ${pms.map(r => `<b>${esc(pmName(r.k))} ${fmtNum(r.v)} кг</b>${r.prev ? ` (было ${fmtNum(r.prev)})` : ''}`).join(', ')}</span></div>` : ''}
+    <section class="doc wvdoc">
+      <div class="doch">
+        ${st ? `<span class="dst ${ST[st[0]][0]}" title="${esc(st[1])}">${ST[st[0]][1]}${esc(st[1].split(' · ')[0])}</span>` : ''}
+        <b class="dtt">${esc(x.blocks.length || x.comp ? x.title : 'Нет тренировки')}</b>
+        ${SUBRO ? '' : `<a class="btn gh sm" href="${edit}">${ICON.build} ${x.blocks.length ? 'Редактировать' : 'Составить'}</a>`}
       </div>
-      ${st ? `<span class="wvst ${st[0]}">${st[1]}</span>` : ''}
-      ${SUBRO || !x.blocks.length ? '' : `<a class="btn gh wve" href="${edit}">${ICON.build} Редактировать</a>`}
-    </div>
-    ${pms.length ? `<div class="wvpm">${ICON.star}<span>Новый 1ПМ: ${pms.map(r => `<b>${esc(pmName(r.k))} ${fmtNum(r.v)} кг</b>${r.prev ? ` (было ${fmtNum(r.prev)})` : ''}`).join(', ')}</span></div>` : ''}
-    ${x.blocks.length
-      ? blocksHTML(x)
-      : `<div class="card empty">${x.comp ? 'Соревнование — тренировка не расписана' : 'На этот день тренировки нет'}${SUBRO ? '' : `<a class="btn gh sm" href="${edit}">Составить</a>`}</div>`}`;
+      ${x.blocks.length ? blocksHTML(x) : `<div class="wvempty">${x.comp ? 'Соревнование — тренировка не расписана' : 'На этот день тренировки нет'}</div>`}
+    </section>`;
+  $('#ptd').onclick = e => openDatePicker(e.currentTarget, DATE, d => { DATE = d; location.hash = ''; render(); scrollTo(0, 0) });
   $('#wPrev').onclick = () => { DATE = prev; location.hash = ''; render(); scrollTo(0, 0) };
   $('#wNext').onclick = () => { DATE = next; location.hash = ''; render(); scrollTo(0, 0) };
   $$('[data-rk]').forEach(inp => {
@@ -133,12 +142,12 @@ function render(){
     talkAdd(b.dataset.rsend, 'trainer', v); toast('Ответ отправлен'); render();
   });
 }
+initShell({page:'clients.html', title:'Тренировка'});
 render();
 /* Пришли из ленты к конкретному блоку — к нему и прокручиваем, поле ответа в фокусе. */
 const jump = /^#b(\d+)$/.exec(location.hash);
 if(jump){ const bx = document.getElementById('b' + jump[1]), tk = document.getElementById('tk' + jump[1]); if(bx) bx.scrollIntoView({block:'start'});
   if(tk){ tk.open = true; const i = tk.querySelector('[data-rk]'); if(i) i.focus({preventScroll:true}) } }
-initShell({page:'clients.html', title:'Тренировка'});
 </script>
 </body>
 </html>
