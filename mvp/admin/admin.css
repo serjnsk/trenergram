@@ -1,0 +1,218 @@
+/* ============================================================
+   Админка · карточка тренера для маркетолога
+
+   Основа — те же base-trainer.css и pages.css, что у кабинета:
+   живая админка на trenergram.ru собрана на той же дизайн-системе.
+   Здесь только то, чего в кабинете нет: шапка карточки с профилем
+   и этапами, под ней одна рабочая колонка с табами и лентой действий.
+   Карточка не шире 1280px: на 1920×1080 она стоит по центру и не тянется.
+   ============================================================ */
+
+.crm{padding:14px 18px 60px;max-width:1280px;margin:0 auto}   /* на 1920 карточка не растягивается */
+.crm .sp{flex:1}
+
+/* ─── шапка карточки ─── */
+.crm-head{background:var(--bg);border-radius:var(--rad-l);padding:12px 18px 16px}
+.crm-hrow{display:flex;align-items:center;gap:8px}
+.crm-hrow .btn.sm{height:32px;padding:0 12px;font-size:14px}
+.crm-hrow .btn svg{width:14px;height:14px}
+.crm-id{display:flex;align-items:center;gap:16px;margin-top:12px}
+.crm-id .av{width:64px;height:64px;border-radius:50%;background:var(--acc-a);color:var(--acc-d);
+  display:grid;place-items:center;font:700 23px/1 var(--disp);flex:none}
+.crm-id .who{min-width:0;flex:1}
+.crm-id h1{font:700 23px/1.15 var(--disp);letter-spacing:-.025em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crm-id .meta{margin-top:5px;color:var(--tx3);font-size:14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crm-id .meta i{font-style:normal;color:var(--line2)}
+
+.stg-lost{margin-top:10px;font-size:14px;color:var(--rm-d);background:var(--rm-a);border-radius:var(--rad-m);padding:8px 12px;display:flex;gap:8px;align-items:center}
+.stg-lost b{font-weight:600}
+
+.fv{min-height:28px;padding:4px 8px;margin:0 -8px;border-radius:var(--rad-s);cursor:text;line-height:1.35;word-break:break-word}
+.fv:hover{background:var(--s1)}
+.fv.ro{cursor:default}
+.fv.ro:hover{background:none}
+.fv .ph{color:var(--tx4)}
+.fv .hint{display:block;font-size:12.5px;color:var(--tx3);margin-top:1px}
+.fv .inp{height:30px;margin:-3px 0}
+.fv select.inp{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:30px;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:13px}
+
+/* ─── рабочая колонка: табы ─── */
+.work{background:var(--bg);border-radius:var(--rad-l);padding:0 18px 18px;min-height:70vh;margin-top:14px}
+.work .tabs2{margin:0 -18px;padding:10px 18px 8px;display:flex;gap:4px;border-bottom:1px solid var(--line);
+  position:sticky;top:58px;background:var(--bg);z-index:5;border-radius:var(--rad-l) var(--rad-l) 0 0}
+.tabs2 button{height:30px;padding:0 12px;border-radius:20px;font-size:14.5px;font-weight:600;color:var(--tx2)}
+.tabs2 button:hover{background:var(--s1)}
+.tabs2 button.on{background:var(--acc-a);color:var(--acc-d)}
+.tabs2 button s{text-decoration:none;color:var(--tx3);font-weight:500;margin-left:5px}
+.tabs2 button s.rm{color:var(--rm);font-weight:700}
+
+/* компоновщик: действие · заметка */
+.cmp{margin-top:14px;border:1px solid var(--line);border-radius:var(--rad-l);padding:12px 14px 14px;background:var(--bg)}
+.cmp.focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-a)}
+.cmp-top{display:flex;align-items:center;gap:10px}
+.cmp .seg{border-color:var(--line)}
+.cmp .seg button{display:inline-flex;align-items:center;gap:6px}
+.cmp .seg button svg{width:14px;height:14px}
+.cmp-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.cmp-row > span{font-size:13px;font-weight:600;color:var(--tx3);width:84px;flex:none}
+.cmp textarea{width:100%;margin-top:10px;min-height:68px;resize:vertical;padding:9px 11px;border-radius:var(--rad-m);
+  background:var(--s1);font-size:14.5px;line-height:1.45;border:1.5px solid transparent;font-family:inherit}
+.cmp textarea:focus{outline:0;background:var(--bg);border-color:var(--acc)}
+.cmp-foot{display:flex;align-items:center;gap:10px;margin-top:10px}
+.cmp-foot .hint{font-size:13px;color:var(--tx3)}
+.cmp-foot .btn{height:34px}
+
+/* лента */
+.ffil{display:flex;align-items:center;gap:10px;margin:16px 0 2px}
+.crev-day{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:16px 0 4px}
+.crev{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.crev:last-child{border-bottom:0}
+.crev .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--s1);color:var(--tx3);margin-top:1px}
+.crev .ic svg{width:15px;height:15px}
+.crev .ic.touch{background:var(--acc-a);color:var(--acc-d)}
+.crev .ic.note{background:#FBF1DE;color:var(--warn)}
+.crev .ic.task{background:#eaf1ff;color:#2f6fe4}
+.crev .ic.sys{background:var(--ok-a);color:var(--ok)}
+.crev .ic.stage{background:var(--ink);color:#fff}
+.crev .ic.lost{background:var(--rm-a);color:var(--rm)}
+.crev .ic.muted{background:var(--s1);color:var(--tx3)}
+.crev .ic.plan{background:#f3ecff;color:#7b4fd6}
+.crev .ic.fb{background:#eaf1ff;color:#2f6fe4}
+.crev .bd{flex:1;min-width:0}
+.crev .ttl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14.5px}
+.crev .ttl b{font-weight:600}
+.crev .ttl .chip{height:20px;font-size:12.5px;padding:0 7px}
+.crev .tx{font-size:14.5px;line-height:1.45;color:var(--tx1);margin-top:3px;white-space:pre-wrap}
+.crev .res{margin-top:6px;font-size:14px;color:var(--tx2);background:var(--s2);border-radius:var(--rad-m);padding:7px 10px}
+.crev .res b{font-weight:600;color:var(--tx1)}
+.crev .tm{font-size:13px;color:var(--tx3);white-space:nowrap;flex:none;padding-top:2px;text-align:right}
+.crev .tm span{display:block}
+.crev.dim .tx,.crev.dim .ttl{color:var(--tx3)}
+.empty{padding:36px 0;text-align:center;color:var(--tx3);font-size:14.5px}
+
+
+/* онбординг */
+.onb-top{display:flex;align-items:center;gap:16px;margin-top:16px;padding:14px 16px;border-radius:var(--rad-l);background:var(--s2)}
+.onb-top .big{font:700 30px/1 var(--disp);letter-spacing:-.03em}
+.onb-top .big small{font-size:17px;color:var(--tx3);font-weight:600}
+.onb-top .bd{flex:1}
+.onb-top .bd b{font-weight:600;font-size:15px}
+.onb-top .bd s{display:block;text-decoration:none;color:var(--tx3);font-size:13.5px;margin-top:2px}
+.onb-top .bar{height:6px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden}
+.onb-top .bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.sec-h{font:700 15.5px/1.2 var(--disp);letter-spacing:-.02em;margin:20px 0 4px;display:flex;align-items:center;gap:8px}
+.sec-h small{font:500 13px var(--ui);color:var(--tx3);letter-spacing:0}
+.sec-sub{font-size:13.5px;color:var(--tx3);margin-bottom:8px}
+.step{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.step:last-child{border-bottom:0}
+.step .box{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);flex:none;display:grid;place-items:center;color:transparent}
+.step .box svg{width:12px;height:12px}
+.step.done .box{background:var(--ok);border-color:var(--ok);color:#fff}
+.step.key .box{border-color:var(--acc)}
+.step.key.done .box{background:var(--acc);border-color:var(--acc)}
+.step .bd{flex:1;min-width:0}
+.step .bd b{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:7px}
+.step .bd span{font-size:13px;color:var(--tx3);display:block;margin-top:2px;line-height:1.4}
+.step .when{font-size:13px;color:var(--tx3);white-space:nowrap;padding-top:2px}
+.step.done .when{color:var(--ok)}
+
+/* окна: причины отказа, тариф, завершение задачи */
+.md .lab{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin:14px 0 7px;display:block}
+.md .lab:first-child{margin-top:0}
+.rsn{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rsn button{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rad-m);border:1.5px solid var(--line);
+  font-size:14.5px;font-weight:500;text-align:left}
+.rsn button:hover{border-color:var(--line2)}
+.rsn button.on{border-color:var(--rm);background:var(--rm-a);color:var(--rm-d);font-weight:600}
+.rsn button i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line2);flex:none}
+.rsn button.on i{border:5px solid var(--rm)}
+.md textarea.inp{height:auto;min-height:76px;padding:9px 11px;resize:vertical;line-height:1.45;font-family:inherit}
+.md .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.md .note{font-size:13.5px;color:var(--tx3);margin-top:8px;line-height:1.45}
+.md select.inp{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:30px;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:13px}
+.mdt{border-left:3px solid var(--acc);margin-bottom:16px;padding-left:12px}
+.mdt b{display:block;font-size:17px;font-weight:700;letter-spacing:-.02em}
+.mdt s{text-decoration:none;color:var(--tx3);font-size:14px}
+
+/* меню «⋯» и тост */
+.amenu{position:fixed;z-index:130;background:var(--bg);border-radius:var(--rad-m);padding:6px;min-width:230px;
+  box-shadow:0 10px 30px rgba(0,0,0,.14),0 0 0 1px var(--line)}
+.amenu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:var(--rad-s);font-size:14.5px;text-align:left}
+.amenu button svg{width:16px;height:16px;color:var(--tx3)}
+.amenu button:hover{background:var(--s1)}
+.amenu button.rm,.amenu button.rm svg{color:var(--rm)}
+.amenu button.rm:hover{background:var(--rm-a)}
+.amenu .cap{font-size:12px;color:var(--tx3);padding:6px 10px 4px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;transition:.2s;z-index:200;
+  background:var(--ink);color:#fff;border-radius:var(--rad-m);padding:10px 16px;font-size:14.5px;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* роль в подвале меню */
+.nfoot.role{cursor:pointer;width:100%;text-align:left}
+.nfoot.role:hover{background:var(--s2)}
+.nfoot.role .rl{font-size:12px;font-weight:600;color:var(--acc-d);background:var(--acc-a);border-radius:var(--rad-s);padding:1px 6px;margin-left:auto}
+.topbar .demo{font-size:13px;color:var(--tx3)}
+
+/* Общие .empty и .hint из pages.css рассчитаны на кабинет —
+   в карточке гасим их рамки и отступы. */
+.crm .empty{border:0;border-radius:0;padding:36px 0}
+.crm .hint{margin-top:0;padding-left:0;border:0;line-height:1.4}
+.crm .fv .hint{margin-top:1px}
+.stg-lost svg{width:14px;height:14px;flex:none}
+
+/* этап тренера — выпадающий список рядом с именем */
+.stsel{height:32px;min-width:220px;border-radius:var(--rad-m);padding:0 34px 0 12px;font:600 14.5px var(--ui);letter-spacing:-.01em;cursor:pointer;
+  appearance:none;-webkit-appearance:none;background:var(--acc) url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E") no-repeat right 11px center/13px;color:#fff}
+.stsel.new{background-color:var(--s1);color:var(--ink);
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E")}
+.stsel.paid{background-color:var(--ok)}
+.stsel.lost{background-color:var(--rm)}
+
+/* общая информация — два блока списком */
+.pblocks{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.pblock{border:1px solid var(--line);border-radius:var(--rad-l);padding:10px 16px 8px}
+.pblock .cap{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin-bottom:4px}
+.prow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:start;padding:5px 0;border-top:1px solid var(--line);font-size:14.5px}
+.pblock .cap + .prow{border-top:0}
+.prow > s{text-decoration:none;color:var(--tx3);padding-top:4px;font-size:14px}
+
+/* тип действия — выпадающий список */
+.cmp .csel{width:320px;height:34px;font-weight:600;appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:30px;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:13px}
+.cmp .csel.rm{color:var(--rm)}
+.cmp-row > span{width:60px}
+.pblock .cap{display:flex;align-items:baseline;gap:8px}
+.pblock .cap span{font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--tx4)}
+.pblock.ro{background:var(--s2);border-color:transparent}
+.pblock.ro .prow{border-top-color:var(--line2)}
+.pblock .prow{grid-template-columns:190px minmax(0,1fr)}
+
+/* поля маркетолога — явные: список со стрелкой или поле ввода */
+.pblock .fin{height:34px;font-size:14.5px;background-color:var(--bg);border:1.5px solid var(--line2)}
+.pblock .fin:hover{border-color:var(--tx4);background-color:var(--bg)}
+.pblock .fin:focus{border-color:var(--acc)}
+.pblock select.fin{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:32px;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235E5E5E' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:13px}
+.pblock:not(.ro) .prow{align-items:center;padding:6px 0;border-top:0}
+.pblock:not(.ro) .prow > s{padding-top:0}
+.cmp .csel{background-color:var(--bg);border:1.5px solid var(--line2)}
+.cmp .csel:hover{border-color:var(--tx4);background-color:var(--bg)}
+
+/* выявленные возражения — флажки, можно отметить несколько */
+.chks{display:flex;flex-wrap:wrap;gap:6px}
+.chks button{height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 12px 0 9px;border-radius:var(--rad-m);
+  border:1.5px solid var(--line2);background:var(--bg);font-size:14px;font-weight:500;color:var(--tx2)}
+.chks button:hover{border-color:var(--tx4)}
+.chks button i{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line2);display:grid;place-items:center;color:transparent;flex:none}
+.chks button i svg{width:10px;height:10px}
+.chks button.on{border-color:var(--acc);background:var(--acc-a);color:var(--acc-d);font-weight:600}
+.chks button.on i{background:var(--acc);border-color:var(--acc);color:#fff}
+.chks{flex-direction:column;align-items:flex-start}
+.pblock .prow:has(.chks){align-items:start}
+.pblock .prow:has(.chks) > s{padding-top:7px}
