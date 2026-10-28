@@ -17,66 +17,7 @@
    «Сбросить демо».
    ============================================================ */
 
-/* ─── время ─── */
-const NOW = new Date();
-const DAY = 864e5;
-const pad = n => String(n).padStart(2, '0');
-const ago = (d, h = 12, m = 0) => { const x = new Date(NOW); x.setDate(x.getDate() - d); x.setHours(h, m, 0, 0); return x.toISOString(); };
-const ahead = (d, h = 12, m = 0) => ago(-d, h, m);
-const parseD = x => x instanceof Date ? x
-  : (typeof x === 'string' && x.length === 10) ? new Date(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10))
-  : new Date(x);
-const sod = x => { const d = new Date(parseD(x)); d.setHours(0, 0, 0, 0); return d; };
-const dd = (a, b) => Math.round((sod(b) - sod(a)) / DAY);          // дней от a до b
-const daysAgo = x => dd(x, NOW);
-const dstr = x => { const d = parseD(x); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-const MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-const WD = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
-const fd = x => { const d = parseD(x); return `${d.getDate()} ${MON[d.getMonth()]}`; };
-const ft = x => { const d = parseD(x); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-const fdt = x => `${fd(x)}, ${ft(x)}`;
-const W = (n, a, b, c) => { const m = Math.abs(n) % 100, k = m % 10; return m > 10 && m < 20 ? c : k > 1 && k < 5 ? b : k === 1 ? a : c; };
-const rel = x => {
-  const s = (NOW - parseD(x)) / 1000, d = daysAgo(x);
-  if (s < 60) return 'только что';
-  if (s < 3600) return `${Math.floor(s / 60)} мин назад`;
-  if (d === 0) return `${Math.floor(s / 3600)} ч назад`;
-  if (d === 1) return 'вчера';
-  return d < 30 ? `${d} ${W(d, 'день', 'дня', 'дней')} назад` : fd(x);
-};
-const dayLabel = x => { const d = daysAgo(x); return d === 0 ? `Сегодня · ${fd(x)}` : d === 1 ? `Вчера · ${fd(x)}` : `${fd(x)} · ${WD[parseD(x).getDay()]}`; };
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const fmtPhone = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 11 ? `+${d[0]} ${d.slice(1, 4)} ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9)}` : (p || '—'); };
-const initials = s => s.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const $ = s => document.querySelector(s);
-
-/* ─── иконки ─── */
-const I = {
-  back: 'M10 3 5 8l5 5', arrow: 'M3 8h10M9 4l4 4-4 4', plus: 'M8 3v10M3 8h10', x: 'M4 4l8 8M12 4l-8 8',
-  phone: 'M3.5 2.5h2.2l1.1 3-1.5 1a8 8 0 0 0 4.2 4.2l1-1.5 3 1.1v2.2a1 1 0 0 1-1 1A11 11 0 0 1 2.5 3.5a1 1 0 0 1 1-1z',
-  tg: 'M14 2.5 1.8 7.3l4.1 1.4 1.5 4.6 2.3-2.6 3.3 2.4L14 2.5zM5.9 8.7l6.2-4.4',
-  wa: 'M8 1.8a6.2 6.2 0 0 0-5.4 9.3L1.8 14.2l3.2-.8A6.2 6.2 0 1 0 8 1.8zM6 5.5c0 2.5 2 4.5 4.5 4.5',
-  sms: 'M13.5 7.6a5.2 5.2 0 0 1-7.4 4.7L2.5 13.2l1-3.6A5.2 5.2 0 1 1 13.5 7.6z',
-  mail: 'M2 3.5h12v9H2zM2 4l6 4.5L14 4', meet: 'M1.8 4.5h8.4v7H1.8zM10.2 7l4-2.3v6.6l-4-2.3',
-  note: 'M3 2h7l3 3v9H3zM10 2v3h3M5.5 8h5M5.5 10.5h3.5', task: 'M2.5 2.5h11v11h-11zM5 8l2 2 4-4',
-  chk: 'M3 8.5 6.5 12 13 4.5', bolt: 'M9 1.5 3 9h4.5L7 14.5 13 7H8.5z', flag: 'M3.5 14V2.5M3.5 3h8l-1.5 3 1.5 3h-8',
-  star: 'M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z',
-  user: 'M8 8a2.8 2.8 0 1 0 0-5.6A2.8 2.8 0 0 0 8 8zM2.5 14c.6-2.8 2.8-4.3 5.5-4.3s4.9 1.5 5.5 4.3',
-  users: 'M6 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM1.5 13.5c.5-2.4 2.3-3.8 4.5-3.8s4 1.4 4.5 3.8M11 2.7a2.4 2.4 0 0 1 0 4.6M12.2 9.9c1.2.5 2 1.7 2.3 3.6',
-  cal: 'M2.5 3.5h11v10h-11zM2.5 6.5h11M5.5 2v3M10.5 2v3', clock: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 4.5V8l2.5 1.5',
-  lock: 'M3.5 7h9v7h-9zM5.5 7V5a2.5 2.5 0 0 1 5 0v2', trash: 'M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4',
-  dots: 'M3.5 8h.01M8 8h.01M12.5 8h.01', alert: 'M8 1.8 14.5 13.5h-13zM8 6v3.5M8 11.5h.01',
-  moon: 'M13.5 9.5A5.8 5.8 0 0 1 6.5 2.5a5.8 5.8 0 1 0 7 7z',
-  sun: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1',
-  grid: 'M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z', list: 'M2.5 4h11M2.5 8h11M2.5 12h11',
-  pulse: 'M1.5 8h3l1.5-3.5 3 7L10.5 8h4', code: 'M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5',
-  idea: 'M6 12.5h4M6.5 14.5h3M8 1.5a4.5 4.5 0 0 0-2.6 8.2c.5.4.6.9.6 1.3v.5h4V11c0-.4.1-.9.6-1.3A4.5 4.5 0 0 0 8 1.5z',
-  bug: 'M5.5 5.5h5v6a2.5 2.5 0 0 1-5 0zM6 5.5a2 2 0 0 1 4 0M2.5 8.5h3M10.5 8.5h3M3 5l2.5 1.5M13 5l-2.5 1.5M3 13l2.5-1.5M13 13l-2.5-1.5',
-  heart: 'M8 13.5S2 10 2 5.8A3 3 0 0 1 8 4.5a3 3 0 0 1 6 1.3C14 10 8 13.5 8 13.5z', edit: 'M10.5 2.5l3 3L6 13H3v-3z',
-  out: 'M9.5 2.5h4v4M13.5 2.5 7 9M11.5 9.5v4h-9v-9h4', inn: 'M6.5 13.5h-4v-4M2.5 13.5 9 7M4.5 6.5v-4h9v9h-4'
-};
-const ic = (k, w) => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="${w || 1.5}" stroke-linecap="round" stroke-linejoin="round"><path d="${I[k]}"/></svg>`;
+/* Время, форматирование, иконки, роль, меню, тост и окно — в common.js. */
 
 /* ─── справочники ─── */
 /* Тарифы и лимиты — дословно как в боевой админке. */
@@ -244,8 +185,6 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} };
 const crmOf = t => (saved[t.id] ||= JSON.parse(JSON.stringify(t.crm)));
-let ROLE = 'mkt';
-try { ROLE = localStorage.getItem('tg-adm-role') || 'mkt'; } catch (e) {}
 
 const params = new URLSearchParams(location.search);
 let T = TRAINERS.find(t => t.id === params.get('id')) || TRAINERS[0];
@@ -303,25 +242,7 @@ function evHTML(e) {
     <div class="tm">${ft(e.at)}<span>${esc(by)}</span></div></div>`;
 }
 
-/* ─── навигация и топбар ─── */
-function renderNav() {
-  const adm = ROLE === 'admin';
-  const items = adm
-    ? [{ g: 'Мониторинг' }, { n: 'Обзор', k: 'grid' }, { n: 'Журнал', k: 'list' }, { n: 'Здоровье', k: 'pulse' },
-       { g: 'Управление' }, { n: 'Тренеры', k: 'user', c: 29, on: 1 }, { n: 'Клиенты', k: 'users', c: 150 },
-       { g: 'Настройки' }, { n: 'Счётчики', k: 'code' }]
-    : [{ g: 'Работа с тренерами' }, { n: 'Тренеры', k: 'user', c: 29, on: 1 }];
-  $('#nav').innerHTML = `
-    <div class="nh"><span class="logo" role="img" aria-label="ТРЕНЕРГРАМ"><i><b>Т</b>РЕНЕРГРА<b>М</b></i><em>ТМ</em></span></div>
-    <div class="nbody">${items.map(x => x.g ? `<div class="ngrp">${x.g}</div>`
-      : `<a href="#" data-a="nolink" class="${x.on ? 'on' : ''}">${ic(x.k)}<span class="ntxt">${x.n}</span>${x.c ? `<span class="cnt">${x.c}</span>` : ''}</a>`).join('')}</div>
-    <button class="nfoot role" data-a="role" title="Прототип: переключить роль">
-      <span class="av">${adm ? 'А' : 'АМ'}</span>
-      <span><b>${adm ? 'Администратор' : 'Анна Миронова'}</b><s>${adm ? 'все разделы' : 'маркетолог'}</s></span>
-      <span class="rl">роль</span>
-    </button>`;
-}
-
+/* ─── топбар ─── */
 function renderTop() {
   $('#topbar').innerHTML = `
     <div class="crumb"><a href="#" data-a="nolink">Тренеры</a><span class="sep">›</span><span class="cur">${esc(nameOf(T))}</span></div>
@@ -430,12 +351,31 @@ function tabOnb() {
       <span class="when">${at ? fd(at) : 'ещё нет'}</span></div>`; }).join('')}`;
 }
 
-const TABS = [['feed', 'Лента'], ['onb', 'Онбординг']];
+/* Партнёрская программа — только администратор: условия тренера (свой
+   процент, вывод средств), его партнёрский счёт, заявки на вывод и кого
+   он привёл. Общий процент и все партнёры — на странице программы. */
+function tabPrt() {
+  const c = prtCond(T.id), st = prtStats(T.id), p = prtOf(T.id), reqs = prtReqs(T.id);
+  const cell = (k, v) => `<div><s>${k}</s><b>${v}</b></div>`;
+  return `<div class="sec-h">Условия</div>${prtCondHTML(c)}
+    <div class="prt-stats">${cell('Приглашено', `${st.invited}<i> · платят ${st.paying}</i>`)}${cell('Заработано', prtRub(st.earned))}
+      ${cell('На баланс аккаунта', prtRub(st.toBalance))}${cell('Выплачено', prtRub(st.paid))}${cell('Доступно', prtRub(st.avail))}</div>
+    ${reqs.length ? `<div class="sec-h">Заявки на вывод</div>${st.waitN ? `<div class="sec-sub">${PRT_REQ_HINT}</div>` : ''}${prtReqHTML(reqs, false)}` : ''}
+    <div class="sec-h">Приглашённые тренеры${p.invited.length ? ` <small>${p.invited.length}</small>` : ''}</div>
+    ${p.invited.length ? p.invited.slice().sort((a, b) => parseD(b.at) - parseD(a.at)).map(i => `<div class="prt-inv"><span class="av">${initials(i.n)}</span>
+        <b>${esc(i.n)}</b><span class="chip ${INV_ST[i.st][0]}">${INV_ST[i.st][1]}</span><span class="when">с ${fd(i.at)}</span></div>`).join('')
+      : '<div class="empty">По ссылке тренера пока никто не зарегистрировался</div>'}
+    <a class="prt-all" href="partners.html">${ic('pct')} Общий процент и все партнёры</a>`;
+}
+
+const TABS = [['feed', 'Лента'], ['onb', 'Онбординг'], ['prt', 'Партнёрская программа', 'admin']];
 function workHTML() {
-  const p = onbProgress();
-  const cnt = { onb: `<s>${p.done}/${p.total}</s>` };
-  const body = (S.tab === 'onb' ? tabOnb : tabFeed)();
-  return `<section class="work"><div class="tabs2">${TABS.map(([k, n]) => `<button class="${S.tab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${n}${cnt[k] || ''}</button>`).join('')}</div>${body}</section>`;
+  const p = onbProgress(), tabs = TABS.filter(t => !t[2] || t[2] === ROLE);
+  if (!tabs.some(t => t[0] === S.tab)) S.tab = 'feed';
+  const w = prtStats(T.id).waitN;
+  const cnt = { onb: `<s>${p.done}/${p.total}</s>`, prt: w ? `<s class="rm">${w} ${W(w, 'заявка', 'заявки', 'заявок')}</s>` : '' };
+  const body = ({ onb: tabOnb, prt: tabPrt }[S.tab] || tabFeed)();
+  return `<section class="work"><div class="tabs2">${tabs.map(([k, n]) => `<button class="${S.tab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${n}${cnt[k] || ''}</button>`).join('')}</div>${body}</section>`;
 }
 
 /* ─── отрисовка ─── */
@@ -446,16 +386,10 @@ function render() {
   if (S.focus) { const tx = $('#cmp-tx'); if (tx) { tx.focus(); tx.setSelectionRange(tx.value.length, tx.value.length); $('#cmp').scrollIntoView({ block: 'center', behavior: 'smooth' }); } S.focus = false; }
   if (S.edit) { document.querySelector(`[data-fe="${S.edit}"]`)?.focus(); S.edit = null; }
 }
-function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2200); }
 const commit = () => { save(); render(); };
 const push = e => { C.feed.push({ id: uid(), at: new Date().toISOString(), by: C.owner || 'Маркетолог', ...e }); };
 
 /* ─── окна ─── */
-function modal(title, body, foot, w = 620) {
-  $('#ov').innerHTML = `<div class="md" style="max-width:${w}px"><div class="mdh"><span class="dot"></span><h2>${title}</h2><button class="cls" data-a="mclose">✕</button></div>
-    <div class="mdb">${body}</div><div class="mdf"><span class="sp"></span>${foot}</div></div>`;
-  $('#ov').classList.add('on');
-}
 const closeModal = () => { $('#ov').classList.remove('on'); S.m = null; };
 
 function renderModal() {
@@ -469,7 +403,7 @@ function renderModal() {
       ${m.r === 'feature' ? `<span class="lab">Какой функции не хватает</span><input class="inp" data-m="extra" value="${esc(m.extra)}" placeholder="например, приём оплаты от клиентов">` : ''}
       ${m.r === 'later' ? `<span class="lab">Когда вернуться</span><input class="inp" type="date" data-m="back" value="${m.back}" style="max-width:200px"><div class="note">Дата появится в карточке рядом с причиной.</div>` : ''}
       <span class="lab">Комментарий</span><textarea class="inp" data-m="cm" placeholder="Слова тренера, детали">${esc(m.cm)}</textarea>`,
-      `<button class="btn gh" data-a="mclose">Отмена</button><button class="btn" data-a="lostsave" style="background:var(--rm)" ${m.r ? '' : 'disabled'}>Сохранить</button>`);
+      `<span class="sp"></span><button class="btn gh" data-a="mclose">Отмена</button><button class="btn" data-a="lostsave" style="background:var(--rm)" ${m.r ? '' : 'disabled'}>Сохранить</button>`);
   }
 }
 
@@ -503,8 +437,13 @@ document.addEventListener('click', ev => {
   if (a !== 'admmenu') document.querySelector('.amenu')?.remove();
   switch (a) {
     case 'nolink': ev.preventDefault(); toast('Этот раздел уже есть в боевой админке'); break;
-    case 'role': ROLE = ROLE === 'mkt' ? 'admin' : 'mkt'; try { localStorage.setItem('tg-adm-role', ROLE); } catch (e) {}
-      renderNav(); render(); toast(ROLE === 'mkt' ? 'Роль: маркетолог' : 'Роль: администратор'); break;
+    case 'role': toggleRole(); renderNav('trainer.html'); render(); toast(ROLE === 'mkt' ? 'Роль: маркетолог' : 'Роль: администратор'); break;
+    /* партнёрская программа: условия меняются сразу */
+    case 'cpct': { const c = prtCond(T.id); prtSetCond(T.id, v === 'own' ? c.pct : null, c.payout); render();
+      if (v === 'own') document.querySelector('[data-c="pct"]')?.select(); toast(v === 'own' ? 'Свой процент — впишите значение' : `Общий процент · ${PRT.pct}%`); break; }
+    case 'cpay': { const c = prtCond(T.id); prtSetCond(T.id, c.own ? c.pct : null, !c.payout); render(); toast(c.payout ? 'Вывод средств выключен' : 'Вывод средств включён'); break; }
+    case 'reqpaid': case 'reqno': { const r = prtResolve(v, a === 'reqpaid' ? 'paid' : 'no'); render();
+      toast(a === 'reqpaid' ? `Выплата ${prtRub(r.sum)} отмечена` : `Заявка отклонена — ${prtRub(r.sum)} вернулись тренеру`); break; }
     case 'reset': delete saved[T.id]; save(); C = crmOf(T); S.edit = null; render(); toast('Демо сброшено'); break;
     case 'multi': { const arr = C.fields[el.dataset.f] ||= []; const i = arr.indexOf(v); i < 0 ? arr.push(v) : arr.splice(i, 1); commit(); break; }
     case 'tab': S.tab = v; S.edit = null; render(); break;
@@ -543,6 +482,11 @@ document.addEventListener('change', ev => {
   if (t.id === 'demo-pick') { location.search = '?id=' + t.value; return; }
   if (t.id === 'cmp-st') { S.draft.st = t.value; render(); return; }
   if (t.id === 'stage-pick') { setStage(t.value); return; }
+  if (t.dataset.c === 'pct') {
+    const n = Math.round(+t.value);
+    if (t.value === '' || !(n >= 0 && n <= 100)) { render(); return toast('Процент — от 0 до 100'); }
+    prtSetCond(T.id, n, prtCond(T.id).payout); render(); toast(`Свой процент: ${n}%`); return;
+  }
   if (t.dataset.fe) {
     const k = t.dataset.fe;
     C.fields[k] = t.value.trim();
@@ -552,7 +496,7 @@ document.addEventListener('change', ev => {
 });
 document.addEventListener('keydown', ev => {
   const t = ev.target;
-  if (t.dataset?.fe && ev.key === 'Enter') { t.blur(); }
+  if ((t.dataset?.fe || t.dataset?.c) && ev.key === 'Enter') { t.blur(); }
   if (t.id === 'cmp-tx' && ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) saveEvent();
   if (ev.key === 'Escape' && S.m) closeModal();
 });
@@ -560,5 +504,5 @@ document.addEventListener('keydown', ev => {
    срабатывает именно тогда, отдельный blur не нужен. */
 $('#ov').addEventListener('click', ev => { if (ev.target.id === 'ov') closeModal(); });
 
-renderNav();
+renderNav('trainer.html');
 render();

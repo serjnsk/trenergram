@@ -34,7 +34,8 @@
 /* ═══════════ ПРОФИЛЬ ТРЕНЕРА ═══════════
    Настройки аккаунта, а не витрина бренда (BRD-1 — за пределами MVP):
    таб «Профиль» — данные, приглашение, реквизиты, вход; таб «Подписка» —
-   тариф, лимит клиентов, карта, история платежей. Виды спорта,
+   тариф, лимит клиентов, карта, баланс, история платежей; таб «Партнёрская программа» —
+   ссылка для тренеров и партнёрский счёт. Виды спорта,
    часовой пояс и уведомления убраны. Приглашение клиентов (REG-1) живёт здесь
    же — это свойство аккаунта тренера. «Реквизиты для оплаты занятий» — текст
    для оплаты занятий (PAY-9): клиент видит его, когда пора платить.
@@ -65,12 +66,14 @@ function photoFrom(file, done){
   img.src = url;
 }
 
-/* Два таба: «Профиль» — всё, что про тренера и его клиентов (данные, ссылка,
-   реквизиты, вход); «Подписка» — оплата Тренерграма. Таб — в хэше адреса,
-   поэтому плашка пробного периода и баннер перерасхода ведут сразу в #billing. */
+/* Три таба: «Профиль» — всё, что про тренера и его клиентов (данные, ссылка,
+   реквизиты, вход); «Подписка» — оплата Тренерграма; «Партнёрская программа» — ссылка для
+   тренеров и партнёрский счёт. Таб — в хэше адреса, поэтому плашка пробного
+   периода и баннер перерасхода ведут сразу в #billing. */
 const TABS = [['profile','Профиль','<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.2 3.8-5 7-5s5.8 1.8 7 5"/>'],
-              ['billing','Подписка','<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>']];
-const tab = () => location.hash === '#billing' ? 'billing' : 'profile';
+              ['billing','Подписка','<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>'],
+              ['partner','Партнёрская программа','<path d="M18.5 5.5l-13 13"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>']];
+const tab = () => ({'#billing':'billing', '#partner':'partner'})[location.hash] || 'profile';
 const row = (label, desc, ctl) => `<div class="srow"><div class="sl"><b>${label}</b>${desc?`<s>${desc}</s>`:''}</div><div class="sc">${ctl}</div></div>`;
 
 function profileTab(){
@@ -111,6 +114,7 @@ function profileTab(){
    под ней карта, внизу полосой — следующий платёж и отмена. Вторая — история. */
 const PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
 const dnum = iso => iso.split('-').reverse().join('.');
+const cell = (k, v, cls='') => `<div class="bst${cls?' '+cls:''}"><s>${k}</s><b>${v}</b></div>`;
 function billingTab(){
   const pl = plan(), used = CLIENTS.length, left = daysLeft(P.sub.until);
   const trial = !!P.sub.trial, nocard = !/\d/.test(P.sub.card||''), hist = payHist();
@@ -120,8 +124,7 @@ function billingTab(){
   const ended = SUBRO, off = !!P.sub.canceled && !trial && !ended;
   /* Срок прошёл (оплата не прошла, подписку отменили или кончился пробный) —
      кабинет только для просмотра (SUBRO, data.js); здесь — «Продлить». */
-  const brand = (P.sub.card||'').split(' ')[0];
-  const cell = (k, v, cls='') => `<div class="bst${cls?' '+cls:''}"><s>${k}</s><b>${v}</b></div>`;
+  const brand = (P.sub.card||'').split(' ')[0], bal = P.balance || 0;
   return `
     <div class="card bcard">
       <div class="bc-b">
@@ -137,13 +140,16 @@ function billingTab(){
         <div class="pmbox">${nocard
           ? `<span class="pm-t">Карта не привязана</span><button class="btn sm" id="btnCard">Привязать карту</button>`
           : `<span class="pm-br">${esc(brand)}</span><span class="pm-t">${esc(P.sub.card)}</span><button class="iact" id="btnCard" title="Изменить карту" aria-label="Изменить карту">${PEN}</button>`}</div>
+        <div class="pmbox pm-bal"><span class="pm-br">₽</span><span class="pm-t">${bal
+          ? `<b>${rub(bal)}</b> на балансе аккаунта — спишем в счёт следующего платежа`
+          : 'Баланс аккаунта пуст — пополняется из партнёрской программы'}</span><a class="lnk-t" href="#partner">${bal?'Пополнить':'Подробнее'}</a></div>
       </div>
       <div class="bc-f"><span>${ended
         ? `Продление — ${rub(pl.price)} за месяц, ${esc(pl.n)}; доступ откроется сразу`
         : trial
         ? `Потом — ${rub(pl.price)} в месяц, ${esc(pl.n)}`
         : off ? `Автопродление выключено — списаний больше не будет`
-        : left>0 ? `Следующий платёж ${rub(pl.price)} — ${dlong(P.sub.until)}, через ${left} ${plural(left,'день','дня','дней')}` : `Подписка закончилась ${dlong(P.sub.until)}`}</span>
+        : left>0 ? `Следующий платёж ${rub(pl.price)} — ${dlong(P.sub.until)}, через ${left} ${plural(left,'день','дня','дней')}${bal?`: ${bal>=pl.price?'всё с баланса':`${rub(bal)} с баланса, ${rub(pl.price-bal)} с карты`}`:''}` : `Подписка закончилась ${dlong(P.sub.until)}`}</span>
         ${trial||off||ended?'':'<button class="lnk-t" id="btnCancel">Отменить подписку</button>'}</div>
     </div>
 
@@ -159,12 +165,100 @@ function billingTab(){
 /* История в прототипе — ежемесячные списания до даты продления, не раньше начала подписки */
 const payHist = () => P.sub.trial ? [] : [1,2,3,4].map(k=>{ const d = new Date(P.sub.until+'T00:00:00'); d.setMonth(d.getMonth()-k); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') }).filter(d=>d<=TODAY && d>=(P.sub.since||''));
 
+/* ═══════════ ПАРТНЁРСКАЯ ПРОГРАММА ═══════════
+   Тренер приводит тренеров по своей ссылке и получает процент с каждой их
+   оплаты подписки. Начисления копятся на партнёрском счёте; оттуда тренер
+   переводит их на баланс аккаунта (P.balance), а баланс уходит в счёт
+   следующего платежа за подписку. Процент задаёт администратор — общий
+   для всех или свой у тренера. «Вывод средств» по умолчанию выключен;
+   включённый — это заявка: администратор связывается с тренером и платит
+   вне сервиса, до выплаты сумма в резерве. Начисление помнит процент,
+   по которому посчитано: смена процента прошлое не пересчитывает.
+   Демо: ?payout=1 — администратор включил вывод средств, ?payout=0 — выключил. */
+const PRT_DEF = {pct:20, payout:false, link:'https://trenergram.ru/p/K7F2QX', invited:3, paying:2, balance:800,
+  ops:[[3,'in',1990,'Анна Лебедева'], [14,'in',490,'Дмитрий Орлов'], [20,'bal',800], [33,'in',1990,'Анна Лебедева'],
+       [44,'in',490,'Дмитрий Орлов'], [63,'in',1990,'Анна Лебедева']]
+    .map(([d,k,n,who]) => k==='in' ? {at:addDays(TODAY,-d), k, base:n, pct:20, sum:Math.round(n*.2), who} : {at:addDays(TODAY,-d), k, sum:n})};
+const PRT = STATE.partner ||= (()=>{ const r = JSON.parse(JSON.stringify(PRT_DEF)); P.balance ??= r.balance; delete r.balance; return r })();
+{ const m = /[?&]payout=(1|0)\b/.exec(location.search); if(m){ PRT.payout = m[1]==='1'; saveState() } }
+/* Доступно: начисления минус переводы на баланс и выводы; отклонённая заявка возвращает сумму */
+const prtEarned = () => PRT.ops.filter(o=>o.k==='in').reduce((s,o)=>s+o.sum, 0);
+const prtAvail = () => PRT.ops.reduce((s,o)=> o.k==='in' ? s+o.sum : o.st==='no' ? s : s-o.sum, 0);
+const prtOp = o => o.k==='in' ? `Оплата подписки · ${esc(o.who)}<div class="sub">${rub(o.base)} × ${o.pct}%</div>`
+  : o.k==='bal' ? 'Перевод на баланс аккаунта'
+  : `Вывод средств <span class="chip ${({new:'warn', paid:'ok', no:'rm'})[o.st]}">${({new:'ждёт выплаты', paid:'выплачено', no:'отклонено'})[o.st]}</span>`;
+
+function partnerTab(){
+  const av = prtAvail(), [base, code] = [PRT.link.replace(/^https:\/\//,'').replace(/[^/]+$/,''), PRT.link.split('/').pop()];
+  const ops = [...PRT.ops].reverse().sort((a,b)=> a.at<b.at ? 1 : a.at>b.at ? -1 : 0);   /* за один день — последняя сверху */
+  return `
+    <div class="card bcard">
+      <div class="bc-b">
+        <div class="bc-h"><b>Партнёрская программа</b></div>
+        <div class="bc-s">Приглашайте тренеров по своей ссылке — с каждой их оплаты подписки вы получаете ${PRT.pct}%. Начисленное переводите на баланс аккаунта: оно пойдёт в счёт оплаты Тренерграма.</div>
+        <div class="invbox prt-link"><code>${esc(base)}<b>${esc(code)}</b></code><button class="btn" id="prtCopy">Скопировать ссылку</button></div>
+        <div class="bstats">
+          ${cell('Ваш процент', PRT.pct + '%')}
+          ${cell('Приглашено', `${PRT.invited}<i> · платят ${PRT.paying}</i>`)}
+          ${cell('Заработано всего', rub(prtEarned()))}
+          ${cell('Доступно', rub(av), 'pl')}
+        </div>
+      </div>
+      <div class="bc-f prt-f"><span>${P.balance ? `На балансе аккаунта ${rub(P.balance)} — пойдёт в оплату подписки` : 'Баланс аккаунта пуст'}</span>
+        ${PRT.payout ? `<button class="btn gh sm" id="prtOut"${av?'':' disabled'}>Вывести</button>` : ''}
+        <button class="btn sm" id="prtBal"${av?'':' disabled'}>Перевести на баланс</button></div>
+    </div>
+
+    <div class="card bcard">
+      <div class="bc-b">
+        <div class="bc-h"><b>Движение по счёту</b></div>
+        ${ops.length ? `<div class="tblwrap bc-tbl"><table class="tbl prt-tbl"><thead><tr><th>Дата</th><th>Операция</th><th class="r">Сумма</th></tr></thead><tbody>
+          ${ops.map(o=>`<tr class="${o.st==='no'?'off':''}"><td class="nw">${o.at.slice(0,4)===TODAY.slice(0,4) ? dlong(o.at).replace(/ \d{4}$/,'') : dlong(o.at)}</td><td>${prtOp(o)}</td><td class="r nw ${o.k==='in'?'plus':''}">${o.k==='in'?'+':'−'}${rub(o.sum)}</td></tr>`).join('')}</tbody></table></div>`
+          : '<div class="bc-s">Начислений пока не было — они появятся после первой оплаты приглашённого тренера</div>'}
+      </div>
+    </div>`;
+}
+
+/* Перевод на баланс и заявка на вывод — одно окно с суммой: по умолчанию всё доступное */
+function prtModal(out){
+  const av = prtAvail();
+  openModal({title: out ? 'Вывести средства' : 'Перевести на баланс', body:`
+    <p class="lead">${out
+      ? 'Оставьте заявку — администратор Тренерграма свяжется с вами и договорится о выплате. Пока заявка ждёт, сумма в резерве.'
+      : 'Деньги перейдут на баланс аккаунта и пойдут в счёт следующего платежа за подписку. Вывести их с баланса будет нельзя.'}</p>
+    <div class="formfld prt-sum"><span class="k">Сумма, ₽</span><input class="inp" id="prtSum" type="number" min="1" max="${av}" step="1" value="${av}" inputmode="numeric"></div>
+    <div class="hint" id="prtNote"></div>`,
+    foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPrt"></button>`});
+  const inp = $('#prtSum'), go = $('#mdPrt');
+  const sync = () => {
+    const n = Math.floor(+inp.value || 0), ok = n >= 1 && n <= av;
+    go.disabled = !ok; go.textContent = (out ? 'Отправить заявку на ' : 'Перевести ') + (ok ? rub(n) : '');
+    $('#prtNote').innerHTML = n > av ? `Доступно только ${rub(av)}` : out ? `Свяжемся с вами по номеру ${esc(T.phone)}` : `Доступно ${rub(av)}`;
+  };
+  inp.oninput = sync; sync(); inp.select();
+  go.onclick = () => {
+    const n = Math.floor(+inp.value);
+    PRT.ops.push(out ? {at:TODAY, k:'out', sum:n, st:'new'} : {at:TODAY, k:'bal', sum:n});
+    if(!out) P.balance = (P.balance||0) + n;
+    closeModal(); save(out ? 'Заявка отправлена — администратор свяжется с вами' : rub(n) + ' на балансе аккаунта'); render();
+  };
+}
+
+function bindPartner(){
+  $('#prtCopy').onclick = () => { try{ navigator.clipboard.writeText(PRT.link) }catch(_){} toast('Ссылка скопирована — отправьте её тренеру') };
+  $('#prtBal').onclick = () => prtModal(false);
+  $('#prtOut')?.addEventListener('click', () => prtModal(true));
+}
+
 function render(){
   const t = tab();
   $('#page').innerHTML = `
   <nav class="ptabs">${TABS.map(([k,n,ic])=>`<a href="#${k}" class="${k===t?'on':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">${ic}</svg>${n}</a>`).join('')}</nav>
-  <div class="prof">${t==='billing'?billingTab():profileTab()}</div>`;
-  t==='billing' ? bindBilling() : bindProfile();
+  <div class="prof">${t==='billing'?billingTab():t==='partner'?partnerTab():profileTab()}</div>`;
+  t==='billing' ? bindBilling() : t==='partner' ? bindPartner() : bindProfile();
+  /* На телефоне табы не помещаются и прокручиваются вбок — открытый таб должен быть виден */
+  const nav = $('.ptabs'), on = nav.querySelector('.on'), right = on.offsetLeft - nav.offsetLeft + on.offsetWidth + 16;
+  if(right > nav.clientWidth) nav.scrollLeft = right - nav.clientWidth;
 }
 
 function bindProfile(){

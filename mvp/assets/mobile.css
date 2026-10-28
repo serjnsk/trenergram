@@ -340,7 +340,11 @@ td.mnil{display:none !important}
 .pmbox .btn{height:40px}
 .bc-tbl .bh-pl{display:none}
 .bc-tbl .tbl th,.bc-tbl .tbl td{padding-left:10px;padding-right:10px}
-.ptabs{justify-content:flex-start;gap:24px}
+.ptabs{justify-content:flex-start;gap:24px;overflow-x:auto;scrollbar-width:none;margin-left:-8px;margin-right:-8px;padding:0 16px}
+.ptabs::-webkit-scrollbar{display:none}
+.ptabs a{flex:none;white-space:nowrap}
+.prt-f > span{flex:1 1 100%}
+.prt-f .btn{flex:1 1 0;height:42px;justify-content:center}
 .copyfield{height:auto;flex-wrap:wrap;padding:8px 8px 8px 12px;gap:8px}
 .copyfield code{flex:1 1 100%;font-size:14px}
 .copyfield .btn{flex:1 1 auto;justify-content:center}

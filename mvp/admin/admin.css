@@ -216,3 +216,67 @@
 .chks{flex-direction:column;align-items:flex-start}
 .pblock .prow:has(.chks){align-items:start}
 .pblock .prow:has(.chks) > s{padding-top:7px}
+
+/* ─── партнёрская программа: страница и вкладка карточки ─── */
+.prt-h1{font:700 23px/1.15 var(--disp);letter-spacing:-.025em;margin-top:4px}
+.prt-lead{margin-top:6px;color:var(--tx3);font-size:14.5px;line-height:1.45;max-width:760px}
+.prt-def{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0 2px}
+.prt-def .btn.sm{height:34px}
+.pblock .note{font-size:13.5px;color:var(--tx3);line-height:1.45;margin:8px 0 6px}
+.pctin{display:inline-flex;align-items:center;gap:7px}
+.pctin .inp{width:84px;text-align:right}
+.pctin i{font-style:normal;font-weight:600;color:var(--tx2)}
+.prt-card{background:var(--bg);border-radius:var(--rad-l);padding:14px 18px 18px;margin-top:14px}
+.prt-sh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.prt-sh b{font:700 16.5px/1.2 var(--disp);letter-spacing:-.02em}
+.prt-sh > s{text-decoration:none;color:var(--tx3);font-weight:600;font-size:14px}
+.prt-sh .btn{height:34px;display:inline-flex;align-items:center;gap:6px}
+.prt-sh .btn svg{width:14px;height:14px}
+.prt-card .sec-sub{margin:-4px 0 12px}
+.prt-tbl{border:1px solid var(--line);border-radius:var(--rad-l);overflow-x:auto}
+.prt-tbl .tbl th{background:var(--s2)}
+.prt-tbl .tbl td{font-size:14.5px}
+.prt-tbl .tbl td b{font-weight:600}
+.prt-tbl tr.dim td,.prt-tbl tr.dim td b{color:var(--tx3);font-weight:500}
+.prt-tbl .mut{color:var(--tx3)}
+.prt-tbl .chip{height:20px;font-size:12.5px;padding:0 7px}
+.prt-tbl .iact{background:none;color:var(--tx3)}
+.prt-tbl .iact:hover{background:var(--s1);color:var(--ink)}
+.prt-nm{font-weight:600;color:var(--ink);text-decoration:none}
+.prt-nm:hover{text-decoration:underline;text-underline-offset:3px}
+.prt-act{display:flex;gap:6px}
+.prt-act .btn{height:30px;font-size:14px}
+.prt-lock{display:flex;gap:14px;align-items:flex-start;padding:18px}
+.prt-lock svg{width:20px;height:20px;color:var(--tx3);flex:none;margin-top:1px}
+.prt-lock b{display:block;font-size:15.5px;font-weight:600}
+.prt-lock s{display:block;text-decoration:none;color:var(--tx3);font-size:14px;margin-top:3px}
+
+/* условия тренера: процент и вывод средств */
+.prt-cond .prow{grid-template-columns:150px minmax(0,1fr);align-items:center;padding:8px 0}
+.prt-cond .prow:first-child{border-top:0}
+.prt-cond .prow > s{padding-top:0}
+.prt-pct{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:34px}
+.prt-pct .seg button{height:32px}
+.prt-pct .inp{height:34px;font-size:14.5px;background-color:var(--bg);border:1.5px solid var(--line2)}
+.prt-pct .inp:focus{border-color:var(--acc)}
+.prt-pay{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--tx2);line-height:1.4}
+.prt-pay .switch{flex:none}
+
+/* вкладка в карточке: счёт и приглашённые */
+.tabs2 + .sec-h{margin-top:16px}
+.prt-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:10px;padding:12px 0;background:var(--s2);border-radius:var(--rad-l)}
+.prt-stats > div{padding:0 16px;border-left:1px solid var(--line2);min-width:0}
+.prt-stats > div:first-child{border-left:0}
+.prt-stats s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prt-stats b{display:block;margin-top:3px;font:700 18px/1.2 var(--disp);letter-spacing:-.01em;white-space:nowrap}
+.prt-stats b i{font:500 14px var(--ui);color:var(--tx3);font-style:normal}
+.work .prt-tbl{margin-top:4px}
+.prt-inv{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.prt-inv:last-of-type{border-bottom:0}
+.prt-inv .av{width:30px;height:30px;border-radius:50%;background:var(--s1);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--tx2);flex:none}
+.prt-inv b{font-weight:600}
+.prt-inv .chip{height:20px;font-size:12.5px;padding:0 7px}
+.prt-inv .when{margin-left:auto;color:var(--tx3);font-size:13px}
+.prt-all{display:inline-flex;align-items:center;gap:7px;margin-top:18px;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none}
+.prt-all:hover{text-decoration:underline;text-underline-offset:3px}
+.prt-all svg{width:15px;height:15px}
