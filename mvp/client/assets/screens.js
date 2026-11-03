@@ -523,7 +523,9 @@ const CL_UI_MOUNT = {
     /* Все первые шаги пройдены — один раз финал с достижением «Курс молодого бойца» */
     const st = clFirstSteps();
     /* Вид «start» на стенде засчитывает достижение по-настоящему — тренер видит событие в ленте */
-    if (v === 'start' || (st.every(t => t[1]) && !clS.ach.start)) { if (!clS.ach.start) clAchGive(); setTimeout(clAchShow, 250); }
+    if (v === 'start' || (st.every(t => t[1]) && !clS.ach.start)) { if (!clS.ach.start) clAchGive(); clQueue(clAchShow); }
+    /* Пропустил тренировку — при входе один раз «Серия прервалась» */
+    clStreakLostCheck();
     scr.addEventListener('click', e => {
       const d = e.target.closest('[data-date]');
       if (d) { clDate = d.dataset.date; clRepaint(scr, 'home'); return; }
@@ -579,11 +581,17 @@ const CL_UI_MOUNT = {
       if (ps) { const k = ps.dataset.pmset, inp = ps.parentElement.querySelector('[data-pmin]');
         const v = parseFloat(String(inp.value).replace(',', '.')); if (!(v > 0)) return;
         const pm = pmOf(CL_ME); (STATE.pmLog ||= []).push({ cid: CL_ME, k, v, prev: pm[k] || null, d: clDate }); pm[k] = v; (clS.pmh[k] ||= []).push([TODAY, v]);
-        saveState(); clSave(); clRepaint(scr, 'workout'); clToast('Рекорд записан — веса пересчитаны'); return; }
+        saveState(); clSave(); clRepaint(scr, 'workout'); if (!clAchFirst()) clToast('Рекорд записан — веса пересчитаны'); return; }
       /* Завершить — просто отметка и назад на главную; снять отметку — на месте */
       if (e.target.closest('#dayDone')) {
         if (clS.dayDone[key]) { delete clS.dayDone[key]; delete (STATE.ddone || {})[key]; saveState(); clSave(); clRepaint(scr, 'workout'); return; }
-        clS.dayDone[key] = true; (STATE.ddone ||= {})[key] = true; saveState(); clSave(); clToast('Тренировка завершена'); clGo('home'); }
+        const s0 = clStreak(); clS.dayDone[key] = true; (STATE.ddone ||= {})[key] = true; saveState(); clSave();
+        /* Поверх главной по очереди: «Первая тренировка» (если первая), «Серия прервалась» (если перед
+           этим был пропуск), момент серии, если она выросла (не выросла — отметили будущий день — тост),
+           и «Курс молодого бойца», если это был последний шаг */
+        const s1 = clStreak(); clAchFirst(); clStreakLostCheck();
+        if (s1 > s0) clQueue(() => clStreakShow(s0, s1)); else clToast('Тренировка завершена');
+        clGo('home'); }
     });
     /* Пока не отправлено — черновик; кнопка «Отправить» активна, когда есть текст */
     scr.addEventListener('input', e => {
@@ -666,21 +674,33 @@ function clMock(k) {
   return pg;
 }
 
-/* ═══ Достижение «Курс молодого бойца» ═══
-   Одно достижение — за все первые шаги, только эмоциональное. Значок —
-   гиря-новобранец: пилотка набекрень, глаза вразбег, отдаёт честь, потеет.
+/* ═══ Достижения ═══
+   Три значка, только эмоциональные — ничего не открывают и не дают:
+   «Курс молодого бойца» — за все первые шаги, «Первый рекорд» и «Первый
+   замер» — за первые рекорд и замер, которые клиент внёс сам. Значок — гиря
+   на шестиграннике: новобранец в пилотке, гиря в короне, гиря с рулеткой.
    Факт уходит в общее с кабинетом состояние: у тренера в ленте событие
    «Первые шаги». Открытку со значком можно отправить друзьям. */
-const CL_ACH_NAME = 'Курс молодого бойца';
-const CL_KMB = id => `<defs><linearGradient id="hx${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A1F"/><stop offset=".5" stop-color="#FC5200"/><stop offset="1" stop-color="#E24400"/></linearGradient>
+/* Общее у значков: шестигранник, ручка и корпус гири, лента с надписью */
+const CL_HEX = id => `<defs><linearGradient id="hx${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A1F"/><stop offset=".5" stop-color="#FC5200"/><stop offset="1" stop-color="#E24400"/></linearGradient>
   <radialGradient id="kb${id}" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#4A403B"/><stop offset="1" stop-color="#1E1A18"/></radialGradient></defs>
   <path d="M60 5 108 32.5v55L60 115 12 87.5v-55z" fill="url(#hx${id})"/>
-  <path d="M60 15 99 37.5v45L60 105 21 82.5v-45z" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2"/>
-  <path class="sweat" d="M29 47c3 5 3 8 0 9.5-3-1.5-3-4.5 0-9.5z" fill="#9BDCFF" stroke="#1E1A18" stroke-width="1"/>
-  <path d="M35 80c-8 1-10 8-6 12" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>
-  <path d="M44 58c-6-30 38-30 32 0" fill="none" stroke="#1E1A18" stroke-width="9" stroke-linecap="round"/>
+  <path d="M60 15 99 37.5v45L60 105 21 82.5v-45z" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2"/>`;
+const CL_HEX_OFF = `<path d="M60 5 108 32.5v55L60 115 12 87.5v-55z" fill="var(--c-fill2)"/>
+  <path d="M60 15 99 37.5v45L60 105 21 82.5v-45z" fill="none" stroke="var(--line2)" stroke-width="2"/>`;
+const CL_KB = id => `<path d="M44 58c-6-30 38-30 32 0" fill="none" stroke="#1E1A18" stroke-width="9" stroke-linecap="round"/>
   <path d="M47 54c-3-20 26-22 26-4" fill="none" stroke="#5A4E48" stroke-width="2" stroke-linecap="round" opacity=".7"/>
-  <circle cx="60" cy="76" r="27" fill="url(#kb${id})"/>
+  <circle cx="60" cy="76" r="27" fill="url(#kb${id})"/>`;
+const CL_SWEAT = '<path class="sweat" d="M29 47c3 5 3 8 0 9.5-3-1.5-3-4.5 0-9.5z" fill="#9BDCFF" stroke="#1E1A18" stroke-width="1"/>';
+const CL_ARM_L = '<path d="M35 80c-8 1-10 8-6 12" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>';
+const CL_RIBBON = (word, dark, light, ink) => `<path d="M26 102l6-4h56l6 4-6 4H32z" fill="${dark}" stroke="#1E1A18" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M34 97h52v10H34z" fill="${light}" stroke="#1E1A18" stroke-width="1.4"/>
+  <text x="60" y="105.2" text-anchor="middle" font-family="Montserrat,Arial Black,sans-serif" font-weight="900" font-size="8.5" letter-spacing="${word.length > 3 ? 1 : 1.5}" fill="${ink}">${word}</text>`;
+/* «Курс молодого бойца»: гиря-новобранец — пилотка набекрень, глаза вразбег, отдаёт честь, потеет */
+const CL_KMB = id => `${CL_HEX(id)}
+  ${CL_SWEAT}
+  ${CL_ARM_L}
+  ${CL_KB(id)}
   <g transform="rotate(-12 60 54)"><path d="M40 58c5-11 35-12 41-1l-1.5 4c-11-4-27-4-38 1.5z" fill="#7A8A3E" stroke="#1E1A18" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M60 53.5l1 2.2 2.4.3-1.8 1.6.5 2.4-2.1-1.2-2.1 1.2.5-2.4-1.8-1.6 2.4-.3z" fill="#FF3B30" stroke="#1E1A18" stroke-width=".5"/></g>
   <circle cx="50" cy="71" r="7.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
@@ -691,44 +711,132 @@ const CL_KMB = id => `<defs><linearGradient id="hx${id}" x1="0" y1="0" x2="1" y2
   <path d="M50 81.3h20l-1 3H51z" fill="#fff"/><ellipse cx="60" cy="88.5" rx="5" ry="2.6" fill="#FF7A8A"/>
   <g class="arm"><path d="M85 80c10-6 9-17 1-24" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>
     <path d="M78.5 54l10-3 1.4 4.6-10 3z" fill="#1E1A18" stroke="#1E1A18" stroke-width="2" stroke-linejoin="round"/></g>
-  <path d="M26 102l6-4h56l6 4-6 4H32z" fill="#7A8A3E" stroke="#1E1A18" stroke-width="1.4" stroke-linejoin="round"/>
-  <path d="M34 97h52v10H34z" fill="#8E9F49" stroke="#1E1A18" stroke-width="1.4"/>
-  <text x="60" y="105.2" text-anchor="middle" font-family="Montserrat,Arial Black,sans-serif" font-weight="900" font-size="8.5" letter-spacing="1.5" fill="#fff">КМБ</text>`;
-const CL_BADGE = (cls, lock) => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true">${lock
-  ? `<path d="M60 5 108 32.5v55L60 115 12 87.5v-55z" fill="var(--c-fill2)"/>
-     <path d="M60 15 99 37.5v45L60 105 21 82.5v-45z" fill="none" stroke="var(--line2)" stroke-width="2"/>
+  ${CL_RIBBON('КМБ', '#7A8A3E', '#8E9F49', '#fff')}`;
+/* «Первый рекорд»: гиря в короне набекрень, зажмурилась от счастья, кулак вверх, вокруг искры */
+const CL_PRB = id => `${CL_HEX(id)}
+  ${CL_ARM_L}
+  <g class="arm"><path d="M85 79c9-5 11-14 8-24" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/><circle cx="93" cy="52" r="5.5" fill="#1E1A18"/></g>
+  ${CL_KB(id)}
+  <g transform="rotate(-10 60 52)"><path d="M45 59l-2-14 8.5 6.5L60 41l8.5 10.5L77 45l-2 14z" fill="#FFC531" stroke="#1E1A18" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M45.6 55h28.8" stroke="#1E1A18" stroke-width="1.2"/><circle cx="60" cy="50" r="2.2" fill="#FF3B30" stroke="#1E1A18" stroke-width=".6"/></g>
+  <path d="M44 72q6-7 12 0M64 71q6-7 12 0" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="43" cy="80" r="3.5" fill="#FF7A8A" opacity=".75"/><circle cx="78" cy="79" r="3.5" fill="#FF7A8A" opacity=".75"/>
+  <path d="M48 79c4 13 20 13 24 0z" fill="#7A1F1F" stroke="#1E1A18" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M50 79.3h20l-1 3H51z" fill="#fff"/><ellipse cx="60" cy="86.5" rx="5" ry="2.6" fill="#FF7A8A"/>
+  <path class="spark" d="M30 34l1.6 4.4 4.4 1.6-4.4 1.6L30 46l-1.6-4.4-4.4-1.6 4.4-1.6z" fill="#fff"/>
+  <path class="spark" d="M84 28l1 2.8 2.8 1-2.8 1-1 2.8-1-2.8-2.8-1 2.8-1z" fill="#fff"/>
+  ${CL_RIBBON('РЕКОРД', '#D99A00', '#F5B91E', '#1E1A18')}`;
+/* «Первый замер»: гиря обмотана рулеткой по поясу, косится на деления, держит кончик ленты и потеет */
+const CL_TICKS = Array.from({ length: 15 }, (_, i) => { const x = 38 + i * 3, t = (x - 33.5) / 53;
+  return `M${x} ${(84.8 + 24 * t * (1 - t)).toFixed(1)}v${i % 2 ? 2.2 : 3.6}`; }).join('');
+const CL_MSB = id => `${CL_HEX(id)}
+  ${CL_SWEAT}
+  ${CL_ARM_L}
+  <path d="M84 70c8 3 12 10 12 19" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>
+  ${CL_KB(id)}
+  <circle cx="50" cy="66" r="7.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+  <circle cx="70" cy="66" r="7.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+  <g class="pups"><circle cx="51.5" cy="69.5" r="3.3" fill="#111"/><circle cx="71.5" cy="69.5" r="3.3" fill="#111"/></g>
+  <circle cx="42" cy="77" r="3.2" fill="#FF7A8A" opacity=".75"/><circle cx="78" cy="77" r="3.2" fill="#FF7A8A" opacity=".75"/>
+  <ellipse cx="60" cy="78.5" rx="3.2" ry="3.8" fill="#7A1F1F" stroke="#1E1A18" stroke-width="1.2"/>
+  <path d="M33.5 84Q60 96 86.5 84L84.5 91Q60 101 35.5 91z" fill="#FFD23F" stroke="#1E1A18" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="${CL_TICKS}" stroke="#1E1A18" stroke-width=".9"/>
+  <path d="M86 84.5l11 5.5-2 5-10.5-4.5z" fill="#FFD23F" stroke="#1E1A18" stroke-width="1.2" stroke-linejoin="round"/>
+  <circle cx="96.5" cy="91.5" r="4.6" fill="#1E1A18"/>
+  ${CL_RIBBON('ЗАМЕР', '#2F64C8', '#3D7BE0', '#fff')}`;
+/* «Первая тренировка»: гиря качает гантель на бицепс, косится на неё, язык набок от усердия, пот градом */
+const CL_WKB = id => `${CL_HEX(id)}
+  ${CL_SWEAT}
+  <path class="sweat" d="M24 66c2.4 4 2.4 6.4 0 7.6-2.4-1.2-2.4-3.6 0-7.6z" fill="#9BDCFF" stroke="#1E1A18" stroke-width="1"/>
+  ${CL_ARM_L}
+  <g class="arm"><path d="M85 79c9-4 12-12 10-22" fill="none" stroke="#1E1A18" stroke-width="6" stroke-linecap="round"/>
+    <path d="M84 53h22" stroke="#1E1A18" stroke-width="3" stroke-linecap="round"/>
+    <rect x="82" y="46" width="5" height="14" rx="1.5" fill="#5A4E48" stroke="#1E1A18" stroke-width="1.2"/>
+    <rect x="103" y="46" width="5" height="14" rx="1.5" fill="#5A4E48" stroke="#1E1A18" stroke-width="1.2"/>
+    <circle cx="95" cy="54" r="5" fill="#1E1A18"/></g>
+  ${CL_KB(id)}
+  <circle cx="50" cy="70" r="7.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+  <circle cx="70" cy="70" r="7.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+  <g class="pups"><circle cx="53" cy="67" r="3.3" fill="#111"/><circle cx="73" cy="67" r="3.3" fill="#111"/></g>
+  <circle cx="42" cy="80" r="3.4" fill="#FF7A8A" opacity=".75"/><circle cx="79" cy="79" r="3.4" fill="#FF7A8A" opacity=".75"/>
+  <path d="M50 81h20c-1 6-5 8-10 8s-9-2-10-8z" fill="#7A1F1F" stroke="#1E1A18" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M51 81.2h18v2.4H51z" fill="#fff"/>
+  <path d="M63 85c1 5 4 8 7 7s3-5 1-8z" fill="#FF7A8A" stroke="#1E1A18" stroke-width="1"/>
+  ${CL_RIBBON('СТАРТ', '#B0262B', '#E0393E', '#fff')}`;
+/* Значки: название, рисунок, подпись закрытого и подсказка по тапу, текст
+   финала, открытка (название в две строки и что сделано) и подпись к ней */
+const CL_ACH = {
+  start: { name: 'Курс молодого бойца', art: CL_KMB, sub: 'первые шаги', tip: 'Пройдите первые шаги на главной',
+    tx: 'Все первые шаги пройдены — вы в строю! Значок уже в профиле, а тренер увидит это в своей ленте.',
+    card: ['КУРС МОЛОДОГО', 'БОЙЦА'], did: she => (she ? 'прошла' : 'прошёл') + ' первые шаги', file: 'kmb',
+    share: she => `${she ? 'Прошла' : 'Прошёл'} «Курс молодого бойца» в Тренерграм 💪` },
+  wk: { name: 'Первая тренировка', art: CL_WKB, sub: '', tip: 'Завершите тренировку — кнопка внизу экрана тренировки',
+    tx: 'Начало положено! Значок уже в профиле, а тренер увидит это в своей ленте.',
+    card: ['ПЕРВАЯ', 'ТРЕНИРОВКА'], did: she => (she ? 'завершила' : 'завершил') + ' первую тренировку', file: 'trenirovka',
+    share: () => 'Моя первая тренировка в Тренерграм 💪' },
+  pr: { name: 'Первый рекорд', art: CL_PRB, sub: '', tip: 'Внесите рекорд в профиле или прямо в тренировке',
+    tx: 'Веса в тренировках теперь считаются от вашего рекорда. Значок уже в профиле, а тренер увидит это в своей ленте.',
+    card: ['ПЕРВЫЙ', 'РЕКОРД'], did: she => (she ? 'внесла' : 'внёс') + ' первый рекорд', file: 'rekord',
+    share: () => 'Мой первый рекорд в Тренерграм 💪' },
+  meas: { name: 'Первый замер', art: CL_MSB, sub: '', tip: 'Добавьте замер во вкладке «Замеры»',
+    tx: 'Первая точка на графике — со следующим замером появится динамика. Значок уже в профиле, а тренер увидит это в своей ленте.',
+    card: ['ПЕРВЫЙ', 'ЗАМЕР'], did: she => (she ? 'сделала' : 'сделал') + ' первый замер', file: 'zamer',
+    share: () => 'Мой первый замер в Тренерграм 💪' }
+};
+const CL_BADGE = (id, cls, lock) => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true">${lock
+  ? `${CL_HEX_OFF}
      <g fill="none" stroke="var(--tx4)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="44" y="56" width="32" height="24" rx="4"/><path d="M50 56v-7a10 10 0 0 1 20 0v7"/></g>`
-  : CL_KMB(cls)}</svg>`;
-function clAchGive() {
-  clS.ach.start = TODAY; clSave();
-  (STATE.steps ||= {})[CL_ME] = { d: TODAY }; saveState();
+  : CL_ACH[id].art(cls)}</svg>`;
+function clAchGive(id = 'start') {
+  clS.ach[id] = TODAY; clSave();
+  if (id === 'start') (STATE.steps ||= {})[CL_ME] = { d: TODAY };
+  else ((STATE.ach ||= {})[CL_ME] ||= {})[id] = TODAY;
+  saveState();
 }
-/* Финал: затемнение, конфетти, значок влетает с поворотом, гиря косит глазами
-   и машет рукой; «Поделиться» — главная кнопка, «Отлично» — закрыть */
-function clAchShow() {
+/* Первые тренировка, рекорд и замер засчитываются, как шаги на главной, только
+   за то, что клиент сделал сам. Один раз — сразу после; true — финал показан */
+const CL_ACH_MET = { wk: () => Object.keys(clS.dayDone).length > 0, pr: () => Object.values(clS.pmh).some(a => a && a.length), meas: () => clS.meas.length > 0 };
+function clAchFirst() {
+  const ids = Object.keys(CL_ACH_MET).filter(k => !clS.ach[k] && CL_ACH_MET[k]());
+  ids.forEach(id => { clAchGive(id); clQueue(() => clAchShow(id)); });
+  return ids.length > 0;
+}
+/* Полноэкранные моменты — финалы достижений и серия — по одному, в порядке очереди */
+const clQ = [];
+let clQt = 0;
+function clQueue(fn) { clQ.push(fn); if (!clQt) clQt = setTimeout(clQRun, 300); }
+function clQRun() {
+  if (document.querySelector('.achw')) { clQt = setTimeout(clQRun, 300); return; }
+  const fn = clQ.shift(); if (fn) fn();
+  clQt = clQ.length ? setTimeout(clQRun, 300) : 0;
+}
+/* Финал: затемнение, конфетти, значок влетает с поворотом, гиря двигается;
+   «Поделиться» — главная кнопка, «Отлично» — закрыть */
+function clAchShow(id = 'start') {
   if (document.querySelector('.achw')) return;
+  const a = CL_ACH[id];
   const cols = ['#FC5200', '#FF7A1F', '#FFB27A', '#8E9F49', '#fff'];
   const bits = Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 37) % 100}%;background:${cols[i % 5]};animation-delay:${(i % 9) * 60 + 150}ms;--r:${(i * 53) % 360}deg;--x:${((i * 29) % 60) - 30}px;--d:${1500 + (i * 71) % 900}ms"></i>`).join('');
   const w = document.createElement('div');
   w.className = 'achw';
   w.innerHTML = `<div class="achbg"></div><div class="confetti" aria-hidden="true">${bits}</div>
-    <div class="achc" role="dialog" aria-label="Достижение «${CL_ACH_NAME}»">
-      <div class="achb">${CL_BADGE('achsvg')}<span class="shine"></span></div>
+    <div class="achc" role="dialog" aria-label="Достижение «${a.name}»">
+      <div class="achb">${CL_BADGE(id, 'achsvg')}<span class="shine"></span></div>
       <em>Достижение</em>
-      <h2>${CL_ACH_NAME}</h2>
-      <p>Все первые шаги пройдены — вы в строю! Значок уже в профиле, а тренер увидит это в своей ленте.</p>
+      <h2>${a.name}</h2>
+      <p>${a.tx}</p>
       <button class="btn pri" data-achshare>${clI('share')}Поделиться</button>
       <button class="lnk achok" data-achok>Отлично</button>
     </div>`;
   const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 260); };
-  w.addEventListener('click', e => { if (e.target.closest('[data-achok]')) close(); if (e.target.closest('[data-achshare]')) clAchShare(); });
+  w.addEventListener('click', e => { if (e.target.closest('[data-achok]')) close(); if (e.target.closest('[data-achshare]')) clAchShare(a); });
   document.getElementById('dev').appendChild(w);
   try { navigator.vibrate && navigator.vibrate([30, 60, 40]); } catch (x) {}
 }
 /* Открытка 1080×1350 (формат поста и сторис): значок, название, кто и у какого
    тренера. Рисуем на canvas, отдаём системному «Поделиться» картинкой;
    где файлом поделиться нельзя — показываем открытку и сохраняем её */
-function clAchCard() {
+function clAchCard(a) {
   return new Promise(res => {
     const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d'), p = clProf(), she = p.sex === 'ж';
@@ -738,26 +846,26 @@ function clAchCard() {
     img.onload = () => {
       g.save(); g.shadowColor = 'rgba(252,82,0,.55)'; g.shadowBlur = 90; g.drawImage(img, W / 2 - 330, 170, 660, 660); g.restore();
       g.textAlign = 'center'; g.fillStyle = '#FF9A5A'; g.font = '800 40px Montserrat, Inter, sans-serif';
-      g.fillText('ДОСТИЖЕНИЕ', W / 2, 108);
+      g.fillText(a.kicker || 'ДОСТИЖЕНИЕ', W / 2, 108);
       g.fillStyle = '#fff'; g.font = '900 84px Montserrat, Inter, sans-serif';
-      g.fillText('КУРС МОЛОДОГО', W / 2, 935); g.fillText('БОЙЦА', W / 2, 1025);
+      g.fillText(a.card[0], W / 2, 935); g.fillText(a.card[1], W / 2, 1025);
       g.fillStyle = 'rgba(255,255,255,.75)'; g.font = '500 40px Inter, sans-serif';
-      g.fillText(`${p.first || 'Я'} ${she ? 'прошла' : 'прошёл'} первые шаги в Тренерграм`, W / 2, 1105);
+      g.fillText(`${p.first || 'Я'} ${a.did(she)} в Тренерграм`, W / 2, 1105);
       g.fillText('Тренер — ' + TRAINER.n, W / 2, 1160);
       g.fillStyle = '#FC5200'; g.fillRect(W / 2 - 60, 1218, 120, 6);
       g.fillStyle = '#fff'; g.font = '900 44px Montserrat, Inter, sans-serif'; g.fillText('ТРЕНЕРГРАМ', W / 2, 1290);
       c.toBlob(b => res({ blob: b, url: URL.createObjectURL(b) }), 'image/jpeg', .92);
     };
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">${CL_KMB('card')}</svg>`);
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">${a.art('card')}</svg>`);
   });
 }
-async function clAchShare() {
+async function clAchShare(ach) {
   const btn = document.querySelector('[data-achshare]');
   if (btn) { if (btn.disabled) return; btn.disabled = true; btn.lastChild.textContent = 'Готовим открытку…'; }
-  const { blob, url } = await clAchCard(), she = clProf().sex === 'ж';
+  const { blob, url } = await clAchCard(ach), she = clProf().sex === 'ж';
   if (btn) { btn.disabled = false; btn.lastChild.textContent = 'Поделиться'; }
-  const text = `${she ? 'Прошла' : 'Прошёл'} «${CL_ACH_NAME}» в Тренерграм 💪`;
-  const file = new File([blob], 'kmb-trenergram.jpg', { type: 'image/jpeg' });
+  const text = ach.share(she);
+  const file = new File([blob], ach.file + '-trenergram.jpg', { type: 'image/jpeg' });
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   /* Системного «Поделиться» картинкой нет (стенд на компьютере) — рисуем, как оно
      выглядит на телефоне: открытка сверху, ниже приложения. Скачивать ничего не нужно */
@@ -765,7 +873,7 @@ async function clAchShare() {
   const w = document.createElement('div');
   w.className = 'shw achsh';
   w.innerHTML = `<div class="shbg" data-x></div><div class="sheet" role="dialog" aria-label="Поделиться"><i class="grab"></i>
-    <div class="shp"><img class="achcard" src="${url}" alt="Открытка «${CL_ACH_NAME}»"><span><b>${clEsc(text)}</b><s>Открытка · JPG</s></span></div>
+    <div class="shp"><img class="achcard" src="${url}" alt="Открытка «${ach.name}»"><span><b>${clEsc(text)}</b><s>Открытка · JPG</s></span></div>
     <div class="shapps">${apps.map(([n, bg, k]) => `<button data-app="${n}"><i style="background:${bg}">${k === 'more' ? clI('plus') : n[0]}</i><span>${n}</span></button>`).join('')}</div>
     <button class="lnk" data-x>Отмена</button></div>`;
   const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 220); };
@@ -774,14 +882,289 @@ async function clAchShare() {
     if (e.target.closest('[data-x]')) close(); });
   document.getElementById('dev').appendChild(w);
 }
-/* Полка в профиле: «Курс молодого бойца» и три закрытых места под будущие достижения */
+
+/* ═══ Серия ═══
+   Тренировки подряд: каждая завершённая — +1, пропущенная обнуляет. Сегодняшняя,
+   пока не завершена, серию не рвёт; закрытая из-за оплаты — тоже: сделать её
+   было нельзя. Отметки — те же, что в календаре клиента.
+   Всё считается по истории отметок: текущая серия, сорвавшиеся (длина и
+   пропуск, который её оборвал) и лучшая — рекорд не хранится отдельно */
+function clStreakRuns() {
+  const p = program(clMe().prog), f = clFeeC(), runs = [];
+  let n = 0;
+  for (let d = p ? p.start : TODAY; p && d <= TODAY; d = addDays(d, 1)) {
+    if (!clDayAt(d).blocks.length) continue;
+    if (clS.dayDone[clDayKey(d)]) n++;
+    else if (d < TODAY && !feeLocked(f, d)) { if (n) runs.push({ n, miss: d }); n = 0; }
+  }
+  return { cur: n, runs, prev: Math.max(0, ...runs.map(r => r.n)) };
+}
+const clStreak = () => clStreakRuns().cur;
+/* Рубежи серии: 3, 7, 14, 30, 50, 100, дальше каждые 50 */
+const CL_STK_MS = [3, 7, 14, 30, 50, 100];
+const clStkPrev = n => n >= 100 ? Math.floor(n / 50) * 50 : [...CL_STK_MS].reverse().find(m => m <= n) || 0;
+const clStkNext = n => n >= 100 ? clStkPrev(n) + 50 : CL_STK_MS.find(m => m > n);
+const clStkWord = n => plural3(n, 'тренировка', 'тренировки', 'тренировок');
+/* Цитаты момента серии — пул из 50, про упорство, дисциплину и движение
+   вперёд. Только с надёжным авторством: цитаты, которые принято ошибочно
+   приписывать (Конфуцию, Черчиллю, Аристотелю), не берём; народное —
+   подписано пословицей. Переводы свои, короткие */
+const CL_QUOTES = [
+  ['Путь в тысячу ли начинается с первого шага', 'Лао-цзы'],
+  ['Побеждающий других силён, побеждающий себя — могуществен', 'Лао-цзы'],
+  ['Девятиэтажная башня начинается с горстки земли', 'Лао-цзы'],
+  ['Капля долбит камень', 'Овидий'],
+  ['Терпи и крепись: эта боль когда-нибудь принесёт тебе пользу', 'Овидий'],
+  ['Последние три-четыре повторения — вот что заставляет мышцы расти', 'Арнольд Шварценеггер'],
+  ['Предел — только в голове', 'Арнольд Шварценеггер'],
+  ['Жизнь — как езда на велосипеде: чтобы сохранить равновесие, нужно двигаться', 'Альберт Эйнштейн'],
+  ['Я снова и снова терпел неудачи. Именно поэтому я добился успеха', 'Майкл Джордан'],
+  ['Я могу принять неудачу. Но не могу принять отказ от попытки', 'Майкл Джордан'],
+  ['Ни один человек не ограничен', 'Элиуд Кипчоге'],
+  ['Только дисциплинированные по-настоящему свободны', 'Элиуд Кипчоге'],
+  ['Нет лёгкого пути от земли к звёздам', 'Сенека'],
+  ['Мы не решаемся не потому, что трудно, — трудно потому, что не решаемся', 'Сенека'],
+  ['Огонь испытывает золото, а трудности — сильных людей', 'Сенека'],
+  ['Пока мы откладываем, жизнь проходит мимо', 'Сенека'],
+  ['Мы чаще страдаем в воображении, чем в действительности', 'Сенека'],
+  ['Власть над собой — высшая власть', 'Сенека'],
+  ['Поехали!', 'Юрий Гагарин'],
+  ['Не можешь лететь — беги, не можешь бежать — иди, не можешь идти — ползи, но двигайся вперёд', 'Мартин Лютер Кинг'],
+  ['Ты промахиваешься во всех бросках, которых не делаешь', 'Уэйн Гретцки'],
+  ['Пределов нет — есть плато, и на них нельзя останавливаться', 'Брюс Ли'],
+  ['Что меня не убивает, делает меня сильнее', 'Фридрих Ницше'],
+  ['Сила не в физических возможностях, а в несгибаемой воле', 'Махатма Ганди'],
+  ['Думаете вы, что можете, или что не можете, — вы правы', 'Генри Форд'],
+  ['Никогда не сдавайтесь — никогда, никогда, никогда', 'Уинстон Черчилль'],
+  ['Хорошо сделанное лучше хорошо сказанного', 'Бенджамин Франклин'],
+  ['Кто начал, тот наполовину сделал', 'Гораций'],
+  ['Победить себя — первая и лучшая из побед', 'Платон'],
+  ['Ничто великое не создаётся вдруг', 'Эпиктет'],
+  ['Сначала скажи себе, кем хочешь быть, а потом делай то, что нужно', 'Эпиктет'],
+  ['Что стоит на пути, то и становится путём', 'Марк Аврелий'],
+  ['Хватит рассуждать, каким должен быть хороший человек. Будь им', 'Марк Аврелий'],
+  ['Недостаточно знать — надо применять. Недостаточно хотеть — надо делать', 'Иоганн Вольфганг Гёте'],
+  ['Лучшее — враг хорошего', 'Вольтер'],
+  ['В здоровом теле — здоровый дух', 'Ювенал'],
+  ['Главное в жизни — не победа, а борьба', 'Пьер де Кубертен'],
+  ['Быстрее, выше, сильнее', 'Олимпийский девиз'],
+  ['Повторение — мать учения', 'Латинская пословица'],
+  ['Через тернии — к звёздам', 'Латинское выражение'],
+  ['Упражнение создаёт мастерство', 'Латинская пословица'],
+  ['Терпение и труд всё перетрут', 'Русская пословица'],
+  ['Дорогу осилит идущий', 'Пословица'],
+  ['Тише едешь — дальше будешь', 'Русская пословица'],
+  ['Без труда не выловишь и рыбку из пруда', 'Русская пословица'],
+  ['Глаза боятся, а руки делают', 'Русская пословица'],
+  ['Москва не сразу строилась', 'Русская пословица'],
+  ['Не боги горшки обжигают', 'Русская пословица'],
+  ['Лиха беда начало', 'Русская пословица'],
+  ['Не откладывай на завтра то, что можно сделать сегодня', 'Пословица']
+];
+/* После каждой завершённой тренировки — случайная цитата, которой этот клиент
+   ещё не видел. Показанные помнит аккаунт (в прототипе — состояние клиента
+   clS.qSeen; в продукте — сервер). Все 50 показаны — новый круг, и последняя
+   первой не выпадет. Тап по серии в профиле новой цитаты не тратит — та же */
+function clQuoteNext() {
+  const seen = new Set(clS.qSeen ||= []);
+  let left = CL_QUOTES.map((_, i) => i).filter(i => !seen.has(i));
+  if (!left.length) { clS.qSeen = []; left = CL_QUOTES.map((_, i) => i).filter(i => i !== clS.qLast); }
+  const i = left[Math.floor(Math.random() * left.length)];
+  clS.qSeen.push(i); clS.qLast = i; clSave();
+  return CL_QUOTES[i];
+}
+const clQuoteLast = () => CL_QUOTES[clS.qLast ?? 0];
+
+/* Огонёк серии — пламя с лицом, обведено, как гири. На 1–2 тренировках —
+   простой огонёк; с каждым рубежом крупнее, качается сильнее и обрастает
+   снаряжением: 3 — руки с бицепсами, 7 — бицепсы больше и повязка на лбу,
+   14 — тёмные очки, 30 — золотая цепь с гирькой, 50 — плащ, 100 — корона.
+   Пока серии нет — серый и спит. Новую ступень огонёк получает эволюцией
+   в момент рубежа (clStreakShow) */
+const clFireT = n => CL_STK_MS.filter(m => n >= m).length;
+const CL_FIRE_K = [.84, .9, .94, .98, 1.02, 1.06, 1.1];
+const CL_FIRE_PATH = 'M60 12c6 16 30 26 30 54 0 19-13 34-30 34S30 85 30 66c0-14 7-24 16-30-1 9 2 15 8 18-3-15 0-29 6-42z';
+/* Рука с бицепсом — левая, правая зеркальна; плечо прячется за пламенем */
+const CL_FIRE_ARM = `<path d="M36 80H14q-6 0-6-6V54q0-10 8-10 6 1 5 8l-1 10q6-8 13-2 4 4 3 8z" fill="#FF8A2A" stroke="#1E1A18" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M24 60q4-3 8 0" fill="none" stroke="#FFD9A0" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="14.5" cy="48" r="6" fill="#FF8A2A" stroke="#1E1A18" stroke-width="1.8"/>`;
+const CL_FIRE = (id, n, k) => {
+  const t = clFireT(n);
+  if (!n) return `<g transform="translate(60 100) scale(${k}) translate(-60 -100)">
+    <path d="${CL_FIRE_PATH}" fill="var(--line2)" stroke="var(--tx4)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M50 74q3 3 6 0M64 74q3 3 6 0M56 83h8" fill="none" stroke="var(--tx4)" stroke-width="2.2" stroke-linecap="round"/></g>`;
+  const arm = `<g class="acc armw"><g transform="translate(36 78) scale(${t >= 2 ? 1 : .78}) translate(-36 -78)"><g class="flex">${CL_FIRE_ARM}</g></g></g>`;
+  return `<g transform="translate(60 100) scale(${k}) translate(-60 -100)"><g class="sway">
+    <defs><linearGradient id="fo${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB23F"/><stop offset=".55" stop-color="#FF6A1A"/><stop offset="1" stop-color="#E23A00"/></linearGradient>
+      <linearGradient id="fc${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4C2"/><stop offset="1" stop-color="#FFD23F"/></linearGradient></defs>
+    ${t >= 5 ? `<g class="acc capew"><path class="cape" d="M38 58Q60 50 82 58L98 104Q60 110 22 104z" fill="#C8102E" stroke="#1E1A18" stroke-width="1.6" stroke-linejoin="round"/></g>` : ''}
+    ${t >= 1 ? `${arm}<g transform="matrix(-1 0 0 1 120 0)">${arm}</g>` : ''}
+    <path class="fo" d="${CL_FIRE_PATH}" fill="url(#fo${id})" stroke="#1E1A18" stroke-width="2" stroke-linejoin="round"/>
+    <path class="fc" d="M60 44c4 10 17 17 17 34 0 11-8 19-17 19s-17-8-17-19c0-9 5-15 10-18 0 6 2 9 5 10-1-9 0-17 2-26z" fill="url(#fc${id})"/>
+    <circle cx="53" cy="72" r="5.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/><circle cx="67" cy="72" r="5.5" fill="#fff" stroke="#1E1A18" stroke-width="1.2"/>
+    <g class="pups"><circle cx="54" cy="71" r="2.6" fill="#111"/><circle cx="68" cy="71" r="2.6" fill="#111"/></g>
+    <circle cx="47.5" cy="80" r="2.6" fill="#FF7A8A" opacity=".8"/><circle cx="72.5" cy="80" r="2.6" fill="#FF7A8A" opacity=".8"/>
+    <path d="M54 80c2 7 10 7 12 0z" fill="#7A1F1F" stroke="#1E1A18" stroke-width="1" stroke-linejoin="round"/>
+    ${t >= 2 ? `<g class="acc band"><path d="M30.5 60Q60 52 89.5 59l.5 6Q60 58 31 66z" fill="#E8323C" stroke="#1E1A18" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M31 63Q60 55 89.7 62" fill="none" stroke="#fff" stroke-width="1.3" opacity=".85"/>
+      <g class="tails"><path d="M89 60l12-5 1 5-12 4zM89 63l11 4-2 4-10-5z" fill="#E8323C" stroke="#1E1A18" stroke-width="1.2" stroke-linejoin="round"/></g></g>` : ''}
+    ${t >= 3 ? `<g class="acc shades"><path d="M44 67h32" stroke="#1E1A18" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M45 67h14v3q0 6-7 6t-7-6zM61 67h14v3q0 6-7 6t-7-6z" fill="#1E1A18"/>
+      <path d="M48 69.5h3M64 69.5h3" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></g>` : ''}
+    ${t >= 4 ? `<g class="acc chainw"><g class="chain"><path d="M41 82Q60 99 79 82" fill="none" stroke="#B88700" stroke-width="3.4"/>
+      <path d="M41 82Q60 99 79 82" fill="none" stroke="#FFD54A" stroke-width="2.2" stroke-dasharray="2.6 1.6"/>
+      <path d="M57.5 92.5a2.5 2.5 0 0 1 5 0" fill="none" stroke="#B88700" stroke-width="1.6"/><circle cx="60" cy="95.5" r="3.6" fill="#FFC531" stroke="#1E1A18" stroke-width="1"/></g></g>` : ''}
+    ${t >= 6 ? `<g class="acc crown"><g transform="translate(1 10) rotate(14 60 16)"><path d="M49 22l-2-11 7 5 6-9 6 9 7-5-2 11z" fill="#FFC531" stroke="#1E1A18" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M49.5 19h21" stroke="#1E1A18" stroke-width="1"/><circle cx="60" cy="15" r="1.8" fill="#FF3B30" stroke="#1E1A18" stroke-width=".5"/></g></g>` : ''}
+  </g></g>`;
+};
+/* Значок серии на полке: огонёк на шестиграннике, со снаряжением своей ступени */
+const CL_STK_BADGE = (cls, n) => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true">${n ? CL_HEX(cls) : CL_HEX_OFF}${CL_FIRE(cls, n, .8)}</svg>`;
+
+/* Дорожка серии — от нуля до цели: «5 / 7» — пять горящих делений из семи.
+   До 14 — деления, дальше — сплошная полоса. just — деление, которое только
+   что загорелось; add — с какого деления начинаются новые (выезжают справа);
+   from — с какой ширины полоса сжимается к новой цели */
+const clStkTrack = (n, hi, o = {}) => hi <= 14
+  ? `<div class="stktr">${Array.from({ length: hi }, (_, i) => { const add = o.add != null && i >= o.add;
+      return `<i class="${[i < n && 'on', o.just && i === n - 1 && 'just', add && 'add'].filter(Boolean).join(' ')}"${add ? ` style="animation-delay:${(i - o.add) * 60}ms"` : ''}></i>`; }).join('')}</div>`
+  : `<div class="stkbar"><i${o.from != null ? ` class="shrink" style="--from:${o.from}%;width:${n / hi * 100}%"` : ` style="width:${n / hi * 100}%"`}></i></div>`;
+
+/* Момент серии — вместо тоста после «Завершить тренировку»: тёмный экран,
+   снизу летят искры, огонёк вспыхивает, число перекатывается from → to,
+   ниже дорожка до цели со счётчиком «1 / 3» и цитата.
+   Рубеж: дорожка заполняется до конца («7 / 7»), огонёк эволюционирует —
+   прежняя форма белеет и мигает, чередуясь с силуэтом новой, всё быстрее,
+   вспышка, и проявляется новая форма в цвете; конфетти. Затем дорожка
+   раздвигается до новой цели: новые деления выезжают справа, счётчик —
+   «7 / 14». Цитата и кнопки — после эволюции. После 100 снаряжения больше
+   нет: рубеж без эволюции, только конфетти и новая цель.
+   prev — лучшая из сорвавшихся серий: пока текущая не выше, рядом с подписью
+   плашка «рекорд 30»; перекрыл её — «Новый рекорд серии!», конфетти, открытка.
+   from === to — тот же экран без анимаций (тап по серии в профиле) */
+function clStreakShow(from, to, prev = clStreakRuns().prev) {
+  if (document.querySelector('.achw')) return;
+  const up = to > from, ms = up && to === clStkPrev(to), t = clFireT(to), t0 = clFireT(from);
+  const rec = up && prev > 0 && from <= prev && to > prev, fest = ms || rec;
+  const evo = ms && t > t0 && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hi = ms ? to : clStkNext(to), nx = clStkNext(to), at = evo ? 2900 : 1700;   /* когда дорожка раздвигается */
+  const [qt, qa] = up ? clQuoteNext() : clQuoteLast();
+  const svg = (id, n, tt, cls) => `<svg class="achsvg ft${tt}${cls}" viewBox="0 0 120 120" aria-hidden="true">${CL_FIRE(id, n, CL_FIRE_K[tt])}</svg>`;
+  const fire = evo ? `<div class="stkevo">${svg('stko', from, t0, ' evo-old')}${svg('stkn', to, t, ' evo-new')}<i class="evo-flash"></i></div>` : svg('stk', to, t, '');
+  const embers = Array.from({ length: 22 + t * 4 }, (_, i) => `<i style="left:${(i * 41) % 100}%;--s:${3 + i % 4}px;--x:${((i * 23) % 50) - 25}px;--d:${1800 + (i * 97) % 1400}ms;--dl:${(i * 173) % 1600}ms"></i>`).join('');
+  const cols = ['#FC5200', '#FF7A1F', '#FFB27A', '#FFD23F', '#fff'];
+  const bits = fest ? `<div class="confetti" aria-hidden="true">${Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 37) % 100}%;background:${cols[i % 5]};animation-delay:${(i % 9) * 60 + (evo ? 2400 : 900)}ms;--r:${(i * 53) % 360}deg;--x:${((i * 29) % 60) - 30}px;--d:${1500 + (i * 71) % 900}ms"></i>`).join('')}</div>` : '';
+  const w = document.createElement('div');
+  w.className = 'achw';
+  w.innerHTML = `<div class="achbg"></div><div class="embers" aria-hidden="true">${embers}</div>${bits}
+    <div class="achc stkc${evo ? ' evo' : ''}" role="dialog" aria-label="Серия: ${to} ${clStkWord(to)} подряд">
+      <div class="stkfire${up ? ' go' : ''}">${fire}</div>
+      <div class="stknum">${up ? `<span class="roll"><b>${from}</b><b>${to}</b></span>` : `<b>${to}</b>`}</div>
+      <em>${rec ? 'Новый рекорд серии!' : clStkWord(to) + ' подряд'}${!rec && prev >= to ? `<span class="stkbest">рекорд ${prev}</span>` : ''}</em>
+      <div class="stkprog">${clStkTrack(to, hi, { just: up })}<span>${to} / ${hi}</span></div>
+      <blockquote class="stkq">«${qt}»<cite>${qa}</cite></blockquote>
+      ${fest ? `<button class="btn pri" data-achshare>${clI('share')}Поделиться</button><button class="lnk achok" data-achok>Продолжить</button>`
+        : '<button class="btn pri" data-achok>Продолжить</button>'}
+    </div>`;
+  const card = { kicker: rec ? 'НОВЫЙ РЕКОРД СЕРИИ' : 'СЕРИЯ', name: 'Серия ' + to, art: id => `${CL_HEX(id)}${CL_FIRE(id, to, .8)}`, file: 'seriya',
+    card: [`${to} ${clStkWord(to).toUpperCase()}`, 'ПОДРЯД'], did: () => 'тренируется без пропусков',
+    share: () => `${to} ${clStkWord(to)} подряд в Тренерграм 🔥` };
+  const close = () => { w.classList.add('out'); setTimeout(() => w.remove(), 260); };
+  w.addEventListener('click', e => { if (e.target.closest('[data-achok]')) close(); if (e.target.closest('[data-achshare]')) clAchShare(card); });
+  document.getElementById('dev').appendChild(w);
+  const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (x) {} };
+  buzz(rec && !evo ? [30, 60, 40] : ms ? 30 : 25);
+  if (evo) setTimeout(() => buzz([30, 60, 40]), 2450);
+  /* Рубеж взят — дорожка раздвигается до новой цели */
+  if (ms) setTimeout(() => { if (!w.isConnected) return;
+    w.querySelector('.stkprog').innerHTML = (hi <= 14 && nx <= 14 ? clStkTrack(to, nx, { add: hi }) : clStkTrack(to, nx, { from: 100 }))
+      + `<span class="upd">${to} / ${nx}</span>`; }, at);
+}
+
+/* ═══ Серия прервалась ═══
+   Один раз, при следующем входе в приложение после пропуска: огонёк в своём
+   снаряжении гаснет — сжимается и сереет, поднимается дымок, остаётся серый
+   спящий огонёк; число откатывается к нулю, «Серия прервалась» и рекорд.
+   Без упрёков: поддерживающая цитата и «Начать заново». Серии короче
+   первого рубежа обрываются молча. Тренеру в ленту — событие (STATE.stkLost):
+   повод написать клиенту */
+const CL_STK_LOST_Q = [
+  ['Упади семь раз, поднимись восемь', 'Японская пословица'],
+  ['Пробовал. Ошибся. Неважно. Пробуй ещё. Ошибись ещё. Ошибись лучше', 'Сэмюэл Беккет'],
+  ['Важно не то, как сильно ты бьёшь, а какой удар можешь выдержать и продолжать идти вперёд', 'Рокки Бальбоа']
+];
+function clStreakLostCheck() {
+  const { runs } = clStreakRuns(), l = runs[runs.length - 1];
+  if (!l || l.n < CL_STK_MS[0] || clS.stkLost === l.miss || daysBetween(l.miss, TODAY) > 14) return;
+  clS.stkLost = l.miss; clSave();
+  (STATE.stkLost ||= {})[CL_ME] = { n: l.n, d: l.miss, at: TODAY }; saveState();
+  const best = Math.max(...runs.map(r => r.n));
+  clQueue(() => clStreakLostShow(l.n, best));
+}
+function clStreakLostShow(n, best) {
+  if (document.querySelector('.achw')) return;
+  const t = clFireT(n), [qt, qa] = CL_STK_LOST_Q[n % CL_STK_LOST_Q.length];
+  const svg = (id, k, tt, cls) => `<svg class="achsvg ft${tt}${cls}" viewBox="0 0 120 120" aria-hidden="true">${CL_FIRE(id, k, CL_FIRE_K[tt])}</svg>`;
+  const w = document.createElement('div');
+  w.className = 'achw';
+  w.innerHTML = `<div class="achbg"></div>
+    <div class="achc stkc lost" role="dialog" aria-label="Серия прервалась: было ${n} ${clStkWord(n)} подряд">
+      <div class="stkfire"><div class="stkevo">${svg('stkl', n, t, ' out-old')}${svg('stkz', 0, 0, ' out-new')}<span class="smoke"><i></i><i></i><i></i></span></div></div>
+      <div class="stknum"><span class="roll"><b>${n}</b><b>0</b></span></div>
+      <em>Серия прервалась<span class="stkbest">рекорд ${best}</span></em>
+      <blockquote class="stkq">«${qt}»<cite>${qa}</cite></blockquote>
+      <button class="btn pri" data-achok>Начать заново</button>
+    </div>`;
+  w.addEventListener('click', e => { if (e.target.closest('[data-achok]')) { w.classList.add('out'); setTimeout(() => w.remove(), 260); } });
+  document.getElementById('dev').appendChild(w);
+  try { navigator.vibrate && navigator.vibrate(60); } catch (x) {}
+}
+
+/* Строка серии: сколько подряд, до какого рубежа и рекорд, если текущая ниже */
+const clStkLine = (n, prev) => { const nx = clStkNext(n), best = Math.max(n, prev);
+  return n ? [`${n} ${clStkWord(n)} подряд`, `До серии ${nx} — ещё ${nx - n}${best > n ? ` · рекорд ${best}` : ''}`]
+    : best ? ['Серия прервалась', `Рекорд — ${best}. Завершите тренировку — огонёк разгорится снова`]
+    : ['Серии пока нет', 'Завершите тренировку — начнётся серия']; };
+
+/* Полка в профиле: серия строкой сверху, под ней значки */
 function clAchShelf() {
-  const got = !!clS.ach.start;
-  const cell = (id, name, sub, lock) => `<button class="bdg${lock ? ' lock' : ''}" data-badge="${id}">${CL_BADGE('bsvg' + id, lock)}<b>${name}</b><s>${sub}</s></button>`;
-  return `<section class="card shelf"><div class="shh"><b>Мои достижения</b><span>${got ? 1 : 0} из 4</span></div>
-    <div class="bdgs">${cell('start', CL_ACH_NAME, got ? clShortDate(clS.ach.start) : 'первые шаги', !got)}${[1, 2, 3].map(k => cell('soon' + k, 'Скоро', '', true)).join('')}</div>
+  const ids = Object.keys(CL_ACH), got = ids.filter(id => clS.ach[id]).length, { cur: n, prev } = clStreakRuns(), [b, s] = clStkLine(n, prev);
+  const cell = id => { const on = clS.ach[id], a = CL_ACH[id];
+    return `<button class="bdg${on ? '' : ' lock'}" data-badge="${id}">${CL_BADGE(id, 'bsvg' + id, !on)}<b>${a.name}</b><s>${on ? clShortDate(on) : a.sub}</s></button>`; };
+  return `<section class="card shelf"><div class="shh"><b>Мои достижения</b><span>${got} из ${ids.length}</span></div>
+    <button class="stkrow${n ? '' : ' off'}" data-streak>${CL_STK_BADGE('bsvgst', n)}<span><b>${b}</b><s>${s}</s></span>${clI('right')}</button>
+    <div class="bdgs">${ids.map(cell).join('')}</div>
   </section>`;
 }
+
+/* ═══ A0. Показ достижений ═══
+   Экран стенда, не продукта: финал любого достижения открывается кнопкой и
+   ничего не засчитывает — полка в профиле и лента тренера не меняются.
+   Серия: «+1» — момент серии после тренировки, рубежи — сразу момент рубежа,
+   «Сорвалась» — экран «Серия прервалась», дальше рекорд — эта серия. Числа
+   меняются только здесь; цитаты берутся из пула клиента, как после тренировки. */
+let clAchDemo = null, clAchDemoPrev = null;
+CL_UI.ach = () => {
+  if (clAchDemo == null) ({ cur: clAchDemo, prev: clAchDemoPrev } = clStreakRuns());
+  const n = clAchDemo, [b, s] = clStkLine(n, clAchDemoPrev);
+  const tile = (art, name, how, btn) => `<div class="card achx">${art}<b>${name}</b><s>${how}</s>${btn}</div>`;
+  return `<header class="hhead"><div class="wmk">Достижения</div></header>
+  <div class="pg"><div class="achgrid">
+    <div class="card achx wide">${CL_STK_BADGE('axsvgst', n)}<b>${b}</b><s>${s}</s>
+      <div class="stkbtns two"><button class="btn sec" data-streakx>+1</button><button class="btn sec" data-stklost>Сорвалась</button></div>
+      <div class="stkbtns">${CL_STK_MS.map(m => `<button class="btn sec" data-stkms="${m}">${m}</button>`).join('')}</div></div>
+    ${Object.entries(CL_ACH).map(([id, a]) => tile(CL_BADGE(id, 'axsvg' + id), a.name, a.tip,
+      `<button class="btn sec" data-achx="${id}">Показать</button>`)).join('')}
+  </div></div>
+  ${clTabs('profile')}`;
+};
+CL_UI_MOUNT.ach = scr => scr.addEventListener('click', e => {
+  const b = e.target.closest('[data-achx]'); if (b) { clAchShow(b.dataset.achx); return; }
+  if (e.target.closest('[data-streakx]')) { clStreakShow(clAchDemo, clAchDemo + 1, clAchDemoPrev); clAchDemo++; clRepaint(scr, 'ach'); return; }
+  if (e.target.closest('[data-stklost]')) { if (!clAchDemo) { clToast('Сначала наберите серию: «+1» или рубеж'); return; }
+    clAchDemoPrev = Math.max(clAchDemoPrev, clAchDemo); clStreakLostShow(clAchDemo, clAchDemoPrev); clAchDemo = 0; clRepaint(scr, 'ach'); return; }
+  const m = e.target.closest('[data-stkms]'); if (m) { const to = +m.dataset.stkms; clStreakShow(to - 1, to, clAchDemoPrev); clAchDemo = to; clRepaint(scr, 'ach'); }
+});
 
 /* Слайды для текущего места: Telegram → сначала в браузер, дальше шаги браузера */
 function clSlides() {
@@ -1198,6 +1581,8 @@ function clToast(t) {
 /* Вкладка профиля сменяется на месте: адрес и стенд узнают новый вид без перехода */
 function clProfTab(scr, v) { clProfOn = v === 'meas' ? 'meas' : 'pr'; clRepaint(scr, 'profile'); }
 CL_UI_MOUNT.profile = scr => {
+  /* Рекорд или замер внесён раньше, а значка ещё нет — финал при входе в профиль */
+  if (clAchFirst()) clRepaint(scr, 'profile');
   scr.addEventListener('change', e => {
     /* Фото — сразу по выбору файла: уменьшаем до 320 px и храним на устройстве */
     if (e.target.id === 'photo-in' && e.target.files[0]) {
@@ -1211,8 +1596,10 @@ CL_UI_MOUNT.profile = scr => {
   scr.addEventListener('click', e => {
     const t = e.target.closest('[data-ptab]'); if (t) { clProfTab(scr, t.dataset.ptab); return; }
     /* Свой значок — снова финал (с «Поделиться»), закрытый — подсказка */
-    const bd = e.target.closest('[data-badge]'); if (bd) { if (bd.dataset.badge === 'start' && clS.ach.start) clAchShow();
-      else clToast(bd.dataset.badge === 'start' ? 'Пройдите первые шаги на главной' : 'Это достижение появится позже'); return; }
+    const bd = e.target.closest('[data-badge]'); if (bd) { const id = bd.dataset.badge;
+      if (clS.ach[id]) clAchShow(id); else clToast(CL_ACH[id].tip); return; }
+    if (e.target.closest('[data-streak]')) { const n = clStreak();
+      if (n) clStreakShow(n, n); else clToast('Завершите тренировку — начнётся серия. Пропущенная тренировка обнуляет её'); return; }
     /* Раскрытие строки: выше свернулся другой график — строку держим там же, где по ней тапнули */
     const pr = e.target.closest('[data-pm]'); if (pr) { const k = pr.dataset.pm, y = pr.getBoundingClientRect().top;
       clPmSel = clPmSel === k ? '' : k; clRepaint(scr, 'profile');
@@ -1232,7 +1619,8 @@ CL_UI_MOUNT.profile = scr => {
         w => clVal(w, 'n-1') != null,
         w => { const k = w.querySelector('#n-ex').value, v1 = clVal(w, 'n-1'), v3 = clVal(w, 'n-3');
           pm[k] = v1; (clS.pmh[k] ||= []).push([TODAY, v1]); if (v3 != null) clPm3()[k] = v3;
-          saveState(); clSave(); clPmSel = k; clRepaint(scr, 'profile'); clToast('Рекорд сохранён — веса в тренировках пересчитаны'); });
+          saveState(); clSave(); clPmSel = k; const ach = clAchFirst(); clRepaint(scr, 'profile');
+          if (!ach) clToast('Рекорд сохранён — веса в тренировках пересчитаны'); });
       return;
     }
     if (e.target.closest('[data-addmeas]')) {
@@ -1244,7 +1632,7 @@ CL_UI_MOUNT.profile = scr => {
         w => { const r = { date: w.querySelector('#m-d').value }; CL_MEAS.forEach(([k]) => { const v = clVal(w, 'm-' + k); if (v != null) r[k] = v; });
           const same = clS.meas.find(x => x.date === r.date); if (same) Object.assign(same, r); else clS.meas.push(r);
           if (r[clMeasSel] == null) clMeasSel = CL_MEAS.find(([k]) => r[k] != null)[0];
-          clSave(); clRepaint(scr, 'profile'); clToast('Замер сохранён'); });
+          clSave(); const ach = clAchFirst(); clRepaint(scr, 'profile'); if (!ach) clToast('Замер сохранён'); });
       return;
     }
     if (e.target.closest('[data-pedit]')) {

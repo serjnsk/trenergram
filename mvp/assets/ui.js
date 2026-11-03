@@ -440,6 +440,16 @@ function events(cid){
      Отметку пишет клиентское приложение (STATE.steps), у демо-клиента — в данных. */
   CLIENTS.forEach(c=>{ const s = (STATE.steps || {})[c.id] || c.steps; if(s && daysBetween(s.d,TODAY)<=14)
     ev.push({t:'start', d:s.d, c, title:c.n, tx:(c.sex==='ж' ? 'Прошла' : 'Прошёл') + ' первые шаги в приложении и получил' + (c.sex==='ж' ? 'а' : '') + ' достижение «Курс молодого бойца»: рекорды, замеры, фото профиля и первая тренировка', act:'Открыть профиль', href:'client.html?id='+c.id}) });
+  /* «Первая тренировка», «Первый рекорд», «Первый замер» — то же: клиент сам завершил первую тренировку
+     или внёс первый рекорд, замер (STATE.ach). */
+  CLIENTS.forEach(c=>{ const a = (STATE.ach || {})[c.id] || {}, she = c.sex==='ж';
+    [['wk',['Завершил','Завершила'],'первую тренировку','Первая тренировка'], ['pr',['Внёс','Внесла'],'первый рекорд','Первый рекорд'],
+     ['meas',['Внёс','Внесла'],'первый замер','Первый замер']].forEach(([k, v, w, n])=>{ if(a[k] && daysBetween(a[k],TODAY)<=14)
+      ev.push({t:'start', d:a[k], c, title:c.n, tx:v[she ? 1 : 0] + ` ${w} в приложении и получил` + (she ? 'а' : '') + ` достижение «${n}»`, act:'Открыть профиль', href:'client.html?id='+c.id}) }) });
+  /* Серия клиента прервалась — пишет клиентское приложение, когда показало клиенту
+     «Серия прервалась» (STATE.stkLost). Повод написать клиенту, пока он не бросил. */
+  CLIENTS.forEach(c=>{ const l = (STATE.stkLost || {})[c.id]; if(l && daysBetween(l.at,TODAY)<=14)
+    ev.push({t:'miss', d:l.at, c, title:c.n, tx:`Серия прервалась: было ${l.n} ${plural(l.n,'тренировка','тренировки','тренировок')} подряд, пропущена тренировка ${humanDate(l.d)}`, act:'Открыть профиль', href:'client.html?id='+c.id}) });
   CLIENTS.filter(c=>c.prog && c.last===TODAY).slice(0,4).forEach(c=>ev.push({t:'done', d:TODAY, c, title:c.n, tx:'Записал результаты сегодняшней тренировки', act:'Посмотреть', href:workoutHref(c.id, TODAY)}));
   /* В карточке клиента — все его выполненные тренировки за две недели, каждая ведёт в просмотр. */
   if(cid){ const c = client(cid); if(c && c.prog) for(let k = 1; k <= 14; k++){ const d = addDays(TODAY, -k), x = cliDay(cid, d);
