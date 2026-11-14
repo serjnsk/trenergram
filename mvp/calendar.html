@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Тренерское приложение с «Экрана Домой»: иконка, название, запуск во весь экран -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
 <title>Календарь · Тренерграм</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -140,7 +149,7 @@ function renderCal(keepYM){
   if(keepYM) scrollToMonth(keepYM, false);
 }
 /* шапка приложения + липкая шапка календаря; на телефоне липнет только заголовок месяца (шапка календаря прячется при прокрутке вниз, mobile.js) */
-const HEAD = () => matchMedia('(max-width:760px)').matches ? 52 + ((document.querySelector('.monh')||{}).offsetHeight || 40)
+const HEAD = () => matchMedia('(max-width:760px)').matches ? ((document.querySelector('.topbar')||{}).offsetHeight || 52) + ((document.querySelector('.monh')||{}).offsetHeight || 40)
   : 58 + ((document.querySelector('.calwrap .wkh')||{}).offsetHeight || 62);
 /* Переход к произвольной дате: месяц дорастает при необходимости, день мигает. */
 function jumpTo(date){

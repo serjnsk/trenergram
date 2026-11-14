@@ -1770,3 +1770,33 @@ body.subro .ro-off{opacity:.45;cursor:not-allowed}
 .csb .wtl{font-size:13.5px}
 .csrc-open{display:inline-block;margin-top:4px;font-size:13.5px;font-weight:600;color:var(--acc-d);text-decoration:none}
 .csrc-open:hover{text-decoration:underline}
+
+/* ═══════════ ДЛИННЫЕ ДАННЫЕ (14.11.2026) ═══════════
+   Имена клиентов и групп, названия упражнений, тренировок и программ вводят
+   люди — вёрстка не должна зависеть от их длины (HIG: переносы вместо
+   обрезаний, служебное не сжимается). Правила:
+   · одна строка (выбор клиента, чипы, подписи в шапках) — многоточие, полное
+     значение там, куда ведёт тап;
+   · многострочное — перенос, в том числе длинного слова без пробелов;
+   · стрелки, ✕, счётчики, аватары — flex:none, их текст не перекрывает.
+   Проверка — стенд trainer/index.html, параметр «Данные: длинные». На обычных
+   данных вид не меняется (сверено попиксельно на 1920×1080). */
+body{overflow-wrap:break-word}
+/* выбор клиента в шапке календаря и конструктора: имя — многоточием, не под стрелку */
+.wkh .cliSel{max-width:100%;min-width:0}
+.wkh .cliSel .cl-t{flex:1 1 auto}
+.wkh .cliSel .cl-t b{overflow:hidden;text-overflow:ellipsis}
+.wkh .cliSel .cl-t s{max-width:min(360px, 100%)}
+.wkh .cliSel .cav,.wkh .cliSel svg{flex:none}
+/* аватары: инициалы не вылезают из кружка */
+.cav{overflow:hidden;white-space:nowrap}
+/* блок в клетке календаря: тип блока — многоточием */
+.days .day .bxh{grid-template-columns:12px minmax(0,1fr) minmax(0,max-content)}
+.days .day .bxh s{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* чип группы: длинное название — многоточием; предел в px — в таблице с автошириной
+   max-width в % не ограничивает колонку (на телефоне — 100 %, mobile.css) */
+.gchips{max-width:100%;min-width:0}
+.gchip{display:inline-block;max-width:240px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:22px;vertical-align:middle}
+.gchip svg{vertical-align:-2px;margin-right:4px}
+/* текст, который пишут тренер и клиент: длинное слово переносится */
+.wl,.line .txt,.line .nm,.md .cl .who b,.cnote textarea,.fev2 .tx,.cid .nm,.ehead .enm,.dtt{overflow-wrap:anywhere}

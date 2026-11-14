@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Тренерское приложение с «Экрана Домой»: иконка, название, запуск во весь экран -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
 <title>Профиль · Тренерграм</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,8 +94,8 @@ function profileTab(){
           ${P.photo?`<img src="${P.photo}" alt="">`:esc(T.ini)}<span class="av-cam">${CAMERA}</span></label>
         <label class="btn gh sm" for="inPhoto">${P.photo?'Сменить фото':'Загрузить фото'}</label>
         <input type="file" id="inPhoto" accept="image/*" hidden></div>`)}
-      ${row('Имя и фамилия', '', `<div class="cols2"><input class="inp" data-t="first" value="${esc(T.first)}" placeholder="Имя" aria-label="Имя"><input class="inp" data-t="last" value="${esc(T.last)}" placeholder="Фамилия" aria-label="Фамилия"></div>`)}
-      ${row('Город', '', `<input class="inp" data-t="city" value="${esc(T.city)}">`)}
+      ${row('Имя и фамилия', '', `<div class="cols2"><input class="inp" data-t="first" autocomplete="given-name" value="${esc(T.first)}" placeholder="Имя" aria-label="Имя"><input class="inp" data-t="last" autocomplete="family-name" value="${esc(T.last)}" placeholder="Фамилия" aria-label="Фамилия"></div>`)}
+      ${row('Город', '', `<input class="inp" data-t="city" autocomplete="address-level2" value="${esc(T.city)}">`)}
       ${row('О себе', '', `<textarea class="inp" data-t="about" rows="3">${esc(T.about)}</textarea>`)}
     </div>
 
@@ -103,8 +112,8 @@ function profileTab(){
 
     <div class="sechead"><span class="t">Вход в кабинет</span><span class="ln"></span></div>
     <div class="card cb">
-      ${row('Телефон', 'Логин для входа', `<input class="inp" data-t="phone" value="${esc(T.phone)}">`)}
-      ${row('Email', 'Чеки и восстановление пароля', `<input class="inp" data-t="email" value="${esc(T.email)}">`)}
+      ${row('Телефон', 'Логин для входа', `<input class="inp" data-t="phone" type="tel" inputmode="tel" autocomplete="tel" value="${esc(T.phone)}">`)}
+      ${row('Email', 'Чеки и восстановление пароля', `<input class="inp" data-t="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" value="${esc(T.email)}">`)}
       ${row('Пароль', '', `<div class="pwrow"><span>••••••••</span><button class="btn gh sm" id="btnPass">Сменить пароль</button></div>`)}
     </div>`;
 }
@@ -267,9 +276,9 @@ function bindProfile(){
   $('#inPhoto').onchange=e=>{ const f=e.target.files[0]; if(f) photoFrom(f, url=>{ P.photo=url; save('Фото обновлено'); render() }) };
   inviteBlockBind();
   $('#btnPass').onclick=()=>openModal({title:'Сменить пароль', body:`
-      <div class="formfld" style="margin-bottom:10px"><span class="k">Текущий пароль</span><input class="inp" type="password"></div>
-      <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password"></div>
-      <div class="formfld"><span class="k">Ещё раз</span><input class="inp" type="password"></div></div>`,
+      <div class="formfld" style="margin-bottom:10px"><span class="k">Текущий пароль</span><input class="inp" type="password" autocomplete="current-password"></div>
+      <div class="cols2"><div class="formfld"><span class="k">Новый пароль</span><input class="inp" type="password" autocomplete="new-password"></div>
+      <div class="formfld"><span class="k">Ещё раз</span><input class="inp" type="password" autocomplete="new-password"></div></div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="mdPass">Сохранить</button>`});
 }
 

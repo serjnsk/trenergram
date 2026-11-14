@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Тренерское приложение с «Экрана Домой»: иконка, название, запуск во весь экран -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
 <title>База упражнений · Тренерграм</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,7 +91,7 @@ function render(){
       </select>
       <label class="chk"><input type="checkbox" id="own" ${V.own?'checked':''}> Только свои</label>
       <span class="sp"></span>
-      <a class="btn" id="btnAdd" href="exercise.html?new=1">${ICON.plus} Добавить упражнение</a>`)
+      <a class="btn" id="btnAdd" href="exercise.html?add=1">${ICON.plus} Добавить упражнение</a>`)
     + (list.length ? dataTable('ex', EX_COLS, list) : `<div class="empty"><div class="t">Ничего не нашли</div><div class="d">Измените поиск или фильтр</div></div>`);
   bindTable('ex', render, id=>{ listSave('exercises.html', V); location.href = 'exercise.html?id=' + encodeURIComponent(id) });
   $('#g').onchange=e=>{ V.g=e.target.value; render() };

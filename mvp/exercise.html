@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Тренерское приложение с «Экрана Домой»: иконка, название, запуск во весь экран -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
 <title>Упражнение · Тренерграм</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,10 +45,11 @@
    как только у него есть название. */
 const Q = new URLSearchParams(location.search);
 const EX_UNITS = ['кг','повт','сек','м','кал','темп','скорость','мощность','высота','пульс','RPE'];
-let E = Q.get('new') ? null : byId(Q.get('id'));
+/* ?add=1 — новая, пустая. Не ?new=: его читает data.js как режим «новый тренер». */
+let E = Q.get('add') ? null : byId(Q.get('id'));
 if(E && E.del) E = null;
 const DRAFT = {ru:'', en:'', g:'', eq:'—', u:['кг','повт'], pm:null, mus:'', mus2:'', steps:[], tech:''};
-const isNew = () => !E && !!Q.get('new');
+const isNew = () => !E && !!Q.get('add');
 
 const thumbHTML = x => `<span class="thumb eth ${x.m==='pending'?'pending':''}">${x.img?`<img src="${x.img}" alt="">`:x.ru?esc(initials(x)):ICON.dumb}</span>`;
 const usesHTML = list => list.length

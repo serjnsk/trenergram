@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Тренерское приложение с «Экрана Домой»: иконка, название, запуск во весь экран -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
 <title>Программа · Тренерграм</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,10 +44,11 @@
    смотрится — «Сохранить как своё» делает копию. Новая — та же страница
    пустой: в базе она появляется с первой правкой. */
 const Q = new URLSearchParams(location.search);
-let P = Q.get('new') ? null : tplById(Q.get('id'));
+/* ?add=1 — новая, пустая. Не ?new=: его читает data.js как режим «новый тренер». */
+let P = Q.get('add') ? null : tplById(Q.get('id'));
 if(P && (P.del || P.lvl !== 'программа')) P = null;
 const DRAFT = {lvl:'программа', title:'', goal:'', days:28, seq:[]};
-const isNew = () => !P && !!Q.get('new');
+const isNew = () => !P && !!Q.get('add');
 const WO = () => tplLive('тренировка');
 /* Тренировка из цикла, которую уже убрали из базы, остаётся выбранной — подписываем её как есть. */
 const woOpts = cur => [...WO(), ...(cur && !WO().some(w => w.id === cur) && tplById(cur) ? [tplById(cur)] : [])];

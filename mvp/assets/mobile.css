@@ -15,11 +15,14 @@
    ============================================================ */
 
 /* на десктопе нижней панели и шторки нет вообще */
-.mtabs, .msh-ov, .msort, .mback, .mrail-btn, .mrail-bd, .mrail-x, .mdrag-ghost{display:none}
+.mtabs, .msh-ov, .msort, .mback, .mrail-btn, .mrail-bd, .mrail-x, .mdrag-ghost, .medit-btn{display:none}
 
 @media (max-width:760px){
 
-:root{--tabh:58px; --sab:env(safe-area-inset-bottom,0px); --mtop:52px}
+/* Безопасные зоны: в вебе браузер держит их сам (env() = 0), в приложении
+   страница во весь экран — шапка отступает от выреза и Dynamic Island, нижняя
+   панель — от полосы Home. Стенд (trainer/index.html) задаёт их через mobile.js. */
+:root{--tabh:58px; --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --mtop:calc(52px + var(--sat))}
 html{-webkit-text-size-adjust:100%}
 body{overflow-x:hidden}
 html.msh-lock, html.msh-lock body{overflow:hidden}
@@ -29,7 +32,7 @@ html.msh-lock, html.msh-lock body{overflow:hidden}
 .nav{display:none}
 .main{padding-bottom:calc(var(--tabh) + var(--sab))}
 
-.topbar{height:var(--mtop);padding:0 8px 0 16px;gap:8px}
+.topbar{height:var(--mtop);padding:var(--sat) 8px 0 16px;gap:8px}
 .topbar .ptitle{font-size:19px;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .topbar .ptitle .cnt{flex:none}
 /* «Создать тренировку» — на телефоне плюс в акцентном круге: слово не влезает,
@@ -306,8 +309,8 @@ td.mnil{display:none !important}
 .cyc[draggable] .cn{width:auto}
 .cyc[draggable] select.inp,.cyc[draggable] .dsel{grid-column:3;max-width:none;width:100%}
 .cyc[draggable] .iact{grid-column:4;grid-row:1;width:44px;height:44px}
-.cyc[draggable] .cmeta{grid-column:2 / 4;grid-row:2;white-space:normal;padding:0;font-size:13.5px}
-.cyc[draggable] .lnk{grid-column:4;grid-row:2;width:auto;text-align:center;padding:8px 0;font-size:14px}
+.cyc[draggable] .cmeta{grid-column:2 / 4;grid-row:2;white-space:normal;padding:0 64px 0 0;font-size:13.5px}
+.cyc[draggable] .lnk{grid-column:3 / 5;grid-row:2;justify-self:end;width:auto;text-align:center;padding:8px 0;font-size:14px}
 .cyc .cn{width:auto}
 .cyc .cmeta{white-space:normal}
 .cycadd{flex-wrap:wrap}
@@ -513,7 +516,7 @@ body.mrail-on .mrail-bd{opacity:1;pointer-events:auto}
 .gchip{min-height:32px;padding:0 10px}
 .cph-up{width:32px;height:32px}
 .cf .v{min-height:40px}
-.cyc .lnk,.cyc[draggable] .lnk{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.cyc .lnk,.cyc[draggable] .lnk{min-height:44px;display:inline-flex;align-items:center;justify-content:center;width:auto}
 .days .day .dmark{width:36px;height:36px;top:2px;right:4px}
 .days .day .dmark svg{width:20px;height:20px}
 .mcal-g button,.mcal button{min-height:44px}
@@ -527,6 +530,317 @@ body.mrail-on .mrail-bd{opacity:1;pointer-events:auto}
 .cellname .s{white-space:normal}
 
 .line > .x:not(.ssx){margin-left:auto}
+
+
+/* ═══════════ АУДИТ 14.11.2026 — стенд тренерского приложения ═══════════
+   Экраны и окна, появившиеся после первой мобильной версии, и то, что нашёл
+   проход по всем видам стенда (trainer/index.html) на 360 и 450 px. */
+
+/* ─── стенд: во фрейме нет полосы прокрутки, как на телефоне ─── */
+html.in-stand{scrollbar-width:none}
+html.in-stand::-webkit-scrollbar,html.in-stand body::-webkit-scrollbar{display:none}
+
+/* ─── шапка: «назад» не уходит за край; заголовок с датой — в две строки ─── */
+.mback{margin-left:-8px}
+.topbar .ptitle:has(.ptd){flex-direction:column;align-items:flex-start;justify-content:center;gap:0;line-height:1.15;flex:1 1 auto}
+.topbar .ptitle:has(.ptd) > .ptd,.topbar .ptitle button.ptd{height:auto;min-height:0;max-width:100%;padding:2px 0 0;margin:0;
+  font-size:14px;font-weight:500;color:var(--tx3);position:relative;display:inline-flex;align-items:center;gap:4px}
+.topbar .ptitle .ptd::before{display:none}
+.topbar .ptitle .ptd svg{width:13px;height:13px;flex:none}
+/* видимая строка даты низкая — зона касания добирается невидимой рамкой */
+.topbar .ptitle .ptd::after{content:"";position:absolute;inset:-10px -10px -12px}
+
+/* ─── окна: кнопки делят строку, длинная главная — во всю ширину ─── */
+.mdf .sp{display:none}
+.mdf .btn{white-space:nowrap}
+
+/* ─── поля: 16 px, иначе iOS приближает страницу при фокусе ─── */
+.cl-s input,#cl-q,.tbx,.nx-f input,.wmsg input,.wz-f input,.wz-f select{font-size:16px}
+/* инициалы в аватарах не мельче 11 px (HIG) */
+.clipick .cav,.gpm .cav,.csrc-cli .cav{font-size:11px}
+.cav.grp{letter-spacing:-.03em}
+
+/* ─── шторка «Ещё»: аватар тренера не растягивается ─── */
+.msh-i .msh-av{flex:none}
+
+/* ─── дашборд: действия в ленте и фильтры под палец ─── */
+.fa .fact{display:inline-flex;align-items:center}   /* зона касания 44 — невидимой рамкой (раздел HIG ниже) */
+.fev2 .h .who{padding:6px 0;margin:-6px 0}
+.fddb{height:44px}
+.fpop .fopt{min-height:44px}
+.frng .fdt{height:40px;padding:0 14px}
+
+/* ─── календарик и окно копирования дней ─── */
+.dp-h .dp-nav{width:44px;height:44px}
+.dp-f .btn{height:44px}
+.bkd-chip button{width:36px;height:36px}
+.bkd-date{flex-wrap:wrap}
+.bkd-date .btn{white-space:nowrap;min-height:40px}
+.bkd-date .bkd-lnk{min-height:40px}
+.bkd-to .bkd-add{min-height:44px}
+
+/* ─── клиенты: «Пригласить» во всю строку; поля карточки на постоянных местах ─── */
+.pane-h > .invw{grid-column:1 / -1}
+.invw .btn{width:100%;justify-content:center;white-space:nowrap}
+.filters button{height:40px}
+.gchip{min-height:36px;max-width:100%;line-height:36px}
+/* сетка карточки клиента: общее правило таблиц (.tbl[data-tbl]… tr — flex) сильнее,
+   поэтому селектор с той же специфичностью и ниже по файлу */
+.tbl[data-tbl="cli"]:not([data-tbl="pm"]) tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 14px}
+[data-tbl="cli"] td:nth-child(2){grid-column:1;grid-row:2}
+[data-tbl="cli"] td:nth-child(4){grid-column:2;grid-row:2}
+[data-tbl="cli"] td:nth-child(6){grid-column:1;grid-row:3}
+[data-tbl="cli"] td:nth-child(3){grid-column:2;grid-row:3}
+[data-tbl="cli"] td:nth-child(5){grid-row:4}
+
+/* ─── карточка клиента ─── */
+/* поле с кнопкой («Оплачено до», «Группа»): подпись — к первой строке значения */
+.cf{align-items:start}
+.cf .k{padding-top:10px}
+.cfv{gap:4px 12px}
+.cph-up{width:36px;height:36px}
+/* рекорды: обе колонки ПМ влезают — имя упражнения переносится */
+.pmt{width:100%}
+.pmt td:first-child{min-width:0;max-width:none}
+.pmt .pmin{width:72px}
+.pmt th,.pmt td{padding-left:10px;padding-right:10px}
+
+/* ─── тренировка клиента: тип блока — второй строкой под названием ─── */
+.wbh{display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;column-gap:10px;row-gap:2px;align-items:center}
+.wbh .wbn{grid-row:1 / span 3;align-self:center}
+.wbh .t1,.wbh .t3,.wbh .t2{grid-column:2;min-width:0}
+.wbh .t3{line-height:1.3}
+.wbh .sp{display:none}
+.wbh .wnb{grid-column:3;grid-row:1 / span 3;width:44px;height:44px}
+.wbh .wch{grid-column:4;grid-row:1 / span 3}
+.wk .wkn button,.wkn button{width:44px;height:44px}
+
+/* ─── конструктор ─── */
+/* заметка блока: ✕ сразу за текстом (.bnote с переносом — это плашка в подписке) */
+.blk .bnote,.doc .bnote{flex-wrap:nowrap}
+.blk .bnote input,.doc .bnote input{flex:1 1 0;max-width:none;width:auto !important}
+/* статус дня и сообщение клиенту */
+.doch .dst{height:36px}
+.wmsg .x{width:40px;height:40px}
+/* вид пустой строки «Упражнение · Сет · Связка» — одной строкой */
+.line .kind{margin-left:0;gap:0;flex-wrap:nowrap}
+.line .kind button{padding:0 10px}
+.line .kind .qh{width:28px;height:28px;margin:0 4px 0 -6px;font-size:12px}
+/* подсказка клавиш (Tab) на телефоне не нужна */
+.sug kbd,.sug .kb{display:none}
+/* правая панель: переключатель и ссылка под палец */
+.srcsw button{height:40px}
+.csrc-h .csrc-open{display:inline-flex;align-items:center;min-height:36px}
+/* новое упражнение в базе: единицы нагрузки */
+.nx-u button{height:40px;min-width:44px}
+/* мастер: на шаге видно название только текущего шага */
+.wz-steps{gap:10px;padding:0 16px 12px}
+.wz-steps span:not(.on){font-size:0;gap:0}
+.wz-steps span:not(.on) i{font-size:13px}
+.wz-tabs button{height:40px}
+.wz-row{gap:10px}
+.wz-f{min-width:0}
+.wz-f select,.wz-f input,.wz-f .dsel{width:100%;min-width:0;height:44px}
+/* окно копирования дней: итог — строкой, кнопки делят строку поровну */
+.bk-dlg .mdf .bkd-sum,.bk-dlg .mdf .bkd-warn{flex:1 1 100%}
+.bk-dlg .mdf .btn{flex:1 1 0}
+
+/* ─── шапка шаблона (блок, тренировка): главное действие во всю строку ─── */
+.ehead .enm{font-size:19px}
+.ehead .eacts .btn{white-space:nowrap;padding:0 12px}
+.ehead .eacts .btn:first-child:nth-last-child(3){grid-column:1 / -1}
+.tabs button{min-height:40px}
+.crumb a{display:inline-flex;align-items:center;min-height:32px}
+.uses-in a{display:inline-block;padding:4px 0}
+
+/* ─── группы: аватары участников не наезжают ─── */
+.gstack .stack .av{width:28px;height:28px;flex:none;font-size:11px}
+.gpm{min-height:36px}
+
+/* ─── профиль: табы, подписка ─── */
+.ptabs a{min-height:44px}
+.lnk-t{display:inline-flex;align-items:center;min-height:44px}
+.bc-h .lnk-t{margin:-12px 0}
+.pmbox{flex-wrap:wrap}
+.pmbox .pm-t{flex:1 1 0;min-width:0}
+/* баланс: значок слева, текст во всю ширину, «Пополнить» — под текстом */
+.pmbox.pm-bal{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;row-gap:0;align-items:center}
+.pm-bal .pm-br{grid-row:1 / span 2}
+.pm-bal .lnk-t{grid-column:2;justify-self:start;min-height:36px}
+.pmbox .iact{width:44px;height:44px}
+.bc-f:not(.prt-f){flex-direction:column;align-items:flex-start;gap:4px}
+.bc-f:not(.prt-f) .lnk-t{margin:0 0 -8px}
+
+
+
+/* ═══════════ КОНСТРУКТОР · КОМПАКТНЫЙ ВИД (14.11.2026) ═══════════
+   Выбран из двух вариантов (сравнение было на trainer/variants.html).
+   · Над тренировкой: «Календарь и базы» — квадрат «Базы» справа от выбора
+     клиента; шапка дня одной строкой (статус значком); сообщение тонкой строкой.
+   · Блок без серой плашки, шапка блока одной строкой: название · тип · ⋯.
+   · Упражнение — одна строка: название слева, схема и нагрузка справа текстом.
+     Тап по названию или цифре — правка на месте (.line.act ставит trainer.js):
+     у полей рамки, видны пустые поля и «от–до».
+   · Ручки ⋮⋮ и ✕ — в режиме «Изменить» (html.medit, кнопка .medit-btn в шапке
+     дня — её ставит mobile.js), как в списках iOS.
+   Селекторы от #doc — сильнее правил .doc.quick … конструктора. */
+/* меньше вложенных рамок: день — без внутреннего поля по бокам, блоки — без серой плашки */
+.cons,.cons.cwide{padding:6px 6px 20px}
+#doc{padding:0 12px 12px}
+#doc .blk{background:none;border-radius:0;padding:4px 0 6px;margin:0;border-top:1px solid var(--line)}
+#doc .doch + .blk,#doc .wmsg + .blk{border-top:0}
+
+/* над тренировкой: «Календарь и базы» — квадрат справа от выбора клиента */
+.cons main:has(> .wk:not(.tplh)){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;align-content:start}
+.cons main:has(> .wk:not(.tplh)) > *{grid-column:1 / -1}
+.cons main > .wk:not(.tplh){grid-column:1;grid-row:1;margin:0;padding:6px}
+.cons main:has(> .wk:not(.tplh)) > .mrail-btn{grid-column:2;grid-row:1;width:64px;min-height:0;height:auto;margin:0;padding:6px 0;
+  flex-direction:column;justify-content:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--tx2)}
+.cons main:has(> .wk:not(.tplh)) > .mrail-btn span{flex:none;font-size:0}
+.cons main:has(> .wk:not(.tplh)) > .mrail-btn span::after{content:"Базы";font-size:11.5px}
+.cons main:has(> .wk:not(.tplh)) > .mrail-btn s{display:none}
+.cons main:has(> .wk:not(.tplh)) > .mrail-btn svg{width:22px;height:22px}
+.cons main > .wk .cliSel{height:48px}
+.cons main > #doc{margin-top:8px}
+
+/* шапка дня — одной строкой: статус значком, название, действия */
+#doc .doch{flex-wrap:nowrap;margin:0 -12px 4px;padding:4px 4px 4px 10px;gap:4px;min-height:52px}
+#doc .doch > .gr{display:none}
+#doc .doch .dst{font-size:0;gap:0;width:36px;height:36px;padding:0;justify-content:center;flex:none}
+#doc .doch .dst svg{width:18px;height:18px}
+#doc .doch input#d-title{order:0;flex:1 1 0;min-width:0;font-size:18px;height:40px;padding:0 4px;margin:0}
+
+/* сообщение клиенту — тонкой строкой */
+#doc .fld.wmsg{min-height:44px;padding:2px 4px 2px 10px;margin:0 0 6px;gap:6px}
+#doc .fld.wmsg .k{width:auto;font-size:11.5px}
+
+/* шапка блока одной строкой: название · тип · ⋯ */
+#doc .blkh{flex-wrap:nowrap;gap:4px;margin:0;min-height:44px}
+#doc .blkh > .gr{display:none}
+#doc .blkh .bt{order:0;flex:1 1 0;min-width:0;height:40px;font-size:17px;font-weight:700;padding:0 6px;margin-left:-6px}
+#doc .blkh .ftype{order:0;flex:none;height:26px;padding:0 9px;margin:0;font-size:12.5px;border-radius:13px}
+#doc .blkh .x{order:0;width:40px;height:40px;border:0;background:none}
+
+/* заметка блока — строкой под шапкой, без плашки */
+#doc .bnote{padding:0 0 4px;min-height:36px}
+#doc .bnote input{height:36px;font-size:16px}
+
+/* сообщение клиенту */
+#doc .fld.wmsg{margin:0 0 4px}
+
+/* добавить упражнение / блок */
+#doc .addl{margin-top:2px}
+
+/* связка и суперсет: без серой подложки, отступы поменьше */
+#doc .ssg{margin:2px 0}
+#doc .line.chain,#doc .line.ssh{background:none}
+
+/* «Подсказка клавиш» и выбор вида строки на телефоне не нужны в покое */
+#doc .keyhint{display:none}
+
+/* суперсет: линия слева и отступ строк — как раньше, строки не наезжают на линию */
+#doc .ssg::before{left:6px;top:46px}
+#doc .ssg > .line:not(.ssh),#doc .ssg > .addl.in{margin-left:16px !important}
+
+#doc .line{flex-wrap:wrap;align-items:center;gap:0 8px;min-height:46px;padding:3px 0;margin:0;
+  background:none;border:0;border-bottom:1px solid var(--line);border-radius:0}
+#doc .blk > .line:last-of-type,#doc .ssg > .line:last-child{border-bottom:0}
+#doc .line > .gr,#doc .line > .x:not(.ssx){display:none}
+#doc .line > .txt{flex:1 1 0;min-width:0;width:auto !important;padding:10px 0;font-size:16px;line-height:1.3}
+#doc .line > .txt .nm{white-space:normal}
+
+/* схема и нагрузка — справа, текстом */
+#doc .line .prm{order:0;flex:0 1 auto;padding-left:0;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;
+  align-items:center;gap:0 2px;max-width:62%}
+#doc .line .pf{height:34px;background:none;border-color:transparent;box-shadow:none;border-radius:8px}
+#doc .line input.pf,#doc .line .pf input{padding:0 3px;font-size:16px;text-align:right}
+/* в покое поле по ширине текста (конструктор задаёт минимум 4 символа) */
+#doc .line:not(.act) input.pf,#doc .line:not(.act) .pf input{width:calc(var(--fw, 4ch) + 2px) !important;min-width:1ch;padding:0 1px}
+@supports (field-sizing:content){ #doc .line:not(.act) input.pf,#doc .line:not(.act) .pf input{field-sizing:content;width:auto !important} }
+#doc .line .pf u{padding:0 3px 0 1px}
+#doc .line .prm .kg{flex-basis:100%;text-align:right;font-size:13px;padding:0 3px}
+#doc .line .prm .kg:empty{display:none}
+
+/* в покое — только заполненное */
+#doc .line:not(.act) input.pf:placeholder-shown,
+#doc .line:not(.act) .pf.ld.empty,
+#doc .line:not(.act) .rng,
+#doc .line:not(.act) .pmf{display:none}
+
+/* правка: строка подсвечена, поля с рамкой, видны пустые и «от–до» */
+#doc .line.act{background:var(--acc-a);margin:0 -12px;padding:3px 12px;border-bottom-color:transparent}
+#doc .line.act .pf{background:var(--bg);border-color:var(--line2)}
+#doc .line.act .pf:focus-within,#doc .line.act input.pf:focus{border-color:var(--acc)}
+#doc .line.act input.pf,#doc .line.act .pf input{text-align:left;padding:0 6px;min-width:3ch}
+#doc .line.act .rng{display:inline-flex;height:34px;padding:0 8px;font-size:13px}
+
+/* строка-текст (не разобрана) и связка — без изменений раскладки, только плотнее */
+#doc .line.raw{border-style:solid;border-width:0 0 1px;border-color:var(--line)}
+#doc .line.raw .pick{height:36px}
+#doc .line.chain{padding:6px 0}
+#doc .line.ssh{border-bottom:0;padding:6px 0 2px}
+
+/* режим «Изменить»: ручки и ✕ у блоков и строк */
+html.medit #doc .line > .gr,html.medit #doc .blkh > .gr,html.medit #doc .doch > .gr{display:grid;width:28px;height:40px;place-items:center}
+html.medit #doc .line > .x{display:grid;width:40px;height:40px;order:5}
+html.medit #doc .line .prm{max-width:48%}
+
+/* кнопка «Изменить / Готово» в шапке тренировки */
+.medit-btn{display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:18px;font-size:14.5px;font-weight:600;color:var(--acc-d);background:var(--bg);flex:none;margin-left:auto}
+html.medit .medit-btn{background:var(--acc);color:#fff}
+
+/* неразобранная строка: в покое — только текст, «Выбрать упражнение» и AI — при правке */
+#doc .line.raw:not(.act) .pick,#doc .line.raw:not(.act) .aib{display:none}
+#doc .line.raw > .txt{flex:1 1 0;min-width:60%}
+#doc .line.raw.act .pick,#doc .line.raw.act .aib{margin-top:4px}
+
+/* ═══════════ HIG 14.11.2026 · контраст и зоны касания ═══════════
+   Проверено скриптом по всем видам стенда (trainer/index.html).
+
+   Контраст текста (HIG: до 17 pt — 4.5:1, крупный или жирный — 3:1).
+   Фирменные цвета в мелком тексте не дотягивали: зелёный 3.3, янтарный 3.3,
+   тёмно-оранжевый 4.35. Как в системной палитре Apple (Increased Contrast) —
+   тот же оттенок темнее; яркий оранжевый остаётся заливкой кнопок и значков. */
+:root{--ok:#147A46; --warn:#8A6200; --acc-d:#B83D00}
+.kpi .v.acc,.msort button,.onb .ol{color:var(--acc-d)}
+.dp-d.out{color:#6C6C70}
+
+/* Зоны касания 44 pt (HIG): видимый размер компактных элементов прежний,
+   невидимая рамка добирает высоту до 44. Только по вертикали — по горизонтали
+   соседние кнопки стоят плотно, рамки не должны перекрываться. */
+.btn.sm,.filters button,.gchip,.pmpick button,.tabs button,.wz-tabs button,.srcsw button,
+.frng .fdt,.bkd-chip button,.bkd-date .btn,.bkd-date .bkd-lnk,.nx-u button,.line .kind button,.kind .qh,
+.crumb a,.uses-in a,.fev2 .h .who,.fa .fact,.lnk-t,.doch .dst,.medit-btn,.blkh .ftype,.bnote .x,
+.line.chain .cpx,.csrc-h .csrc-open,.tp-ticks button{position:relative}   /* .dmark и .cph-up и так absolute */
+.btn.sm::after,.filters button::after,.gchip::after,.pmpick button::after,.tabs button::after,.wz-tabs button::after,.srcsw button::after,
+.frng .fdt::after,.bkd-chip button::after,.bkd-date .btn::after,.bkd-date .bkd-lnk::after,.nx-u button::after,.line .kind button::after,.kind .qh::after,
+.crumb a::after,.uses-in a::after,.fev2 .h .who::after,.fa .fact::after,.lnk-t::after,.doch .dst::after,.medit-btn::after,.blkh .ftype::after,.bnote .x::after,
+.line.chain .cpx::after,.days .day .dmark::after,.csrc-h .csrc-open::after,.tp-ticks button::after,.cph-up::after{
+  content:"";position:absolute;left:0;right:0;top:50%;height:max(100%,44px);transform:translateY(-50%)}
+
+/* ─── поля и кнопки, которые по высоте не дотягивали до 44 ─── */
+#doc .line input.pf,#doc .line .pf{height:44px}
+#doc .bnote input,#doc .blkh .bt,#doc .doch input#d-title,#doc .ssf input{height:44px}
+#doc .blkh .x,#doc .doch .x,.csb-h .add,.csi .add,.exc .add{width:44px;height:44px}
+.ctabs a{height:44px}
+.line .aib{min-height:44px}
+#doc .line .pf input{height:100%}
+.topbar .ptitle .ptd::after{inset:-13px -10px}
+.wsec > summary,.wv .wbd .wtd > summary{min-height:44px}
+.cf .v{min-height:44px}
+
+/* ─── шторки: хват сверху — знак, что шторку можно смахнуть вниз (mobile.js) ─── */
+.ov .md::before,.ov .wmd::before{content:"";display:block;flex:none;align-self:center;width:36px;height:5px;border-radius:3px;background:var(--line2);margin:7px auto -3px}
+.ov .md,.ov .wmd,.msh,.rail{touch-action:pan-y}
+
+/* ─── «+» в шапке по экрану (mobile.js plusBtn): дубли в списках скрыты ─── */
+.mnone{display:none !important}
+#btnAdd,#gNew,.invw:not(.spot){display:none}
+
+/* ─── «Уменьшение движения» (HIG): без выездов, пружин и автоповторов ─── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
 
 } /* /max-width:760px */
 

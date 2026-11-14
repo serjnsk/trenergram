@@ -13,6 +13,47 @@
 (function(){
   const MQ = matchMedia('(max-width:760px)');
 
+  /* ─── стенд тренерского приложения ───
+     trainer/index.html открывает кабинет во фрейме телефона и пишет режим в
+     атрибут фрейма: data-mode="<iphone|android>:<web|app>" — атрибут живёт на
+     самом <iframe>, поэтому переживает переходы по ссылкам внутри телефона.
+     В режиме приложения страница во весь экран, а env(safe-area-inset-*) во
+     фрейме всегда 0 — задаём безопасные зоны сами, как их отдаст WebView. */
+  const SA = {iphone:[59, 34], android:[24, 16]};
+  let fe = null; try{ fe = window.frameElement }catch(_){}
+  const fm = fe && /^(iphone|android):(app|web)$/.exec(fe.dataset.mode || '');
+  if(fm){
+    document.documentElement.classList.add('in-stand');
+    if(fm[2] === 'app'){ const r = document.documentElement.style; r.setProperty('--sat', SA[fm[1]][0] + 'px'); r.setProperty('--sab', SA[fm[1]][1] + 'px') }
+  }
+
+  /* ─── стенд: «Данные: длинные» ───
+     Проверка, что интерфейс не ломают длинные имена клиентов и групп, названия
+     упражнений, тренировок и программ (в том числе слово без пробелов). Только во
+     фрейме стенда с параметром (localStorage tr.long) или по ?long=1 в адресе —
+     обычный кабинет это не задевает. Данные подменяем сразу после data.js, до
+     отрисовки страницы: load у <script> срабатывает до следующего скрипта. */
+  let longOn = /[?&]long=1\b/.test(location.search);
+  try{ if(fm && localStorage.getItem('tr.long') === '1') longOn = true }catch(_){}
+  if(longOn) document.addEventListener('load', e => {
+    if(!e.target.src || !/assets\/data\.js/.test(e.target.src)) return;
+    try{ longData() }catch(err){ console.warn('longData', err) }
+  }, true);
+  function longData(){
+    const NAMES = ['Александр Константинопольский-Преображенский', 'Мария-Антуанетта Римская-Корсакова', 'Вольфганг Шварценеггерштадтмахерович',
+                   'Анастасия Владиславовна Большакова-Малышевская', 'Христофор Бонифатьевич Длинноименный'];
+    CLIENTS.slice(0, NAMES.length).forEach((c, i) => { c.n = NAMES[i] });
+    TRAINER.first = 'Константин'; TRAINER.last = 'Константинопольский-Преображенский'; TRAINER.n = TRAINER.first + ' ' + TRAINER.last;
+    PROGRAMS.forEach(p => { if(p.title && p.kind !== 'group') p.title += ': подготовка к соревновательному сезону 2027 года' });
+    GRPS.forEach(g => { g.n = 'Лечебная физкультура для спины, суставов и баланса — утро'; const p = PROGRAMS.find(x => x.id === g.prog); if(p) p.title = g.n });
+    TPL.forEach((t, i) => { if(i % 3 === 0) t.title += ' — расширенная версия для продвинутых спортсменов' });
+    const ex = id => EX.find(e => e.id === id);
+    const set = (id, ru) => { const e = ex(id); if(e) e.ru = ru };
+    set('own_rom', 'Суставная разминка от шеи до голеностопа по кругу без остановок');
+    set('own_row', 'Греблянатренажёреконцепттуинтервалами');      /* одно слово без пробелов */
+    set('own_pvc', 'Мобилити плечевого пояса с гимнастической палкой PVC');
+  }
+
   /* ─── до загрузки страницы ─── */
   /* Страницы списков при каждой перерисовке зовут focus() на поле поиска — на
      телефоне это поднимало бы клавиатуру от тапа по фильтру. Пропускаем вызов,
@@ -212,8 +253,105 @@
     tb.prepend(a);
   }
 
+  /* ─── конструктор, компактный вид: режим «Изменить» ───
+     В покое у строк нет ручек ⋮⋮ и ✕ — как в списках iOS, они появляются по
+     кнопке «Изменить» в шапке дня (html.medit, стили — mobile.css). День
+     перерисовывается целиком, поэтому кнопку ставим заново в каждом sweep. */
+  function editBtn(){
+    const h = document.querySelector('#doc .doch'); if(!h || h.querySelector('.medit-btn')) return;
+    const root = document.documentElement, b = document.createElement('button');
+    const paint = x => { const on = root.classList.contains('medit'); x.textContent = on ? 'Готово' : 'Изменить'; x.setAttribute('aria-pressed', on) };
+    b.type = 'button'; b.className = 'medit-btn'; paint(b);
+    b.onclick = e => { e.stopPropagation(); root.classList.toggle('medit'); document.querySelectorAll('.medit-btn').forEach(paint) };
+    const menu = h.querySelector('#day-menu'); menu ? menu.before(b) : h.append(b);
+  }
+  /* В покое цифры строки — текстом, поле по ширине значения. Safari не умеет
+     field-sizing, поэтому ширину отдаём переменной --fw (в символах). */
+  function fitFields(root){
+    root.querySelectorAll('#doc .line input.pf, #doc .line .pf input').forEach(i => {
+      const n = Math.max(1, (i.value || '').length); if(i._fw !== n){ i._fw = n; i.style.setProperty('--fw', n + 'ch') } });
+  }
+  addEventListener('input', e => { if(MQ.matches && e.target.matches && e.target.matches('#doc .line input.pf, #doc .line .pf input')) fitFields(document) }, true);
+
+  /* ─── шторки: закрыть смахиванием вниз (HIG) ───
+     Окна (.ov .md), шторка «Ещё», панель «Календарь и базы», выбор клиента и
+     даты — шторки снизу. Как в iOS, их можно смахнуть вниз; тянуть — за верхнюю
+     полосу (хват и заголовок, 56 px), чтобы жест не спорил с прокруткой внутри.
+     Кнопка ✕ и тап по затемнению остаются — у жеста есть альтернатива кнопкой. */
+  const SHEET = '.ov.on .md, .ov.on .wmd, .msh-ov.on .msh, body.mrail-on .rail, .sug.dsl, .sug.clipick, .sug.dpick, .sug.dpk, .sug.setup';
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  function closeSheet(sh){
+    if(sh.matches('.msh')){ sh.parentElement.click(); return }
+    if(sh.matches('.rail')){ const bd = document.querySelector('.mrail-bd'); if(bd) bd.click(); return }
+    if(sh.matches('.sug')){ document.body.dispatchEvent(new MouseEvent('click', {bubbles:true})); setTimeout(() => { if(sh.isConnected) sh.remove() }, 60); return }
+    const ov = sh.closest('.ov'), x = sh.querySelector('.cls, [data-x], [data-bkd="close"], [data-close]');
+    if(x) x.click(); else if(ov && ov.id === 'ov' && typeof closeModal === 'function') closeModal(); else if(ov) ov.remove();
+  }
+  let sw = null;
+  addEventListener('touchstart', e => {
+    if(!MQ.matches || e.touches.length !== 1) return;
+    const sh = e.target.closest && e.target.closest(SHEET); if(!sh) return;
+    if(e.target.closest('input, textarea, select, [contenteditable]')) return;
+    const t = e.touches[0], top = sh.getBoundingClientRect().top;
+    if(t.clientY - top > 56) return;
+    sw = {sh, y0:t.clientY, dy:0, t0:Date.now()};
+  }, {passive:true});
+  addEventListener('touchmove', e => {
+    if(!sw) return;
+    sw.dy = Math.max(0, e.touches[0].clientY - sw.y0);
+    if(sw.dy > 4){ e.preventDefault(); sw.sh.style.transition = 'none'; sw.sh.style.transform = `translateY(${sw.dy}px)` }
+  }, {passive:false});
+  const swEnd = () => { if(!sw) return;
+    const {sh, dy, t0} = sw; sw = null;
+    const fast = dy > 30 && dy / Math.max(1, Date.now() - t0) > .6;
+    const done = () => { sh.style.transition = ''; sh.style.transform = '' };
+    if(dy > 90 || fast){
+      if(RM.matches){ done(); closeSheet(sh); return }
+      sh.style.transition = 'transform .18s ease-in'; sh.style.transform = 'translateY(100%)';
+      setTimeout(() => { closeSheet(sh); setTimeout(done, 30) }, 170);
+    } else { sh.style.transition = RM.matches ? 'none' : 'transform .2s cubic-bezier(.2,.8,.2,1)'; sh.style.transform = ''; setTimeout(done, 220) }
+  };
+  addEventListener('touchend', swEnd); addEventListener('touchcancel', swEnd);
+
+  /* ─── VoiceOver: у кнопок-значков имя только в title — даём aria-label ─── */
+  function names(root){
+    root.querySelectorAll('button[title]:not([aria-label]), a[title]:not([aria-label]), [role=button][title]:not([aria-label]), .dmark[title]:not([aria-label])').forEach(b => {
+      if(!b.textContent.trim()) b.setAttribute('aria-label', b.title) });
+    /* иконки без title — по назначению */
+    const BY = [['[data-del]', 'Удалить упражнение'], ['[data-delpart]', 'Убрать из связки'], ['[data-delss]', 'Удалить сет'], ['[data-notedel]', 'Удалить заметку'], ['.kebab', 'Действия'], ['.cls', 'Закрыть']];
+    root.querySelectorAll('button:not([aria-label]):not([title])').forEach(b => {
+      if(b.textContent.trim()) return; const m = BY.find(([s]) => b.matches(s)); if(m) b.setAttribute('aria-label', m[1]) });
+  }
+
+  /* ─── «+» в шапке — действие этого экрана (HIG: кнопка панели относится к экрану) ───
+     На компьютере «+» везде — «Создать тренировку». На телефоне: в списках он
+     делает то, что ждут от «+» здесь (пригласить клиента, создать группу, добавить
+     в базу), а дублирующая оранжевая кнопка в списке скрыта (mobile.css); в
+     календаре и карточке клиента — тренировка этому клиенту; в профиле и на
+     страницах-потомках «+» нет. */
+  const PLUS = {'clients.html':['#btnInvite', 'Пригласить клиента'], 'groups.html':['#gNew', 'Создать группу'],
+                'exercises.html':['#btnAdd'], 'blocks.html':['#btnAdd'], 'workouts.html':['#btnAdd'], 'programs.html':['#btnAdd']};
+  const NOPLUS = ['profile.html', 'exercise.html', 'program.html', 'constructor.html', 'workout.html'];
+  function plusBtn(){
+    const file = location.pathname.split('/').pop() || 'index.html';
+    const b = document.querySelector('#topbar .tsplit .btn'); if(!b) return;
+    const wrap = b.closest('.tsplit');
+    if(NOPLUS.includes(file)){ wrap.classList.add('mnone'); return }
+    let subj = '';
+    try{ if(file === 'calendar.html' && typeof C !== 'undefined' && C.cid) subj = subjQ(C.cid) }catch(_){}
+    if(file === 'client.html'){ const id = new URLSearchParams(location.search).get('id') || (typeof STATE !== 'undefined' && STATE.curClient); if(id) subj = 'client=' + id }
+    if(subj){ const h = 'constructor.html?' + subj; if(b.getAttribute('href') !== h) b.setAttribute('href', h); return }
+    const p = PLUS[file]; if(!p) return;
+    const t = document.querySelector(p[0]); if(!t){ wrap.classList.add('mnone'); return }
+    wrap.classList.remove('mnone');
+    const name = p[1] || t.textContent.trim();
+    if(b.dataset.mplus === name) return;
+    b.dataset.mplus = name; b.setAttribute('aria-label', name); b.title = name;
+    b.onclick = e => { e.preventDefault(); t.click() };
+  }
+
   let queued = false;
-  function sweep(){ queued = false; if(!MQ.matches) return; markNil(document); sortBar(document); backBtn() }
+  function sweep(){ queued = false; if(!MQ.matches) return; markNil(document); sortBar(document); backBtn(); plusBtn(); editBtn(); fitFields(document); names(document) }
   new MutationObserver(() => { if(!queued){ queued = true; requestAnimationFrame(sweep) } })
     .observe(document.documentElement, {childList:true, subtree:true});
   document.addEventListener('DOMContentLoaded', sweep);

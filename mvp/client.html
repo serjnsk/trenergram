@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Тренерское приложение с «Экрана Домой»: иконка, название, запуск во весь экран -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
 <title>Карточка клиента · Тренерграм</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -151,8 +160,8 @@ function pmHTML(){
   const rowOf = k => { const h = hist[k] || []; const last = h.length ? h[h.length-1][0] : null;
     return `<tr class="click ${V.metric===k?'on':''}" data-pm-row="${k}">
       <td><b>${esc(pmLabel(k))}</b></td>
-      <td class="r"><input class="pmin" data-pm="${k}" value="${fmtNum(pm[k])}"></td>
-      <td class="r"><input class="pmin" data-pm3="${k}" value="${pm3[k]!=null?fmtNum(pm3[k]):''}" placeholder="—"></td>
+      <td class="r"><input class="pmin" inputmode="decimal" data-pm="${k}" value="${fmtNum(pm[k])}"></td>
+      <td class="r"><input class="pmin" inputmode="decimal" data-pm3="${k}" value="${pm3[k]!=null?fmtNum(pm3[k]):''}" placeholder="—"></td>
       <td class="r mut">${last ? humanDate(last) : '—'}</td>
     </tr>`; };
   const series = V.metric && hist[V.metric] && hist[V.metric].length>1 ? hist[V.metric] : null;
@@ -230,13 +239,13 @@ function render(){
   const nt = $('#fNote'), fit = () => { nt.style.height = 'auto'; nt.style.height = nt.scrollHeight + 2 + 'px' };
   fit(); nt.oninput = fit; window.onresize = fit;
   nt.onchange=e=>{ C.note=e.target.value; toast('Заметка сохранена') };
-  const am = $('#addMeas'); if(am) am.onclick=()=>openModal({title:'Новый замер', body:`<div class="cols3">${MEAS.map(([k,n,u])=>`<div class="formfld"><span class="k">${n}, ${u}</span><input class="inp" data-nm="${k}" placeholder="—"></div>`).join('')}</div>`,
+  const am = $('#addMeas'); if(am) am.onclick=()=>openModal({title:'Новый замер', body:`<div class="cols3">${MEAS.map(([k,n,u])=>`<div class="formfld"><span class="k">${n}, ${u}</span><input class="inp" inputmode="decimal" data-nm="${k}" placeholder="—"></div>`).join('')}</div>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="nmSave">Сохранить</button>`});
   const ap = $('#addPm'); if(ap) ap.onclick=()=>{ const pm = pmOf(C.id), seen = new Set(Object.keys(pm)), opts = [];
     EX.forEach(e=>{ if(!(e.u||[]).includes('кг')) return; const k = e.pm || e.id; if(seen.has(k)) return; seen.add(k); opts.push([k, PMNAMES[k] || e.ru]) });
     opts.sort((a,b)=>a[1].localeCompare(b[1],'ru'));
     openModal({title:'Новое упражнение в рекордах', body:`<div class="formfld"><span class="k">Упражнение</span><select class="inp" id="npKey">${opts.map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join('')}</select></div>
-      <div class="cols2" style="margin-top:12px"><div class="formfld"><span class="k">1ПМ, кг</span><input class="inp" id="npV1" placeholder="—"></div><div class="formfld"><span class="k">3ПМ, кг · необязательно</span><input class="inp" id="npV3" placeholder="—"></div></div>`,
+      <div class="cols2" style="margin-top:12px"><div class="formfld"><span class="k">1ПМ, кг</span><input class="inp" inputmode="decimal" id="npV1" placeholder="—"></div><div class="formfld"><span class="k">3ПМ, кг · необязательно</span><input class="inp" inputmode="decimal" id="npV3" placeholder="—"></div></div>`,
       foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn" id="npSave">Добавить</button>`});
     $('#npV1').focus();
     $('#npSave').onclick=()=>{ const k = $('#npKey').value, v = parseFloat($('#npV1').value.replace(',','.')), v3 = parseFloat($('#npV3').value.replace(',','.'));

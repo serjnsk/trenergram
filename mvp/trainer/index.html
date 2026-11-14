@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Тренерское приложение · стенд · Тренерграм</title>
+<script>
+/* На телефоне стенд не нужен — открываем сам кабинет на выбранном экране
+   (переход — в конце страницы, когда загружена карта); пока — не мелькаем */
+if (matchMedia('(max-width: 760px)').matches) document.documentElement.classList.add('tr-phone');
+</script>
+<style>.tr-phone body{visibility:hidden}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/theme-01-strava.css">
+<style>
+/* ═══════════ СТЕНД ТРЕНЕРСКОГО ПРИЛОЖЕНИЯ ═══════════
+   Рабочая страница для просмотра на компьютере, не экран продукта.
+   Слева — параметры сценария и карта экранов, в центре — настоящий кабинет
+   тренера во фрейме телефона (его мобильный вид и есть тренерское
+   приложение), справа — описание экрана, его виды и адаптация.
+   Устроен как стенд клиентского приложения (client/index.html). */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--tx1);font:400 14px/1.5 var(--ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:var(--acc-d)}
+
+.cols{display:grid;grid-template-columns:380px minmax(0,1fr) 420px;height:100vh}
+@media(max-width:1360px){.cols{grid-template-columns:340px minmax(0,1fr) 340px}}
+
+/* ── левая колонка: сценарий и карта ── */
+.map{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.mh{padding:18px 18px 14px;border-bottom:1px solid var(--line);overflow-y:auto;max-height:56vh}
+.wm{font:900 15px/1 "Montserrat",var(--ui);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink)}
+.mh .sub{font-size:13px;color:var(--tx3);margin-top:6px}
+.mh h2{font-size:16.5px;font-weight:700;letter-spacing:-.01em;margin:16px 0 2px}
+.mh .cnt{font-size:13px;color:var(--tx3)}
+.params{margin-top:14px;display:flex;flex-direction:column;gap:14px}
+.prm{display:flex;flex-direction:column;gap:6px}
+.prm>span{font-size:13px;font-weight:500;color:var(--tx2)}
+.prm .seg{display:flex}
+.prm .seg button{flex:1 1 0;height:32px;padding:0 6px;font-size:12.5px;white-space:nowrap}
+.prm .hint{font-size:12px;color:var(--tx4);line-height:1.4}
+/* Сводка адаптации: сколько экранов готово */
+.sum{margin-top:16px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--tx2)}
+.sum .bar{flex:1;height:6px;border-radius:3px;background:var(--s1);overflow:hidden}
+.sum .bar i{display:block;height:100%;background:var(--ok)}
+.sum b{font-weight:600;color:var(--ink)}
+
+.tree{flex:1;overflow-y:auto;padding:6px 10px 30px}
+.flow{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);padding:8px 8px 6px;margin-top:6px}
+.tg{display:flex;align-items:center;gap:6px;width:100%;text-align:left;border-radius:var(--rad-s)}
+.tg:hover{background:var(--s2)}
+.tg .chv{width:12px;height:12px;stroke:var(--tx4);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none;transition:transform .15s}
+.grp.col > .tg .chv{transform:rotate(-90deg)}
+.grp.col > .gb{display:none}
+.tg .n{margin-left:auto;font:500 12px/1 var(--ui);letter-spacing:0;text-transform:none;color:var(--tx3);background:var(--s1);border-radius:9px;padding:3px 7px;flex:none}
+.grp:not(.col) > .tg .n{display:none}
+.gb{margin-left:13px;border-left:1.5px solid var(--line2);padding-left:6px}
+.it{display:flex;align-items:center;gap:8px;width:100%;text-align:left;min-height:34px;padding:6px 8px;border-radius:var(--rad-s);position:relative}
+.it:hover{background:var(--s2)}
+.it.on{background:var(--acc-a)}
+.it.on::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:3px;border-radius:0 2px 2px 0;background:var(--acc)}
+.it .cd{font:500 12px/1 var(--mono);color:var(--tx3);min-width:22px}
+.it.on .cd{color:var(--acc-d)}
+.it .nm{flex:1;min-width:0;font-weight:500;line-height:1.3}
+.it.on .nm{font-weight:600;color:var(--ink)}
+.it .vw{font-size:12px;color:var(--tx3);background:var(--s1);border-radius:9px;padding:1px 6px;flex:none}
+.it.on .vw{background:#fff}
+.it .ph{font-size:11.5px;font-weight:600;color:#1E5BD8;background:#EAF2FF;border-radius:9px;padding:1px 6px;flex:none}
+.st{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.st.ok{background:var(--ok)}
+.st.fix{background:var(--acc)}
+
+/* ── центр: телефон ── */
+.stage{background:var(--page);display:flex;flex-direction:column;min-width:0;min-height:0}
+.tools{display:flex;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap;justify-content:center}
+.seg{display:flex;background:var(--bg);border-radius:var(--rad-m);padding:3px;gap:2px;box-shadow:inset 0 0 0 1px var(--line)}
+.seg button{height:28px;padding:0 11px;border-radius:6px;font-size:13px;font-weight:500;color:var(--tx2)}
+.seg button.on{background:var(--ink);color:#fff}
+.ib{width:34px;height:34px;padding:0;display:grid;place-items:center;color:var(--tx2)}
+.ib:hover{color:var(--ink)}
+.ib svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.scale{font:500 12px/1 var(--mono);color:var(--tx3);min-width:40px;text-align:center}
+.ph-area{flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center;padding:4px 16px 20px}
+.phwrap{position:relative;flex:none}
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;background:#0d0d0f;
+  box-shadow:0 30px 60px -30px rgba(0,0,0,.45),inset 0 0 0 1.5px #2a2a2e}
+.scrn{position:relative;display:flex;flex-direction:column;overflow:hidden;background:#fff}
+.scrn iframe{display:block;flex:none;border:0;background:#fff}
+/* Системные полосы: в «Приложении» лежат поверх страницы (страница сама
+   отступает на безопасные зоны), в «Вебе» — над и под ней, как у браузера */
+.sys{position:absolute;left:0;right:0;pointer-events:none;color:#141414;z-index:2}
+.sys.top{top:0}
+.sys.bot{bottom:0}
+.sys .tm{position:absolute;font:600 16px/1 -apple-system,"Inter",sans-serif}
+.sys .isl{position:absolute;left:50%;top:11px;width:124px;height:36px;margin-left:-62px;border-radius:18px;background:#000}
+.sys .ic{position:absolute;display:flex;gap:6px;align-items:center}
+.sys .ic svg{fill:currentColor}
+.sys .hi{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:#141414}
+.bro{flex:none;position:relative;background:#fff;color:#141414;display:none}
+.bro.on{display:block}
+.bro .pill{position:absolute;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.86);
+  box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 16px -8px rgba(0,0,0,.25);font:500 16px/1 -apple-system,"Inter",sans-serif;color:#141414}
+.bro .rnd{position:absolute;top:10px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.86);box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 16px -8px rgba(0,0,0,.25)}
+.bro svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dims{font:500 12px/1 var(--mono);color:var(--tx3);text-align:center;padding-bottom:10px}
+
+/* ── правая колонка: описание ── */
+.info{border-left:1px solid var(--line);overflow-y:auto;padding:22px 24px 40px}
+.crumbs{font-size:13px;color:var(--tx3);display:flex;gap:6px;flex-wrap:wrap}
+.crumbs i{font-style:normal;color:var(--tx4)}
+.ttl{display:flex;align-items:baseline;gap:10px;margin:8px 0 10px}
+.ttl .cd{font:500 14px/1 var(--mono);color:var(--acc-d)}
+.ttl h1{font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.02em;margin:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;font-size:12.5px;font-weight:600;background:var(--s1);color:var(--tx2);text-decoration:none}
+.chip.ph{background:#EAF2FF;color:#1E5BD8}
+.chip.pg{font:500 12px/1 var(--mono);background:none;box-shadow:inset 0 0 0 1px var(--line2)}
+.chip.pg:hover{color:var(--acc-d);box-shadow:inset 0 0 0 1px var(--acc)}
+.info h3{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin:26px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+.info p{margin:0 0 8px;color:var(--tx2);font-size:14.5px;line-height:1.55}
+.info h4{margin:14px 0 6px;font:700 14.5px/1.3 var(--ui);color:var(--ink)}
+.info ul{margin:0 0 4px;padding-left:18px;color:var(--tx1);font-size:14.5px;line-height:1.5}
+.info li{margin-bottom:4px}
+.info li::marker{color:var(--tx4)}
+.info p b,.info li b{font-weight:700;color:var(--ink)}
+.views{display:flex;flex-direction:column;gap:8px}
+.vbtn{display:flex;gap:11px;align-items:flex-start;text-align:left;padding:10px 13px;border-radius:var(--rad-m);box-shadow:inset 0 0 0 1px var(--line)}
+.vbtn:hover{box-shadow:inset 0 0 0 1px var(--line2)}
+.vbtn.on{background:var(--acc-a);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.vbtn .rd{width:18px;height:18px;border-radius:50%;flex:none;margin-top:1px;box-shadow:inset 0 0 0 1.5px var(--line2);display:grid;place-items:center}
+.vbtn.on .rd{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.vbtn.on .rd::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--acc)}
+.vbtn b{display:block;font-weight:600;font-size:14.5px}
+.vbtn s{display:block;text-decoration:none;color:var(--tx3);font-size:13.5px;margin-top:1px}
+.vbtn kbd{margin-left:auto;font:500 11.5px/1 var(--mono);color:var(--tx4);border:1px solid var(--line);border-radius:4px;padding:3px 5px;flex:none}
+/* Адаптация: статус пункта значком, а не только цветом */
+.aud{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.aud li{display:flex;gap:9px;align-items:flex-start;font-size:14px;line-height:1.45;color:var(--tx1);margin:0}
+.aud li::marker{content:none}
+.aud .mk{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;margin-top:1px}
+.aud .mk svg{width:11px;height:11px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.aud .ok .mk{background:var(--ok)}
+.aud .fix .mk{background:var(--acc)}
+.lk{display:flex;flex-direction:column}
+.lk button{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 0;border-bottom:1px solid var(--line)}
+.lk button:last-child{border-bottom:0}
+.lk button:hover .to{color:var(--acc-d)}
+.lk .lb{flex:1;min-width:0;color:var(--tx2)}
+.lk .to{font-weight:600;white-space:nowrap}
+.lk .to .cd{font:500 12px/1 var(--mono);color:var(--tx3);margin-right:5px}
+.lk button.oth{opacity:.5}
+.lk svg{width:14px;height:14px;stroke:var(--tx4);fill:none;stroke-width:2;flex:none}
+.empty{font-size:13.5px;color:var(--tx3)}
+.req{font:500 12.5px/1 var(--mono);text-decoration:none;color:var(--tx2);background:var(--s1);border-radius:6px;padding:5px 7px}
+.req:hover{color:var(--acc-d);background:var(--acc-a)}
+.keys{margin-top:30px;font-size:12.5px;color:var(--tx4);line-height:1.8}
+.keys kbd{font:500 11.5px/1 var(--mono);color:var(--tx3);border:1px solid var(--line);border-radius:4px;padding:2px 5px}
+</style>
+</head>
+<body>
+<div class="cols">
+  <aside class="map">
+    <div class="mh">
+      <div class="wm">Тренерграм</div>
+      <div class="sub">Тренерское приложение · стенд</div>
+      <h2>Сценарий</h2>
+      <div class="cnt">Условия входа — стенд подставляет их в каждую страницу</div>
+      <div class="params" id="params"></div>
+      <div class="sum" id="sum"></div>
+    </div>
+    <nav class="tree" id="tree"></nav>
+  </aside>
+
+  <section class="stage">
+    <div class="tools">
+      <div class="seg" id="dev"></div>
+      <div class="seg" id="size" title="Разрешение экрана"></div>
+      <div class="seg" id="plat" title="Веб — кабинет в мобильном браузере; Приложение — тот же интерфейс во весь экран, с безопасными зонами"></div>
+      <button class="seg ib" id="reload" title="Открыть вид заново (R)"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/></svg></button>
+      <a class="seg ib" id="newtab" target="_blank" rel="noopener" title="Эта страница кабинета в новой вкладке — как на компьютере"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+      <span class="scale" id="scale"></span>
+    </div>
+    <div class="ph-area" id="area">
+      <div>
+        <div class="phwrap" id="wrap"><div class="phone" id="phone"><div class="scrn" id="scrn">
+          <div class="bro" id="broTop"></div><iframe id="fr" title="Кабинет тренера"></iframe><div class="bro" id="broBot"></div>
+          <div class="sys top" id="sysTop"></div><div class="sys bot" id="sysBot"></div>
+        </div></div></div>
+      </div>
+    </div>
+    <div class="dims" id="dims"></div>
+  </section>
+
+  <aside class="info" id="info"></aside>
+</div>
+
+<script src="map.js"></script>
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = id => document.getElementById(id);
+const DOCS = 'https://serjnsk.github.io/trenergram/docs/02-functional-requirements/';
+const ARR = '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const CHEV = '<svg class="chv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+const MK = { ok: '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg>', fix: '<svg viewBox="0 0 12 12"><path d="M6 2.8v4M6 9.2v.1"/></svg>' };
+
+/* Устройства: безопасные зоны приложения (sa) и полосы браузера (web) —
+   как у стенда клиентского приложения */
+const DEVICES = {
+  iphone:  { name: 'iPhone',  r: 55, pad: 12, sa: [59, 34], web: [59, 84] },
+  android: { name: 'Android', r: 28, pad: 9,  sa: [24, 16], web: [80, 16] }
+};
+const SIZES = [[360, 780], [450, 976]];
+const PLATS = [['web', 'Веб'], ['app', 'Приложение']];
+const ids = Object.keys(TR_SCREENS);
+const defP = () => Object.fromEntries(TR_PARAMS.map(x => [x.id, x.opts[0][0]]));
+
+/* ── состояние стенда; экран и параметры — в адресе, устройство — в браузере ── */
+const st = { id: 'dash', v: '', p: defP(), dev: 'iphone', size: '360x780', plat: 'app' };
+try { st.dev = localStorage.getItem('tr.dev') || st.dev; st.size = localStorage.getItem('tr.size') || st.size; st.plat = localStorage.getItem('tr.plat') || st.plat; } catch (e) {}
+if (!DEVICES[st.dev]) st.dev = 'iphone';
+if (!SIZES.some(([w, h]) => w + 'x' + h === st.size)) st.size = '360x780';
+if (!PLATS.some(([k]) => k === st.plat)) st.plat = 'app';
+const dev = () => { const [w, h] = st.size.split('x').map(Number); return Object.assign({ w, h }, DEVICES[st.dev]); };
+const inFlow = id => trMatch(TR_SCREENS[id].if, st.p);
+const views = id => trViews(id, st.p);
+const viewOk = (id, v) => views(id).some(x => x.id === v) ? v : (views(id)[0] || {}).id || '';
+
+function readHash() {
+  const m = location.hash.match(/^#\/([^?]*)(?:\?(.*))?/);
+  const q = new URLSearchParams(m ? m[2] || '' : '');
+  st.p = defP();
+  TR_PARAMS.forEach(x => { const v = q.get(x.id); if (v && x.opts.some(o => o[0] === v)) st.p[x.id] = v; });
+  st.id = m && TR_SCREENS[m[1]] ? m[1] : 'dash';
+  if (!inFlow(st.id)) st.id = 'dash';
+  st.v = viewOk(st.id, q.get('v') || '');
+}
+function writeHash() {
+  const q = new URLSearchParams(), d = defP();
+  if (st.v && st.v !== (views(st.id)[0] || {}).id) q.set('v', st.v);
+  TR_PARAMS.forEach(x => { if (st.p[x.id] !== d[x.id]) q.set(x.id, st.p[x.id]); });
+  const s = q.toString();
+  history.replaceState(null, '', '#/' + st.id + (s ? '?' + s : ''));
+}
+
+/* ── слева: параметры, сводка, дерево ── */
+function renderParams() {
+  $('params').innerHTML = TR_PARAMS.map(x => `
+    <div class="prm"><span>${esc(x.name)}</span>
+      <div class="seg">${x.opts.map(([v, n]) => `<button class="${st.p[x.id] === v ? 'on' : ''}" data-prm="${x.id}" data-val="${v}">${esc(n)}</button>`).join('')}</div>
+      ${x.hint ? `<div class="hint">${esc(x.hint)}</div>` : ''}
+    </div>`).join('');
+  const all = ids.length, ok = ids.filter(id => TR_SCREENS[id].audit.st === 'ok').length;
+  $('sum').innerHTML = `<span>Адаптировано <b>${ok}</b> из ${all}</span><span class="bar"><i style="width:${Math.round(ok / all * 100)}%"></i></span>`;
+}
+let folded = new Set();
+try { folded = new Set(JSON.parse(localStorage.getItem('tr.fold') || '[]')); } catch (e) {}
+const saveFold = () => { try { localStorage.setItem('tr.fold', JSON.stringify([...folded])); } catch (e) {} };
+function renderTree() {
+  $('tree').innerHTML = TR_MAP.map((f, fi) => {
+    const items = f.items.filter(inFlow);
+    const body = items.map(id => {
+      const sc = TR_SCREENS[id], n = views(id).length;
+      return `<button class="it${id === st.id ? ' on' : ''}" data-id="${id}">
+        <span class="cd">${esc(sc.code)}</span><span class="nm">${esc(sc.title)}</span>
+        ${sc.phoneOnly ? '<span class="ph" title="Есть только на телефоне">телефон</span>' : ''}
+        ${n > 1 ? `<span class="vw" title="Вариантов вида">${n}</span>` : ''}
+        <i class="st ${sc.audit.st}" title="${TR_AUDIT[sc.audit.st]}"></i></button>`;
+    }).join('');
+    return `<div class="grp${folded.has('f' + fi) ? ' col' : ''}" data-c="f${fi}">
+      <button class="flow tg">${CHEV}<span>${esc(f.flow)}</span><span class="n">${items.length}</span></button>
+      <div class="gb">${body}</div></div>`;
+  }).join('');
+  const on = document.querySelector('.it.on');
+  if (on) {
+    const g = on.closest('.grp');
+    if (g.classList.contains('col')) { g.classList.remove('col'); folded.delete(g.dataset.c); saveFold(); }
+    on.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+/* ── центр: телефон и фрейм ── */
+const fr = $('fr');
+const fwin = () => fr.contentWindow;
+let pend = null;      /* шаги вида, которые выполнить после загрузки страницы */
+let loadedUrl = '';
+
+/* Режим пишем в атрибут фрейма — он переживает переходы по ссылкам внутри
+   телефона: по нему assets/mobile.js узнаёт, что он в стенде, и в режиме
+   «Приложение» задаёт странице безопасные зоны (во фрейме env() всегда 0). */
+function frame() {
+  const d = dev(), app = st.plat === 'app';
+  const top = app ? 0 : d.web[0], bot = app ? 0 : d.web[1];
+  const sc = $('scrn'), ph = $('phone');
+  sc.style.width = d.w + 'px'; sc.style.height = d.h + 'px'; sc.style.borderRadius = d.r + 'px';
+  ph.style.padding = d.pad + 'px'; ph.style.borderRadius = (d.r + d.pad) + 'px';
+  fr.width = d.w; fr.height = d.h - top - bot;
+  fr.dataset.mode = st.dev + ':' + st.plat;
+  $('broTop').className = 'bro' + (top ? ' on' : ''); $('broTop').style.height = top + 'px';
+  $('broBot').className = 'bro' + (bot ? ' on' : ''); $('broBot').style.height = bot + 'px';
+  drawSys();
+  $('dev').innerHTML = Object.entries(DEVICES).map(([k, x]) => `<button class="${k === st.dev ? 'on' : ''}" data-dev="${k}">${x.name}</button>`).join('');
+  $('size').innerHTML = SIZES.map(([w, h]) => `<button class="${w + 'x' + h === st.size ? 'on' : ''}" data-size="${w}x${h}">${w}×${h}</button>`).join('');
+  $('plat').innerHTML = PLATS.map(([k, n]) => `<button class="${k === st.plat ? 'on' : ''}" data-plat="${k}">${n}</button>`).join('');
+  $('dims').textContent = `${d.name} · ${st.plat === 'app' ? 'приложение · безопасные зоны ' + d.sa.join(' / ') : 'веб · полосы браузера ' + d.web.join(' / ')} · ${d.w} × ${d.h}`;
+  fit();
+}
+
+/* Статус-бар и полосы. В приложении — поверх страницы; в вебе статус-бар
+   iPhone и адресная строка Chrome — над страницей, панель Safari — под ней. */
+function drawSys() {
+  const i = s => `<svg viewBox="0 0 24 24">${s}</svg>`;
+  const app = st.plat === 'app', ios = st.dev === 'iphone';
+  const icons = '<svg viewBox="0 0 18 12" width="18" height="12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>'
+    + '<svg viewBox="0 0 26 12" width="26" height="12"><rect x="0.5" y="0.5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="2"/><rect x="24" y="4" width="1.5" height="4" rx=".7" opacity=".4"/></svg>';
+  const iosBar = `<span class="tm" style="left:${st.size === '360x780' ? 30 : 46}px;top:21px">9:41</span><span class="isl"></span><span class="ic" style="right:${st.size === '360x780' ? 24 : 36}px;top:22px">${icons}</span>`;
+  const andBar = '<span class="tm" style="left:16px;top:5px;font:500 13px/1 Roboto,Inter,sans-serif">9:41</span><span class="ic" style="right:14px;top:6px">' + icons.replace(/width="18"/, 'width="14"').replace(/width="26"/, 'width="20"') + '</span>';
+  const home = ios ? '<i class="hi"></i>' : '<i class="hi" style="width:108px;margin-left:-54px;bottom:6px;height:4px;opacity:.5"></i>';
+  const T = $('sysTop'), B = $('sysBot');
+  T.style.height = (ios ? 59 : 24) + 'px'; B.style.height = (ios ? 34 : 16) + 'px';
+  T.innerHTML = ios ? iosBar : andBar;
+  B.innerHTML = home;
+  B.style.display = app ? '' : 'none';
+  $('broTop').innerHTML = ''; $('broBot').innerHTML = '';
+  if (app) return;
+  if (ios) {
+    /* Safari: статус-бар сверху (рисует sysTop), снизу — назад, адрес, «ещё» */
+    $('broBot').innerHTML = `<span class="rnd" style="left:16px">${i('<path d="M15 5l-7 7 7 7"/>')}</span>
+      <span class="pill" style="left:72px;right:72px;top:10px;height:48px;padding:0 16px;border-radius:24px">${i('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9h16"/>')}<span style="flex:1;text-align:center">${location.hostname || 'trenergram.ru'}</span></span>
+      <span class="rnd" style="right:16px">${i('<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>')}</span>
+      <i class="hi" style="position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:#141414"></i>`;
+  } else {
+    $('broTop').innerHTML = `<span class="pill" style="left:12px;right:56px;top:32px;height:42px;padding:0 14px;border-radius:21px;font-size:15px">${i('<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/>')}<span>${location.hostname || 'trenergram.ru'}</span></span>
+      <span style="position:absolute;right:14px;top:42px">${i('<circle cx="12" cy="6" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="18" r="1.3" fill="currentColor"/>')}</span>`;
+    $('broBot').innerHTML = '<i style="position:absolute;left:50%;bottom:6px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:#141414;opacity:.5"></i>';
+  }
+}
+
+/* Открыть экран и вид: загрузить страницу (если нужна другая) и выполнить шаги вида */
+function open(force) {
+  const v = views(st.id).find(x => x.id === st.v) || {};
+  const url = '../' + trUrl(st.id, v.id, st.p);
+  pend = v.act || null;
+  trMode(st.p, localStorage);
+  $('newtab').href = url.replace(/[?&]new=[^&#]*/, '').replace(/[?&]payout=[^&#]*/, '').replace(/^([^?]*)&/, '$1?');
+  let cur = '';
+  try { cur = fwin().location.href; } catch (e) {}
+  const abs = new URL(url, location.href).href;
+  if (!force && cur && cur.split('#')[0] === abs.split('#')[0] && cur.split('#')[1] === abs.split('#')[1] && !pend) return;
+  loadedUrl = abs;
+  if (cur && cur.split('#')[0] === abs.split('#')[0]) { fwin().location.replace(abs); fwin().location.reload(); }
+  else fr.src = url;
+}
+fr.addEventListener('load', async () => {
+  const w = fwin();
+  w.addEventListener('click', () => setTimeout(observe, 260), true);
+  w.addEventListener('keydown', e => { if (e.key === 'Escape') setTimeout(observe, 200); }, true);
+  if (pend) { const a = pend; pend = null; await new Promise(r => setTimeout(r, 450)); await trRun(w, a); }
+  observe(true);
+});
+
+/* Какой экран и вид сейчас во фрейме — после загрузки и после каждого клика
+   внутри телефона. Ушли по ссылке на другой экран — карта идёт следом. */
+function locate(w) {
+  let u; try { u = new URL(w.location.href); } catch (e) { return null; }
+  const file = u.pathname.split('/').pop() || 'index.html';
+  if (TR_SCREENS.more.m(u, w)) return 'more';
+  const cand = ids.filter(id => id !== 'more' && inFlow(id)).filter(id => {
+    const sc = TR_SCREENS[id];
+    if (sc.m) return sc.m(u, w);
+    let pg = sc.page; if (typeof pg === 'function') pg = pg(st.p, trToday());
+    const [path, hash] = pg.split('#');
+    return path.split('?')[0] === file && (!hash || u.hash === '#' + hash);
+  });
+  return cand.includes(st.id) ? st.id : cand[0] || null;
+}
+function observe(loaded) {
+  const w = fwin(); if (!w || !w.document || !w.document.body) return;
+  const id = locate(w); if (!id) return;
+  const was = st.id + ':' + st.v;
+  if (id !== st.id) { st.id = id; st.v = ''; }
+  const dv = trDetect(w, id, st.p);
+  if (dv) st.v = dv;
+  else if (!loaded) { const v = views(id).find(x => x.id === st.v); if (v && v.sel) st.v = views(id)[0].id; }
+  st.v = viewOk(id, st.v);
+  try { $('newtab').href = w.location.href.replace(/[?&]new=[^&#]*/, '').replace(/[?&]payout=[^&#]*/, '').replace(/^([^?#]*)&/, '$1?'); } catch (e) {}
+  if (was !== st.id + ':' + st.v) sync();
+}
+
+/* Телефон целиком помещается по высоте; на низком экране — уменьшаем */
+function fit() {
+  const d = dev(), ph = $('phone');
+  const W = d.w + d.pad * 2, H = d.h + d.pad * 2, area = $('area');
+  const s = Math.min(1, (area.clientHeight - 24) / H, (area.clientWidth - 32) / W);
+  ph.style.transform = `scale(${s})`;
+  $('wrap').style.width = W * s + 'px'; $('wrap').style.height = H * s + 'px';
+  $('scale').textContent = s < 1 ? Math.round(s * 100) + '%' : '';
+}
+addEventListener('resize', fit);
+
+/* ── справа: описание ── */
+const rich = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+const paras = a => (a || []).map(x => typeof x === 'string' ? `<p>${rich(x)}</p>`
+  : `<h4>${rich(x.h)}</h4><ul>${x.li.map(t => `<li>${rich(t)}</li>`).join('')}</ul>`).join('');
+const inbound = id => ids.flatMap(src => (TR_SCREENS[src].links || []).filter(l => l.to === id).map(l => ({ src, label: l.label })));
+function renderInfo() {
+  const sc = TR_SCREENS[st.id], vs = views(st.id);
+  const sect = (TR_MAP.find(f => f.items.includes(st.id)) || {}).flow || '';
+  let pg = sc.page; if (typeof pg === 'function') pg = pg(st.p, trToday());
+  const out = (sc.links || []);
+  const inb = inbound(st.id);
+  $('info').innerHTML = `
+    <div class="crumbs">${esc(sect)}<i>›</i>${esc(sc.code)}</div>
+    <div class="ttl"><span class="cd">${esc(sc.code)}</span><h1>${esc(sc.title)}</h1></div>
+    <div class="chips"><span class="chip"><i class="st ${sc.audit.st}"></i>${TR_AUDIT[sc.audit.st]}</span>
+      ${sc.phoneOnly ? '<span class="chip ph">Только телефон</span>' : ''}
+      <a class="chip pg" href="../${esc(pg.split('?')[0].split('#')[0])}" target="_blank" rel="noopener" title="Открыть на компьютере">${esc(pg.split('?')[0].split('#')[0])}</a></div>
+
+    ${vs.length > 1 ? `<h3>Варианты вида</h3><div class="views">${vs.map((x, k) => `
+      <button class="vbtn ${x.id === st.v ? 'on' : ''}" data-view="${x.id}"><span class="rd"></span>
+        <span><b>${esc(x.name)}</b><s>${esc(x.note || '')}</s></span>${k < 9 ? `<kbd>${k + 1}</kbd>` : ''}</button>`).join('')}</div>` : ''}
+
+    <h3>Адаптация</h3>
+    <ul class="aud">${sc.audit.items.map(([s, t]) => `<li class="${s}"><span class="mk">${MK[s]}</span><span>${rich(t)}</span></li>`).join('')}</ul>
+
+    <h3>Описание</h3>${paras(sc.desc)}
+    ${sc.phone && sc.phone.length ? `<h3>На телефоне</h3>${paras(sc.phone)}` : ''}
+
+    <h3>Переходы отсюда</h3>
+    ${out.length ? `<div class="lk">${out.map(l => { const t = TR_SCREENS[l.to];
+      return `<button data-to="${l.to}" class="${inFlow(l.to) ? '' : 'oth'}"><span class="lb">${esc(l.label)}</span>${ARR}<span class="to"><span class="cd">${esc(t.code)}</span>${esc(t.title)}</span></button>`; }).join('')}</div>`
+      : '<div class="empty">Только назад</div>'}
+
+    <h3>Сюда приходят</h3>
+    ${inb.length ? `<div class="lk">${inb.map(l => { const t = TR_SCREENS[l.src];
+      return `<button data-to="${l.src}" class="${inFlow(l.src) ? '' : 'oth'}"><span class="to"><span class="cd">${esc(t.code)}</span>${esc(t.title)}</span>${ARR}<span class="lb">${esc(l.label)}</span></button>`; }).join('')}</div>`
+      : '<div class="empty">Нижняя панель</div>'}
+
+    ${sc.reqs && sc.reqs.length ? `<h3>Требования</h3><div class="chips">${sc.reqs.map(r => `<a class="req" href="${DOCS}" target="_blank" rel="noopener">${esc(r)}</a>`).join('')}</div>` : ''}
+
+    <div class="keys"><kbd>↑</kbd> <kbd>↓</kbd> экраны · ${vs.length > 1 ? '<kbd>1</kbd>–<kbd>' + Math.min(9, vs.length) + '</kbd> или <kbd>←</kbd> <kbd>→</kbd> виды · ' : ''}<kbd>R</kbd> открыть заново</div>`;
+}
+
+function sync() { renderParams(); renderTree(); renderInfo(); writeHash(); }
+
+function pick(id, v) {
+  if (!inFlow(id)) return;
+  st.id = id; st.v = viewOk(id, v || '');
+  setNeed(); open(true); sync();
+}
+function setView(v) {
+  st.v = viewOk(st.id, v); setNeed(); open(true); sync();
+}
+/* Вид требует параметра (вывод средств) — включаем его */
+function setNeed() {
+  const v = views(st.id).find(x => x.id === st.v);
+  if (v && v.need) Object.assign(st.p, v.need);
+}
+function setParam(k, val) {
+  st.p[k] = val;
+  if (!inFlow(st.id)) st.id = 'dash';
+  st.v = viewOk(st.id, st.v);
+  open(true); sync();
+}
+
+/* ── события ── */
+$('params').addEventListener('click', e => { const b = e.target.closest('[data-prm]'); if (b) setParam(b.dataset.prm, b.dataset.val); });
+$('tree').addEventListener('click', e => {
+  const b = e.target.closest('.it'); if (b) return pick(b.dataset.id);
+  const t = e.target.closest('.tg');
+  if (t) { const g = t.parentElement; g.classList.toggle('col'); g.classList.contains('col') ? folded.add(g.dataset.c) : folded.delete(g.dataset.c); saveFold(); }
+});
+$('info').addEventListener('click', e => {
+  const v = e.target.closest('[data-view]'); if (v) return setView(v.dataset.view);
+  const t = e.target.closest('[data-to]'); if (t) return pick(t.dataset.to);
+});
+const keep = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+$('dev').addEventListener('click', e => { const b = e.target.closest('[data-dev]'); if (!b || b.dataset.dev === st.dev) return; st.dev = b.dataset.dev; keep('tr.dev', st.dev); frame(); open(true); });
+$('size').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (!b || b.dataset.size === st.size) return; st.size = b.dataset.size; keep('tr.size', st.size); frame(); open(true); });
+$('plat').addEventListener('click', e => { const b = e.target.closest('[data-plat]'); if (!b || b.dataset.plat === st.plat) return; st.plat = b.dataset.plat; keep('tr.plat', st.plat); frame(); open(true); });
+$('reload').addEventListener('click', () => open(true));
+
+addEventListener('keydown', e => {
+  if (e.target.closest?.('input,textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+  const rows = [...document.querySelectorAll('#tree .it')];
+  const i = rows.findIndex(r => r.dataset.id === st.id);
+  const vs = views(st.id), vi = vs.findIndex(x => x.id === st.v);
+  if (e.key === 'ArrowDown' && i < rows.length - 1) { pick(rows[i + 1].dataset.id); e.preventDefault(); }
+  else if (e.key === 'ArrowUp' && i > 0) { pick(rows[i - 1].dataset.id); e.preventDefault(); }
+  else if (e.key === 'ArrowRight' && vi > -1 && vi < vs.length - 1) setView(vs[vi + 1].id);
+  else if (e.key === 'ArrowLeft' && vi > 0) setView(vs[vi - 1].id);
+  else if (/^[1-9]$/.test(e.key) && vs[+e.key - 1]) setView(vs[+e.key - 1].id);
+  else if (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') open(true);
+});
+addEventListener('hashchange', () => { readHash(); open(true); sync(); });
+
+readHash();
+if (document.documentElement.classList.contains('tr-phone')) {
+  /* телефон: сразу страница экрана из адреса стенда, с параметрами сценария */
+  trMode(st.p, localStorage);
+  location.replace('../' + trUrl(st.id, st.v, st.p));
+} else {
+  frame();
+  open(true);
+  sync();
+}
+</script>
+</body>
+</html>
