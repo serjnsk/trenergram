@@ -392,12 +392,13 @@ function blockHTML(b, k){
     <div class="eb-h${solo() ? ' solo' : ''}">
       ${solo() ? '<span class="eb-t eb-solo">Состав блока</span><span class="eb-tyr">' + ty + '</span>' : `<span class="eb-no" aria-hidden="true">${k + 1}</span>
       <div class="eb-tt"><textarea class="eb-t" data-bt="${b.id}" rows="1" placeholder="${txt ? 'Блок текстом' : 'Блок ' + (k + 1)}" aria-label="Название блока ${k + 1}" enterkeyhint="done" autocomplete="off" ${ED.reorder ? 'disabled' : ''}>${h(b.title)}</textarea><span class="eb-tyr">${ty}</span>${fcap}</div>`}
+      ${txt && !ED.reorder && String(b.text || '').trim() ? `<button class="eb-ai" data-act="e-ai" data-b="${b.id}" aria-label="Разобрать на упражнения — ИИ">${IC.spark}<span>AI</span></button>` : ''}
       ${ED.reorder ? handle('b', b.id) : solo() ? '' : `<button class="nb" data-act="e-bmenu" data-b="${b.id}" aria-label="Действия с блоком ${h(b.title || 'Блок ' + (k + 1))}">${I.more}</button>`}
     </div>
     ${b.note && !ED.reorder ? `<button class="eb-n" data-act="e-note" data-b="${b.id}">${I.msg}<span>${h(b.note)}</span></button>` : ''}
     ${txt ? textBodyHTML(b) : `<div class="eb-items" data-items="${b.id}">${solo() && fcap ? fcap.replace('eb-fmt', 'er-fmt') : ''}
         ${itemsHTML(b)}</div>
-      ${ED.reorder ? '' : `<div class="qadd"><span class="qi">${I.plus}</span><input class="qa-in" data-qb="${b.id}" placeholder="Добавить упражнение" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" aria-label="Добавить упражнение в блок">
+      ${ED.reorder ? '' : `<div class="qadd"><span class="qi">${I.plus}</span><input class="qa-in" data-qb="${b.id}" placeholder="Добавить упражнение" enterkeyhint="enter" autocomplete="off" autocapitalize="sentences" aria-label="Добавить упражнение в блок">
         <button class="nb" data-act="e-add" data-b="${b.id}" aria-label="База упражнений — несколько сразу, сетом, связкой">${I.search}</button></div>
         <div class="qsug" data-sug="${b.id}"></div>`}`}
   </section>`;
@@ -446,7 +447,7 @@ function textBodyHTML(b){
   const body = t.trim() ? t.split('\n').map(l => LIST_RE.test(l) ? `<span class="li">${h(l.replace(LIST_RE, ''))}</span>` : `<span>${h(l) || '&nbsp;'}</span>`).join('')
     : '<span class="ph">Пусто — нажмите, чтобы написать</span>';
   return `<button class="eb-text" data-act="e-text" data-b="${b.id}" ${ED.reorder ? 'tabindex="-1"' : ''}>${body}</button>
-    ${ED.reorder || !t.trim() ? '' : `<button class="er-add ai" data-act="e-ai" data-b="${b.id}">${IC.spark}Разобрать на упражнения</button>`}`;
+`;
 }
 
 /* ═══════════ ЖИВЫЕ ЭЛЕМЕНТЫ: поля, смахивание, долгое нажатие, порядок ═══════════ */
@@ -487,16 +488,35 @@ function quickSug(bid, q){
 function bindQuick(inp){
   const bid = inp.dataset.qb, box = () => document.querySelector(`.qsug[data-sug="${bid}"]`);
   inp.addEventListener('input', () => { const b = box(); if(b) b.innerHTML = quickSug(bid, inp.value) });
-  inp.addEventListener('keydown', e => { if(e.key === 'Enter' && inp.value.trim()){ e.preventDefault(); quickAdd(bid, rawItem(inp.value.trim()), 'Строка добавлена текстом — клиент увидит как написано') } });
+  inp.addEventListener('keydown', e => { if(e.key !== 'Enter') return; e.preventDefault();
+    if(inp.value.trim()) quickAdd(bid, rawItem(inp.value.trim()), 'Строка добавлена текстом — клиент увидит как написано'); else inp.blur() });
+  /* подсказки (упражнение из базы, «Добавить текстом», ИИ) нажимаются, не забирая фокус у поля — клавиатура не закрывается */
+  const sb = box(); if(sb) sb.addEventListener('mousedown', e => { if(e.target.closest('.qs-r')) e.preventDefault() });
   inp.addEventListener('paste', e => { const t = (e.clipboardData || window.clipboardData).getData('text');
     if(!t || !/\n/.test(t.trim())) return; e.preventDefault();
     const b = blk(bid), k = ED.blocks.indexOf(b), tb = textBlock(t.trim(), ''); ED.blocks.splice(k + 1, 0, tb); draw();
-    setTimeout(() => scrollToBlock(tb.id), 30); say('Вставлено блоком текстом — «Разобрать на упражнения» под ним') });
+    setTimeout(() => scrollToBlock(tb.id), 30); say('Вставлено блоком текстом — разобрать на упражнения: значок AI справа вверху блока') });
 }
+/* Добавить строку из поля ввода блока. Поле и клавиатура остаются на месте (строки блока перерисовываются
+   отдельно от поля), курсор — в пустом поле для следующей строки: пишут строка за строкой, как в Заметках;
+   пустой «Ввод» — закончить. Подсказка про строку текстом — один раз, а не на каждой строке (15.11). */
 function quickAdd(bid, it, msg){
   const b = blk(bid); if(!b) return;
   b.items = (b.items || []).filter(x => x.ss || itemHas(x)); b.items.push(it); normSS(b);
-  ED.flash.add(it.id); ED.focusQ = bid; draw(); if(msg) say(msg);
+  ED.flash.add(it.id);
+  const scr = document.getElementById('edScr'), box = scr && scr.querySelector(`.eb-items[data-items="${bid}"]`),
+    inp = scr && scr.querySelector(`.qa-in[data-qb="${bid}"]`);
+  if(box && inp && !ED.reorder && !ED.sel){
+    const tmp = document.createElement('div'); tmp.innerHTML = blockHTML(b, ED.blocks.indexOf(b));
+    const nb = tmp.querySelector('.eb-items'); box.replaceWith(nb); nb.querySelectorAll('.er:not(.ssh)').forEach(bindRow);
+    inp.value = ''; const sg = scr.querySelector(`.qsug[data-sug="${bid}"]`); if(sg) sg.innerHTML = '';
+    const full = LAYER.querySelector('.full.ed'); full.querySelector('.ed-hd').innerHTML = headHTML();
+    const sub = scr.querySelector('.ed-sub'); if(sub && ED.tpl) sub.textContent = meta();
+    syncBar(); ED.flash.clear();
+    inp.focus({preventScroll:true}); inp.scrollIntoView({block:'nearest'});
+  } else { ED.focusQ = bid; draw() }
+  ED.said = ED.said || new Set();
+  if(msg && !ED.said.has(msg)){ ED.said.add(msg); say(msg) }
 }
 const quickText = bid => { const i = document.querySelector(`.qa-in[data-qb="${bid}"]`); return i ? i.value.trim() : '' };
 let SWOPEN = null, LPFIRED = false;
@@ -1064,7 +1084,8 @@ const acts = {
   'e-add': b => { closeSheet(true); sheetSearch({mode:'add', bid:b.dataset.b || null}) },
   'e-write': () => { const b = mkBlock(null, '', '', null, []); ED.blocks.push(b); draw();
     const inp = document.querySelector(`#edScr .qa-in[data-qb="${b.id}"]`); if(inp) inp.focus() },
-  'e-addblk': () => { const b = mkBlock(null, '', '', null, []); ED.blocks.push(b); draw(); scrollToBlock(b.id); sheetSearch({mode:'add', bid:b.id}) },
+  /* «+ Блок» — только новый блок (15.11: раньше сразу открывался поиск упражнения); упражнения — строкой ввода в нём */
+  'e-addblk': () => { const b = mkBlock(null, '', '', null, []); ED.blocks.push(b); ED.flash.add(b.id); draw(); scrollToBlock(b.id, true) },
   /* упражнение */
   'e-x-pre': b => { const ov = sheetOf(b), it = findIt(ov.dataset.id).it; it.scheme = b.dataset.v; rerenderEx(ov, it) },
   'e-x-unit': b => { const ov = sheetOf(b), it = findIt(ov.dataset.id).it, U = units(it), pc = U.cur === '%';
@@ -1178,7 +1199,7 @@ const acts = {
   'e-t-ai': b => { const ov = sheetOf(b), {b: x} = textTarget(ov); if(!x || !x.text.trim()){ say('Сначала напишите текст'); return }
     b.disabled = true; b.innerHTML = IC.spark + 'Разбираю…';
     setTimeout(() => { closeSheet(true); if(!aiParse(x)) draw() }, 700) },
-  'e-ai': b => { const x = blk(b.dataset.b); if(!x) return; b.disabled = true; b.innerHTML = IC.spark + 'Разбираю…'; setTimeout(() => { if(!aiParse(x)) draw() }, 700) },
+  'e-ai': b => { const x = blk(b.dataset.b); if(!x) return; b.disabled = true; b.classList.add('busy'); b.setAttribute('aria-label', 'Разбираю…'); setTimeout(() => { if(!aiParse(x)) draw() }, 700) },
   'e-ai-src': () => { const P = ED.pending; if(P) sheet({id:'aisrc', title:P.photo ? 'Фото' : 'Исходный текст', sub:P.photo ? 'Снимок и распознанный текст — клиент их не видит' : 'Как было написано до разбора',
     body:`<div class="sh-p">${P.photo ? `<img class="ai-photo" src="${P.photo}" alt="Фото тренировки">` : ''}<p class="ai-src">${h(P.text)}</p></div>`}) },
   /* Фото — только разбор ИИ (15.11.2026): снимок тетради, доски или скриншот распознаётся в текст

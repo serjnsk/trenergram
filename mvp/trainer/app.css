@@ -865,3 +865,12 @@ body:has(.full.ed.selm) .etoast{bottom:calc(78px + var(--sab))}
 .ed-selbar .btn:not(.s){flex:1;height:50px;border-radius:25px;gap:8px;justify-content:center}
 .ed-selbar .btn svg{width:20px;height:20px;flex:none}
 .selr.ssh .er-m{color:var(--tx2)}
+/* «Разобрать на упражнения» — значок AI справа сверху в блоке текстом, рядом с «•••» (15.11) */
+.eb-ai{position:relative;flex:none;display:inline-flex;align-items:center;gap:3px;height:30px;padding:0 10px 0 8px;border-radius:15px;font-size:13px;font-weight:700;color:var(--tx);
+  border:1.5px solid transparent;background:linear-gradient(var(--bg),var(--bg)) padding-box,linear-gradient(120deg,#7B61FF,#2EC5FF,#FFB020,#FC5200) border-box}
+.eb-ai svg{width:15px;height:15px;color:var(--acc-t)}
+.eb-ai::after{content:"";position:absolute;inset:-7px -4px}
+.eb-ai.busy{opacity:.6}
+.eb-ai.busy svg{animation:aispin 1s linear infinite}
+@keyframes aispin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.eb-ai.busy svg{animation:none}}
