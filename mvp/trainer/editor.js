@@ -444,13 +444,15 @@ function rowHTML(it){
     <button class="er-m" data-act="e-item" data-id="${it.id}" ${ED.reorder ? 'tabindex="-1"' : ''} aria-label="${h(it.chain ? 'Связка: ' + chainNames(it) : exName(it) || 'Строка')}"><span class="xl">${lineHTML(it)}</span></button>
     ${ED.reorder ? handle('it', it.id) : ''}</div>`;
 }
+/* подсказка пустого блока текстом — как в кабинете (TEXT_PH, trainer.js), с примером */
+const TXT_PH = 'Пишите как в заметках — блок сохранится текстом, клиент увидит его как есть.\nРазобрать на упражнения — кнопка AI.\n\nAMRAP 12:\n• трастеры 10 × 40 кг\n• подтягивания 8\n• гребля 250 м';
 function textBodyHTML(b){
   const t = String(b.text || '');
   const body = t.trim() ? t.split('\n').map(l => LIST_RE.test(l) ? `<span class="li">${h(l.replace(LIST_RE, ''))}</span>` : `<span>${h(l) || '&nbsp;'}</span>`).join('')
     : '<span class="ph">Пусто — нажмите, чтобы написать</span>';
   /* 15.11: текст пишут прямо в блоке, как в заметках (раньше — шторкой); body — вид для порядка и выбора строк */
   if(ED.reorder || ED.sel) return `<div class="eb-text">${body}</div>`;
-  return `<textarea class="eb-ta" data-tb="${b.id}" rows="2" placeholder="Пишите как в заметках — каждое упражнение с новой строки" aria-label="Текст блока" autocapitalize="sentences">${h(t)}</textarea>`;
+  return `<textarea class="eb-ta" data-tb="${b.id}" rows="2" placeholder="${h(TXT_PH)}" aria-label="Текст блока" autocapitalize="sentences">${h(t)}</textarea>`;
 }
 
 /* ═══════════ ЖИВЫЕ ЭЛЕМЕНТЫ: поля, смахивание, долгое нажатие, порядок ═══════════ */

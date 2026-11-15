@@ -882,6 +882,7 @@ body:has(.full.ed.selm) .etoast{bottom:calc(78px + var(--sab))}
 .eb-tg.on{color:var(--acc-t);background:var(--acc-a);border-radius:10px}
 .eb-ai:disabled{opacity:.4}
 .eb-ta{display:block;width:100%;min-height:66px;margin:0;padding:10px 16px 12px;border:0;outline:0;resize:none;overflow:hidden;background:none;font:inherit;font-size:16px;line-height:22px;color:var(--tx)}
-.eb-ta::placeholder{color:var(--tx2)}
+.eb-ta::placeholder{color:var(--tx3)}
 .full.ed.dirty:has(.eb-ta:focus) .ed-save{visibility:hidden;transform:translateY(100%);opacity:0}
 .full.ed.dirty:has(.eb-ta:focus) .ed-scr{padding-bottom:calc(24px + var(--sab))}
+.eb-ta:placeholder-shown{min-height:178px}   /* подсказка с примером видна целиком (15.11) */
