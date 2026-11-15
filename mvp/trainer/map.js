@@ -193,7 +193,7 @@ const TR_SCREENS = {
       { id: 'search', name: 'Добавить упражнения', note: 'Поиск, недавние, несколько сразу', act: [['click', '[data-act="e-add"]']], sel: '.ov[data-sheet="search"]' },
       { id: 'type', name: 'Тип блока', note: 'Настройка комплекса: AMRAP, EMOM…', act: [['js', "([...document.querySelectorAll('[data-act=\"e-type\"]')].find(b => /Комплекс/.test(b.textContent)) || document.querySelector('[data-act=\"e-type\"]')).click()"]], sel: '.ov[data-sheet="type"]' },
       { id: 'chain', name: 'Связка', note: 'Повторы частей, подходы, нагрузка', act: [['click', '.er.chn .er-m']], sel: '.ov[data-sheet="chain"]' },
-      { id: 'text', name: 'Блок текстом', note: 'Как в заметках, разбор ИИ', act: [['click', '.eb-text']], sel: '.ov[data-sheet="text"]' },
+      { id: 'text', name: 'Блок текстом', note: '«T» в шапке блока: строки ↔ текст, пишут прямо в блоке; AI — разбор', act: [['click', '.eb .eb-tg']], sel: '.eb-ta' },
       { id: 'swipe', name: 'Смахнуть строку', note: '«Удалить» — то же есть в шторке строки', act: [['js', "document.querySelector('.er.ex').classList.add('open')"]], sel: '.er.open' },
       { id: 'dmenu', name: 'Меню тренировки', note: 'Сообщение, соревнование, в базу, порядок', act: [['click', '[data-act="e-dmenu"]']], sel: '.ov[data-sheet="dmenu"]' },
       { id: 'reorder', name: 'Изменить порядок', note: 'Перетаскивание за ≡', act: [['click', '[data-act="e-dmenu"]'], ['wait', 300], ['click', '.ov [data-act="e-reorder"]']], sel: '.full.ed.reorder' },

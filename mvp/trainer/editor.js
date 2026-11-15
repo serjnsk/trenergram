@@ -48,6 +48,7 @@ const IC = {
   ungroup: sv('<path d="M4 7h7M4 12h7M4 17h7M15 9l4 3-4 3"/>'),
   undo: sv('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>'),
   pen: sv('<path d="M15 4.5 19.5 9 9 19.5H4.5V15z"/><path d="M12.5 7l4.5 4.5"/>'),
+  tglyph: sv('<path d="M5.5 7V5h13v2M12 5v14M9 19h6"/>'),
   cam: sv('<path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/>')
 };
 
@@ -392,7 +393,8 @@ function blockHTML(b, k){
     <div class="eb-h${solo() ? ' solo' : ''}">
       ${solo() ? '<span class="eb-t eb-solo">Состав блока</span><span class="eb-tyr">' + ty + '</span>' : `<span class="eb-no" aria-hidden="true">${k + 1}</span>
       <div class="eb-tt"><textarea class="eb-t" data-bt="${b.id}" rows="1" placeholder="${txt ? 'Блок текстом' : 'Блок ' + (k + 1)}" aria-label="Название блока ${k + 1}" enterkeyhint="done" autocomplete="off" ${ED.reorder ? 'disabled' : ''}>${h(b.title)}</textarea><span class="eb-tyr">${ty}</span>${fcap}</div>`}
-      ${txt && !ED.reorder && String(b.text || '').trim() ? `<button class="eb-ai" data-act="e-ai" data-b="${b.id}" aria-label="Разобрать на упражнения — ИИ">${IC.spark}<span>AI</span></button>` : ''}
+      ${txt && !ED.reorder ? `<button class="eb-ai" data-act="e-ai" data-b="${b.id}" aria-label="Разобрать на упражнения — ИИ" ${String(b.text || '').trim() ? '' : 'disabled'}>${IC.spark}<span>AI</span></button>` : ''}
+      ${ED.reorder ? '' : `<button class="nb eb-tg${txt ? ' on' : ''}" data-act="e-btoggle" data-b="${b.id}" aria-pressed="${txt}" aria-label="${txt ? 'Блок текстом — вернуть строками' : 'Писать блок текстом'}">${IC.tglyph}</button>`}
       ${ED.reorder ? handle('b', b.id) : solo() ? '' : `<button class="nb" data-act="e-bmenu" data-b="${b.id}" aria-label="Действия с блоком ${h(b.title || 'Блок ' + (k + 1))}">${I.more}</button>`}
     </div>
     ${b.note && !ED.reorder ? `<button class="eb-n" data-act="e-note" data-b="${b.id}">${I.msg}<span>${h(b.note)}</span></button>` : ''}
@@ -446,8 +448,9 @@ function textBodyHTML(b){
   const t = String(b.text || '');
   const body = t.trim() ? t.split('\n').map(l => LIST_RE.test(l) ? `<span class="li">${h(l.replace(LIST_RE, ''))}</span>` : `<span>${h(l) || '&nbsp;'}</span>`).join('')
     : '<span class="ph">Пусто — нажмите, чтобы написать</span>';
-  return `<button class="eb-text" data-act="e-text" data-b="${b.id}" ${ED.reorder ? 'tabindex="-1"' : ''}>${body}</button>
-`;
+  /* 15.11: текст пишут прямо в блоке, как в заметках (раньше — шторкой); body — вид для порядка и выбора строк */
+  if(ED.reorder || ED.sel) return `<div class="eb-text">${body}</div>`;
+  return `<textarea class="eb-ta" data-tb="${b.id}" rows="2" placeholder="Пишите как в заметках — каждое упражнение с новой строки" aria-label="Текст блока" autocapitalize="sentences">${h(t)}</textarea>`;
 }
 
 /* ═══════════ ЖИВЫЕ ЭЛЕМЕНТЫ: поля, смахивание, долгое нажатие, порядок ═══════════ */
@@ -468,6 +471,19 @@ function bind(scr){
     i.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); i.blur() } });
     fit(); requestAnimationFrame(fit);
   });
+  scr.querySelectorAll('.eb-ta').forEach(ta => {
+    const fit = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px' };
+    ta.addEventListener('input', () => { const x = blk(ta.dataset.tb); if(!x) return; x.text = ta.value; fit(); syncBar();
+      const ai = ta.closest('.eb') && ta.closest('.eb').querySelector('.eb-ai'); if(ai) ai.disabled = !ta.value.trim() });
+    ta.addEventListener('keydown', e => { if(e.key !== 'Enter') return;      /* Enter в пункте списка — новый пункт; пустой пункт — конец списка */
+      const s = ta.selectionStart, ls = ta.value.lastIndexOf('\n', s - 1) + 1, line = ta.value.slice(ls, s);
+      if(!LIST_RE.test(line)) return; e.preventDefault();
+      if(!line.replace(LIST_RE, '').trim()) ta.setRangeText('', ls, s, 'end'); else ta.setRangeText('\n• ', s, ta.selectionEnd, 'end');
+      ta.dispatchEvent(new Event('input')) });
+    fit(); requestAnimationFrame(fit);
+  });
+  if(ED.focusTA){ const t = scr.querySelector(`.eb-ta[data-tb="${ED.focusTA}"]`); ED.focusTA = null;
+    if(t){ t.focus({preventScroll:true}); t.setSelectionRange(t.value.length, t.value.length); t.scrollIntoView({block:'center'}) } }
   if(ED.reorder){ scr.querySelectorAll('.hd').forEach(d => d.addEventListener('pointerdown', dragStart)); return }
   if(ED.sel) return;
   scr.querySelectorAll('.er:not(.ssh)').forEach(bindRow);
@@ -507,13 +523,15 @@ function quickAdd(bid, it, msg){
   const scr = document.getElementById('edScr'), box = scr && scr.querySelector(`.eb-items[data-items="${bid}"]`),
     inp = scr && scr.querySelector(`.qa-in[data-qb="${bid}"]`);
   if(box && inp && !ED.reorder && !ED.sel){
+    const y0 = inp.getBoundingClientRect().top;
     const tmp = document.createElement('div'); tmp.innerHTML = blockHTML(b, ED.blocks.indexOf(b));
     const nb = tmp.querySelector('.eb-items'); box.replaceWith(nb); nb.querySelectorAll('.er:not(.ssh)').forEach(bindRow);
+    scr.scrollTop += inp.getBoundingClientRect().top - y0;   /* поле остаётся на месте экрана — новая строка встаёт над ним */
     inp.value = ''; const sg = scr.querySelector(`.qsug[data-sug="${bid}"]`); if(sg) sg.innerHTML = '';
     const full = LAYER.querySelector('.full.ed'); full.querySelector('.ed-hd').innerHTML = headHTML();
     const sub = scr.querySelector('.ed-sub'); if(sub && ED.tpl) sub.textContent = meta();
     syncBar(); ED.flash.clear();
-    inp.focus({preventScroll:true}); inp.scrollIntoView({block:'nearest'});
+    inp.focus({preventScroll:true});
   } else { ED.focusQ = bid; draw() }
   ED.said = ED.said || new Set();
   if(msg && !ED.said.has(msg)){ ED.said.add(msg); say(msg) }
@@ -1165,6 +1183,19 @@ const acts = {
   'e-bsave': b => { const x = blk(b.dataset.b); if(!x) return; const guess = TYPE_FOLDER[x.kind] || 'Разминки';
     sheet({id:'folder', title:'Сохранить в базу блоков', sub:'Папка', body:`<div class="ed-opts">${TPL_FOLDERS.map(f => `<button class="opt${f === guess ? ' on' : ''}" data-act="e-bsave-to" data-b="${x.id}" data-f="${h(f)}"><span class="box rnd">${I.check}</span>${h(f)}${f === guess ? '<span class="n">подходит</span>' : ''}</button>`).join('')}</div>`}) },
   'e-bsave-to': b => { const x = blk(b.dataset.b); if(!x) return; blockToTpl(x, b.dataset.f); closeSheet(); say('Блок «' + (x.title || 'без названия') + '» — в папке «' + b.dataset.f + '»') },
+  /* «Текст» в шапке блока (15.11): строки ↔ текст, как в заметках. В текст — строки блока как их видит клиент;
+     обратно — если текст не меняли, возвращаются прежние строки (упражнения из базы, схемы, сеты),
+     иначе каждая строка текста — строкой текстом: упражнение выбирают нажатием на неё или разбирают ИИ */
+  'e-btoggle': b => { const x = blk(b.dataset.b); if(!x) return; const snap = JSON.stringify(x);
+    const undo = () => { Object.keys(x).forEach(k => delete x[k]); Object.assign(x, JSON.parse(snap)); draw() };
+    if(isTextBlock(x)){
+      const back = x._from && x._from.text === x.text ? JSON.parse(x._from.items) : textLines(x.text).map(l => rawItem(l.replace(LIST_RE, '')));
+      delete x.text; delete x._from; x.items = back; normSS(x); ED.focusQ = back.length ? null : x.id; draw();
+      undoToast('Блок строками — упражнения из базы или текстом', undo);
+    } else {
+      x.text = blockToText(x); x._from = {items: JSON.stringify(x.items || []), text: x.text}; x.items = [];
+      ED.focusTA = x.id; draw(); undoToast('Блок текстом — пишите как в заметках', undo);
+    } },
   'e-btext': b => { const x = blk(b.dataset.b); if(!x) return; const snap = JSON.stringify(x), k = ED.blocks.indexOf(x);
     const tb = Object.assign(textBlock(blockToText(x), x.title), {kind:x.kind, note:x.note}); ED.blocks.splice(k, 1, tb); closeSheet(); draw();
     undoToast('Блок переведён в текст', () => { ED.blocks.splice(ED.blocks.indexOf(tb), 1, JSON.parse(snap)); draw() }) },
