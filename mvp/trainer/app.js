@@ -865,7 +865,7 @@ function scrStub(k){
 function openFull(r){
   const [kind, id, d] = [r.name, r.args[0], r.args[1]];
   const w = who(id); if(!w){ go('#/today'); return }
-  const wiz = d === 'wizard', date = wiz ? TODAY : (d || TODAY);
+  const wiz = d === 'wizard', date = wiz ? TODAY : (d || (kind === 'edit' ? nextFree(id) : TODAY));   /* #/edit/<кто>/ без даты — первый свободный день, как «Создать тренировку» в кабинете */
   /* день — новый редактор приложения (editor.js); мастер копирования пока страница кабинета */
   if(kind === 'edit' && !wiz && window.TED){ window.TED.open(w, date, LAYER); return }
   const src = kind === 'edit' ? `../constructor.html?${subjQ(w.id)}&date=${date}${wiz ? '&wizard=1' : ''}`

@@ -10,6 +10,48 @@
    Ширину не проверяем: панель и шторка живут в DOM всегда, на десктопе их
    скрывает CSS. Так поворот экрана и ресайз ничего не перерисовывают.
    ============================================================ */
+/* ═══ Телефон: мобильная версия кабинета = тренерское приложение (16.11.2026, решение пользователя) ═══
+   На экране до 760 px страница кабинета сразу открывает тот же экран trainer/app.html: код один —
+   логика одна, правка в приложении сразу и «в мобильном кабинете». Десктоп не меняется.
+   Не переводим: фреймы (приложение само показывает во фрейме просмотр тренировки и мастер копирования,
+   стенд — страницы кабинета), страницы вне корня (стенд trainer/, клиент, админка), мастер (?wizard=1),
+   переходы «Добавить клиенту» (?addtpl= / ?addex=) и принудительный кабинет (?cabinet=1). */
+(function(){
+  if(!matchMedia('(max-width:760px)').matches) return;
+  try{ if(window.top !== window) return }catch(_){ return }
+  const parts = location.pathname.split('/'), file = parts.pop() || 'index.html', dir = parts.pop() || '';
+  if(['trainer', 'client', 'admin', 'brand', 'landing'].includes(dir)) return;
+  const q = new URLSearchParams(location.search);
+  if(q.get('cabinet') || q.get('wizard') || q.get('addtpl') || q.get('addex')) return;
+  const id = q.get('id'), who = q.get('group') || q.get('client'), d = q.get('date') || '', tpl = q.get('tpl');
+  const go = hash => location.replace('trainer/app.html' + hash);
+  if(file === 'constructor.html' && tpl){
+    /* шаблон из баз: блок или тренировка — уровень знает data.js, он загрузится к концу страницы */
+    if(tpl === 'new') return go(q.get('lvl') === 'block' ? '#/more/blocks' : '#/more/workouts');
+    return document.addEventListener('DOMContentLoaded', () => {
+      const t = typeof tplById === 'function' ? tplById(tpl) : null;
+      go('#/more/' + (t && t.lvl === 'блок' ? 'blocks' : 'workouts') + (t ? '/' + tpl : ''));
+    });
+  }
+  const MAP = {
+    'index.html': '#/today',
+    'calendar.html': '#/calendar' + (who ? '/' + who : ''),
+    'clients.html': '#/clients',
+    'groups.html': '#/clients/groups',
+    'client.html': id ? (/^grp/.test(id) ? '#/group/' : '#/client/') + id : '#/clients',
+    'constructor.html': who ? '#/edit/' + who + '/' + d : '#/today',      /* без даты — первый свободный день (app.js) */
+    'workout.html': who && d ? '#/workout/' + who + '/' + d : '#/today',
+    'exercises.html': '#/more/ex',
+    'exercise.html': id ? '#/more/ex/' + id : '#/more/ex',
+    'blocks.html': '#/more/blocks',
+    'workouts.html': '#/more/workouts',
+    'programs.html': '#/more/programs',
+    'program.html': id ? '#/more/programs/' + id : '#/more/programs',
+    'profile.html': location.hash === '#billing' ? '#/more/sub' : location.hash === '#partner' ? '#/more/partner' : '#/profile'
+  };
+  if(MAP[file]) go(MAP[file]);
+})();
+
 (function(){
   const MQ = matchMedia('(max-width:760px)');
 
