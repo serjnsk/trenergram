@@ -852,6 +852,22 @@ html.inapp .wvdoc .doch .dst{display:none}
    календаря в шапке приложения */
 html.inapp .wvdoc .doch{align-items:center;flex-wrap:nowrap;padding:4px 16px}
 html.inapp .wvdoc .doch .dtt{order:0;flex:1 1 auto;min-width:0;line-height:24px;padding:10px 0}
+/* ─── шапки просмотра по HIG (15.11.2026), как в правке (trainer/app.css → «Шапки правки по HIG»):
+   без белой подложки дня и оранжевой плашки; название — Title 1 (28/34) на фоне экрана, блоки — белые
+   карточки, шапка блока без серой заливки, под ней тонкая линия с отступом; поля 16 pt ─── */
+html.inapp .page{background:#F2F2F2}
+html.inapp .wvdoc{margin:0 -8px !important}   /* .pagewrap даёт 8 — карточки встают на 16 от края, как в правке */
+html.inapp .wvdoc{padding:0 16px 24px;background:none;border:0;border-radius:0;box-shadow:none}
+html.inapp .wvdoc .doch{margin:8px 0 0;padding:0;background:none;border:0}   /* +8 от .pagewrap = 16, как в правке */
+html.inapp .wvdoc .doch .dtt{font-size:28px;line-height:34px;font-weight:700;letter-spacing:.014em;white-space:normal;overflow:visible;padding:4px 0}
+html.inapp .wv{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+html.inapp .wb{border:0;border-radius:16px}
+html.inapp .wbh{position:relative;background:var(--bg);min-height:56px;padding:8px 8px 8px 12px}
+html.inapp .wb[open] > .wbh{border-bottom:0}
+html.inapp .wb[open] > .wbh::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:.5px;background:var(--line)}
+html.inapp .wbh .t1{font-size:17px;line-height:22px;font-weight:600;letter-spacing:-.026em}
+html.inapp .wbh .t3{font-size:15px;line-height:20px;letter-spacing:-.016em}
+html.inapp .wbb{padding:4px 16px 12px}
 html.inapp,html.inapp body{scrollbar-width:none}
 html.inapp::-webkit-scrollbar{display:none}
 

@@ -834,3 +834,24 @@ button.ac-r:active,a.ac-r:active{background:var(--s1)}
 body:has(.full.ed.selm) .etoast{bottom:calc(78px + var(--sab))}
 .selm .ed-top .gear{visibility:hidden}
 .ai-photo{display:block;max-width:100%;max-height:50vh;margin:0 auto 12px;border-radius:12px;object-fit:contain;background:var(--s1)}
+
+/* ═══ Шапки правки по HIG (15.11.2026, просмотр — так же: mobile.css, html.inapp) ═══
+   Было: светло-оранжевая плашка названия и серая шапка блока (#F7F7F8) на сером фоне —
+   четыре почти одинаковых слоя (контраст между ними 1.01–1.12), край карточки пропадал,
+   а оранжевым красилось неинтерактивное. Теперь два слоя, как сгруппированный список iOS:
+   фон экрана и белые карточки. Название — Title 1 (28/34, жирный) прямо на фоне, шестерёнка
+   справа; шапка блока — первая строка белой карточки без заливки: название — Headline
+   (17/22, полужирный), тип — Subhead (15/20) серым; под шапкой — тонкая линия с отступом.
+   Оранжевый остаётся только у того, что нажимается. Поля — 16 pt, как в iOS. */
+.ed-top{margin:16px 16px 0;padding:0;border-radius:0;background:none}
+.ed-title{font-size:28px;line-height:34px;font-weight:700;letter-spacing:.014em;padding:4px 0}
+.ed-tr > .nb{margin:-1px -10px 0 0}
+.ed-sub{margin:4px 0 0}
+.ed-st,.ed-start{margin:12px 16px 0}
+.ed-blocks{padding:0 16px}
+.eb-h{position:relative;background:none;border-bottom:0;min-height:56px;padding:6px 4px 6px 12px}
+.eb-h::after{content:"";position:absolute;left:16px;right:0;bottom:0;height:.5px;background:var(--line)}
+.eb-h.solo::after{content:none}
+.eb-t{font-size:17px;line-height:22px;font-weight:600;letter-spacing:-.026em}
+.eb-ty{font-size:15px;line-height:20px;letter-spacing:-.016em}
+.eb-ty svg{width:15px;height:15px}
