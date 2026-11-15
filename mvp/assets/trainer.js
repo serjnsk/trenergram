@@ -105,7 +105,7 @@ let TDAYS = null, TSIG = null, TFOLDER = null;
 /* Открыть можно и группу (?group=): у неё свой контейнер дней, и конструктор
    работает с ним так же, как с календарём клиента (GRP-2). */
 const S = { cid: Q.get('group') || Q.get('client') || 'c1', pid:'p1', i:0, date: Q.get('date') || TODAY,
-            tab:'ex', q:'', src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
+            tab: !TQ && ['wk','blk','ex'].includes(STATE.railTab) ? STATE.railTab : 'ex', q:'', src: STATE.railSrc === 'tpl' ? 'tpl' : 'cal',
             tplSaved:{}  /* дата → слепок тренировки, сохранённой в базу: пока не изменилась, закладка активна */ };
 /* Два вида конструктора. По умолчанию — «быстрый старт» (QUICK): одно поле
    с курсором — печатают упражнение или вставляют текст; копирование — из
@@ -249,18 +249,19 @@ const aiBtn = (attr, id, title, sm, dim) =>
 
 function renderTop(){
   if(TPLM){
-    $('#topbar').innerHTML = `<h1 class="ptitle">${TMISS ? 'Шаблон' : TPLM === 'блок' ? (TT ? 'Блок' : 'Новый блок') : (TT ? 'Тренировка' : 'Новая тренировка')}</h1><span class="sp"></span>${topButton()}`;
-    bindTopButton(); return;
+    $('#topbar').innerHTML = `<h1 class="ptitle">${TMISS ? 'Шаблон' : TPLM === 'блок' ? (TT ? 'Блок' : 'Новый блок') : (TT ? 'Тренировка' : 'Новая тренировка')}</h1><span class="sp"></span>`;
+    return;
   }
-  /* Шапка одинакова на всех страницах и несёт только главное действие.
-     Крошки, выбор клиента и «Назначить» переехали в рабочую зону — они
-     относятся к тренировке, а не к приложению. */
+  /* Шапка дня — кто и когда одной строкой: «Артём Ковалёв ▾ · Вторник, 24 ноября ▾».
+     Экран один и для новой тренировки, и для правки, поэтому слова «Создать» и
+     оранжевой «Создать тренировку» здесь нет: другого клиента и другой день
+     выбирают в самой шапке (решение 15.11.2026, как в приложении). */
   $('#topbar').innerHTML = `
-    <h1 class="ptitle">${SUBRO ? 'Тренировка' : 'Создать тренировку'}<button class="ptd" id="ptd" title="Выбрать дату тренировки"></button></h1>
-    <span class="sp"></span>
-    ${topButton()}`;
-  bindTopButton();
+    <h1 class="ptitle pday"><button class="pwho" id="cli" title="Сменить клиента или группу"></button><button class="ptd" id="ptd" title="Выбрать дату тренировки"></button></h1>
+    <span class="sp"></span>`;
 }
+/* Кнопка клиента в шапке: аватар, имя, ▾ — перерисовывается вместе с датой (render). */
+const pwhoHTML = w => `<span class="cav${isGrp(w.id) ? ' grp' : ''}">${esc(w.ini)}</span><span class="nm">${esc(w.n)}</span>${ICON.chev}`;
 
 
 
@@ -333,7 +334,7 @@ function renderTplHead(){
         <div class="esub">${own ? '<span class="chip ok">своё</span>' : '<span class="chip ghost">общая база</span>'}${isB && b && b.kind ? `<span>${esc(blockTypeLabel(b))}</span>` : ''}<span>${isB ? '' : nb + ' ' + plural(nb, 'блок', 'блока', 'блоков') + ' · '}${n} ${plural(n, 'упражнение', 'упражнения', 'упражнений')}</span></div>
       </div>
       <div class="eacts">
-        ${TT ? `<a class="btn" href="constructor.html?addtpl=${TT.id}">${ICON.build} В тренировку</a>` : ''}
+        ${TT ? `<button class="btn" id="t-to">${isB ? ICON.build + ' В тренировку' : ICON.plus + ' Добавить клиенту'}</button>` : ''}
         ${TT && own ? `<button class="btn gh" id="t-dup">${ICON.copy} Дублировать</button><button class="btn gh" id="t-del">Удалить</button>` : ''}
         ${TT && !own ? `<button class="btn" id="t-own">Сохранить как своё</button>` : ''}
       </div>
@@ -362,9 +363,11 @@ function renderStrip(){
     const date = addDays(wk0, k), i = daysBetween(p.start, date);
     return {date, i, inPlan: i>=0 && i<d.length, inProg: i>=0};
   });
+  /* Клиент — в шапке страницы (renderTop). В быстром старте ленты дней нет,
+     и карточка над тренировкой не нужна вовсе. */
+  $('#wk').hidden = QUICK;
   $('#wk').innerHTML = `
     <div class="wkh one">
-      <button class="cliSel" id="cli" title="Сменить клиента или группу">${whoBtnHTML(who(S.cid))}${ICON.chev}</button>
       <div class="dates">${laneHid() ? '' : `
         <span class="wkn">
           <button id="dayPrev" title="Неделей раньше" ${cells[0].i<1?'disabled':''}>${ICON.back}</button>
@@ -468,8 +471,8 @@ function chainLineHTML(it){
   const parts = ps.map((p, k) => `${k ? '<span class="cplus">+</span>' : ''}<span class="cp${p.exId ? '' : ' raw'}" data-part="${p.id}">
       <span class="cpn">${esc(partName(p))}</span>${repsHTML(p)}
       <button class="cpx" data-delpart="${p.id}" tabindex="-1" title="Убрать из связки">${ICON.x}</button></span>`).join('');
-  return `<div class="line chain${ps.length ? '' : ' empty'}" data-item="${it.id}">
-    <span class="gr" title="Перетащить связку">${ICON.grip}</span>
+  return `<div class="line chain${ps.length ? '' : ' empty'}${lselOn(it)}" data-item="${it.id}">
+    ${lboxHTML(ps.length ? it : null)}<span class="gr" title="Перетащить связку">${ICON.grip}</span>
     <span class="chl">Связка</span>
     <span class="cps">${parts}<span class="caddw">${ps.length ? '<span class="cplus">+</span>' : ''}<span class="cadd" contenteditable data-edit="${it.id}" spellcheck="false" data-ph="${ps.length ? 'упражнение' : 'первое упражнение связки'}"></span></span>${ps.length ? chainPrmHTML(it) : ''}</span>
     ${QUICK && !ps.length ? kindHTML(it, 'ch') : ''}
@@ -483,10 +486,10 @@ function lineHTML(it){
      написал, так её и увидит клиент (CON-5). Сама строка не разбирается
      никогда. Путей в структуру два, оба по просьбе тренера: кнопка AI в углу
      строки и ручной выбор из базы. */
-  if(!ex) return `<div class="line raw" data-item="${it.id}">
-    <span class="gr">${ICON.grip}</span>
+  if(!ex) return `<div class="line raw${lselOn(it)}" data-item="${it.id}">
+    ${lboxHTML(String(it.raw||'').trim() ? it : null)}<span class="gr">${ICON.grip}</span>
     <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"${QUICK ? ` data-ph="${it.sub ? 'упражнение сета' : 'упражнение'}"` : ''}>${esc(it.raw||'')}</span>
-    ${QUICK && !String(it.raw||'').trim() ? kindHTML(it, 'ex') : ''}
+    ${!QUICK && !String(it.raw||'').trim() ? kindHTML(it, 'ex') : ''}
     ${String(it.raw||'').trim() ? `<button class="pick" data-pickfor="${it.id}" tabindex="-1">Выбрать упражнение</button>
     ${aiBtn('ailine', it.id, 'Разобрать строку: ИИ найдёт упражнение в базе, схему и нагрузку', true)}` : ''}
     <button class="x" data-del="${it.id}" tabindex="-1">${ICON.x}</button>
@@ -494,8 +497,8 @@ function lineHTML(it){
   /* Схема и нагрузка — поля сразу за названием, без отдельной панели: их
      видно и в них печатают сразу. Колонка полей выровнена внутри блока по
      самому длинному названию (alignNames). */
-  return `<div class="line ${it.txt ? 'txtmode' : ''}" data-item="${it.id}">
-    <span class="gr">${ICON.grip}</span>
+  return `<div class="line ${it.txt ? 'txtmode' : ''}${lselOn(it)}" data-item="${it.id}">
+    ${lboxHTML(it)}<span class="gr">${ICON.grip}</span>
     <span class="txt" contenteditable data-edit="${it.id}" spellcheck="false"><span class="nm">${esc(ex.ru)}</span></span>
     <span class="prm">
       ${prmHTML(it, it.sub ? 'повт' : '3×10')}
@@ -521,7 +524,7 @@ function ssHTML(h, mem){
   const r = Math.max(1, +h.rounds || 1);
   return `<div class="ssg" data-ss="${h.id}">
     <div class="line ssh" data-item="${h.id}">
-      <span class="gr" title="Перетащить сет">${ICON.grip}</span>
+      ${lboxHTML(null)}<span class="gr" title="Перетащить сет">${ICON.grip}</span>
       <span class="nm ssb">Сет</span>
       <label class="ssf"><input class="ssn" data-ssf="rounds" data-ss-id="${h.id}" value="${r}" inputmode="numeric" maxlength="2"><s data-ss-rl="${h.id}">${plural(r,'круг','круга','кругов')}</s></label>
       <label class="ssf"><s>отдых</s><input class="ssrest" data-ssf="rest" data-ss-id="${h.id}" value="${esc(h.rest||'')}" placeholder="без отдыха"></label>
@@ -597,11 +600,30 @@ function renderFresh(d){
     </div>
     ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
     <div class="blk qblk" data-blk="${b.id}">${itemsHTML(b)}</div>
-    <div class="addbrow">
-      <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>
+    <div class="addbrow"><button class="addb photo" data-photo="1" title="${esc(PHOTO_TIP)}">${CAM_ICON} Фото <s>— ИИ разберёт на упражнения</s></button></div>
+    <div class="fs-cap">Или начните с готового</div>
+    <div class="fstart" role="group" aria-label="Или начните с готового">
+      <button class="fs" data-start="cal"><span class="ic">${ICON.cal}</span><span class="t"><b>Скопировать из календаря</b><s>Тренировка с любого дня — ${G_() ? 'этой группы' : 'этого клиента'} или другого</s></span>${ICON.arr}</button>
+      <button class="fs" data-start="wk"><span class="ic">${ICON.tpl}</span><span class="t"><b>Из базы</b><s>Тренировка или блок из ваших баз</s></span>${ICON.arr}</button>
     </div>`;
   const ed = $('#doc .qblk [data-edit]');
-  if(ed) ed.dataset.ph = 'Выберите упражнение из базы или введите вручную';
+  if(ed) ed.dataset.ph = 'Начните писать — упражнение из базы или любой текст';
+}
+/* «Как начать» пустого дня (15.11.2026): писать — в поле с курсором; «Скопировать
+   из календаря» и «Из базы» открывают правую панель на нужной вкладке — там же
+   берут материал и в составленном дне, второго способа не заводим. Свёрнутую
+   панель разворачиваем, на телефоне она шторка; в узком окне панели нет —
+   тогда окно выбора (на пустом дне копия просто встаёт в день). */
+function openRailAt(k){
+  if(k === 'cal') S.src = 'cal'; else { S.src = 'tpl'; S.tab = k }
+  STATE.railSrc = S.src; STATE.railTab = S.tab; saveState(); renderRailHead(); renderSrc();
+  const rail = $('.rail'), mb = $('.mrail-btn');
+  if(mb && getComputedStyle(mb).display !== 'none'){ mb.click(); return }
+  if(!rail || getComputedStyle(rail).display === 'none'){ if(k === 'cal') pickExisting(); else pickTemplate(); return }
+  if(document.body.classList.contains('railmin')){ const t = $('#railtog'); if(t) t.click() }
+  rail.classList.remove('hl'); void rail.offsetWidth; rail.classList.add('hl');
+  const rr = rail.getBoundingClientRect(); if(rr.top > innerHeight - 160) rail.scrollIntoView({block:'start', behavior:'smooth'});   /* узкое окно: панель под тренировкой */
+  if(k !== 'cal'){ const q = $('#q'); if(q) q.focus({preventScroll:true}) }
 }
 /* «+ Блок» и «Блок текстом» в быстром старте. Пустой блок — заготовка: без
    строк, названия и заметки. Повторное нажатие не плодит заготовки, а ставит
@@ -685,6 +707,97 @@ const KIND_HELP = {ss: ['Сет', 'Несколько упражнений по 
 const qhHTML = k => { const [h, t] = KIND_HELP[k]; return `<span class="qh" tabindex="0" role="button" aria-label="Что такое «${h}»" data-tip="${esc(t)}" data-tip-card="${k}">?</span>` };
 const kindHTML = (it, cur) => `<span class="kind">${KINDS.filter(([k]) => !(k === 'ss' && it.sub))
   .map(([k, n]) => `<button data-kind="${k}" data-for="${it.id}" tabindex="-1" class="${k === cur ? 'on' : ''}">${n}</button>${KIND_HELP[k] ? qhHTML(k) : ''}`).join('')}</span>`;
+/* ═══════════ СЕТ И СВЯЗКА — ГАЛОЧКАМИ (15.11.2026) ═══════════
+   Вид строки больше не выбирают до ввода (переключатель «Упражнение · Сет ·
+   Связка» на каждой пустой строке убран): пишут упражнения, потом отмечают
+   две строки и больше — внизу строка действий «Сделать сетом / Сделать
+   связкой», как выделение дней в календаре (bulk.js). Галочка — слева у
+   строки, видна при наведении и пока что-то выбрано; Shift — диапазон в
+   блоке; Esc — снять. Строки — из одного блока. Отмена — из тоста.
+   Быстрый «+» после упражнения (строка → связка) остаётся. */
+const LSEL = new Set();
+let LSEL_AT = null;                                   /* последняя отмеченная — начало диапазона для Shift */
+const lselOn = it => QUICK && LSEL.has(it.id) ? ' lsel' : '';
+const lboxHTML = it => !QUICK || TRO || SUBRO ? '' : !it ? '<i class="bk-box lbox off" aria-hidden="true"></i>'
+  : `<i class="bk-box lbox${LSEL.has(it.id) ? ' on' : ''}" data-lsel="${it.id}" role="checkbox" aria-checked="${LSEL.has(it.id)}" aria-label="Выбрать строку" title="Отметьте строки — сделать сетом или связкой">${BK_I.chk}</i>`;
+const LS_I = {
+  ss: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg>',
+  ch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'};
+/* Выбранные строки по порядку и блок, если он один. */
+function lselPick(){
+  const d = day(), bs = (d ? d.blocks : []).filter(b => !isTextBlock(b) && b.items.some(i => LSEL.has(i.id)));
+  const b = bs.length === 1 ? bs[0] : null;
+  return {b, many: bs.length > 1, sel: b ? b.items.filter(i => LSEL.has(i.id) && !i.ss) : []};
+}
+function lselSync(){
+  const d = day();
+  /* после перерисовки и смены дня в выборе — только живые строки открытого дня */
+  const live = new Set(); (d ? d.blocks : []).forEach(b => (b.items || []).forEach(i => { if(!i.ss && itemHas(i)) live.add(i.id) }));
+  [...LSEL].forEach(id => { if(!live.has(id)) LSEL.delete(id) });
+  let bar = document.getElementById('lsBar');
+  if(!bar){ bar = document.createElement('div'); bar.id = 'lsBar'; bar.className = 'bk-bar ls-bar'; bar.addEventListener('click', lselBarClick); document.body.appendChild(bar) }
+  const on = QUICK && LSEL.size > 0;
+  document.body.classList.toggle('ls-on', on);
+  $$('#doc .line[data-item]').forEach(l => { const y = LSEL.has(l.dataset.item); l.classList.toggle('lsel', y);
+    const bx = l.querySelector(':scope > .lbox[data-lsel]'); if(bx){ bx.classList.toggle('on', y); bx.setAttribute('aria-checked', y) } });
+  if(!on){ bar.innerHTML = ''; return }
+  const {b, many, sel} = lselPick(), n = LSEL.size;
+  const parts = sel.reduce((a, i) => a + (i.chain ? (i.parts || []).filter(partHas).length : 1), 0);
+  const hint = many ? 'Строки из разных блоков — отметьте в одном' : n < 2 ? 'Отметьте ещё строку' : (b.title || 'Блок ' + (day().blocks.indexOf(b) + 1));
+  const okSS = !many && sel.length >= 2, okCH = !many && parts >= 2;
+  bar.innerHTML = `<span class="bk-n"><b>Выбрано ${n}</b><s>${esc(hint)}</s></span><span class="bk-sep"></span>
+    <button data-lsa="ss" ${okSS ? '' : 'disabled'} title="${esc(KIND_HELP.ss[1])}">${LS_I.ss}Сделать сетом</button>
+    <button data-lsa="ch" ${okCH ? '' : 'disabled'} title="${esc(KIND_HELP.ch[1])}">${LS_I.ch}Сделать связкой</button>
+    <span class="bk-sep"></span>
+    <button data-lsa="clear" class="clr">${BK_I.x}Снять выделение</button>`;
+  const r = $('#doc').getBoundingClientRect();
+  bar.style.left = Math.round(r.left + r.width / 2) + 'px';
+}
+function lselClear(){ LSEL.clear(); LSEL_AT = null; lselSync() }
+function lselToggle(id, range){
+  const {b} = findItem(id); if(!b) return;
+  if(range && LSEL_AT && LSEL_AT !== id){
+    const ids = b.items.filter(i => !i.ss && itemHas(i)).map(i => i.id), a = ids.indexOf(LSEL_AT), z = ids.indexOf(id);
+    if(a >= 0 && z >= 0){ ids.slice(Math.min(a, z), Math.max(a, z) + 1).forEach(x => LSEL.add(x)); LSEL_AT = id; lselSync(); return }
+  }
+  if(LSEL.has(id)) LSEL.delete(id); else LSEL.add(id);
+  LSEL_AT = id; lselSync();
+}
+/* Сет: заголовок (круги, отдых) и выбранные строки следом. Встаёт на место
+   первой выбранной; если она была в другом сете — перед тем сетом. Строки,
+   ушедшие из старых сетов, их покидают (normSS распустит сет без двух). */
+function lselMakeSet(b, sel){
+  const snap = b.items.slice(), subs = snap.map(i => i.sub);
+  const undo = () => { snap.forEach((i, k) => { i.sub = subs[k] }); b.items = snap; render() };
+  let at = b.items.indexOf(sel[0]);
+  if(sel[0].sub) for(let k = at; k >= 0; k--) if(b.items[k].ss){ at = k; break }
+  const pos = b.items.slice(0, at).filter(i => !LSEL.has(i.id)).length;
+  const rest = b.items.filter(i => !LSEL.has(i.id)), h = ssItem(3, '');
+  sel.forEach(i => { i.sub = true });
+  rest.splice(pos, 0, h, ...sel); b.items = rest; normSS(b);
+  LSEL.clear(); render();
+  toast('Сет: ' + sel.length + ' ' + plural(sel.length, 'упражнение', 'упражнения', 'упражнений') + ' по кругу — задайте круги и отдых', 'Отменить', undo);
+  const f = $(`#doc [data-ss-id="${h.id}"][data-ssf="rounds"]`); if(f){ f.focus(); f.select() }
+}
+/* Связка: выбранные строки становятся её частями (связка в выборе — своими
+   частями), нагрузка — одна на всю связку (normChain). Встаёт на место первой. */
+function lselMakeChain(b, sel){
+  const snap = b.items.slice(), undo = () => { b.items = snap; render() };
+  const parts = sel.flatMap(i => i.chain ? (i.parts || []).filter(partHas).map(p => ({...p, id: nid('i')})) : [(p => { delete p.sub; return p })({...i, id: nid('i')})]);
+  const c = chainItem(parts); if(sel[0].sub) c.sub = true;
+  const at = b.items.indexOf(sel[0]);
+  b.items = b.items.flatMap((i, k) => k === at ? [c] : LSEL.has(i.id) ? [] : [i]); normSS(b);
+  LSEL.clear(); render();
+  toast('Связка: ' + parts.length + ' ' + plural(parts.length, 'упражнение', 'упражнения', 'упражнений') + ' одним подходом', 'Отменить', undo);
+}
+function lselBarClick(e){
+  const a = e.target.closest('[data-lsa]'); if(!a || a.disabled) return;
+  if(a.dataset.lsa === 'clear') return lselClear();
+  flushRaw();
+  const {b, sel} = lselPick(); if(!b) return;
+  if(a.dataset.lsa === 'ss') lselMakeSet(b, sel); else lselMakeChain(b, sel);
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && LSEL.size && !document.querySelector('.ov.on')) lselClear() });
 function setKind(id, k){
   flushRaw();
   const {b, i} = findItem(id); if(!b || !i) return;
@@ -746,7 +859,6 @@ function renderTplDoc(){
   doc.innerHTML = d.blocks.map((b, k) => blockHTML(b, k)).join('')
     + (TRO || TPLM === 'блок' ? '' : `<div class="addbrow">
       <button class="addb" id="add-blk">${ICON.plus} Блок</button>
-      <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>
     </div>`);
   if(TRO) $$('#doc input, #doc textarea').forEach(i => { i.readOnly = true; i.tabIndex = -1 });
   if(TRO) $$('#doc [contenteditable]').forEach(e => e.contentEditable = 'false');
@@ -777,17 +889,17 @@ function renderDoc(){
   const pendAt = PENDING && PENDING.date === d.date ? d.blocks.findIndex(b => PENDING.ids.has(b.id)) : -1;
   if(PENDING && PENDING.date === d.date && pendAt < 0) PENDING = null;     /* блоки предложения удалили руками */
   const propose = pendAt >= 0 ? `<div class="propose">
-      <span class="t"><b>${AIMARK} Разобрано ИИ — проверьте</b><s>${pendingStat()}</s></span>
-      <button class="lnk" id="pd-src">Исходный текст</button>
-      <button class="btn gh" id="pd-no">Вернуть текст</button>
+      <span class="t"><b>${AIMARK} ${PENDING.photo ? 'Распознано с фото' : 'Разобрано ИИ'} — проверьте</b><s>${pendingStat()}</s></span>
+      <button class="lnk" id="pd-src">${PENDING.photo ? 'Фото' : 'Исходный текст'}</button>
+      <button class="btn gh" id="pd-no">${PENDING.photo ? 'Оставить текстом' : 'Вернуть текст'}</button>
       <button class="btn" id="pd-yes">Принять</button>
     </div>` : '';
   $('#doc').innerHTML = `
     <div class="doch">
       <span class="gr" title="Перетащить тренировку на другой день">${ICON.grip}</span>
-      ${docStatusHTML(d, n)}
       <input id="d-title" value="${esc(REST_TITLES.has(d.title) ? '' : (d.title||''))}"
              placeholder="${QUICK ? 'Новая тренировка' : `${DOW[dowMon(day().date)]}, ${dt.getDate()} ${MON[dt.getMonth()]}`}">
+      ${docStatusHTML(d, n)}
       ${SUBRO ? '' : `<button class="x kebab" id="day-menu" title="Действия с тренировкой" aria-haspopup="menu">${ICON.more}</button>`}
     </div>
     ${G_() ? grpPanelHTML(d) : grpRibbonHTML(d)}
@@ -806,7 +918,7 @@ function renderDoc(){
     ${d.blocks.map((b, k) => (k === pendAt ? propose : '') + blockHTML(b, k)).join('')}
     ${SUBRO ? '' : `<div class="addbrow">${QUICK
       ? `<button class="addb" id="add-blk">${ICON.plus} Блок</button>
-      <button class="addb" id="add-blk-text" title="Пишете как в заметках — сохранится как написано">${ICON.text} Блок текстом</button>`
+      <button class="addb photo" data-photo="1" title="${esc(PHOTO_TIP)}">${CAM_ICON} Фото</button>`
       : `<button class="addb" id="add-blk">${ICON.plus} Добавить блок</button>
       <button class="addb" id="add-blk-text">${ICON.text} Добавить блок текстом</button>`}
     </div>`}
@@ -931,6 +1043,8 @@ function mcalHTML(){
     <div class="mcal-g">${RU.map(w => `<s>${w}</s>`).join('')}${cells.join('')}</div>
   </div>`;
 }
+const RAIL_TABS = [['cal', 'Календарь'], ['wk', 'Тренировки'], ['blk', 'Блоки'], ['ex', 'Упражнения']];
+const RAIL_PH = {wk: 'Поиск тренировки…', blk: 'Поиск блока…', ex: 'Поиск упражнения…'};
 function renderRailHead(){
   const h = $('#railhead'); if(!h) return;
   /* Шаблон собирают из баз: у блока — только упражнения, у тренировки — ещё блоки. */
@@ -939,14 +1053,15 @@ function renderRailHead(){
       + `<label class="search">${ICON.search}<input id="q" placeholder="${TPLM === 'блок' ? 'Поиск упражнения…' : 'Поиск…'}" autocomplete="off" value="${esc(S.q)}"></label>`;
     return;
   }
-  const sw = `<div class="srcsw">
-      <button data-srcsw="cal" class="${S.src === 'cal' ? 'on' : ''}">${ICON.cal}<span>Календарь</span></button>
-      <button data-srcsw="tpl" class="${S.src === 'tpl' ? 'on' : ''}">${ICON.tpl}<span>Базы шаблонов</span></button>
-    </div>`;
+  /* Вкладки одного уровня (15.11.2026): раньше было «Календарь | Базы шаблонов»,
+     а внутри баз — ещё «Упражнения | Блоки», и готовой тренировки из базы не было
+     вовсе. Теперь всё, откуда берут материал, — в одном ряду. */
+  const cur = S.src === 'cal' ? 'cal' : S.tab;
+  const sw = `<div class="tabs rtabs" role="tablist" aria-label="Откуда взять">${RAIL_TABS.map(([k, n]) =>
+      `<button data-rt="${k}" role="tab" aria-selected="${k === cur}" class="${k === cur ? 'on' : ''}">${n}</button>`).join('')}</div>`;
   if(S.src === 'tpl'){
     h.innerHTML = sw + `
-      <div class="tabs" id="tabs"><button data-tab="ex" class="${S.tab === 'ex' ? 'on' : ''}">Упражнения</button><button data-tab="blk" class="${S.tab === 'blk' ? 'on' : ''}">Блоки</button></div>
-      <label class="search">${ICON.search}<input id="q" placeholder="Поиск…" autocomplete="off" value="${esc(S.q)}"></label>`;
+      <label class="search">${ICON.search}<input id="q" placeholder="${RAIL_PH[S.tab] || 'Поиск…'}" autocomplete="off" value="${esc(S.q)}"></label>`;
     return;
   }
   const c = who(CSRC.cid) || who(S.cid);
@@ -965,12 +1080,34 @@ function csrcCopyItems(ref){
 const csrcCopyBlock = bi => { const x = csrcDay(), b = x && x.blocks[+bi]; return b ? copyBlocks([b])[0] : null };
 /* Пустая заготовка блока (появляется на каждом пустом дне) не должна оставаться над вставленным. */
 const dropEmptyBlocks = d => { d.blocks = d.blocks.filter(b => b.items.length || ownTitle(b) || b.note || blockHas(b)) };
-function csrcCopyWorkout(){
+function csrcCopyWorkout(btn){
   const x = csrcDay(); if(!x) return;
-  const d = day(), snap = {title: d.title, blocks: d.blocks}, had = dayHas(d);
-  d.title = x.title; d.blocks = copyBlocks(x.blocks);
-  render();
-  toast(had ? 'Тренировка дня заменена копией' : 'Тренировка скопирована', 'Отменить', () => { d.title = snap.title; d.blocks = snap.blocks; render() });
+  putWorkout({title: x.title, blocks: copyBlocks(x.blocks)}, btn, 'Тренировка');
+}
+/* Готовая тренировка — из календаря или из базы — встаёт в открытый день.
+   Пустой день она просто занимает; в составленном спрашиваем: добавить её
+   блоки к тренировке дня или поставить вместо неё (как «Добавить клиенту» из
+   базы, assign.js). Любой вариант отменяется из тоста. */
+function putWorkout(w, anchor, what){
+  const d = day(), had = dayHas(d), snap = {title: d.title, blocks: d.blocks, rest: d.rest};
+  const go = mode => {
+    if(mode === 'add') d.blocks = d.blocks.filter(b => !blankBlock(b)).concat(w.blocks);
+    else { d.title = w.title && !REST_TITLES.has(w.title) ? w.title : d.title; d.blocks = w.blocks }
+    d.rest = false; render();
+    toast(what + (mode === 'add' ? ' добавлена к тренировке дня' : had ? ' стоит вместо прежней' : ' в тренировке'), 'Отменить', () => { Object.assign(d, snap); render() });
+  };
+  if(!had || !anchor) return go('put');
+  closeSug();
+  const box = document.createElement('div');
+  box.className = 'sug kmenu putmenu'; box.setAttribute('role', 'menu');
+  box.innerHTML = `<div class="km-h">В этом дне уже есть тренировка</div>
+    <button class="row" data-put="add" role="menuitem">${ICON.plus}<b>Добавить к ней</b></button>
+    <button class="row" data-put="put" role="menuitem">${ICON.copy}<b>Заменить её</b></button>`;
+  document.body.appendChild(box); SUG = box;
+  const r = anchor.getBoundingClientRect();
+  box.style.left = Math.max(12, Math.min(r.left, innerWidth - box.offsetWidth - 12)) + 'px';
+  box.style.top = (r.bottom + scrollY + 6) + 'px';
+  box.addEventListener('click', ev => { const b = ev.target.closest('[data-put]'); if(!b) return; closeSug(); go(b.dataset.put) });
 }
 const csrcItemHTML = (it, bi, k, sub) => { const e = it.exId ? byId(it.exId) : null, chip = it.exId ? itemChip(it) : '';
   return `<div class="csi ${sub ? 'sub' : ''}" draggable="true" data-cit="${bi}:${k}"><span class="gr">${ICON.grip}</span><span class="nm">${esc(it.chain ? chainText(it) : e ? e.ru : it.raw || '')}</span>${chip ? `<em>${esc(chip)}</em>` : ''}<button class="add" data-ciadd="${bi}:${k}" title="Добавить в тренировку">${ICON.plus}</button></div>` };
@@ -1058,8 +1195,8 @@ function renderSrc(){
           : (t.blocks||[]).map(id=>{ const b=tplById(id); return b?`<span>${esc(b.title)}</span>`:'' }).join('')}</div>
       </div>`).join('') || '<div class="empty">Пусто</div>';
     $('#railfoot').textContent = lvl === 'блок'
-      ? 'Блок вставляется в открытую тренировку одним нажатием (CON-3).'
-      : 'Шаблон тренировки занимает день целиком (TPL-3).';
+      ? 'Нажмите — блок встанет в конец тренировки; перетащите — в нужное место.'
+      : 'Нажмите — тренировка встанет в этот день. Если в нём уже есть тренировка, спросим: добавить к ней или заменить.';
   }
 }
 /* ═══════════ СОХРАНЕНИЕ, ЧЕРНОВИК И ПУБЛИКАЦИЯ (CON-20) ═══════════
@@ -1176,7 +1313,8 @@ const fitText = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHei
 const fullDate = date => { const t = D(date), y = t.getFullYear(); return DOW[dowMon(date)] + ', ' + t.getDate() + ' ' + MONTHS[t.getMonth()] + (y !== new Date().getFullYear() ? ' ' + y : '') };
 function render(){ const fs = focusSnap(), cur = day(); if(cur) cur.blocks.forEach(normSS); if(QUICK && cur && TPLM !== 'блок') autoTitles(cur); persist(); renderStrip(); renderDoc(); $$('#doc .tbx').forEach(fitText); fitNotes(); alignNames(); if(S.src === 'cal') renderRailHead(); renderSrc(); focusRestore(fs);
   const pt = $('#ptd'); if(pt && cur) pt.innerHTML = esc(fullDate(cur.date)) + '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l4 4 4-4"/></svg>';
-  if(QUICK) freshFocus() }
+  const pw = $('#topbar #cli'), w = who(S.cid); if(pw && w && pw.dataset.w !== w.id){ pw.dataset.w = w.id; pw.innerHTML = pwhoHTML(w) }
+  lselSync(); if(QUICK) freshFocus() }
 
 /* ═══════════ ВИЗАРД «СОЗДАТЬ НЕСКОЛЬКО ТРЕНИРОВОК» (CON-4) ═══════════
    Три шага: что копируем (шаблоны или существующие дни, любой набор) →
@@ -1476,6 +1614,30 @@ async function aiBlock(id){
   PENDING = {date: d.date, ids: new Set(made.map(b => b.id)), block: tb, source: text};
   render();
 }
+/* ═══ ФОТО — ТОЛЬКО РАЗБОР ИИ (15.11.2026) ═══
+   Фото тетради, доски или скриншота — способ ввода, а не содержимое: клиент снимок
+   не видит. Снимок распознаётся в текст, текст сразу разбирается на упражнения тем
+   же путём, что блок текстом (aiBlock): блоки встают под полосу «Распознано с фото —
+   проверьте» с «Принять» и «Оставить текстом» (распознанный текст — блоком текстом).
+   В прототипе распознавания нет — подставляется пример записи из тетради. */
+const CAM_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4h1.3l1-1.5h4.4l1 1.5h1.3A1.5 1.5 0 0 1 14 5.5v6A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5z"/><circle cx="8" cy="8.4" r="2.4"/></svg>';
+const PHOTO_TIP = 'Фото тетради, доски или скриншот — ИИ распознает и разберёт на упражнения. Клиент снимок не видит';
+function pickPhoto(){
+  let inp = document.getElementById('photoIn');
+  if(!inp){ inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'photoIn'; inp.hidden = true; document.body.appendChild(inp);
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.value = ''; if(!f) return;
+      const r = new FileReader(); r.onload = () => aiPhoto(String(r.result)); r.readAsDataURL(f) }) }
+  inp.click();
+}
+async function aiPhoto(src){
+  flushRaw();
+  toast('Распознаю фото…');
+  await aiWait(700);
+  const tb = addTextBlock(PHOTO_OCR_DEMO);
+  render();
+  await aiBlock(tb.id);
+  if(PENDING && PENDING.block === tb){ PENDING.photo = src; render() }
+}
 /* Кнопка AI в строке текстом: строка меняется на месте, возврат — в уведомлении. */
 async function aiLine(id){
   const was = findItem(id); if(!was.i || was.i.exId) return;
@@ -1654,8 +1816,8 @@ function showSource(){
   const box = document.createElement('div');
   box.className = 'ov on srcov';
   box.innerHTML = `<div class="md"><div class="mdh"><span class="dot"></span>
-      <h2>Исходный текст</h2><button class="cls">✕</button></div>
-    <div class="mdb"><pre class="src">${esc(PENDING.source)}</pre></div></div>`;
+      <h2>${PENDING.photo ? 'Фото и распознанный текст' : 'Исходный текст'}</h2><button class="cls">✕</button></div>
+    <div class="mdb">${PENDING.photo ? `<img class="src-photo" src="${PENDING.photo}" alt="Фото тренировки">` : ''}<pre class="src">${esc(PENDING.source)}</pre></div></div>`;
   box.addEventListener('click', e=>{
     if(e.target === box || e.target.closest('.cls')) box.remove();
   });
@@ -1950,31 +2112,39 @@ function normField(pf){
 /* Статус дня и кнопки публикации — без перерисовки документа. */
 /* Кто видит тренировку: клиент или участники группы. */
 const aud = dat => G_() ? (dat ? 'группе' : 'участники') : (dat ? 'клиенту' : 'клиент');
-/* Статус у названия дня — тот же переключатель, что внизу (CON-20): нажатие
-   сразу меняет статус и сохраняет правки дня. */
-const docStatusHTML = (d, n) => n || contentHas(d.saved) ? (isDraft(d)
-  ? `<button class="dst draft" data-status="pub" title="Черновик — ${aud()} не ${seeVerb()}. Нажмите, чтобы опубликовать">${DAYICON.draft}Черновик</button>`
-  : `<button class="dst pub" data-status="draft" title="Опубликована — ${aud()} ${seeVerb()}. Нажмите, чтобы перевести в черновик">${DAYICON.pub}Опубликована</button>`) : '';
+/* Публикация — один переключатель у названия (решение 15.11.2026, как глаз в
+   приложении): «Видит клиент» включён — опубликована, выключен — черновик.
+   Срабатывает сразу и заодно сохраняет правки дня (CON-20). Раньше статус
+   стоял трижды: чип «Опубликована» слева от названия, переключатель
+   «Опубликовать» внизу и «Сохранить». Пустой день опубликовать нечего. */
+const seeLabel = () => G_() ? 'Видят участники' : 'Видит клиент';
+function docStatusHTML(d, n){
+  const can = !SUBRO && (n > 0 || contentHas(d.saved)), on = !isDraft(d) && (n > 0 || contentHas(d.saved));
+  const tip = SUBRO ? '' : !can ? 'Пустой день опубликовать нечего'
+    : on ? (G_() ? 'Участники видят' : 'Клиент видит') + ' сохранённую версию. Выключите — тренировка станет черновиком'
+    : 'Черновик — ' + aud() + ' не ' + seeVerb() + '. Включите, чтобы опубликовать (правки сохранятся)';
+  return `<button class="pubsw dpub${on ? ' on' : ''}" role="switch" aria-checked="${on}" data-status="${on ? 'draft' : 'pub'}" ${can ? '' : 'disabled'} title="${tip}">${seeLabel()}<i></i></button>`;
+}
 const SAVE_KEY = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘S' : 'Ctrl+S';
-/* Панель сохранения прилипает к низу экрана; в ней только переключатель
-   «Опубликовать» и «Сохранить», оба справа. Что не сохранено, видно по
-   активной кнопке и точкам в полосе дней. Пустой день опубликовать нечего. */
+/* «Сохранить» — явная кнопка (автосохранение в приложении пробовали и сняли:
+   непонятно, записано ли). Панель прилипает к низу экрана и видна, только
+   пока есть несохранённое; слева — что это значит для клиента. */
 function pubbarHTML(d, n){
-  const nd = dirtyIdx().length, can = n > 0 || contentHas(d.saved), on = !isDraft(d);
-  const tip = !can ? 'Пустой день опубликовать нечего'
-    : on ? 'Опубликована — ' + aud() + ' ' + seeVerb() + ' сохранённую версию. Выключите, чтобы скрыть'
-    : 'Черновик — ' + aud() + ' не ' + seeVerb() + '. Включите, чтобы опубликовать';
-  return `<div class="pubbar">
-    <button class="pubsw${on ? ' on' : ''}" role="switch" aria-checked="${on}" data-status="${on ? 'draft' : 'pub'}" ${can ? '' : 'disabled'} title="${tip}">Опубликовать<i></i></button>
-    <button class="btn" id="saveAll" ${nd ? '' : 'disabled'} title="${nd > 1 ? 'Не сохранено: ' + nd + ' ' + plural(nd, 'день', 'дня', 'дней') : 'Сохранить изменения'} · ${SAVE_KEY}">${ICON.chk} Сохранить</button>
+  const nd = dirtyIdx().length, cur = isDirty(d), seen = cur && !isDraft(d) && contentHas(d.saved);
+  const what = !nd ? '' : !cur ? 'Не сохранены другие дни: ' + nd
+    : nd > 1 ? 'Не сохранено: ' + nd + ' ' + plural(nd, 'день', 'дня', 'дней')
+    : seen ? 'Не сохранено — ' + aud() + ' ' + seeVerb() + ' прежнюю версию' : 'Не сохранено';
+  return `<div class="pubbar"${nd ? '' : ' hidden'}>
+    <s>${what}</s>
+    <button class="btn" id="saveAll" ${nd ? '' : 'disabled'} title="Сохранить изменения · ${SAVE_KEY}">${ICON.chk} Сохранить</button>
   </div>`;
 }
 /* Статус и панель — на месте, без перерисовки документа: она сбила бы курсор. */
 function refreshChrome(){
   const d = day(); if(!d) return;
   const n = dayCount(d), html = docStatusHTML(d, n);
-  const old = $('#doc .doch .dst');
-  if(old) old.outerHTML = html; else if(html){ const gr = $('#doc .doch > .gr'); if(gr) gr.insertAdjacentHTML('afterend', html) }
+  const old = $('#doc .doch .dpub');
+  if(old) old.outerHTML = html; else { const t = $('#doc .doch #d-title'); if(t) t.insertAdjacentHTML('afterend', html) }
   const pb = $('#doc .pubbar'); if(pb) pb.outerHTML = pubbarHTML(d, n);
 }
 const commitSoft = () => { persist(); renderStrip(); refreshChrome(); syncLoads(); refreshGrp() };
@@ -2696,7 +2866,8 @@ document.addEventListener('click', e=>{
   /* Кликается вся карточка, а не только «+»: маленькая кнопка была
      единственным способом добавить, и по ней приходилось целиться. */
   const ae = e.target.closest('[data-ex]');  if(ae){ addEx(ae.dataset.ex); return }
-  const at = e.target.closest('[data-tpl]'); if(at){ addTpl(tplById(at.dataset.tpl)); return }
+  const at = e.target.closest('#src [data-tpl]');      /* окна выбора (.pk) кладут шаблон сами */
+  if(at){ const t = tplById(at.dataset.tpl); if(t && t.lvl !== 'блок' && !TPLM) putWorkout(tplToWorkout(t), at, '«' + t.title + '»'); else addTpl(t); return }
 
   const kd = e.target.closest('[data-kind]'); if(kd){ setKind(kd.dataset.for, kd.dataset.kind); return }
   const add = e.target.closest('[data-add]');
@@ -2765,6 +2936,7 @@ document.addEventListener('click', e=>{
   const aib = e.target.closest('[data-aiblk]'); if(aib){ if(!aib.classList.contains('busy')) aiBlock(aib.dataset.aiblk); return }
   const fmt = e.target.closest('[data-fmt="ul"]'); if(fmt){ toggleList(fmt.closest('.tbody').querySelector('.tbx')); return }
   const ail = e.target.closest('[data-ailine]'); if(ail){ if(!ail.classList.contains('busy')) aiLine(ail.dataset.ailine); return }
+  if(e.target.closest('[data-photo]')){ pickPhoto(); return }
   if(e.target.closest('#pd-yes')){ acceptPending(); return }
   if(e.target.closest('#pd-no')){  cancelPending(); return }
   if(e.target.closest('#pd-src')){ showSource();   return }
@@ -2777,6 +2949,11 @@ document.addEventListener('click', e=>{
   if(e.target.closest('#clr-wo')){ askClear(); return }
   const sb = e.target.closest('[data-savblk]');
   if(sb){ openFolder(sb); return }
+  const lsb = e.target.closest('[data-lsel]'); if(lsb){ e.preventDefault(); lselToggle(lsb.dataset.lsel, e.shiftKey); return }
+  const rt = e.target.closest('[data-rt]');
+  if(rt){ const k = rt.dataset.rt; if(k === 'cal') S.src = 'cal'; else { S.src = 'tpl'; S.tab = k }
+    STATE.railSrc = S.src; STATE.railTab = S.tab; saveState(); renderRailHead(); renderSrc(); return }
+  const fst = e.target.closest('[data-start]'); if(fst){ openRailAt(fst.dataset.start); return }
   const ssw = e.target.closest('[data-srcsw]');
   if(ssw){ S.src = ssw.dataset.srcsw; STATE.railSrc = S.src; saveState(); renderRailHead(); renderSrc(); return }
   const csc = e.target.closest('#cs-cli');
@@ -2786,7 +2963,7 @@ document.addEventListener('click', e=>{
     CSRC.month = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'); renderRailHead(); return }
   const mday = e.target.closest('[data-mday]');
   if(mday){ CSRC.date = mday.dataset.mday; renderRailHead(); renderSrc(); return }
-  if(e.target.closest('#cs-copy')){ csrcCopyWorkout(); return }
+  if(e.target.closest('#cs-copy')){ csrcCopyWorkout(e.target.closest('#cs-copy')); return }
   const cba = e.target.closest('[data-cbadd]');
   if(cba){ const nb = csrcCopyBlock(cba.dataset.cbadd); if(!nb) return; const d = day(); dropEmptyBlocks(d); d.blocks.push(nb); render(); flash(nb.id); return }
   const cia = e.target.closest('[data-ciadd]');
@@ -3138,7 +3315,9 @@ function dropFromRail(e){
     const b = blk ? day().blocks.find(x=>x.id===blk.dataset.blk) : lastBlock();
     if(isTextBlock(b)){ textDropNo(); return }
     it = mkItem(DRAG.v, '', null, null, ''); b.items.push(it);
-  } else addTplRaw(tplById(DRAG.v));
+  } else { const t = tplById(DRAG.v);
+    if(t && t.lvl !== 'блок' && !TPLM){ clearDrag(); putWorkout(tplToWorkout(t), $('#d-title') || $('#doc'), '«' + t.title + '»'); return }
+    addTplRaw(t) }
   clearDrag(); render();
   if(it) focusLineField(it.id, 'sch');
 }
@@ -3269,13 +3448,19 @@ if(TPLM){
   document.body.classList.toggle('tplro', TRO || TMISS);           /* общий шаблон не собирают — панель источников не нужна */
   if(!TT && !TMISS){ const t = $('#t-name'); if(t) t.focus() }
 }
-/* «В тренировку» со страницы элемента базы: конструктор открывается на новом
-   дне, и упражнение или шаблон сразу в нём (?addex=, ?addtpl=). */
+/* «Добавить клиенту» / «В тренировку» со страницы элемента базы (assets/assign.js):
+   конструктор открывается на выбранном дне клиента или группы, и упражнение
+   или шаблон сразу в нём (?addex=, ?addtpl=). Готовая тренировка на занятый
+   день встаёт вместо прежней или добавляется к ней (?tmode=replace|add);
+   блок и упражнение всегда добавляются. */
 if(!TPLM && (Q.get('addex') || Q.get('addtpl'))){
   const ex = Q.get('addex') && byId(Q.get('addex')), t = Q.get('addtpl') && tplById(Q.get('addtpl'));
   const d = day(), lb = structBlock(d);
-  if(ex){ if(lb) lb.items = lb.items.filter(i => !blankLine(i)); addEx(ex.id); toast('«' + ex.ru + '» — в тренировке') }
-  if(t){ addTplRaw(t); d.blocks = d.blocks.filter(x => !blankBlock(x)); render(); toast((t.lvl === 'блок' ? 'Блок' : 'Тренировка') + ' «' + t.title + '» — в тренировке') }
+  if(ex){ d.rest = false; if(lb) lb.items = lb.items.filter(i => !blankLine(i)); addEx(ex.id); toast('«' + ex.ru + '» — в тренировке') }
+  if(t){ const had = t.lvl !== 'блок' && d.blocks.some(blockHas), add = had && Q.get('tmode') === 'add';
+    if(add) d.blocks = d.blocks.filter(x => !blankBlock(x)).concat(tplToWorkout(t).blocks); else addTplRaw(t);
+    d.rest = false; d.blocks = d.blocks.filter(x => !blankBlock(x)); render();
+    toast((t.lvl === 'блок' ? 'Блок' : 'Тренировка') + ' «' + t.title + '» — ' + (add ? 'добавлена к тренировке дня' : had ? 'вместо прежней' : 'в тренировке')) }
   history.replaceState(null, '', `constructor.html?${subjQ(S.cid)}&date=${d.date}${CLASSIC_Q}`);
 }
 
@@ -3294,6 +3479,7 @@ document.addEventListener('change', e => {
 document.addEventListener('keydown', e => { if(TPLM && e.key === 'Enter' && e.target.id === 't-name') e.target.blur() });
 document.addEventListener('click', e => {
   if(!TPLM) return;
+  if(e.target.closest('#t-to')){ persist(); toClientModal('tpl', TT.id); return }     /* кому и в какой день — assets/assign.js */
   if(e.target.closest('#t-dup')){ persist(); const c = tplClone(TT, TT.title + ' — копия'); location.href = 'constructor.html?tpl=' + c.id; return }
   if(e.target.closest('#t-own')){ const c = tplClone(TT); location.href = 'constructor.html?tpl=' + c.id; return }
   if(e.target.closest('#t-del')){

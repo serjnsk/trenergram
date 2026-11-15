@@ -1800,3 +1800,92 @@ body{overflow-wrap:break-word}
 .gchip svg{vertical-align:-2px;margin-right:4px}
 /* текст, который пишут тренер и клиент: длинное слово переносится */
 .wl,.line .txt,.line .nm,.md .cl .who b,.cnote textarea,.fev2 .tx,.cid .nm,.ehead .enm,.dtt{overflow-wrap:anywhere}
+
+/* ─── окна «Назначить клиенту» и «Добавить клиенту» (assets/assign.js, CON-9) ─── */
+.md.am{max-width:580px}
+.am .wz-row{flex-wrap:wrap}
+.am .wz-f{min-width:200px}
+.am .am-sum{font-size:15px;line-height:1.45;color:var(--tx2);margin:0 0 14px;overflow-wrap:anywhere}
+.am .am-sum b{color:var(--ink);font-weight:600}
+.am .am-sum.muted{font-size:14px;color:var(--tx3);margin-bottom:0}
+.am .am-busy{margin:-4px 0 14px}
+.am .wz-it .t{min-width:0;overflow-wrap:anywhere}
+.am .wz-pub{margin-top:0}
+/* значение списка (dd.js) — span внутри .wz-f: без заглавных подписи поля */
+.am .wz-f .dsel{width:100%;height:40px}
+.am .wz-f .dselv,.am .wz-f .dselv s{font-size:15px;font-weight:500;letter-spacing:normal;text-transform:none;color:var(--ink)}
+.am .wz-f .dselv s{font-weight:400;color:var(--tx3)}
+.am .wz-f input{height:40px}
+
+/* ═══════════ КОНСТРУКТОР ПРОЩЕ (15.11.2026) ═══════════
+   Шапка дня «кто ▾ · когда ▾» вместо «Создать тренировку» и плашки клиента;
+   «Как начать» пустого дня — поле с курсором и две строки ниже; вкладки правой
+   панели одного уровня; выбор «добавить к ней / заменить её» для готовой тренировки. */
+.wk[hidden]{display:none !important}
+.topbar .ptitle.pday{gap:0;min-width:0}
+.topbar .ptitle .pwho{display:inline-flex;align-items:center;gap:8px;height:38px;margin:0 0 0 -6px;padding:0 6px;border-radius:var(--rad-m);
+  font:inherit;color:var(--ink);cursor:pointer;min-width:0;max-width:440px}
+.topbar .ptitle .pwho .cav{width:28px;height:28px;font:700 12px/1 var(--ui);letter-spacing:0}
+.topbar .ptitle .pwho .cav.grp{font-size:10.5px}
+.topbar .ptitle .pwho .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.topbar .ptitle .pwho svg{width:16px;height:16px;flex:none;color:var(--tx3)}
+.topbar .ptitle .pwho:hover{background:var(--s1)}
+.topbar .ptitle .pwho:hover svg{color:var(--ink)}
+.topbar .ptitle.pday button.ptd{margin-left:2px}
+
+.doc .fs-cap{margin:18px 2px 8px;font-size:13px;font-weight:600;color:var(--tx3)}
+.doc .fstart{border:1px solid var(--line);border-radius:var(--rad-l);overflow:hidden;background:var(--bg)}
+.doc .fstart .fs{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;text-align:left;cursor:pointer;background:none}
+.doc .fstart .fs + .fs{border-top:1px solid var(--line)}
+.doc .fstart .fs .ic{width:34px;height:34px;border-radius:10px;background:var(--acc-a);color:var(--acc-d);display:grid;place-items:center;flex:none}
+.doc .fstart .fs .ic svg{width:17px;height:17px}
+.doc .fstart .fs .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.doc .fstart .fs b{font-size:15px;font-weight:600;color:var(--ink)}
+.doc .fstart .fs s{text-decoration:none;font-size:13.5px;color:var(--tx3)}
+.doc .fstart .fs > svg{width:16px;height:16px;color:var(--tx4);flex:none}
+.doc .fstart .fs:hover{background:var(--s1)}
+.doc .fstart .fs:hover > svg{color:var(--acc-d)}
+
+/* четыре вкладки в ширину панели: подчёркнутые, как в теме, но плотнее; в узкой панели — переносом, не обрезкой */
+.app .railhead .rtabs{margin:0 32px 12px 0;gap:4px 0;justify-content:space-between;flex-wrap:wrap}
+.app .railhead .rtabs button{padding:0;font-size:13px;white-space:nowrap}
+.rail.hl{animation:railhl 1.1s ease}
+@keyframes railhl{0%,40%{box-shadow:0 0 0 2px var(--acc)}100%{box-shadow:0 0 0 2px transparent}}
+@media (prefers-reduced-motion:reduce){ .rail.hl{animation:none} }
+
+.sug.putmenu{min-width:240px}
+.putmenu .km-h{padding:7px 11px 5px;font-size:12.5px;font-weight:600;color:var(--tx3)}
+.clipick .cl-h{padding:4px 4px 8px;font-size:15px;font-weight:700;color:var(--ink)}
+
+/* ─── публикация у названия и «Сохранить» только при правках (15.11.2026) ───
+   «Видит клиент» — тот же переключатель .pubsw, что был внизу, теперь в плашке
+   дня справа от названия; чипа «Опубликована / Черновик» нет. Панель внизу
+   появляется, только пока есть несохранённое: слева — что видит клиент. */
+.doch .dpub{height:32px;font-size:14px;gap:9px;padding:0 4px;margin-left:auto;white-space:nowrap}
+.doch .dpub i{width:34px;height:20px;border-radius:10px}
+.doch .dpub i::after{width:14px;height:14px}
+.doch .dpub.on i::after{left:17px}
+.doch .dpub:not(.on):not(:disabled){color:var(--tx2)}
+.pubbar[hidden]{display:none !important}
+.pubbar{justify-content:space-between}
+
+/* ─── сет и связка галочками (15.11.2026): галочка слева у строки — при наведении
+   и пока что-то выбрано; строка действий внизу — как у выделения дней (.bk-bar) ─── */
+.line > .lbox{width:17px;height:17px;border-radius:5px;margin:0 -3px 0 -2px;opacity:0;transition:opacity .1s,border-color .1s,background .1s}
+.line > .lbox svg{width:11px;height:11px}
+.line:hover > .lbox,.line:focus-within > .lbox,body.ls-on .line > .lbox,.line > .lbox.on{opacity:1}
+.line > .lbox.off{visibility:hidden}
+.line.lsel{border-color:var(--acc);background:var(--acc-a)}
+.line.raw.lsel{border-style:solid}
+#lsBar{display:none}
+body.bk-on #lsBar{display:none}
+body.ls-on #lsBar{display:flex}
+#lsBar button:disabled{opacity:.38;cursor:default;background:none}
+body.ls-on .pubbar{bottom:76px}
+
+/* ─── «Фото» — только разбор ИИ (15.11.2026): в пустом дне под полем, в составленном — рядом с «+ Блок» ─── */
+.addb.photo{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.addb.photo svg{width:16px;height:16px;flex:none}
+.addb.photo s{text-decoration:none;font-weight:500;color:var(--tx3)}
+.doc.fresh .addbrow{margin-top:10px}
+.srcov .src-photo{display:block;max-width:100%;max-height:52vh;margin:0 auto 12px;border-radius:var(--rad-m);object-fit:contain;background:var(--s1)}

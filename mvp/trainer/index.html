@@ -220,7 +220,7 @@ const ids = Object.keys(TR_SCREENS);
 const defP = () => Object.fromEntries(TR_PARAMS.map(x => [x.id, x.opts[0][0]]));
 
 /* ── состояние стенда; экран и параметры — в адресе, устройство — в браузере ── */
-const st = { id: 'dash', v: '', p: defP(), dev: 'iphone', size: '360x780', plat: 'app' };
+const st = { id: 'a_today', v: '', p: defP(), dev: 'iphone', size: '360x780', plat: 'app' };
 try { st.dev = localStorage.getItem('tr.dev') || st.dev; st.size = localStorage.getItem('tr.size') || st.size; st.plat = localStorage.getItem('tr.plat') || st.plat; } catch (e) {}
 if (!DEVICES[st.dev]) st.dev = 'iphone';
 if (!SIZES.some(([w, h]) => w + 'x' + h === st.size)) st.size = '360x780';
@@ -235,8 +235,8 @@ function readHash() {
   const q = new URLSearchParams(m ? m[2] || '' : '');
   st.p = defP();
   TR_PARAMS.forEach(x => { const v = q.get(x.id); if (v && x.opts.some(o => o[0] === v)) st.p[x.id] = v; });
-  st.id = m && TR_SCREENS[m[1]] ? m[1] : 'dash';
-  if (!inFlow(st.id)) st.id = 'dash';
+  st.id = m && TR_SCREENS[m[1]] ? m[1] : 'a_today';
+  if (!inFlow(st.id)) st.id = 'a_today';
   st.v = viewOk(st.id, q.get('v') || '');
 }
 function writeHash() {
@@ -462,7 +462,7 @@ function setNeed() {
 }
 function setParam(k, val) {
   st.p[k] = val;
-  if (!inFlow(st.id)) st.id = 'dash';
+  if (!inFlow(st.id)) st.id = 'a_today';
   st.v = viewOk(st.id, st.v);
   open(true); sync();
 }

@@ -39,6 +39,7 @@
 <script src="assets/nav.js"></script>
 <script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
+<script src="assets/assign.js"></script>
 <script>
 /* ═══════════ КАРТОЧКА КЛИЕНТА ═══════════
    Ширина страницы ограничена (pagewrap без wide): на 1920 карточка не
@@ -193,7 +194,7 @@ function render(){
         <span class="cph">${esc(C.ini)}<button class="cph-up" title="Загрузить фото">${ICON.plus}</button></span>
         <div class="cid"><div class="nm">${esc(C.n)}</div><div class="sub">${C.sex==='ж'?'Женщина':'Мужчина'}, ${age(C.born)} ${plural(age(C.born),'год','года','лет')}</div></div>
         <div class="cacts">
-          ${over ? '' : P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a>` : `<a class="btn" href="programs.html">${ICON.prog} Назначить программу</a>`}
+          ${over ? '' : P ? `<a class="btn" href="constructor.html?client=${C.id}&date=${TODAY}">${ICON.build} В конструктор</a>` : `<button class="btn" id="cAssign">${ICON.prog} Назначить программу</button>`}
           <a class="btn gh" href="calendar.html?client=${C.id}">Календарь</a>
         </div>
       </div>
@@ -254,6 +255,8 @@ function render(){
   document.addEventListener('click', e=>{ if(e.target.closest('#nmSave')){ const r={date:TODAY}; $$('[data-nm]').forEach(i=>{ const v=parseFloat(i.value.replace(',','.')); if(isFinite(v)) r[i.dataset.nm]=v }); if(Object.keys(r).length>1){ (C.meas ||= []).push(r); if(r.w) C.w=r.w; closeModal(); toast('Замер записан'); render() } } }, {once:true});
   $$('.fev.t-q .btn, .fev2.t-q .fact').forEach(b=>b.onclick=e=>{ e.preventDefault(); toast('Ответ на вопрос — из ленты дашборда') });
   $('#grpChg').onclick = groupPick;
+  /* Программа из базы — в календарь клиента с даты старта (CON-9, assets/assign.js). */
+  const ca = $('#cAssign'); if(ca) ca.onclick = () => assignProgModal({wid: C.id, onDone: render});
   $$('.cph-up').forEach(b=>b.onclick=()=>toast('Загрузка фото появится с бэкендом — пока инициалы'));
   $$('[data-max]').forEach(a=>a.onclick=e=>{ e.preventDefault(); toast('Max: ссылка на чат появится, когда мессенджер откроет диплинки') });
   const go = t => { V.tab = t; history.replaceState(null,'','#'+t); render() };

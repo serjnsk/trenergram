@@ -1,0 +1,836 @@
+/* ═══════════ ТРЕНЕРСКОЕ ПРИЛОЖЕНИЕ · стиль ═══════════
+   Визуальный язык — Strava iOS (референсы Mobbin): белые экраны, лента из
+   карточек во всю ширину с серыми промежутками, шапка с заголовком по центру,
+   жирные заголовки разделов, оранжевые подчёркивания вкладок и кнопки-пилюли,
+   цифры «серая подпись — жирное значение». Цвета и цифры — по HIG: текст
+   ≥ 4.5:1 (мелкий оранжевый — тёмный вариант), касание ≥ 44 pt, поля 16 px. */
+:root{
+  --bg:#FFFFFF; --gap:#F2F2F2; --s1:#F2F2F3; --s2:#E9E9EB;
+  --tx:#1C1C1E; --tx2:#5F5F66; --tx3:#6C6C70; --line:#E5E5EA; --line2:#D1D1D6;
+  --acc:#FC5200; --acc-t:#B83D00; --acc-a:#FFF1EA;
+  --ok:#147A46; --ok-a:#E8F5EE; --warn:#8A6200; --warn-a:#FBF1DE; --rm:#C0392B; --rm-a:#FDEDEB; --blue:#1E5BD8; --blue-a:#EAF1FE;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --navh:52px; --tabh:56px;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:400 16px/1.35 var(--ui);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+html.in-stand{scrollbar-width:none}
+html.in-stand::-webkit-scrollbar{display:none}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+input,textarea{font:inherit;font-size:16px;color:var(--tx)}
+svg{display:block}
+.lock{overflow:hidden}
+
+/* ─── шапка ─── */
+.nav{position:sticky;top:0;z-index:20;background:var(--bg);padding-top:var(--sat);border-bottom:.5px solid var(--line)}
+/* над серым фоном (модули) шапка — цвета фона и без линии, пока экран не прокручен;
+   прокрутили — белая с размытием и линией: карточка уходит под неё, а не «наезжает» */
+#app:has(> .mods) > .nav{background:var(--gap);border-bottom-color:transparent;transition:background .2s,border-color .2s}
+#app:has(> .mods) > .nav.scrolled,#app:has(> .mods) > .nav.mini-on{background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom-color:var(--line)}
+.nav-in{height:var(--navh);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 8px}
+.nav h1{margin:0;font-size:17px;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
+.nav h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--tx2);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav h1 small button{position:relative;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.nav h1 small button::after{content:"";position:absolute;inset:-15px -8px}
+.nav-l,.nav-r{display:flex;align-items:center;gap:2px}
+.nav-r{justify-content:flex-end}
+.nb{min-width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:22px;padding:0 8px;font-size:16px;color:var(--tx)}
+.nb svg{width:24px;height:24px}
+.nb.t{font-weight:400}
+.nb.t.b{font-weight:600;color:var(--acc-t)}
+.nb:active{background:var(--s1)}
+/* публикация — глаз в шапке: оранжевый круг — клиент видит, серый с перечёркнутым глазом — черновик */
+.nb.eye,.nb.ok{padding:0}
+.nb.eye i,.nb.ok i{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--s1);color:var(--tx2);transition:background .15s,color .15s}
+.nb.eye.on i,.nb.ok i{background:var(--acc);color:#fff}
+.nb.eye svg,.nb.ok svg{width:19px;height:19px}
+.nb.eye:active,.nb.ok:active{background:none}
+.nb.eye:active i,.nb.ok:active i{filter:brightness(.9)}
+.nb.eye:disabled{opacity:.4}
+/* шапки без слов: карандаш — «Править» / «Изменить», галочка — «Готово» в режиме «Порядок»,
+   шестерёнка — настройки тренировки на плашке дня (единственное отличие плашки правки от просмотра),
+   календарь с числом — день тренировки (нажатие — другой день) */
+.nb.pen svg,.nb.gear svg{width:22px;height:22px}
+.nb.cal svg{width:28px;height:28px}
+.nb.cal text{font-family:var(--ui)}
+/* шапка тренировки (просмотр и правка): имя ▾ — сразу после «‹», справа до трёх значков — так оно стоит
+   на одном месте в обоих видах и не обрезается */
+.nav.lead .nav-in{grid-template-columns:auto minmax(0,1fr) auto}
+.nav.lead h1{text-align:left;max-width:none;padding:0 8px 0 4px}
+.nav.lead h1 .who-t{display:inline-flex;margin:0;justify-content:flex-start;vertical-align:top}
+.nb .badge{position:absolute;margin:-16px -18px 0 0;min-width:17px;height:17px;border-radius:9px;background:#E5322D;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.me{width:32px;height:32px;border-radius:50%;background:var(--tx);color:#fff;font-size:12.5px;font-weight:700;display:grid;place-items:center}
+
+/* ─── вкладки с подчёркиванием (Strava: Progress | Activities) ─── */
+.utabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-bottom:.5px solid var(--line);background:var(--bg)}
+.utabs button{height:46px;font-size:16px;font-weight:600;color:var(--tx3);position:relative}
+.utabs button.on{color:var(--tx)}
+.utabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-.5px;height:2.5px;background:var(--acc)}
+.utabs s{text-decoration:none;font-weight:500;color:var(--tx3);margin-left:4px}
+
+/* ─── нижняя панель ─── */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);
+  background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:.5px solid var(--line);padding-bottom:var(--sab)}
+.tabbar a,.tabbar button{height:var(--tabh);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:600;color:var(--tx);position:relative}
+.tabbar a svg,.tabbar button svg{width:26px;height:26px}
+.tabbar a.on,.tabbar button.on{color:var(--acc)}
+.tabbar a.on svg{fill:var(--acc-a)}
+.more-s{padding-bottom:8px}
+.more-s .cap{padding-top:14px}
+.tabbar .badge{position:absolute;top:4px;left:calc(50% + 5px);min-width:17px;height:17px;border-radius:9px;background:#E5322D;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.scr{padding-bottom:calc(var(--tabh) + var(--sab) + 16px);min-height:100dvh}
+.scr.gapbg{background:var(--gap);display:flow-root}  /* flow-root: отступ первой карточки не «проваливается» наружу и не открывает белую полосу под шапкой */
+
+/* ─── общие блоки ─── */
+.sec{background:var(--bg);padding:16px}
+.sec + .sec,.gapbg > * + *{margin-top:8px}
+.h2{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 12px}
+.h2 b{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.h2 a,.h2 button,.lnk{font-size:15px;font-weight:600;color:var(--acc-t);min-height:44px;display:inline-flex;align-items:center;margin:-12px 0}
+.muted{color:var(--tx2)}
+.small{font-size:13px}
+.ava{width:44px;height:44px;border-radius:50%;background:var(--s1);color:var(--tx2);display:grid;place-items:center;font-size:14px;font-weight:600;overflow:hidden;flex:none;position:relative}
+.ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ava.sq{border-radius:10px;background:var(--tx);color:#fff;font-size:12px}
+.ava.s{width:32px;height:32px;font-size:12px}
+.ava.l{width:72px;height:72px;font-size:24px}
+.pill{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;border-radius:11px;font-size:12px;font-weight:600;white-space:nowrap;flex:none}
+.row .chev + .pill,.row .pill + .chev{margin-left:-4px}
+.pill.rm{background:var(--rm-a);color:var(--rm)} .pill.warn{background:var(--warn-a);color:var(--warn)} .pill.ok{background:var(--ok-a);color:var(--ok)}
+.pill.blue{background:var(--blue-a);color:var(--blue)} .pill.gray{background:var(--s1);color:var(--tx2)} .pill.acc{background:var(--acc-a);color:var(--acc-t)}
+.btn{height:48px;border-radius:24px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:600;background:var(--acc);color:#fff;width:100%}
+.btn.o{background:var(--bg);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line2)}
+.btn svg{width:20px;height:20px;flex:none}
+.btn.s{height:36px;border-radius:18px;font-size:15px;width:auto;padding:0 16px}
+.btn.s::after{content:"";position:absolute;inset:-4px 0}
+.btn{position:relative}
+.search{display:flex;align-items:center;gap:8px;height:44px;margin:12px 16px 4px;padding:0 12px;border-radius:20px;background:var(--s2);color:var(--tx3)}
+.search svg{width:18px;height:18px;flex:none}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0;height:100%}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:36px;padding:0 14px;border-radius:18px;font-size:14.5px;font-weight:500;white-space:nowrap;box-shadow:inset 0 0 0 1px var(--line2);flex:none;display:inline-flex;align-items:center;gap:6px;position:relative}
+.chip::after{content:"";position:absolute;inset:-4px 0}
+.chip.on{box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc-t);font-weight:600}
+.chip svg{width:14px;height:14px}
+.cap{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);padding:16px 16px 8px}
+.empty{padding:40px 24px;text-align:center;color:var(--tx2)}
+.empty b{display:block;color:var(--tx);font-size:17px;margin-bottom:4px}
+
+/* ─── строки списков (Strava: клубы, участники) ─── */
+.row{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 16px;background:var(--bg);position:relative;width:100%;text-align:left}
+.row + .row::before{content:"";position:absolute;left:72px;right:0;top:0;border-top:.5px solid var(--line)}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.row .chev{width:16px;height:16px;color:var(--tx3);flex:none}
+.row > button.t,.row > a.t{align-self:stretch;min-height:48px;display:flex;flex-direction:column;justify-content:center}
+.row:active{background:var(--s1)}
+/* карточка клиента: общая информация и вкладки */
+.lrow.ci{min-height:56px;gap:12px;padding:6px 12px 6px 16px}
+.lrow.ci .ic{width:32px;height:32px;border-radius:8px}
+.lrow.ci .ic svg{width:18px;height:18px}
+.lrow.ci .t{display:flex;flex-direction:column}
+.lrow.ci .t s{order:-1;font-size:13px}
+.lrow.ci .t b{font-weight:500;font-size:16px;overflow-wrap:anywhere}
+.lrow.ci .t b.rm{color:var(--rm)} .lrow.ci .t b.warn{color:var(--warn)}
+.lrow.ci + .lrow.ci::before{left:60px}
+.ci-note{padding:10px 16px 16px;border-top:.5px solid var(--line)}
+.ci-note span{display:block;font-size:13px;color:var(--tx2);margin-bottom:6px}
+.cchart{padding:12px 26px 4px 34px}
+.cchart svg{width:100%;height:auto;display:block;overflow:visible}
+.cchart-h{margin-left:-18px;margin-right:-10px}
+/* график общий с кабинетом (lineChart, viewBox 640): подписи крупнее, чтобы после уменьшения до 360 читались */
+.cchart svg text{font-size:21px !important}
+.cchart svg .yl{fill:var(--tx2)}
+.cchart-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.cchart-h b{font-size:16px;font-weight:600}
+.cchart-h span{font-size:13px;color:var(--tx2)}
+.lrow.pmrow{min-height:60px}
+.lrow.pmrow.on{background:var(--acc-a)}
+.pmv{text-align:right;flex:none}
+.pmv b{display:block;font-size:16px;font-weight:700}
+.pmv s{display:block;text-decoration:none;font-size:13px;color:var(--tx2)}
+.mv{display:flex;align-items:baseline;gap:8px;flex:none}
+.mv b{font-size:16px;font-weight:600}
+.mv s{text-decoration:none;font-size:13px;font-weight:600;min-width:38px;text-align:right}
+.mv s.up{color:var(--warn)} .mv s.dn{color:var(--ok)}
+.cev{background:var(--gap);padding-bottom:6px}
+.cev .day{padding-top:12px}
+/* карточка группы */
+.g-cal{padding:0 16px 16px}
+.g-cal .btn{gap:8px}
+.g-cal .btn svg{width:20px;height:20px}
+.g-h{padding:16px 6px 4px 16px;margin:0}
+.g-h b s{text-decoration:none;font-weight:600;color:var(--tx3);margin-left:6px}
+.g-h button{font-size:15px;font-weight:600;color:var(--acc-t);min-height:44px;padding:0 10px}
+.add-r{color:var(--acc-t)}
+.add-r .t b{font-weight:600}
+.row .ic.acc{width:44px;height:44px;border-radius:50%;background:var(--acc-a);color:var(--acc-t);display:grid;place-items:center;flex:none}
+.row .ic.acc svg{width:20px;height:20px}
+.rm-b{width:44px;height:44px;margin:0 -8px 0 -10px;display:grid;place-items:center;flex:none}
+.rm-b i{width:22px;height:22px;border-radius:50%;background:var(--rm);position:relative}
+.rm-b i::after{content:"";position:absolute;left:6px;right:6px;top:10px;height:2px;border-radius:1px;background:#fff}
+.row.gm + .row.gm::before{left:110px}
+.swipe .acts .a-rm{background:var(--rm)}
+.row.danger{justify-content:center;color:var(--rm);font-weight:600;font-size:16px;min-height:52px}
+.row.off{opacity:.55}
+/* «Ещё» — разделы строками */
+.more-r{min-height:52px;gap:12px}
+.more-r .ic{width:32px;height:32px;border-radius:8px;background:var(--s1);color:var(--tx)}
+.more-r .ic svg{width:19px;height:19px}
+.more-r .t b{font-weight:400;font-size:16px}
+.more-r .n{color:var(--tx2);font-size:15px}
+.lrow.more-r + .lrow.more-r::before{left:60px}
+/* клиенты: поиск и значок фильтра в одну строку; статус — под именем */
+.srow{display:flex;align-items:center;gap:4px;padding:12px 8px 4px 16px}
+.srow .search{flex:1;margin:0}
+.srow .nb.on{color:var(--acc-t);position:relative}
+.srow .nb.on::after{content:"";position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 2px var(--bg)}
+.fsum{display:flex;align-items:center;gap:8px;padding:6px 8px 0 16px;font-size:14px;color:var(--tx2)}
+.fsum span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsum .lnk{margin:0;flex:none;padding:0 8px}
+.row.cl .t s{display:flex;align-items:center;gap:6px;margin-top:3px}
+.row.cl .t s .pill{flex:none}
+.row.cl .t s .pl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.cl{min-height:64px}
+/* смахивание строки влево — действия */
+.swipe{position:relative;overflow:hidden}
+.swipe .acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+.swipe .acts button{width:96px;color:#fff;font-size:13.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 6px;text-align:center;line-height:1.15}
+.swipe .acts svg{width:22px;height:22px}
+.swipe .acts .a-fee{background:var(--acc)}
+.swipe .acts .a-msg{background:#5F5F66}
+.swipe .row{transition:transform .2s ease;z-index:1}
+.swipe.open .row{transform:translateX(var(--sw,-192px))}
+
+/* ─── «Тренируются сегодня» — полоса аватаров ─── */
+.strip{display:flex;gap:14px;overflow-x:auto;padding:4px 16px 2px;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.st{flex:none;width:60px;text-align:center;position:relative}
+/* статус — значком в углу аватара (без цветных ободков): ✓ сделал · ▶ делает · ✕ не выполнил · ✎ черновик */
+.st .ring{display:block;position:relative;width:56px;height:56px;margin:0 auto;border-radius:50%}
+.st .ring .ava{width:56px;height:56px}
+.st .ring i{position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:50%;border:2px solid var(--bg);display:grid;place-items:center;color:#fff}
+.st.ok .ring i{background:var(--ok)} .st.go .ring i{background:var(--acc)} .st.late .ring i{background:var(--rm)} .st.draft .ring i{background:#5F5F66}
+.st .ring i svg{width:12px;height:12px;stroke-width:2.6}
+.st.go .ring i svg{fill:currentColor;stroke-width:1.5;margin-left:1px}
+/* в строке шторки «Все» — аватар 44 */
+.row .st{width:44px;flex:none}
+.row .st .ring,.row .st .ring .ava{width:44px;height:44px}
+.row .st .ring i{width:18px;height:18px;right:-3px;bottom:-3px}
+.row .st .ring i svg{width:10px;height:10px}
+.st s{display:block;text-decoration:none;font-size:12px;color:var(--tx2);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* свёрнутая полоса под заголовком (лента прокручена) */
+.mini{display:flex;align-items:center;gap:10px;width:100%;height:0;padding:0 12px 0 16px;overflow:hidden;opacity:0;text-align:left;border-top:0 solid var(--line);transition:height .22s ease,opacity .18s ease}
+.nav.mini-on .mini{height:48px;opacity:1;border-top-width:.5px}
+.mini .mav{display:flex;flex:none}
+.mini .mav:empty{display:none}
+.mini .st{width:auto;display:block}
+.mini .st + .st{margin-left:-8px}
+.mini .st .ring{width:32px;height:32px;border-radius:50%;box-shadow:0 0 0 2px var(--bg)}
+.mini .st .ring .ava{width:32px;height:32px;font-size:11px}
+.mini .st .ring i{width:15px;height:15px;border-width:1.5px;right:-3px;bottom:-3px}
+.mini .st .ring i svg{width:8px;height:8px}
+.mini .mt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.mini .mt b,.mini .mt small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .mt b{font-size:15px;font-weight:600}
+.mini .mt small{font-size:12.5px;color:var(--tx2)}
+.mf.draft{color:var(--rm);font-weight:600} .mf.go{color:var(--acc-t);font-weight:600}
+.mini svg{width:16px;height:16px;color:var(--tx3);flex:none}
+
+/* ─── лента (Strava: карточки активностей) ─── */
+/* «Сегодня» — два модуля на сером фоне: виджет «Тренируются сегодня» и раздел «События» */
+.mods .sec + .sec,.gapbg.mods > * + *{margin-top:0}
+.mod{background:var(--bg);border-radius:16px;margin:12px 12px 0;padding:14px 0 12px}
+.gapbg.mods > .mod + .mod{margin-top:12px}     /* модули не слипаются: правило выше обнуляет отступ у соседей */
+.mod-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 6px 10px 16px}
+.mod-h b{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.mod-h b s{text-decoration:none;font-weight:600;color:var(--tx3);margin-left:6px}
+.mod-h .lnk{margin:0;gap:2px;padding:0 10px}
+.mod-h .lnk svg{width:16px;height:16px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;padding:20px 4px 2px 16px}
+.sec-h b{font-size:22px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.sec-h .pill{font-size:12.5px;height:24px;padding:0 9px;border-radius:12px;letter-spacing:0}
+.sec-h .nb.on{color:var(--acc-t)}
+.sec-h .nb.on::after{content:"";position:absolute;margin:-18px -18px 0 0;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+/* «Первые шаги» — чек-лист первого входа */
+.onbm .mod-h b{display:flex;align-items:baseline}
+/* прогресс по шагам — сегментами */
+.obar{display:flex;gap:4px;margin:0 16px 10px}
+.obar i{flex:1;height:5px;border-radius:3px;background:var(--s2);transition:background .3s}
+.obar i.on{background:var(--acc)}
+.onbm.fin .obar i.on{background:var(--ok)}
+/* шаги — горизонтальная лента карточек: блок не выше половины первого экрана */
+.ocar{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 16px;padding:0 16px 2px;scrollbar-width:none}
+.ocar::-webkit-scrollbar{display:none}
+.ocard{flex:none;width:236px;scroll-snap-align:start;border-radius:14px;background:var(--s1);padding:12px 12px 12px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;position:relative}
+.ocard.next{background:var(--acc-a)}
+.oc-h{display:flex;gap:8px;align-items:flex-start}
+.ocard b{font-size:15px;font-weight:600;line-height:1.3;padding-top:3px}
+.ocard s{text-decoration:none;font-size:13px;color:var(--tx2);line-height:1.3;flex:1;padding-left:34px}
+.ocard .cbtn{margin:6px 0 0 34px;height:34px;padding:0 14px;font-size:14.5px;background:var(--bg)}
+.ocard .ock{width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx2);background:var(--bg)}
+.ocard.next .ock{background:var(--acc);color:#fff}
+.ocard.done{opacity:.75}
+.ocard.done .ock{background:var(--ok-a);color:var(--ok)}
+.ocard.done .ock svg{width:14px;height:14px}
+.onbm.fin .obar i{background:var(--ok)}
+.osteps{padding-top:4px}
+.ost{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:8px 10px 8px 16px;text-align:left;position:relative}
+.ost + .ost::before{content:"";position:absolute;left:56px;right:0;top:0;border-top:.5px solid var(--line)}
+.ost .ock{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:14px;font-weight:700;color:var(--tx2);box-shadow:inset 0 0 0 1.5px var(--line2)}
+.ost.next .ock{box-shadow:none;background:var(--acc);color:#fff}
+.ost.done .ock{box-shadow:none;background:var(--ok-a);color:var(--ok)}
+.ost .ock svg{width:15px;height:15px}
+.ost .t{flex:1;min-width:0}
+.ost .t b{display:block;font-size:15.5px;font-weight:600;line-height:1.3}
+.ost .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);margin-top:1px}
+.ost.done .t b{font-weight:400;color:var(--tx2)}
+.ost > svg{width:16px;height:16px;color:var(--tx3);flex:none}
+.ost:active{background:var(--s1)}
+.onb-fin{margin:6px 16px 4px;font-size:15px;color:var(--tx2);line-height:1.4}
+/* рекорды клиента */
+.pmr{display:flex;align-items:center;gap:10px;min-height:52px;border-bottom:.5px solid var(--line)}
+.pmr span{flex:1;min-width:0;font-size:16px}
+.pmr input{width:88px;height:44px;border-radius:10px;border:1px solid var(--line2);text-align:center;font-size:17px;font-weight:600;outline:0}
+.pmr input:focus{border-color:var(--acc)}
+.pmr i{font-style:normal;color:var(--tx2);width:20px}
+/* лента: карточка одного формата — шапка, одна-две фразы, одно действие */
+.day{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);padding:14px 16px 8px}
+.card{background:var(--bg);padding:14px 14px 14px 16px;position:relative;border-radius:16px;margin:0 12px 10px}
+.card.gone{opacity:.62}
+.ch{display:flex;gap:10px;align-items:center}
+.ch > a,.ch > .ava,.ch > .sys,.ch > .stack{flex:none}
+.card .ch > .ava,.card .ch > a > .ava{width:40px;height:40px}
+.card .ch > a{display:grid;place-items:center;width:44px;height:44px;margin:-2px}
+.card .stack .ava{width:32px;height:32px}
+.ch .t{flex:1;min-width:0}
+.ch .t b{display:block;font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-right:6px;vertical-align:2px}
+.tag{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:12px;font-size:12.5px;font-weight:600;white-space:nowrap;flex:none;align-self:flex-start}
+.tag svg{width:13px;height:13px;stroke-width:2.2}
+.tag.blue{background:var(--blue-a);color:var(--blue)} .tag.warn{background:var(--warn-a);color:var(--warn)} .tag.acc{background:var(--acc-a);color:var(--acc-t)}
+.tag.rm{background:var(--rm-a);color:var(--rm)} .tag.ok{background:var(--ok-a);color:var(--ok)} .tag.gray{background:var(--s1);color:var(--tx2)}
+.card p{margin:10px 0 0;font-size:15.5px;line-height:1.4;overflow-wrap:anywhere}
+.card blockquote{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--s1);font-size:15.5px;line-height:1.4;overflow-wrap:anywhere}
+.card p.ans{margin-top:8px;padding-left:12px;border-left:2px solid var(--line2);color:var(--tx2)}
+.cbtn{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:18px;background:var(--acc-a);color:var(--acc-t);font-size:15px;font-weight:600;position:relative}
+.cbtn::after,.clnk::after{content:"";position:absolute;inset:-4px 0}
+.clnk{display:inline-flex;align-items:center;gap:2px;height:36px;font-size:15px;font-weight:600;color:var(--tx2);position:relative}
+.clnk svg{width:16px;height:16px}
+.stats{display:flex;gap:22px;margin-top:12px}
+.stats div s{display:block;text-decoration:none;font-size:13px;color:var(--tx2)}
+.stats div b{font-size:20px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.stats div b em{font-style:normal;font-size:15px;font-weight:600;color:var(--ok);margin-left:4px}
+.cacts{display:flex;align-items:center;gap:8px;margin-top:12px}
+.cacts .lnk{margin:0;flex:1;justify-content:flex-start}
+.cacts .ok{color:var(--ok);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.stack{display:flex}
+.stack .ava{width:28px;height:28px;font-size:11px;box-shadow:0 0 0 2px var(--bg)}
+.stack .ava + .ava{margin-left:-8px}
+.sys{width:40px;height:40px;border-radius:10px;background:#141414;color:var(--acc);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+
+/* ─── календарь ─── */
+.who{display:flex;align-items:center;gap:10px;margin:12px 16px 0;padding:8px 12px 8px 8px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line2);width:calc(100% - 32px);text-align:left;min-height:56px}
+.who .t{flex:1;min-width:0}
+.who .t b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .t s{display:block;text-decoration:none;font-size:13px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:16px 8px 4px 16px}
+.mh b{font-size:20px;font-weight:700}
+.mh div{display:flex}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;font-size:12px;font-weight:600;color:var(--tx3);text-align:center;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);padding:2px 8px 8px;row-gap:2px}
+.gd{height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;position:relative}
+.gd b{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:500}
+.gd.out b{color:var(--tx3);font-weight:400}
+.gd.today b{color:var(--acc-t);font-weight:700}
+.gd.sel b{background:var(--tx);color:#fff;font-weight:600}
+.gd.pk b{background:var(--acc);color:#fff;font-weight:600}
+.gd .mk{height:6px;display:flex;gap:3px;position:absolute;bottom:3px}
+.gd .mk i{width:6px;height:6px;border-radius:50%}
+.mk .pub{background:var(--acc)} .mk .draft{box-shadow:inset 0 0 0 1.5px var(--acc)} .mk .done{background:var(--ok)} .mk .miss{background:var(--rm)} .mk .comp{background:#7A3EF0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 16px 12px;font-size:12.5px;color:var(--tx2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:8px;height:8px;border-radius:50%}
+.drow{display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:68px;width:100%;text-align:left;position:relative;background:var(--bg)}
+.drow + .drow::before{content:"";position:absolute;left:72px;right:0;top:0;border-top:.5px solid var(--line)}
+.drow.sel{background:var(--acc-a)}
+.badge-d{width:44px;flex:none;border-radius:8px;overflow:hidden;text-align:center;box-shadow:inset 0 0 0 1px var(--line2)}
+.badge-d s{display:block;text-decoration:none;background:var(--acc);color:#fff;font-size:11px;font-weight:700;line-height:16px;text-transform:uppercase}
+.badge-d b{display:block;font-size:19px;font-weight:700;line-height:26px}
+.badge-d.rest s{background:var(--s2);color:var(--tx2)}
+.drow .t{flex:1;min-width:0}
+.drow .t b{display:block;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow.rest .t b{font-weight:400;color:var(--tx2)}
+.drow .ck{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line2);flex:none;display:grid;place-items:center}
+.drow.sel .ck{background:var(--acc);box-shadow:none;color:#fff}
+.drow .ck svg{width:14px;height:14px}
+.selbar{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--bg);border-top:.5px solid var(--line);padding:8px 8px calc(8px + var(--sab));display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.selbar button{height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12.5px;font-weight:600}
+.selbar button svg{width:22px;height:22px}
+.selbar button:disabled{color:var(--tx3)}
+
+/* календарь: две недели, превью дня, выбор и вставка */
+.who-t{display:inline-flex;align-items:center;gap:4px;max-width:100%;font:inherit;font-weight:600;position:relative}
+.who-t::after{content:"";position:absolute;inset:-12px -6px}
+.nav h1 .who-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-t svg{width:16px;height:16px;color:var(--tx3);flex:none}
+.date-t{display:inline-flex;align-items:center;gap:2px;max-width:100%;font:inherit;color:inherit;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.date-t::after{content:"";position:absolute;inset:-15px -8px}
+.date-t svg{width:13px;height:13px;flex:none;color:var(--tx3)}
+.nav h1 .who-t{display:flex;margin:0 auto;justify-content:center}
+.nav h1 small .date-t{display:inline-flex;align-items:center}
+.cal-top{background:var(--bg);padding-bottom:2px}
+.calm .mh{padding-top:8px}
+.cal-tg{display:block;margin:0 auto;width:64px;height:24px;color:var(--tx3);position:relative}
+.cal-tg::after{content:"";position:absolute;inset:-10px 0}
+.cal-tg svg{width:20px;height:20px;margin:0 auto;transition:transform .2s}
+.cal-tg.up svg{transform:rotate(180deg)}
+.gd.trg b{box-shadow:inset 0 0 0 2px var(--acc);color:var(--acc-t);font-weight:700}
+.gd.off{opacity:.35}
+.cal-clip{background:var(--acc-a);color:var(--acc-t);padding:10px 16px;font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center}
+.cal-clip svg{width:18px;height:18px;flex:none}
+.pv{padding-bottom:14px}
+.pv-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px 0 16px;color:var(--tx2);font-size:14px;font-weight:500}
+.pv h3{margin:6px 16px 8px;font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.25;overflow-wrap:anywhere}
+.pv h3.muted{color:var(--tx2);font-weight:600}
+.pv-b{list-style:none;margin:0;padding:0 16px}
+.pv-b li + li{margin-top:6px}
+.pv-b li b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.pv-b li s{display:block;text-decoration:none;font-size:14px;color:var(--tx2);overflow-wrap:anywhere}
+.pv-b li.more{font-size:14px;color:var(--tx2)}
+.pv-n{margin:8px 16px 0;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+.pv-warn{margin:6px 16px 0;font-size:14px;color:var(--rm);font-weight:500}
+.pv-a{display:flex;gap:8px;padding:14px 16px 0}
+.pv-a .btn.s{flex:1;height:44px;border-radius:22px;gap:6px}
+.pv-a .btn svg{width:18px;height:18px}
+.pv-hint{margin:10px 16px 0;font-size:13px;color:var(--tx2);line-height:1.35}
+/* тренировка дня — одной карточкой; блоки как в клиентском приложении: название 17 pt со
+   стрелкой (сворачивает), строки 15/22, группы внутри блока — через тонкую линию */
+.pv-msg{margin:14px 16px 0;background:var(--s1);border-radius:12px;padding:10px 12px}
+.pv-msg b{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--tx2)}
+.pv-msg b svg{width:15px;height:15px}
+.pv-msg p{margin:4px 0 0;font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.pv-w{margin-top:14px;border-top:.5px solid var(--line)}
+.pv-wh{display:flex;align-items:center;justify-content:space-between;padding:0 6px 0 16px;min-height:44px;font-size:14px;color:var(--tx2);border-bottom:.5px solid var(--line)}
+.pv-wh .lnk{margin:0;padding:0 10px;font-size:15px}
+.pvk + .pvk{border-top:.5px solid var(--line)}
+.pvk-h{display:flex;align-items:center;gap:6px;width:100%;min-height:50px;padding:0 16px;text-align:left}
+.pvk-h b{min-width:0;font-size:17px;font-weight:500;line-height:1.25;overflow-wrap:anywhere}
+.pvk-h svg{width:18px;height:18px;color:var(--tx2);flex:none;transform:rotate(180deg);transition:transform .15s}
+.pvk.shut .pvk-h svg{transform:none}
+.pvk-h span{margin-left:auto;font-size:13.5px;color:var(--tx2);flex:none}
+.pvk-c{padding:0 16px 12px}
+.pvs + .pvs{border-top:.5px solid var(--line);margin-top:8px;padding-top:8px}
+.pvs .xl{font-size:15px;line-height:22px;overflow-wrap:anywhere}
+.pvs .nw{white-space:nowrap}
+.pbar{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--bg);border-top:.5px solid var(--line);padding:8px 16px calc(8px + var(--sab))}
+.scr.with-bar{padding-bottom:calc(84px + var(--sab))}
+
+/* ─── карточка клиента (Strava: профиль клуба) ─── */
+.hero{display:flex;gap:14px;align-items:center;padding:16px}
+.hero h2{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.15;overflow-wrap:anywhere}
+.hero p{margin:4px 0 0;color:var(--tx2);font-size:14.5px}
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 8px 16px}
+.qa button,.qa a{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--tx);padding:4px 0;text-align:center}
+.qa span{width:52px;height:52px;border-radius:50%;background:var(--s1);display:grid;place-items:center}
+.qa svg{width:22px;height:22px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.kv div s{display:block;text-decoration:none;font-size:13px;color:var(--tx2)}
+.kv div b{font-size:18px;font-weight:700}
+.note{width:100%;min-height:72px;border:0;border-radius:12px;background:var(--s1);padding:12px;resize:none;line-height:1.4;outline:0}
+.lrow{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;width:100%;text-align:left;background:var(--bg);position:relative}
+.lrow + .lrow::before{content:"";position:absolute;left:16px;right:0;top:0;border-top:.5px solid var(--line)}
+.lrow .t{flex:1;min-width:0}
+.lrow .t b{display:block;font-weight:500}
+.lrow .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2)}
+.lrow svg{width:16px;height:16px;color:var(--tx3);flex:none}
+
+/* ─── шторка (Strava: заголовок слева и ✕) ─── */
+.ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;opacity:0;transition:opacity .2s}
+.ov.on{opacity:1}
+.sheet{width:100%;max-height:88dvh;background:var(--bg);border-radius:16px 16px 0 0;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);touch-action:pan-y}
+.ov.on .sheet{transform:none}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--line2);margin:7px auto 0;flex:none}
+.sh-h{display:flex;align-items:center;gap:8px;padding:8px 8px 10px 16px;border-bottom:.5px solid var(--line);flex:none}
+.sh-h b{flex:1;font-size:17px;font-weight:700}
+.sh-h small{display:block;font-size:13px;font-weight:400;color:var(--tx2)}
+.sh-b{overflow-y:auto;padding:0 0 calc(16px + var(--sab));flex:1}
+.sh-p{padding:16px}
+.field{display:block;margin:0 0 14px}
+.field span{display:block;font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px}
+.field input,.field textarea{width:100%;height:48px;border-radius:10px;border:1px solid var(--line2);padding:0 12px;background:var(--bg);outline:0}
+.field textarea{height:auto;min-height:88px;padding:12px;resize:none}
+.field input:focus,.field textarea:focus{border-color:var(--acc)}
+.opt{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;width:100%;text-align:left;font-size:16px}
+.opt + .opt{border-top:.5px solid var(--line)}
+.opt .box{width:24px;height:24px;border-radius:6px;box-shadow:inset 0 0 0 1.5px var(--line2);display:grid;place-items:center;flex:none;color:#fff}
+.opt.on .box{background:var(--acc);box-shadow:none}
+.opt .box svg{width:14px;height:14px}
+.opt .n{margin-left:auto;font-size:14px;color:var(--tx3)}
+.chat{padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.bub{max-width:82%;padding:9px 12px;border-radius:16px;font-size:15.5px;line-height:1.4}
+.bub small{display:block;font-size:12px;color:var(--tx2);margin-bottom:2px}
+.bub.cl{align-self:flex-start;background:var(--s1);border-bottom-left-radius:4px}
+.bub.me{align-self:flex-end;background:var(--acc-a);border-bottom-right-radius:4px}
+.reply{display:flex;gap:8px;align-items:flex-end;padding:8px 12px calc(8px + var(--sab));border-top:.5px solid var(--line);flex:none;background:var(--bg)}
+.reply textarea{flex:1;min-height:44px;max-height:120px;border-radius:20px;border:1px solid var(--line2);padding:11px 14px;resize:none;outline:0;line-height:1.3}
+.reply button{width:44px;height:44px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;flex:none}
+.reply button svg{width:20px;height:20px}
+.reply-go{padding:0 16px 8px}
+.reply-go .clnk{color:var(--acc-t);height:44px}
+
+/* ─── полноэкранный слой: конструктор, просмотр тренировки ─── */
+.full{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.full.push{transform:translateX(100%)}
+.full.on{transform:none}
+.full .nav{position:static}
+.full iframe{flex:1;width:100%;border:0;display:block}
+
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tabh) + var(--sab) + 12px);z-index:90;background:#1C1C1E;color:#fff;border-radius:12px;padding:12px 16px;font-size:15px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
+.toast.on{opacity:1;transform:none}
+
+/* ═══════════ РЕДАКТОР ТРЕНИРОВКИ (editor.js) ═══════════
+   Документ дня на сером фоне: шапка тренировки, статус, блоки карточками.
+   Строка — итог (название + «5×3 · 80 % → 96 кг»), правка — в шторке. */
+.full.ed{background:var(--gap)}
+/* «Сохранить» — плавающая кнопка внизу правки, под большим пальцем: выезжает, пока есть несохранённые
+   правки (.full.ed.dirty), после записи уходит. Под ней фон затухает, чтобы строки не спорили с кнопкой;
+   подсказка с «Отменить» на это время стоит выше кнопки (обычная подсказка в правке — вверху экрана) */
+.ed-save{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:20px 16px calc(12px + var(--sab));background:linear-gradient(to top,var(--gap) 55%,rgba(242,242,242,0));pointer-events:none;visibility:hidden;transform:translateY(100%);opacity:0;transition:transform .25s cubic-bezier(.2,.8,.2,1),opacity .2s,visibility 0s .25s}
+.full.ed.dirty .ed-save{visibility:visible;transform:none;opacity:1;transition:transform .25s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.ed-save .btn{pointer-events:auto;height:50px;border-radius:25px;font-size:17px;box-shadow:0 6px 18px rgba(252,82,0,.28)}
+.full.ed.dirty .ed-scr{padding-bottom:calc(98px + var(--sab))}
+body:has(.full.ed.dirty) .etoast{bottom:calc(78px + var(--sab))}
+@media (prefers-reduced-motion:reduce){.ed-save{transition:opacity .2s}}
+.ed-hd{flex:none}
+.ed-scr{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(24px + var(--sab));overscroll-behavior:contain}
+/* шапка дня — оранжевая плашка, как в просмотре (workout.html, .wvdoc .doch): название 19 pt жирным на всю
+   ширину; в правке справа от него шестерёнка настроек (серым, по первой строке названия). День — значком
+   календаря в шапке экрана. Под названием — только «Соревнование» / сводка шаблона */
+.ed-top{margin:12px 12px 0;padding:4px 4px 4px 16px;border-radius:16px;background:var(--acc-a)}
+.ed-tr{display:flex;align-items:flex-start;gap:4px}
+/* название — textarea по высоте текста: длинное переносится на 2–3 строки, не обрезается */
+.ed-title{flex:1;min-width:0;display:block;border:0;outline:0;background:none;font-family:inherit;font-size:19px;font-weight:700;line-height:24px;letter-spacing:-.03em;padding:10px 0;resize:none;overflow:hidden;overflow-wrap:break-word}
+.ed-title::placeholder{color:var(--tx3);font-weight:600}
+.ed-tr > .nb{flex:none;color:var(--tx2)}
+.full.reorder .ed-title{padding-right:12px}
+.ed-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 12px 8px 0;font-size:14px;line-height:18px;color:var(--tx2)}
+/* строка ввода в конце блока */
+.qadd{display:flex;align-items:center;gap:4px;padding:2px 4px 2px 16px;border-top:.5px solid var(--line)}
+.qadd .qi{color:var(--acc-t);flex:none;display:grid;place-items:center}
+.qadd .qi svg{width:20px;height:20px}
+.qa-in{flex:1;min-width:0;height:46px;border:0;outline:0;background:none;font-size:16px;padding:0 4px}
+.qa-in::placeholder{color:var(--acc-t);font-weight:500}
+.qa-in:focus::placeholder{color:var(--tx3);font-weight:400}
+.qsug:empty{display:none}
+.qsug{border-top:.5px solid var(--line);padding:4px 0}
+.qs-r{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:48px;padding:6px 16px 6px 44px;text-align:left;justify-content:center}
+.qs-r b{font-weight:500;font-size:15.5px}
+.qs-r s{text-decoration:none;font-size:13px;color:var(--tx2)}
+.qs-r.alt{flex-direction:row;align-items:center;gap:8px;padding-left:16px;color:var(--acc-t);font-weight:600;font-size:15px}
+.qs-r.alt svg{width:20px;height:20px;flex:none}
+.qs-r.alt span{min-width:0;overflow-wrap:anywhere}
+.qs-r:active{background:var(--s1)}
+.pmset{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pmset span{flex:1;font-size:15px}
+.pmset input{width:88px;height:44px;border-radius:10px;border:1px solid var(--line2);text-align:center;font-size:17px;font-weight:600;outline:0}
+.pmset i{font-style:normal;color:var(--tx2)}
+.ed-sub .pill svg{display:inline-block}
+.ed-st{background:var(--bg);margin:12px 12px 0;border-radius:16px;overflow:hidden}
+.ed-st .lrow{min-height:60px;padding:8px 12px 8px 16px}
+.ed-st .lrow .t s{white-space:normal}
+.ic{width:36px;height:36px;border-radius:50%;background:var(--s1);color:var(--tx2);display:grid;place-items:center;flex:none}
+.lrow .ic svg{width:20px;height:20px;color:inherit}
+.ic.on{background:var(--ok-a);color:var(--ok)}
+.ic.acc{background:var(--acc-a);color:var(--acc-t);border-radius:10px}
+.ic.sq{border-radius:10px}
+.row .ic svg{width:20px;height:20px}
+.lrow > svg:last-child{width:16px;height:16px;color:var(--tx3)}
+.ed-from{background:var(--warn-a) !important}
+.ed-from .ic{background:#fff;color:var(--warn)}
+.ed-from .lnk{flex:none;margin:0}
+.stk{display:flex;flex:none}
+.stk .ava + .ava{margin-left:-10px;box-shadow:0 0 0 2px var(--bg)}
+/* переключатель (iOS, акцент Strava) */
+.tg{width:51px;height:31px;border-radius:16px;background:var(--line2);position:relative;flex:none;transition:background .2s}
+.tg::after{content:"";position:absolute;inset:-7px -2px}
+.tg i{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .2s}
+.tg.on{background:var(--acc)}
+.tg.on i{transform:translateX(20px)}
+.tg:disabled{opacity:.45}
+/* как начать */
+.ed-start{background:var(--bg);margin:12px 12px 0;border-radius:16px;overflow:hidden;padding-bottom:4px}
+.ed-start .cap{padding-top:14px}
+.ed-start .lrow{min-height:68px}
+.ed-start .ic{width:40px;height:40px}
+/* блоки — каждый своей карточкой (в правке их легче различить, чем блоки через линию); внутри — как в просмотре: строки «схема упражнение вес» */
+.ed-blocks{position:relative;padding:0 12px}
+.eb{background:var(--bg);position:relative;margin-top:12px;border-radius:16px;overflow:hidden}
+.eb.pend{box-shadow:inset 3px 0 0 var(--acc)}
+/* шапка блока — как в просмотре (.wbh): серая полоса, номер в рамке, название, под ним тип серым; справа «•••» */
+.eb-h{display:flex;align-items:center;gap:10px;min-height:58px;padding:4px 4px 4px 12px;background:#F7F7F8;border-bottom:.5px solid var(--line)}
+.eb-no{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:6px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2);font-size:13px;color:var(--tx2)}
+.eb-tt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.eb-t{width:100%;min-width:0;display:block;border:0;outline:0;background:none;font-family:inherit;font-size:16px;font-weight:600;line-height:22px;padding:4px 0 2px;min-height:28px;resize:none;overflow:hidden;overflow-wrap:break-word}
+.eb-t::placeholder{color:var(--tx3);font-weight:500}
+/* тип — строкой под названием; видимая высота 22, зона касания шире и ниже */
+.eb-ty{position:relative;display:inline-flex;align-items:center;gap:2px;max-width:100%;min-height:28px;margin:-4px 0 -2px;padding:0 0 2px;font-size:13px;color:var(--tx2)}
+.eb-ty::after{content:"";position:absolute;inset:-2px -10px -6px}
+.eb-ty span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eb-ty:not(.on){color:var(--tx3)}
+.eb-ty svg{width:14px;height:14px;flex:none}
+/* блок-шаблон: шапка «Состав блока» и тип справа, без номера */
+.eb-h.solo{background:none;border-bottom:0;min-height:50px;padding:6px 4px 0 16px}
+.eb-h.solo .eb-ty{min-height:44px;padding:0 8px}
+.eb-h.solo .eb-ty::after{content:none}
+.eb-h + .eb-n{padding-top:10px}
+.eb-n{display:flex;gap:6px;align-items:flex-start;width:100%;padding:2px 16px 8px;min-height:36px;position:relative;text-align:left;font-size:14px;color:var(--tx2);line-height:1.35}
+.eb-n svg{width:15px;height:15px;flex:none;margin-top:2px}
+.eb-n::after{content:"";position:absolute;inset:-4px 0}   /* видимая строка 36, зона касания 44 */
+.eb-n span{overflow-wrap:anywhere}
+.eb-items{position:relative;padding-bottom:4px}
+.er-fmt{display:block;width:100%;min-height:44px;text-align:left;padding:10px 16px 11px;font-size:15px;line-height:22px;color:var(--tx);border-bottom:.5px solid var(--line);margin-bottom:4px}
+.er{position:relative;overflow:hidden;background:var(--bg)}
+.er-m{position:relative;z-index:1;display:flex;align-items:center;width:100%;min-height:44px;padding:9px 16px;background:var(--bg);text-align:left;touch-action:pan-y;transition:transform .2s;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.er-m:active{background:var(--s1)}
+.er-m .xl{font-size:15.5px;line-height:22px;overflow-wrap:anywhere}
+.er-m .sc{font-weight:600}
+.er-m .lx{color:var(--tx2)}
+.er-m .ph{color:var(--tx3)}
+.ers{border-top:.5px solid var(--line);border-bottom:.5px solid var(--line);margin:4px 0;padding:2px 0 4px}
+.ers + .ers{margin-top:-4px;border-top:0}
+.eb-items > .ers:first-child{margin-top:0;border-top:0}
+.eb-items > .ers:last-child{margin-bottom:0;border-bottom:0}   /* ниже — линия строки ввода, двойной не нужно */
+.er.ssh .er-m{min-height:44px;padding-bottom:4px}
+.er.ssh .er-m .xl{font-weight:600}
+.er-rest{padding:2px 16px 6px;font-size:15.5px;line-height:22px;color:var(--tx2)}
+.er-del{position:absolute;right:0;top:0;bottom:0;width:96px;background:var(--rm);color:#fff;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.er-del svg{width:20px;height:20px}
+.er.open .er-m{transform:translateX(-96px)}
+.er.new .er-m{animation:erNew 1.2s ease}
+@keyframes erNew{0%{background:var(--acc-a)}100%{background:var(--bg)}}
+.er-add{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:0 16px;font-size:16px;font-weight:600;color:var(--acc-t);position:relative}
+.er-add svg{width:20px;height:20px}
+.er-add.ai{color:var(--tx)}
+.er-add.ai svg{color:var(--acc)}
+/* блок текстом */
+.eb-text{display:block;width:100%;text-align:left;padding:4px 16px 12px;font-size:16px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.eb-text span{display:block}
+.eb-text .li{padding-left:18px;position:relative}
+.eb-text .li::before{content:"•";position:absolute;left:4px}
+.eb-text .ph{color:var(--tx3)}
+/* предложение ИИ */
+.ed-ai{margin-top:12px;border-radius:16px;background:var(--acc-a);padding:12px 16px}
+.ed-ai b{display:flex;align-items:center;gap:6px;font-size:15px}
+.ed-ai b svg{width:18px;height:18px;color:var(--acc)}
+.ed-ai s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);margin:2px 0 10px}
+.ed-ai div{display:flex;gap:8px}
+.ed-ai .btn.s{flex:1;height:44px;border-radius:22px}
+.ed-ai .btn.o{background:var(--bg)}
+.ai-src{margin:0;white-space:pre-wrap;font-size:16px;line-height:1.45;overflow-wrap:anywhere}
+/* добавить блок */
+.ed-add{display:flex;gap:8px;padding:16px 12px 8px}
+.ed-add .btn.s{flex:1;min-width:0;height:44px;border-radius:22px;padding:0 8px;font-size:15px;gap:6px;white-space:nowrap}
+.ed-add .btn svg{width:18px;height:18px;flex:none}
+/* порядок */
+.full.ed.reorder .er-m{pointer-events:none}
+.hd{width:44px;height:44px;display:grid;place-items:center;color:var(--tx3);flex:none;touch-action:none;cursor:grab}
+.hd svg{width:22px;height:22px}
+.er .hd{position:absolute;right:4px;top:50%;margin-top:-22px;z-index:3}
+.full.ed.reorder .er-m{padding-right:52px}
+.drag{z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.16);transition:none !important;position:relative}
+.drag .er-m,.drag.er{background:var(--bg)}
+.ed-blocks.collapse .eb > :not(.eb-h){display:none}
+.ed-blocks.collapse .eb{margin-top:8px}
+.ed-blocks.collapse .eb-h{border-bottom:0}
+/* шторки редактора */
+.sh-f{padding:10px 16px calc(10px + var(--sab));border-top:.5px solid var(--line);flex:none;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.sh-f.row2{flex-direction:row}
+.sh-f.row2 .btn{flex:1;height:44px;border-radius:22px;padding:0 8px;gap:6px;font-size:15px}
+.sh-f.row2 .btn svg{width:18px;height:18px;flex:none}
+.ov.tall .sheet{height:88dvh}
+.ov.tall .sh-b{flex:1}
+.ed-acts{border-top:.5px solid var(--line)}
+.ed-acts.top{border-top:0;border-bottom:.5px solid var(--line)}
+.ed-acts .opt{min-height:52px}
+.ed-acts .opt.rm{color:var(--rm)}
+.oi{width:24px;display:grid;place-items:center;flex:none;color:var(--tx2)}
+.oi svg{width:22px;height:22px}
+.opt.rm .oi{color:var(--rm)}
+.ed-opts .opt{min-height:50px}
+.box.rnd{border-radius:50%;font-size:12px;font-weight:700}
+.exr .box.rnd{color:#fff}
+.exr .t{flex:1;min-width:0}
+.exr .t b{display:block;font-weight:500;overflow-wrap:anywhere}
+.exr .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2)}
+.exr{padding-top:6px;padding-bottom:6px}
+.srch{position:sticky;top:0;background:var(--bg);z-index:2;border-bottom:.5px solid var(--line)}
+.srch .search{margin:12px 16px 0}
+.chips.wrap{flex-wrap:wrap;overflow:visible}
+.chips.pre{padding:0 0 14px;flex-wrap:wrap;overflow:visible}
+.chips.pre .chip{height:36px}
+.chip:disabled{opacity:.45}
+.ld{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ld input{width:84px;flex:none;height:48px;border-radius:10px;border:1px solid var(--line2);padding:0 12px;outline:0;text-align:center;font-size:17px;font-weight:600}
+.ld input:focus{border-color:var(--acc)}
+.ld input:disabled{background:var(--s1);color:var(--tx3)}
+.ld i{font-style:normal;color:var(--tx2)}
+.seg{display:inline-flex;background:var(--s1);border-radius:10px;padding:2px;gap:2px;flex:none;max-width:100%;overflow-x:auto}
+.seg button{min-width:44px;height:44px;padding:0 10px;border-radius:8px;font-size:15px;font-weight:500;color:var(--tx2);white-space:nowrap}
+.seg button.on{background:var(--bg);color:var(--tx);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg.wide{display:flex;width:100%}
+.seg.wide button{flex:1;padding:0 4px}
+.ld .seg{margin-left:auto}
+/* шторка упражнения: схема и нагрузка одним рядом; на узком экране нагрузка уходит строкой ниже */
+.x-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.x-row .field{margin:0}
+.x-sch{flex:1 1 92px;min-width:0}
+.x-ld{flex:3 1 196px;min-width:0}
+.x-ld .ld{flex-wrap:nowrap}
+.x-ld .ld input{width:auto;flex:1 1 56px;min-width:56px;padding:0 8px}
+.x-ld .ld .seg{flex:none}
+.x-ld .u1{flex:none;min-width:44px;font-style:normal;font-size:17px;color:var(--tx2)}
+.sh-p .ed-hint:not(:last-child){margin-bottom:14px}
+.x-ld.rng{flex-basis:100%}     /* «от–до» — два числа: нагрузка своей строкой под схемой */
+.x-row + .ed-hint{margin-top:10px}
+.x-row ~ .pmset{margin-top:10px}
+.field .lnk{margin:4px 0 0;min-height:44px}
+.field > .lnk svg{display:inline-block;margin-right:4px}
+.ed-hint{margin:2px 0 0;font-size:14px;color:var(--tx2);min-height:0}
+.ed-hint:empty{display:none}
+.ed-hint b{color:var(--tx)}
+.ed-note{margin:0 0 12px;font-size:13.5px;color:var(--tx2);line-height:1.4}
+.ed-ask{display:flex;flex-direction:column;gap:10px}
+.btn.rm{background:var(--rm);color:#fff}
+.btn.o.rm{background:var(--bg);color:var(--rm);box-shadow:inset 0 0 0 1px var(--line2)}
+.btn:disabled{background:var(--s2);color:var(--tx3)}
+.stp{display:flex;align-items:center;gap:8px;min-height:52px}
+.stp > span{flex:1;font-size:16px}
+.stp b{min-width:56px;text-align:center;font-size:18px;font-weight:700}
+.stp .nb{background:var(--s1);width:44px;border-radius:50%}
+.stp .nb svg{width:20px;height:20px}
+.stp .seg{margin-left:auto}
+.cparts{display:flex;flex-direction:column;gap:8px}
+.cpart{display:flex;align-items:center;gap:8px;min-height:48px}
+.cpart b{flex:1;min-width:0;font-weight:500;overflow-wrap:anywhere}
+.cpart input{width:72px;height:44px;border-radius:10px;border:1px solid var(--line2);text-align:center;outline:0;font-size:16px}
+.cpart .nb svg{width:20px;height:20px;color:var(--tx3)}
+.field select{width:100%;height:48px;border-radius:10px;border:1px solid var(--line2);padding:0 12px;background:var(--bg);font-size:16px}
+.txa{width:100%;min-height:52dvh;border:0;outline:0;resize:none;font-size:17px;line-height:1.45;padding:0}
+.txa::placeholder{color:var(--tx3)}
+.ed-cal .mh{padding-top:8px}
+.etoast{position:fixed;left:12px;right:12px;bottom:calc(16px + var(--sab));z-index:95;background:#1C1C1E;color:#fff;border-radius:12px;padding:6px 6px 6px 16px;font-size:15px;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
+.etoast.on{opacity:1;transform:none;pointer-events:auto}
+.etoast span{flex:1;min-width:0}
+.etoast button{height:44px;padding:0 12px;color:#FF9A66;font-weight:700;font-size:15px}
+/* в редакторе подсказка — сверху, под шапкой: внизу она закрывала бы кнопки шторок */
+/* над открытой шторкой подсказка — сверху, чтобы не закрывать её кнопки */
+body:has(.ov.on) .toast{top:calc(var(--sat) + 60px);bottom:auto}
+body:has(.full.ed.on) .toast{top:calc(var(--sat) + 60px);bottom:auto;transform:translateY(-8px)}
+body:has(.full.ed.on) .toast.on{transform:none}
+
+/* ═══════════ АККАУНТ (account.js): профиль, подписка, уведомления, партнёрская программа ═══════════
+   Списки по iOS: подпись раздела капсом, строка «подпись над значением ›», правка — в шторке,
+   пояснение — сноской под строками. Длинные значения переносятся, а не обрезаются. */
+.me{overflow:hidden;position:relative}
+.me img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.ac .sec{padding:0}
+.ac .ac-p{padding:16px}
+.ac .cap + .ac-p{padding-top:4px}
+.ac-p > * + *{margin-top:12px}
+/* шапка профиля — в строку, как у карточки клиента: фото слева (нажатие — сменить), имя и город справа */
+.ac .ac-hero{display:flex;align-items:center;gap:14px;padding:16px}
+.ac-ph{position:relative;width:64px;height:64px;border-radius:50%;background:var(--s1);color:var(--tx2);display:grid;place-items:center;font-size:22px;font-weight:600;cursor:pointer;flex:none}
+.ac-ph img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
+.ac-cam{position:absolute;right:-4px;bottom:-4px;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;border:2px solid var(--bg)}
+.ac-cam svg{width:14px;height:14px}
+.ac-hero .t{flex:1;min-width:0}
+.ac-hero h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2;overflow-wrap:anywhere}
+.ac-hero p{margin:2px 0 0;color:var(--tx2);font-size:15px;overflow-wrap:anywhere}
+/* строка: подпись над значением, справа шеврон; без шеврона — только для чтения */
+.ac-r{display:flex;align-items:center;gap:12px;min-height:56px;padding:9px 12px 9px 16px;width:100%;text-align:left;background:var(--bg);position:relative}
+.ac-r + .ac-r::before,.ac-op + .ac-op::before{content:"";position:absolute;left:16px;right:0;top:0;border-top:.5px solid var(--line)}
+.ac-r .t{flex:1;min-width:0}
+.ac-r .t s{display:block;text-decoration:none;font-size:13px;color:var(--tx2);margin-bottom:1px;overflow-wrap:anywhere}
+.ac-r .t b{display:block;font-size:16px;font-weight:400;line-height:1.35;overflow-wrap:anywhere;white-space:pre-line}
+.ac-r .t b small{display:block;font-size:13.5px;color:var(--tx2);margin-top:1px;white-space:normal}
+.ac-r.clamp .t b{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ac-r > svg{width:16px;height:16px;color:var(--tx3);flex:none}
+button.ac-r:active,a.ac-r:active{background:var(--s1)}
+.mu{color:var(--tx3)}
+.ac-note{margin:0;padding:6px 16px 16px;font-size:13.5px;line-height:1.4;color:var(--tx2)}
+/* переключатели: название, под ним пояснение */
+.ac-sw .t s{margin:2px 0 0;font-size:13.5px;line-height:1.3}
+.ac-sw.dis .t{opacity:.45}
+.ac-time{height:36px;border:0;border-radius:8px;background:var(--s1);padding:0 10px;font-size:17px;font-variant-numeric:tabular-nums;color:var(--tx);outline:0;flex:none}
+.ac-time:disabled{opacity:.45}
+/* ссылка-приглашение: код жирным, «Скопировать» значком справа */
+.ac-link{display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 4px 4px 14px;border-radius:12px;background:var(--s1)}
+.ac-link > svg{width:18px;height:18px;color:var(--tx3);flex:none}
+.ac-link span{flex:1;min-width:0;font-size:15px;color:var(--tx2);overflow-wrap:anywhere}
+.ac-link span b{color:var(--tx);font-weight:700}
+.ac-link .nb{flex:none;color:var(--acc-t)}
+.ac-link .nb svg{width:22px;height:22px}
+.ac-lead{margin:0;font-size:15px;line-height:1.45}
+/* точка статуса срока подписки — рядом с текстом, не вместо него */
+.ac-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.ac-dot.ok{background:var(--ok)} .ac-dot.warn{background:#E0A100} .ac-dot.rm{background:var(--rm)}
+.ac-box{border-radius:12px;padding:12px 14px;font-size:14.5px;line-height:1.4}
+.ac-box.warn{background:var(--warn-a)} .ac-box.rm{background:var(--rm-a)}
+.ac-box b{font-weight:600}
+/* подписка — модулями: заголовок со статусом справа, строки, сноска */
+.ac-mod .mod-h{padding-right:16px;min-height:28px}
+.ac-mod > .ac-box{margin:0 16px 12px}
+.ac .ac-mod > .ac-p{padding:0 16px 4px}
+.ac-plan b.acc{color:var(--acc-t)}
+.ac-plan{padding:0 16px 12px}
+.ac-plan b{display:block;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2;overflow-wrap:anywhere}
+.ac-plan span{display:block;margin-top:2px;font-size:15px;color:var(--tx2)}
+.ac-plan + .ac-r::before{content:"";position:absolute;left:16px;right:0;top:0;border-top:.5px solid var(--line)}
+.ac-r .t b small.warn{color:var(--warn)} .ac-r .t b small.ok{color:var(--ok)} .ac-r .t b small.rm{color:var(--rm)}
+.ac-r .t b small:has(.ac-dot){display:flex;align-items:center;gap:5px}
+.ac-mod > .ac-note:last-child{padding-bottom:4px}
+.ac-mod > .ac-op:last-child{padding-bottom:4px}
+/* операции и платежи: что и когда слева, сумма справа */
+.ac-op{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;position:relative;background:var(--bg)}
+.ac-op .t{flex:1;min-width:0}
+.ac-op .t b{display:block;font-size:16px;font-weight:400;line-height:1.3;overflow-wrap:anywhere}
+.ac-op .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);margin-top:2px}
+.ac-op .t .pill{margin-top:6px}
+.ac-sum{flex:none;text-align:right;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ac-sum small{display:block;font-size:13px;font-weight:500;margin-top:2px}
+.ac-sum.plus,.ac-sum small.ok{color:var(--ok)}
+.ac-op.off .t b,.ac-op.off .ac-sum{color:var(--tx3)}
+.ac-op.off .ac-sum{text-decoration:line-through}
+.ac-end .row{min-height:52px;justify-content:center;font-size:16px}
+.ac-end .row + .row::before{left:16px}
+.ac-c{font-weight:600}
+
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important} }
+
+/* ═══ Сет или связка выбором строк (editor.js → selBar, 15.11.2026) ═══
+   Режим выбора: у строк кружок слева, нажатие отмечает; строки других блоков
+   приглушены; ввод, меню блоков и «Сохранить» скрыты; внизу — «Сделать сетом» и
+   «Сделать связкой» (как панель действий в режиме выбора iOS). */
+.selm .qadd,.selm .qsug,.selm .ed-add,.selm .eb [data-act="e-bmenu"],.selm .er-rest,.selm .ed-start{display:none}
+.selm .eb-ty,.selm .eb-t,.selm .eb-n,.selm .er-fmt,.selm .ssh .er-m,.selm .eb-text{pointer-events:none}
+.selr .er-m{gap:12px}
+.er-ck{width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line2);display:grid;place-items:center;flex:none;color:transparent;transition:background .12s}
+.er-ck svg{width:15px;height:15px}
+.selr.on .er-ck{background:var(--acc);box-shadow:none;color:#fff}
+.selr.off{opacity:.4}
+.ed-selbar{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;gap:10px;padding:12px 16px calc(12px + var(--sab));background:var(--bg);box-shadow:0 -.5px 0 var(--line)}
+.ed-selbar .btn.s{flex:1;min-width:0;height:50px;border-radius:25px;gap:6px;justify-content:center;white-space:nowrap}
+.ed-selbar .btn.s svg{width:20px;height:20px;flex:none}
+.ed-selbar .btn:disabled{opacity:.4}
+.full.ed.selm .ed-scr{padding-bottom:calc(84px + var(--sab))}
+body:has(.full.ed.selm) .etoast{bottom:calc(78px + var(--sab))}
+.selm .ed-top .gear{visibility:hidden}
+.ai-photo{display:block;max-width:100%;max-height:50vh;margin:0 auto 12px;border-radius:12px;object-fit:contain;background:var(--s1)}

@@ -240,10 +240,10 @@ const TPL = [
  /* ── уровень: программа — последовательность недель ── */
  /* seq — последовательность дней: id шаблона тренировки или null (отдых).
     Ритм задаёт тренер, длина цикла произвольная — недели в модели нет. */
- {id:'p1t', lvl:'программа', own:true, at:'2026-07-05', title:'Сила + кроссфит · 56 дней', used:3,
+ {id:'p1t', lvl:'программа', own:true, at:'2026-07-05', title:'Сила + кроссфит', used:3,
   goal:'Рост силовых при сохранении метконовой формы', days:56,
   seq:['w1', null,'w3', null,'w2', null, null]},
- {id:'p2t', lvl:'программа', own:true, at:'2026-08-22', title:'Возвращение после травмы · 42 дня', used:1,
+ {id:'p2t', lvl:'программа', own:true, at:'2026-08-22', title:'Возвращение после травмы', used:1,
   goal:'Аккуратный возврат к базовым движениям', days:42,
   seq:['w1','w2', null,'w3', null]},
 
@@ -268,13 +268,13 @@ const TPL = [
  {id:'sw2', lvl:'тренировка', own:false, title:'Кроссфит · классический метком', used:0, blocks:['sb2','sb5','sb7']},
  {id:'sw3', lvl:'тренировка', own:false, title:'Смешанный день · сила + Helen', used:0, blocks:['sb1','sb3','sb6','sb7']},
 
- {id:'sp1', lvl:'программа', own:false, title:'Линейная прогрессия · 84 дня', used:0,
+ {id:'sp1', lvl:'программа', own:false, title:'Линейная прогрессия', used:0,
   goal:'Базовая сила для новичка: присед, жим, тяга по линейной схеме', days:84,
   seq:['sw1', null,'sw2', null,'sw3', null, null]},
- {id:'sp2', lvl:'программа', own:false, title:'Кроссфит база · 56 дней', used:0,
+ {id:'sp2', lvl:'программа', own:false, title:'Кроссфит база', used:0,
   goal:'Общая физическая подготовка с классическими комплексами', days:56,
   seq:['sw2','sw1','sw3', null,'sw2','sw1', null]},
- {id:'sp3', lvl:'программа', own:false, title:'Гипертрофия верх/низ · 70 дней', used:0,
+ {id:'sp3', lvl:'программа', own:false, title:'Гипертрофия верх/низ', used:0,
   goal:'Набор мышечной массы, сплит верх/низ четыре раза в неделю', days:70,
   seq:['sw1','sw2', null,'sw1','sw3', null]},
 ];
@@ -531,6 +531,20 @@ const dayCount = x => (x.blocks || []).reduce((a, b) => a + blockCount(b), 0);
 const blockName = b => b.title || blockTypeLabel(b) || (isTextBlock(b) ? firstTextLine(b.text) : '');
 /* Строка текстом в шаблоне блока: [TXT_TAG, текст, '', '', '', sub]. */
 const TXT_TAG = '@txt';
+/* «Фото» в конструкторе (кабинет и приложение): в прототипе распознавания нет —
+   вместо текста со снимка подставляется эта запись из тетради; дальше её разбирает
+   ИИ, как блок текстом. Клиент снимок не видит. */
+const PHOTO_OCR_DEMO = [
+  'Разминка:',
+  '• гребля 500 м',
+  '• мобилити плеч с PVC 2×10',
+  'Сила:',
+  'Приседания со штангой 5×5 75%',
+  'Жим лёжа 4×8 70%',
+  'AMRAP 12:',
+  '• трастеры 10 × 40 кг',
+  '• подтягивания 8',
+  '• гребля 250 м'].join('\n');
 /* Конец группы: индекс первой строки после участников суперсета с заголовком в k. */
 const ssEnd = (items, k) => { let j = k + 1; while(j < items.length && items[j].sub && !items[j].ss) j++; return j };
 /* Порядок в блоке: заголовок без двух участников распускается, sub без заголовка сверху снимается. */
@@ -1491,7 +1505,7 @@ const ONB_BASE = (PLAN.p1 || []).length;
 if(NEWTR){
   let gone = false; try{ gone = !!((JSON.parse(localStorage.getItem(STATE_KEY) || '{}').onb) || {}).demoGone }catch(_){}
   CLIENTS.splice(gone ? 0 : 1);
-  if(CLIENTS[0]){ Object.assign(CLIENTS[0], {n:'Александр Невский (демо клиент)', ini:'АН', demo:true}) }
+  if(CLIENTS[0]){ Object.assign(CLIENTS[0], {n:'Демо Клиент', ini:'ДК', demo:true}) }
   PROGRAMS.splice(0, PROGRAMS.length, ...PROGRAMS.filter(p => !gone && p.id === 'p1'));
   Object.keys(PLAN).forEach(k => { if(gone || k !== 'p1') delete PLAN[k] });
   GRPS.length = 0;
@@ -1942,6 +1956,68 @@ function ensureDay(cid, date){
     if(q.start < p.start){ const k = daysBetween(q.start, p.start); PLAN[pid] = Array(k).fill(null).concat(PLAN[pid] || []); p.start = q.start; p.days += k; } });
 })();
 
+/* ═══════════ НАЗНАЧЕНИЕ ПРОГРАММЫ ИЗ БАЗЫ (CON-9) ═══════════
+   Цикл программы ложится в календарь клиента или группы с даты старта: день
+   цикла — тренировка из базы или отдых, цикл повторяется до конца срока.
+   Отдых день не трогает. Дни, где уже стоит тренировка, заменяются или
+   пропускаются — одно решение на все, как в окне занятых дней группы (GRP-3);
+   у группы оно же действует на участников со своей тренировкой в эти дни.
+   Название и цель программы переходят клиенту: их видно в списке клиентов.
+   Общее для кабинета (program.html, client.html) и приложения (trainer/bases.js). */
+/* Подпись программы: длина цикла и срок — одной строкой, без повторов. */
+const progCycText = t => { const c = (t.seq || []).length, d = +t.days || 0, dd = d + ' ' + plural3(d, 'день', 'дня', 'дней');
+  return c ? 'Цикл ' + c + ' ' + plural3(c, 'день', 'дня', 'дней') + ' · повторяется ' + dd : 'Цикл пуст · срок ' + dd };
+/* Что уже стоит у клиента или группы на дату: название тренировки или ''. */
+function subjDayAt(wid, date){
+  const w = who(wid), d = w && w.prog && dayAt(w.prog, date);
+  return d && contentHas(d.c) ? dayTitleOf(d.c) : '';
+}
+/* Раскладка без записи: даты тренировок и что на них уже стоит. */
+function progLayout(t, wid, start){
+  const seq = (t && t.seq) || [], out = [];
+  if(!seq.some(Boolean)) return out;
+  for(let k = 0; k < (+t.days || 0); k++){
+    const id = seq[k % seq.length], w = id && tplById(id); if(!w) continue;
+    const date = addDays(start, k);
+    out.push({date, tpl:w, busy:subjDayAt(wid, date)});
+  }
+  return out;
+}
+/* Дни отдыха программы, где у клиента уже стоит тренировка: она остаётся — окно об этом говорит. */
+function progRestBusy(t, wid, start){
+  const seq = (t && t.seq) || []; let n = 0;
+  if(seq.some(Boolean)) for(let k = 0; k < (+t.days || 0); k++) if(!seq[k % seq.length] && subjDayAt(wid, addDays(start, k))) n++;
+  return n;
+}
+/* Старт по умолчанию — день после последней тренировки, не раньше сегодня. */
+function progAssignStart(wid){
+  const w = who(wid), last = w && w.prog ? lastWorkoutDay(w.prog) : null, d = last ? addDays(last, 1) : TODAY;
+  return d < TODAY ? TODAY : d;
+}
+function progAssign(t, wid, start, {replace = false, pub = true} = {}){
+  const w = who(wid), G = isGrp(wid) ? grp(wid) : null, rows = progLayout(t, wid, start);
+  const res = {n:0, skip:0, first:null, last:null};
+  if(!w || !rows.length) return res;
+  const mem = G ? groupConflicts(G, rows.map(r => r.date)) : [];
+  const rep = replace && mem.length ? new Set(mem.map(m => m.key)) : null;
+  if(G && !replace) mem.forEach(m => setSkip(G, m.cid, m.date, true));
+  rows.forEach(r => {
+    if(r.busy && !replace){ res.skip++; return }
+    const x = ensureDay(wid, r.date); if(!x) return;
+    const c = serializeDay(tplToWorkout(r.tpl)), old = savedDay(x.pid, x.i), pl = (PLAN[x.pid] || [])[x.i];
+    /* Черновик хранит то, что клиент видит сейчас, — как при раздаче группы. */
+    const seen = old ? (old.draft ? (old.pub || '') : old.c) : (pl ? serializeDay(buildDay(x.pid, x.i)) : '');
+    putDay(x.pid, x.i, pub ? {c, draft:false} : {c, pub:seen, draft:true}, true, rep);
+    if(typeof PCACHE !== 'undefined') delete PCACHE[x.pid];
+    res.n++; res.first ||= r.date; res.last = r.date;
+  });
+  if(!G && res.n){ const p = program(w.prog); p.title = t.title; p.goal = t.goal || '';
+    (STATE.ptitle ||= {})[w.prog] = {title:p.title, goal:p.goal} }
+  saveState();
+  return res;
+}
+(function(){ Object.entries(STATE.ptitle || {}).forEach(([pid, q]) => { const p = program(pid); if(p){ p.title = q.title; p.goal = q.goal } }) })();
+
 /* ═══════════ ПОДРОБНЫЙ ВИД ДНЯ: блоки → упражнения со схемой и нагрузкой ═══════════
    Третий вид календаря и полосы недель: видна иерархия «блок → упражнения»,
    у упражнения — подходы×повторы, процент от ПМ и рабочий вес (или объём). */
@@ -2112,6 +2188,18 @@ let TSEED = null;
 function talkSeeds(){
   if(TSEED) return TSEED; TSEED = {};
   const put = (cid, at, msgs) => { if(at) (TSEED[blkKey(cid, at.date, at.bi)] ||= []).push(...msgs) };
+  /* Первый вход (?new=1): истории у аккаунта нет — только свежий вопрос демо-клиента
+     к сегодняшней тренировке (он её начал и написал по ходу). Новый тренер отвечает
+     на него первым делом и видит весь круг: вопрос → ответ → «Отвечено». */
+  if(NEWTR){
+    const bs = client('c1') ? cliDay('c1', TODAY).blocks : [];
+    let bi = bs.findIndex(b => (b.items || []).some(it => it.exId === '0032' || (it.parts || []).some(p => p.exId === '0032')));
+    const dl = bi >= 0; if(!dl) bi = Math.max(0, bs.findIndex(b => b.kind === 'strength'));
+    const t = new Date(Date.now() - 35 * 60000), at = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+    if(bs.length) put('c1', {date:TODAY, bi}, [{who:'client', d:TODAY, at,
+      text: dl ? 'Можно заменить становую на румынскую тягу? Поясница после вчерашнего.' : 'Можно заменить упражнение в этом блоке? Поясница после вчерашнего.'}]);
+    return TSEED;
+  }
   CLIENTS.forEach(c => (c.comments || []).forEach((cm, i) => put(c.id, cmBlock(c.id, cm.d, cm.ex),
     [{who:'client', text:cm.tx, d:cm.d, at:'19:' + String(12 + i * 7).padStart(2, '0')}]
       .concat(cm.reply ? [{who:'trainer', text:cm.reply, d:cm.d, at:'21:05'}] : []))));
@@ -2190,3 +2278,29 @@ function blkExtraHTML(cid, date, b, bi){
   return `${res.length ? `<div class="wres"><b>Итог</b>${res.map(([x, v]) => `<span><s>${esc(x.label)}</s> <em>${esc(v)}</em></span>`).join('')}</div>` : ''}${talkHTML(cid, date, bi, false)}`;
 }
 const workoutHref = (cid, date, bi) => `workout.html?client=${cid}&date=${date}${bi != null ? '#b' + bi : ''}`;
+
+/* ─── Стенд тренерского приложения: «Данные: длинные» ───
+   Проверка, что интерфейс не ломают длинные имена клиентов и групп, названия
+   упражнений, тренировок и программ (в том числе слово без пробелов). Только
+   во фрейме стенда или приложения с параметром (localStorage tr.long) или по
+   ?long=1 в адресе — обычный кабинет это не задевает. Здесь, в конце data.js,
+   — до отрисовки любой страницы и приложения (trainer/app.html). */
+function longData(){
+  const NAMES = ['Александр Константинопольский-Преображенский', 'Мария-Антуанетта Римская-Корсакова', 'Вольфганг Шварценеггерштадтмахерович',
+                 'Анастасия Владиславовна Большакова-Малышевская', 'Христофор Бонифатьевич Длинноименный'];
+  CLIENTS.slice(0, NAMES.length).forEach((c, i) => { c.n = NAMES[i] });
+  TRAINER.first = 'Константин'; TRAINER.last = 'Константинопольский-Преображенский'; TRAINER.n = TRAINER.first + ' ' + TRAINER.last;
+  PROGRAMS.forEach(p => { if(p.title && p.kind !== 'group') p.title += ': подготовка к соревновательному сезону 2027 года' });
+  GRPS.forEach(g => { g.n = 'Лечебная физкультура для спины, суставов и баланса — утро'; const p = PROGRAMS.find(x => x.id === g.prog); if(p) p.title = g.n });
+  TPL.forEach((t, i) => { if(i % 3 === 0) t.title += ' — расширенная версия для продвинутых спортсменов' });
+  const ex = id => EX.find(e => e.id === id);
+  const set = (id, ru) => { const e = ex(id); if(e) e.ru = ru };
+  set('own_rom', 'Суставная разминка от шеи до голеностопа по кругу без остановок');
+  set('own_row', 'Греблянатренажёреконцепттуинтервалами');      /* одно слово без пробелов */
+  set('own_pvc', 'Мобилити плечевого пояса с гимнастической палкой PVC');
+}
+(function(){
+  let on = /[?&]long=1\b/.test(location.search);
+  try{ const fe = window.frameElement; if(fe && (fe.dataset.mode || fe.dataset.inapp) && localStorage.getItem('tr.long') === '1') on = true }catch(_){}
+  if(on) try{ longData() }catch(err){ console.warn('longData', err) }
+})();

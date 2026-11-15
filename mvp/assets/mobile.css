@@ -837,6 +837,36 @@ html.medit .medit-btn{background:var(--acc);color:#fff}
 .mnone{display:none !important}
 #btnAdd,#gNew,.invw:not(.spot){display:none}
 
+/* ─── режим «внутри приложения» (trainer/app.html: конструктор, тренировка клиента) ───
+   Страницу кабинета открывает фрейм приложения с data-inapp; шапку и вкладки
+   рисует приложение — у страницы их нет, отступы под них обнулены. */
+html.inapp{--mtop:0px;--tabh:0px;--sat:0px;--sab:0px}
+html.inapp .mtabs,html.inapp .msh-ov,html.inapp #topbar{display:none !important}
+html.inapp .main{padding-bottom:0}
+/* тренировка клиента внутри приложения: «Править» — в шапке приложения */
+html.inapp .wvdoc .doch a.btn{display:none}
+/* в приложении клиента и день выбирают в шапке приложения — свой выбор и стрелки страницы не нужны */
+html.inapp .wvwk{display:none !important}
+html.inapp .wvdoc .doch .dst{display:none}
+/* как плашка дня в правке (trainer/app.css, .ed-top): только название, на всю ширину; день выбирают значком
+   календаря в шапке приложения */
+html.inapp .wvdoc .doch{align-items:center;flex-wrap:nowrap;padding:4px 16px}
+html.inapp .wvdoc .doch .dtt{order:0;flex:1 1 auto;min-width:0;line-height:24px;padding:10px 0}
+html.inapp,html.inapp body{scrollbar-width:none}
+html.inapp::-webkit-scrollbar{display:none}
+
+/* ─── «Видит клиент» у названия (15.11.2026) — на телефоне отдельной строкой под
+   названием: в одном ряду с «Изменить» и «•••» название сжималось до пары букв ─── */
+#doc .doch:has(.dpub){flex-wrap:wrap;row-gap:0}
+#doc .doch .dpub{order:9;flex:1 1 100%;justify-content:space-between;height:44px;margin:0;padding:0 6px 0 4px;font-size:15px}
+#doc .doch .dpub i{width:46px;height:28px;border-radius:14px}
+#doc .doch .dpub i::after{width:22px;height:22px}
+#doc .doch .dpub.on i::after{left:21px}
+
+/* ─── галочки строк (сет и связка): на телефоне наведения нет — видны в режиме «Изменить» ─── */
+#doc .line > .lbox{display:none}
+html.medit #doc .line > .lbox{display:inline-grid;opacity:1;width:24px;height:24px;margin:0 0 0 4px}
+
 /* ─── «Уменьшение движения» (HIG): без выездов, пружин и автоповторов ─── */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}

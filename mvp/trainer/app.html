@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Тренерское приложение с «Экрана Домой» -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" type="image/png" href="../assets/app/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/app/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тренер">
+<title>Тренерграм Тренер</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="bases.css">
+</head>
+<body>
+<!-- ═══════════ ТРЕНЕРСКОЕ ПРИЛОЖЕНИЕ · прототип ═══════════
+     Экраны спроектированы под телефон заново (не ужатый кабинет): стиль Strava
+     iOS, компоненты по HIG. Данные и логика — общие с кабинетом тренера
+     (data.js, nav.js, ui.js), поэтому всё, что сделано здесь, видно в кабинете
+     и наоборот. Конструктор и просмотр тренировки — страницы кабинета в режиме
+     «внутри приложения» (mobile.css: html.inapp). Карта экранов — trainer/map.js,
+     стенд — trainer/index.html. -->
+<div id="app"></div>
+<div id="layer"></div>
+<script src="../assets/exdb.js"></script>
+<script src="../assets/data.js"></script>
+<script src="../assets/nav.js"></script>
+<script src="../assets/ui.js"></script>
+<script src="app.js"></script>
+<script src="editor.js"></script>
+<script src="account.js"></script>
+<script src="bases.js"></script>
+</body>
+</html>

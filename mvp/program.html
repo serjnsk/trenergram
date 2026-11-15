@@ -36,13 +36,15 @@
 <script src="assets/nav.js"></script>
 <script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
+<script src="assets/assign.js"></script>
 <script>
 /* ═══════════ СТРАНИЦА ПРОГРАММЫ (TPL-2) ═══════════
    Программа — цикл дней (тренировка из базы или отдых), который повторяется,
    пока не кончится срок. Недели в модели нет: ритм задаёт тренер, длина цикла
    любая. Своя правится здесь и сохраняется сама; общая из базы сервиса только
    смотрится — «Сохранить как своё» делает копию. Новая — та же страница
-   пустой: в базе она появляется с первой правкой. */
+   пустой: в базе она появляется с первой правкой. «Назначить клиенту» —
+   окно assets/assign.js: цикл встаёт в календарь клиента или группы (CON-9). */
 const Q = new URLSearchParams(location.search);
 /* ?add=1 — новая, пустая. Не ?new=: его читает data.js как режим «новый тренер». */
 let P = Q.get('add') ? null : tplById(Q.get('id'));
@@ -79,8 +81,7 @@ function draw(){
     return;
   }
   const x = P || DRAFT, own = !P || P.own, seq = x.seq || [];
-  const nw = seq.filter(Boolean).length, cyc = seq.length;
-  const exN = seq.reduce((n, id) => { const w = id && tplById(id); return n + (w ? tplStats(w).n : 0) }, 0);
+  const cyc = seq.length;
   setTopTitle(isNew() ? 'Новая программа' : 'Программа');
 
   const row = (id, k) => {
@@ -112,43 +113,32 @@ function draw(){
       <span class="thumb eth">${ICON.prog}</span>
       <div class="eid">
         ${own ? `<input class="enm" data-f="title" value="${esc(x.title)}" placeholder="Название программы" aria-label="Название программы">` : `<div class="enm">${esc(x.title)}</div>`}
-        <div class="esub">${own ? '<span class="chip ok">своё</span>' : '<span class="chip ghost">общая база</span>'}<span>${x.days} ${plural(x.days,'день','дня','дней')}</span><span>цикл ${cyc} ${plural(cyc,'день','дня','дней')}</span><span>${nw} ${plural(nw,'тренировка','тренировки','тренировок')} в цикле</span></div>
+        <div class="esub">${own ? '<span class="chip ok">своё</span>' : '<span class="chip ghost">общая база</span>'}<span>${esc(progCycText(x))}</span>${x.at ? `<span>создана ${new Date(x.at + 'T00:00:00').toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'})}</span>` : ''}</div>
       </div>
       <div class="eacts">
+        ${P ? `<button class="btn" id="pAssign">${ICON.plus} Назначить клиенту</button>` : ''}
         ${P && own ? `<button class="btn gh" id="pDup">${ICON.copy || ''} Дублировать</button><button class="btn gh" id="pDel">Удалить</button>` : ''}
-        ${P && !own ? `<button class="btn" id="pOwn">Сохранить как своё</button>` : ''}
+        ${P && !own ? `<button class="btn gh" id="pOwn">Сохранить как своё</button>` : ''}
       </div>
     </div>
   </div>
   ${own ? '' : `<div class="ebar"><span><b>Программа из общей базы</b><s>Правится только своё (TPL-2). Нажмите «Сохранить как своё» — появится ваша копия, её и правьте.</s></span></div>`}
   ${isNew() ? `<div class="ebar"><span><b>Новая программа</b><s>Появится в вашей базе с первой правкой. Всё сохраняется само.</s></span></div>` : ''}
 
-  <div class="egrid">
+  <div class="egrid" style="grid-template-columns:minmax(0,820px)">
     <div>
       <div class="sechead"><span class="t">Основное</span><span class="ln"></span></div>
       <div class="card cb ecard">
         ${own ? `<div class="formfld" style="margin-bottom:12px"><span class="k">Цель</span><textarea class="inp" data-f="goal" rows="2" placeholder="Чего добиваемся за программу">${esc(x.goal || '')}</textarea></div>
           <div class="formfld" style="max-width:220px"><span class="k">Длительность, дней</span><input class="inp" data-f="days" type="number" min="1" max="365" value="${x.days}"></div>`
-          : `<div class="kv" style="margin-top:0"><s>Цель</s><b>${esc(x.goal || '—')}</b><s>Длительность</s><b>${x.days} ${plural(x.days,'день','дня','дней')}</b></div>`}
+          : `<div class="kv" style="margin-top:0"><s>Цель</s><b>${esc(x.goal || '—')}</b></div>`}
       </div>
 
-      <div class="sechead"><span class="t">Цикл</span><span class="ln"></span><span class="n">${cyc ? `повторяется до ${x.days}-го дня` : ''}</span></div>
+      <div class="sechead"><span class="t">Цикл</span><span class="ln"></span></div>
       <div class="card cb ecard">
         ${cyc ? `<div class="cycs" id="cycs">${seq.map(row).join('')}</div>` : `<div class="hint" style="margin-top:0">В цикле пока нет дней. Добавьте тренировку или день отдыха.</div>`}
         ${own ? `<div class="cycadd"><button class="btn gh sm" id="addWo">${ICON.plus} Тренировка</button><button class="btn gh sm" id="addRest">${ICON.plus} Отдых</button></div>` : ''}
         <div class="hint">Цикл — дни подряд: тренировка из базы или отдых. Кончился цикл — начинается заново, пока не выйдет срок программы.</div>
-      </div>
-    </div>
-
-    <div class="side">
-      <div class="card cb ecard">
-        <div class="kv" style="margin-top:0">
-          <s>Источник</s><b>${own ? 'ваша база' : 'общая база сервиса'}</b>
-          ${P ? `<s>Использована</s><b>${P.used ? P.used + '×' : '—'}</b>` : ''}
-          ${x.at ? `<s>Создана</s><b>${new Date(x.at + 'T00:00:00').toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'})}</b>` : ''}
-          <s>Тренировок в цикле</s><b>${nw}</b>
-          <s>Упражнений за цикл</s><b>${exN}</b>
-        </div>
       </div>
     </div>
   </div>`;
@@ -168,6 +158,7 @@ function bind(){
   const aw = $('#addWo'); if(aw) aw.onclick = () => save({seq:[...x.seq, (WO()[0] || {}).id || null]}, false);
   const ar = $('#addRest'); if(ar) ar.onclick = () => save({seq:[...x.seq, null]}, false);
   const dup = $('#pDup'); if(dup) dup.onclick = () => { const c = tplClone(P, P.title + ' — копия'); location.href = 'program.html?id=' + c.id };
+  const as = $('#pAssign'); if(as) as.onclick = () => assignProgModal({tid: P.id});
   const own = $('#pOwn'); if(own) own.onclick = () => { const c = tplClone(P); location.href = 'program.html?id=' + c.id };
   const del = $('#pDel'); if(del) del.onclick = () => openModal({title:'Удалить программу', body:`<p class="lead">«${esc(P.title)}» уйдёт из вашей базы. Клиентам, которым она уже стоит в календаре, ничего не изменится.</p>`,
     foot:`<span class="sp"></span><button class="btn gh" data-close>Отмена</button><button class="btn rm" id="pDelOk">Удалить</button>`});

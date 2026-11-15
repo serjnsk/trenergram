@@ -85,8 +85,28 @@ addEventListener('DOMContentLoaded', ()=>{
    ссылке constructor.html?wizard=1. */
 function topButton(){
   if(SUBRO) return '';
-  return `<span class="tsplit one"><a class="btn" href="constructor.html">Создать тренировку</a></span>`;
+  return `<span class="tsplit one"><a class="btn" id="newWk" href="constructor.html">Создать тренировку</a></span>`;
 }
+/* «Создать тренировку» — сначала «Кому?» (поиск клиента или группы), день
+   подставляется сам: первый ещё не составленный, не раньше сегодня — как «+»
+   в приложении (nextFree, trainer/app.js). Решение 15.11.2026: раньше кнопка
+   молча открывала конструктор первого клиента. Ссылка с клиентом в адресе
+   (мобильный «+» в календаре и карточке клиента, mobile.js) ведёт сразу. */
+function nextFreeDay(id){
+  const w = who(id); if(!w || !w.prog) return TODAY;
+  const n = composedDays(w.prog), d = n ? addDays(dayDate(w.prog, n - 1), 1) : TODAY;
+  return d < TODAY ? TODAY : d;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('#newWk');
+  if(!b || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
+  if((b.getAttribute('href') || '').includes('?')) return;
+  e.preventDefault();
+  if(document.querySelector('.sug.clipick.newwk')){ document.querySelectorAll('.sug.clipick').forEach(x => x.remove()); return }
+  const box = openClientPicker(b, null, id => { location.href = 'constructor.html?' + subjQ(id) + '&date=' + nextFreeDay(id) },
+    {all:true, title:'Кому тренировка?', right:true});
+  box.classList.add('newwk');
+});
 function bindTopButton(){
   const b = document.getElementById('topmore'), dd = document.getElementById('topdd');
   if(!b || !dd) return;
@@ -143,8 +163,9 @@ function openClientPicker(btn, curId, onPick, opts = {}){
       ? (gr.length ? `<div class="cl-cap">Группы</div>${gr.map(row).join('')}` + (rows.length ? '<div class="cl-cap">Клиенты</div>' : '') : '') + rows.map(row).join('')
       : '<div class="cap">Никого не нашли</div>';
   };
-  box.innerHTML = `<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="${groups.length ? 'Клиент, группа или программа' : 'Имя клиента или программа'}" autocomplete="off"></div><div class="cl-list"></div>`;
+  box.innerHTML = `${opts.title ? `<div class="cl-h">${esc(opts.title)}</div>` : ''}<div class="cl-s">${ICON.search}<input id="cl-q" placeholder="${groups.length ? 'Клиент, группа или программа' : 'Имя клиента или программа'}" autocomplete="off"></div><div class="cl-list"></div>`;
   draw('');
+  if(opts.right) box.style.left = Math.max(12, r.right - box.offsetWidth) + 'px';   /* кнопка у правого края шапки */
   const close = () => { box.remove(); document.removeEventListener('click', off, true) };
   const pick = id => { close(); onPick(id) };
   const off = e => { if(!box.isConnected){ document.removeEventListener('click', off, true); return }

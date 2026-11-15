@@ -37,6 +37,7 @@
 <script src="assets/nav.js"></script>
 <script src="assets/dd.js"></script>
 <script src="assets/ui.js"></script>
+<script src="assets/assign.js"></script>
 <script>
 /* ═══════════ СТРАНИЦА УПРАЖНЕНИЯ (EX-1, EX-2, EX-3) ═══════════
    Всё об упражнении на одной странице, сюда ведёт строка базы. Своё правится
@@ -88,7 +89,7 @@ function draw(){
         <div class="esub">${own ? '<span class="chip ok">своё</span>' : '<span class="chip ghost">общая база</span>'}${x.en ? `<span>${esc(x.en)}</span>` : ''}${x.g ? `<span>${esc(x.g)}</span>` : ''}${x.eq && x.eq !== '—' ? `<span>${esc(x.eq)}</span>` : ''}</div>
       </div>
       <div class="eacts">
-        ${E ? `<a class="btn" href="constructor.html?addex=${encodeURIComponent(E.id)}">${ICON.build} В тренировку</a>` : ''}
+        ${E ? `<button class="btn" id="eTo">${ICON.build} В тренировку</button>` : ''}
         ${E && own ? `<button class="btn gh" id="eDel">Удалить</button>` : ''}
       </div>
     </div>
@@ -200,6 +201,7 @@ function bind(){
 }
 document.addEventListener('click', e => {
   if(e.target.closest('#eDelOk')){ exDrop(E); location.href = 'exercises.html' }
+  if(e.target.closest('#eTo') && E) toClientModal('ex', E.id);     /* кому и в какой день — assets/assign.js */
 });
 render();
 initShell({page:'exercises.html'});

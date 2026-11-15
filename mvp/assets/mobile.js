@@ -22,36 +22,11 @@
   const SA = {iphone:[59, 34], android:[24, 16]};
   let fe = null; try{ fe = window.frameElement }catch(_){}
   const fm = fe && /^(iphone|android):(app|web)$/.exec(fe.dataset.mode || '');
+  /* фрейм тренерского приложения (trainer/app.html): своя шапка и вкладки у приложения */
+  if(fe && fe.dataset.inapp) document.documentElement.classList.add('inapp');
   if(fm){
     document.documentElement.classList.add('in-stand');
     if(fm[2] === 'app'){ const r = document.documentElement.style; r.setProperty('--sat', SA[fm[1]][0] + 'px'); r.setProperty('--sab', SA[fm[1]][1] + 'px') }
-  }
-
-  /* ─── стенд: «Данные: длинные» ───
-     Проверка, что интерфейс не ломают длинные имена клиентов и групп, названия
-     упражнений, тренировок и программ (в том числе слово без пробелов). Только во
-     фрейме стенда с параметром (localStorage tr.long) или по ?long=1 в адресе —
-     обычный кабинет это не задевает. Данные подменяем сразу после data.js, до
-     отрисовки страницы: load у <script> срабатывает до следующего скрипта. */
-  let longOn = /[?&]long=1\b/.test(location.search);
-  try{ if(fm && localStorage.getItem('tr.long') === '1') longOn = true }catch(_){}
-  if(longOn) document.addEventListener('load', e => {
-    if(!e.target.src || !/assets\/data\.js/.test(e.target.src)) return;
-    try{ longData() }catch(err){ console.warn('longData', err) }
-  }, true);
-  function longData(){
-    const NAMES = ['Александр Константинопольский-Преображенский', 'Мария-Антуанетта Римская-Корсакова', 'Вольфганг Шварценеггерштадтмахерович',
-                   'Анастасия Владиславовна Большакова-Малышевская', 'Христофор Бонифатьевич Длинноименный'];
-    CLIENTS.slice(0, NAMES.length).forEach((c, i) => { c.n = NAMES[i] });
-    TRAINER.first = 'Константин'; TRAINER.last = 'Константинопольский-Преображенский'; TRAINER.n = TRAINER.first + ' ' + TRAINER.last;
-    PROGRAMS.forEach(p => { if(p.title && p.kind !== 'group') p.title += ': подготовка к соревновательному сезону 2027 года' });
-    GRPS.forEach(g => { g.n = 'Лечебная физкультура для спины, суставов и баланса — утро'; const p = PROGRAMS.find(x => x.id === g.prog); if(p) p.title = g.n });
-    TPL.forEach((t, i) => { if(i % 3 === 0) t.title += ' — расширенная версия для продвинутых спортсменов' });
-    const ex = id => EX.find(e => e.id === id);
-    const set = (id, ru) => { const e = ex(id); if(e) e.ru = ru };
-    set('own_rom', 'Суставная разминка от шеи до голеностопа по кругу без остановок');
-    set('own_row', 'Греблянатренажёреконцепттуинтервалами');      /* одно слово без пробелов */
-    set('own_pvc', 'Мобилити плечевого пояса с гимнастической палкой PVC');
   }
 
   /* ─── до загрузки страницы ─── */

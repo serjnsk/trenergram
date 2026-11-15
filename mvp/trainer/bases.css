@@ -1,0 +1,104 @@
+/* ═══════════ ТРЕНЕРСКОЕ ПРИЛОЖЕНИЕ · БАЗЫ (bases.js) ═══════════
+   Только своё (классы bx-*) поверх компонентов app.css: строки, шторки, кнопки.
+   Длинные названия переносятся, а не обрезаются (HIG: текст ×2). */
+
+/* ─── строки списков ─── */
+.bx-r{min-height:64px}
+.bx-r .t b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;line-height:1.3}
+.bx-r .t s{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;margin-top:2px}
+.bx-r .pill{margin-right:-4px}
+.row.nt + .row::before,.row + .row.nt::before{left:16px}
+.bx-r.sm{min-height:56px}
+.bx-th{width:44px;height:44px;border-radius:10px;background:var(--s1);color:var(--tx2);flex:none;display:grid;place-items:center;font-size:13px;font-weight:600;overflow:hidden;position:relative}
+.bx-th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bx-th.l{width:72px;height:72px;border-radius:16px;font-size:22px}
+.bx-more{display:flex;justify-content:center;padding:16px}
+
+/* ─── экран элемента ─── */
+.sec.p0{padding:0}
+.sec.p0 > .cap:first-child{padding-top:14px}
+.bx-hero{padding:16px}
+.bx-media{margin:-16px -16px 14px;background:#fff;border-bottom:.5px solid var(--line);display:grid;place-items:center}
+.bx-media img{display:block;width:100%;max-width:360px;aspect-ratio:1;object-fit:contain}
+.bx-id{display:flex;gap:14px;align-items:center}
+.bx-idt{min-width:0;flex:1}
+.bx-hero h2{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2;overflow-wrap:anywhere}
+.bx-hero p{margin:4px 0 0;color:var(--tx2);font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.bx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.bx-tags .pill{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.bx-go{margin-top:16px}
+.bx-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.bx-acts .btn.s{flex:1 1 auto;white-space:nowrap;height:44px;border-radius:22px;gap:6px;padding:0 12px}
+.bx-acts .btn svg{width:18px;height:18px}
+.bx-note{margin:8px 12px 0;padding:12px 14px;border-radius:14px;background:var(--blue-a)}
+.bx-note b{display:block;font-size:15px;font-weight:600}
+.bx-note s{display:block;text-decoration:none;font-size:14px;color:var(--tx2);line-height:1.4;margin-top:2px}
+.gapbg > .bx-note + .sec{margin-top:8px}
+.bx-hint{margin:0;padding:8px 16px 14px;font-size:13px;color:var(--tx2);line-height:1.4;border-top:.5px solid var(--line)}
+.bx-cap-s{margin:-6px 16px 4px;font-size:13px;color:var(--tx2)}
+.bx-p{margin:0;padding:4px 16px 12px;font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.bx-steps{margin:0;padding:2px 16px 12px 40px;font-size:15px;line-height:1.45}
+.bx-steps li + li{margin-top:6px}
+.bx-steps li{overflow-wrap:anywhere}
+/* «подпись — значение»: значение может быть длинным — переносится */
+.bx-kv{min-height:56px;padding:8px 12px 8px 16px}
+.bx-kv .t b{overflow-wrap:anywhere;line-height:1.3}
+.bx-kv .t b.none{color:var(--tx3);font-weight:400}
+.bx .lrow.ci + .lrow.ci::before{left:16px}
+.bx-kv svg.chev{width:16px;height:16px}
+.lrow.bx-all{min-height:48px;color:var(--acc-t);font-weight:600;font-size:15px;gap:6px;border-top:.5px solid var(--line)}
+.lrow.bx-all svg{width:18px;height:18px;color:var(--acc-t)}
+.lrow.bx-all::before{display:none}
+
+/* ─── состав блока и тренировки (как превью дня в календаре) ─── */
+.bx-comp{padding:2px 16px 12px}
+.bx-comp .xl{font-size:15px;line-height:22px;overflow-wrap:anywhere}
+.bx-comp .xl.in{padding-left:12px;position:relative}
+.bx-comp .xl.in::before{content:"";position:absolute;left:2px;top:4px;bottom:4px;width:2px;border-radius:1px;background:var(--line2)}
+.bx-comp .xl.fm,.bx-comp .xl.ss{color:var(--tx2);font-size:14px}
+.bx-blk + .bx-blk{border-top:.5px solid var(--line)}
+.bx-bh{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 12px 4px 16px;width:100%;text-align:left}
+.bx-bh .t{flex:1;min-width:0}
+.bx-bh .t b{display:block;font-size:17px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.bx-bh .t s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2)}
+.bx-bh svg.chev{width:16px;height:16px;color:var(--tx3);flex:none}
+a.bx-bh:active{background:var(--s1)}
+
+/* ─── цикл программы ─── */
+.bx-h{display:flex;align-items:center;justify-content:space-between;padding-right:6px}
+.bx-h .cap{padding-top:14px}
+.bx-h .lnk{margin:6px 0 0;padding:0 10px}
+.bx-d{min-height:60px}
+.bx-d + .bx-d::before{left:60px !important}
+.bx-dn{width:32px;height:32px;border-radius:50%;background:var(--s1);color:var(--tx2);display:grid;place-items:center;font-size:14px;font-weight:700;flex:none}
+.bx-d .t b.rest{font-weight:400;color:var(--tx2)}
+.bx-cyc.re .bx-d{transition:transform .15s ease;touch-action:none}
+.bx-cyc.re .bx-d.drag{transition:none;z-index:2;box-shadow:0 6px 20px rgba(0,0,0,.14)}
+.bx-d .hd{width:44px;height:44px;margin-right:-8px;display:grid;place-items:center;color:var(--tx3);flex:none;cursor:grab;touch-action:none}
+.bx-d .hd svg{width:22px;height:22px}
+.bx-add{display:flex;gap:8px;padding:12px 16px}
+.bx-add .btn.s{flex:1;height:44px;border-radius:22px;gap:6px}
+.bx-add .btn svg{width:18px;height:18px}
+
+/* ─── редактор в режиме шаблона блока (editor.js): название блока — в шапке, у карточки — подпись ─── */
+.eb-h .eb-solo{flex:1;display:flex;align-items:center;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);pointer-events:none}
+/* неактивная кнопка шапки («Добавить» без названия) — серой */
+.nav .nb:disabled{color:var(--tx3);font-weight:400}
+
+/* ─── шторки ─── */
+.opt .ot{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.3;padding:6px 0}
+.opt .ot b{display:block;font-weight:500}
+.opt .ot s{display:block;text-decoration:none;font-size:13.5px;color:var(--tx2);margin-top:1px}
+.bx-wopt{min-height:60px}
+.note.bx-ta{min-height:160px;font-size:16px}
+
+/* ─── программа: заголовок нажимается — правка в шторке (вместо строки «Название») ─── */
+.bx-tt{display:flex;align-items:flex-start;gap:8px;width:100%;min-height:44px;padding:0;text-align:left;color:inherit;background:none}
+.bx-tt h2{min-width:0}
+.bx-tt h2.ph{color:var(--tx3)}
+.bx-tt svg{width:18px;height:18px;flex:none;margin-top:5px;color:var(--tx3)}
+/* ─── шторка «Назначить программу» (CON-9) ─── */
+.bx-as-sum{padding-top:12px}
+.bx-sw{min-height:64px;padding:8px 16px;border-top:.5px solid var(--line)}
+.bx-sw .t b{font-weight:500}
+.bx-sw .t s{display:block;text-decoration:none;font-size:13px;color:var(--tx3);margin-top:2px}
