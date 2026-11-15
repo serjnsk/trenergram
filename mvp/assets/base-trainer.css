@@ -1889,3 +1889,8 @@ body.ls-on .pubbar{bottom:76px}
 .addb.photo s{text-decoration:none;font-weight:500;color:var(--tx3)}
 .doc.fresh .addbrow{margin-top:10px}
 .srcov .src-photo{display:block;max-width:100%;max-height:52vh;margin:0 auto 12px;border-radius:var(--rad-m);object-fit:contain;background:var(--s1)}
+
+/* ─── сет и связка на телефоне (15.11.2026): разметка общая, на десктопе — как было ───
+   .mob-only — только мобильная версия (mobile.css показывает), .desk-only — только десктоп */
+.mob-only{display:none !important}
+.line.ssh > .lbox[data-lsel]{visibility:hidden;pointer-events:none}

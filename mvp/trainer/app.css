@@ -855,3 +855,13 @@ body:has(.full.ed.selm) .etoast{bottom:calc(78px + var(--sab))}
 .eb-t{font-size:17px;line-height:22px;font-weight:600;letter-spacing:-.026em}
 .eb-ty{font-size:15px;line-height:20px;letter-spacing:-.016em}
 .eb-ty svg{width:15px;height:15px}
+.eb-ty span{white-space:normal;overflow:visible;text-overflow:clip;text-align:left}   /* «Комплекс · 3 раунда на время · до 15 мин» — переносом */
+/* настройка комплекса — строкой в шапке блока под «Комплекс ▾» (15.11) */
+.eb-tyr{display:inline-flex;align-items:center;gap:8px;max-width:100%;min-width:0}
+.eb-fmt{position:relative;display:block;width:100%;margin:2px 0 2px;text-align:left;font-size:15px;line-height:20px;letter-spacing:-.016em;color:var(--tx);overflow-wrap:anywhere}
+.eb-fmt::after{content:"";position:absolute;inset:-6px -10px}
+/* «Объединить» и переключатель «Сет · Связка» в шторке группы (15.11, только телефон) */
+.gkind{margin:0 0 16px}
+.ed-selbar .btn:not(.s){flex:1;height:50px;border-radius:25px;gap:8px;justify-content:center}
+.ed-selbar .btn svg{width:20px;height:20px;flex:none}
+.selr.ssh .er-m{color:var(--tx2)}

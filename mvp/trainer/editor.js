@@ -280,7 +280,7 @@ function leave(r){
 /* ═══════════ ОТРИСОВКА ═══════════ */
 function headHTML(){
   if(ED.sel){ const n = ED.sel.size;
-    return `<header class="nav"><div class="nav-in"><div class="nav-l"></div><h1>Сет или связка<small>${n ? 'выбрано ' + n : 'отметьте строки одного блока'}</small></h1>
+    return `<header class="nav"><div class="nav-in"><div class="nav-l"></div><h1>Объединить<small>${n ? 'выбрано ' + n : 'отметьте строки одного блока'}</small></h1>
     <div class="nav-r"><button class="nb" data-act="e-sel-x" aria-label="Отменить выбор">${I.x}</button></div></div></header>` }
   if(ED.reorder) return `<header class="nav"><div class="nav-in"><div class="nav-l"></div><h1>Порядок<small>перетащите за ${'≡'}</small></h1>
     <div class="nav-r"><button class="nb ok" data-act="e-reorder" aria-label="Готово"><i>${I.check}</i></button></div></div></header>`;
@@ -383,17 +383,19 @@ const handle = (kind, id) => `<span class="hd" data-drag="${kind}" data-id="${id
    шторка правки; смахивание — «Удалить»; в конце блока — строка ввода. */
 function blockHTML(b, k){
   const txt = isTextBlock(b), lab = blockTypeLabel(b), pend = ED.pending && ED.pending.ids.has(b.id), fmt = b.fmt && typeof b.fmt === 'object' ? b.fmt : null;
-  /* шапка блока — как в просмотре (.wbh): номер, название, под ним тип серым (нажатие — сменить), справа «•••» */
+  /* шапка блока — как в просмотре (.wbh): номер, название, под ним тип серым (нажатие — сменить), справа «•••».
+     У комплекса под типом «Комплекс ▾» — строкой в шапке настройка с расшифровкой: «AMRAP 12 — максимум раундов
+     за 12:00» (15.11: не отдельной строкой в теле блока и не за «?»); нажатие — та же шторка типа */
   const ty = ED.reorder ? '' : `<button class="eb-ty${lab ? ' on' : ''}" data-act="e-type" data-b="${b.id}" aria-label="Тип блока: ${h(lab || 'не задан')}"><span>${h(lab ? (fmt ? 'Комплекс' : lab) : 'Тип блока')}</span>${I.down}</button>`;
+  const fcap = fmt && !ED.reorder ? `<button class="eb-fmt" data-act="e-type" data-b="${b.id}">${h(fmtLabel(fmt) + (fmtDesc(fmt) ? ' — ' + fmtDesc(fmt) : ''))}</button>` : '';
   return `<section class="eb${pend ? ' pend' : ''}${txt ? ' tb' : ''}" data-b="${b.id}">
     <div class="eb-h${solo() ? ' solo' : ''}">
-      ${solo() ? '<span class="eb-t eb-solo">Состав блока</span>' + ty : `<span class="eb-no" aria-hidden="true">${k + 1}</span>
-      <div class="eb-tt"><textarea class="eb-t" data-bt="${b.id}" rows="1" placeholder="${txt ? 'Блок текстом' : 'Блок ' + (k + 1)}" aria-label="Название блока ${k + 1}" enterkeyhint="done" autocomplete="off" ${ED.reorder ? 'disabled' : ''}>${h(b.title)}</textarea>${ty}</div>`}
+      ${solo() ? '<span class="eb-t eb-solo">Состав блока</span><span class="eb-tyr">' + ty + '</span>' : `<span class="eb-no" aria-hidden="true">${k + 1}</span>
+      <div class="eb-tt"><textarea class="eb-t" data-bt="${b.id}" rows="1" placeholder="${txt ? 'Блок текстом' : 'Блок ' + (k + 1)}" aria-label="Название блока ${k + 1}" enterkeyhint="done" autocomplete="off" ${ED.reorder ? 'disabled' : ''}>${h(b.title)}</textarea><span class="eb-tyr">${ty}</span>${fcap}</div>`}
       ${ED.reorder ? handle('b', b.id) : solo() ? '' : `<button class="nb" data-act="e-bmenu" data-b="${b.id}" aria-label="Действия с блоком ${h(b.title || 'Блок ' + (k + 1))}">${I.more}</button>`}
     </div>
     ${b.note && !ED.reorder ? `<button class="eb-n" data-act="e-note" data-b="${b.id}">${I.msg}<span>${h(b.note)}</span></button>` : ''}
-    ${txt ? textBodyHTML(b) : `<div class="eb-items" data-items="${b.id}">
-        ${fmt && !ED.reorder ? `<button class="er-fmt" data-act="e-type" data-b="${b.id}">${h(fmtLabel(fmt) + ' — ' + fmtDesc(fmt))}</button>` : ''}
+    ${txt ? textBodyHTML(b) : `<div class="eb-items" data-items="${b.id}">${solo() && fcap ? fcap.replace('eb-fmt', 'er-fmt') : ''}
         ${itemsHTML(b)}</div>
       ${ED.reorder ? '' : `<div class="qadd"><span class="qi">${I.plus}</span><input class="qa-in" data-qb="${b.id}" placeholder="Добавить упражнение" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" aria-label="Добавить упражнение в блок">
         <button class="nb" data-act="e-add" data-b="${b.id}" aria-label="База упражнений — несколько сразу, сетом, связкой">${I.search}</button></div>
@@ -425,6 +427,9 @@ function lineHTML(it){
   return (it.scheme ? `<span class="sc">${h(it.scheme)}</span> ` : '') + h(nm) + (ld ? ` <span class="lx">${h(ld)}</span>` : '') + (!it.scheme && !ld ? ' <span class="ph">· задать схему</span>' : '');
 }
 function rowHTML(it){
+  if(it.ss && ED.sel){ const on = ED.sel.has(it.id), sb = selBlock(), off = !!sb && !sb.items.includes(it);
+    return `<div class="er ssh selr${on ? ' on' : ''}${off ? ' off' : ''}" data-id="${it.id}">
+      <button class="er-m" data-act="e-sel-t" data-id="${it.id}" role="checkbox" aria-checked="${on}" ${off ? 'aria-disabled="true"' : ''}><span class="er-ck" aria-hidden="true">${I.check}</span><span class="xl">Сет · ${it.rounds} ${plural3(+it.rounds, 'круг', 'круга', 'кругов')}</span></button></div>` }
   if(it.ss) return `<div class="er ssh" data-id="${it.id}">
       <button class="er-m" data-act="e-ss" data-id="${it.id}" ${ED.reorder ? 'tabindex="-1"' : ''}><span class="xl">${it.rounds} ${plural3(+it.rounds, 'круг', 'круга', 'кругов')}:</span></button>${ED.reorder ? handle('ss', it.id) : ''}</div>`;
   const cls = it.chain ? 'chn' : it.exId ? 'ex' : 'raw';
@@ -619,45 +624,34 @@ function menuBtn(ov, id, label){
   const x = ov.querySelector('.sh-h [data-act="close-sheet"]');
   if(x) x.insertAdjacentHTML('beforebegin', `<button class="nb" data-act="e-imenu" data-id="${id}" aria-label="${h(label)}">${I.more}</button>`);
 }
-/* ═══ Сет и связка — выбором строк (15.11.2026, как галочки в кабинете) ═══
-   Из меню строки («Сет или связка с другими строками» — она уже отмечена) или из
-   настроек тренировки. Отмечают строки одного блока, внизу — «Сделать сетом» и
-   «Сделать связкой»; другие блоки на это время приглушены. Сет — заголовок с кругами
-   и выбранные строки следом, на месте первой; связка — выбранные строки частями одной
-   строки с общей нагрузкой (normChain). Отмена — из тоста. Прежнее «Объединить в сет
-   со следующим» вошло сюда. */
+/* ═══ Объединить строки (15.11.2026, решение пользователя — только телефон: приложение и мобильный кабинет) ═══
+   Из меню строки («Объединить с другими строками» — она уже отмечена) или из настроек тренировки. Отмечают
+   строки одного блока (у сета можно отметить и его заголовок — весь сет), внизу одна кнопка «Объединить»:
+   новая группа встаёт сетом; если среди отмеченных уже есть сет или связка — остальные строки встают в неё.
+   Сет или связка — переключателем «Сет · Связка» в шторке группы, там же «Разъединить». Логика — общая
+   с кабинетом, в data.js (grpMerge, grpToChain, grpToSet, grpUngroup). Отмена — из тоста. */
 const canSel = b => !!b && !isTextBlock(b) && (b.items || []).filter(itemHas).length > 1;
 const selBlock = () => ED && ED.sel ? ED.blocks.find(b => !isTextBlock(b) && (b.items || []).some(i => ED.sel.has(i.id))) || null : null;
-function selPick(){
-  const b = selBlock(), sel = b ? b.items.filter(i => ED.sel.has(i.id) && !i.ss && itemHas(i)) : [];
-  return {b, sel, parts: sel.reduce((a, i) => a + (i.chain ? (i.parts || []).filter(partHas).length : 1), 0)};
-}
 function selBar(full){
   let bar = full.querySelector('.ed-selbar');
   if(!ED.sel){ full.classList.remove('selm'); if(bar) bar.remove(); return }
   full.classList.add('selm');
-  if(!bar){ full.insertAdjacentHTML('beforeend', '<div class="ed-selbar" role="toolbar" aria-label="Сет или связка"></div>'); bar = full.querySelector('.ed-selbar') }
-  const {sel, parts} = selPick();
-  bar.innerHTML = `<button class="btn s o" data-act="e-sel-ss" ${sel.length >= 2 ? '' : 'disabled'}>${IC.set}Сделать сетом</button>
-    <button class="btn s o" data-act="e-sel-ch" ${parts >= 2 ? '' : 'disabled'}>${IC.chain}Сделать связкой</button>`;
+  if(!bar){ full.insertAdjacentHTML('beforeend', '<div class="ed-selbar" role="toolbar" aria-label="Объединить строки"></div>'); bar = full.querySelector('.ed-selbar') }
+  const b = selBlock(), ok = !!b && grpCan(b, ED.sel);
+  bar.innerHTML = `<button class="btn" data-act="e-sel-merge" ${ok ? '' : 'disabled'}>${IC.set}Объединить</button>`;
 }
-function selMake(k){
-  const {b, sel, parts} = selPick(); if(!b || (k === 'ss' ? sel.length < 2 : parts < 2)) return;
-  const ids = ED.sel, snap = b.items.slice(), subs = snap.map(i => i.sub);
-  const undo = () => { snap.forEach((i, j) => { i.sub = subs[j] }); b.items = snap; draw() };
-  if(k === 'ss'){
-    let at = b.items.indexOf(sel[0]);
-    if(sel[0].sub) for(let j = at; j >= 0; j--) if(b.items[j].ss){ at = j; break }
-    const pos = b.items.slice(0, at).filter(i => !ids.has(i.id)).length, rest = b.items.filter(i => !ids.has(i.id)), hd = ssItem(3, '');
-    sel.forEach(i => { i.sub = true }); rest.splice(pos, 0, hd, ...sel); b.items = rest;
-  } else {
-    const ps = sel.flatMap(i => i.chain ? (i.parts || []).filter(partHas).map(p => ({...p, id: nid('i')})) : [(p => { delete p.sub; return p })({...i, id: nid('i')})]);
-    const c = chainItem(ps); if(sel[0].sub) c.sub = true;
-    const at = b.items.indexOf(sel[0]); b.items = b.items.flatMap((i, j) => j === at ? [c] : ids.has(i.id) ? [] : [i]);
-  }
-  normSS(b); ED.sel = null; draw();
-  undoToast(k === 'ss' ? 'Сет: ' + sel.length + ' ' + plural3(sel.length, 'упражнение', 'упражнения', 'упражнений') + ' по кругу — круги и отдых в строке сета'
-    : 'Связка: ' + parts + ' ' + plural3(parts, 'упражнение', 'упражнения', 'упражнений') + ' одним подходом', undo);
+function selMerge(){
+  const b = selBlock(); if(!b || !grpCan(b, ED.sel)) return;
+  const snap = JSON.stringify(b.items), undo = () => { b.items = JSON.parse(snap); draw() };
+  const r = grpMerge(b, ED.sel); ED.sel = null; if(!r){ draw(); return }
+  ED.flash.add(r.id); draw();
+  undoToast(r.into ? (r.kind === 'ss' ? 'Добавлено в сет' : 'Добавлено в связку')
+    : 'Сет из ' + r.n + ' ' + plural3(r.n, 'упражнения', 'упражнений', 'упражнений') + ' — связкой можно сделать в настройках сета', undo);
+}
+function grpUn(id){
+  const f = findIt(id); if(!f) return; const B = f.b, snap = JSON.stringify(B.items);
+  if(!grpUngroup(B, id)) return; closeSheet(); draw();
+  undoToast('Разъединено — упражнения отдельными строками', () => { B.items = JSON.parse(snap); draw() });
 }
 function itemActs(it){
   const f = findIt(it.id);
@@ -668,7 +662,8 @@ function itemActs(it){
     ${lu ? optRow('e-x-rng', IC.range, hasRng(it) ? 'Нагрузка одним числом' : 'Нагрузка диапазоном от–до', `data-id="${it.id}"`) : ''}
     ${it.exId && !it.chain ? optRow('e-x-txt', IC.text, txtMode(it) ? 'Вернуть схему и нагрузку' : 'Записать текстом, как в тетради', `data-id="${it.id}"`) : ''}
     ${it.sub ? optRow('e-x-unss', IC.ungroup, 'Убрать из сета', `data-id="${it.id}"`) : ''}
-    ${canSel(f.b) ? optRow('e-sel', IC.set, 'Сет или связка с другими строками', `data-id="${it.id}"`) : ''}
+    ${it.chain ? optRow('e-g-un', IC.ungroup, 'Разъединить — упражнения станут отдельными строками', `data-id="${it.id}"`) : ''}
+    ${canSel(f.b) ? optRow('e-sel', IC.set, 'Объединить с другими строками', `data-id="${it.id}"`) : ''}
     ${ED.blocks.filter(x => !isTextBlock(x)).length > 1 ? optRow('e-x-move', IC.move, 'Перенести в другой блок', `data-id="${it.id}"`) : ''}
     ${optRow('e-del', IC.trash, 'Удалить', `data-id="${it.id}"`, 'rm')}</div>`;
 }
@@ -698,6 +693,7 @@ function wireEx(ov, it){
 function chainBody(it){
   const U = units(it), ws = chainWeighted(it), seen = new Set(), wsu = ws.filter(p => !seen.has(p.exId) && seen.add(p.exId));
   return `<div class="sh-p">
+    <div class="seg wide gkind" role="radiogroup" aria-label="Сет или связка"><button class="" role="radio" aria-checked="false" data-act="e-g-kind" data-k="ss" data-id="${it.id}">Сет</button><button class="on" role="radio" aria-checked="true" >Связка</button></div>
     <div class="field"><span>Упражнения и повторы</span>
       <div class="cparts">${(it.parts || []).map(p => `<div class="cpart"><b>${h(partName(p))}</b>
         <input data-part="${p.id}" value="${h(p.scheme || '')}" inputmode="numeric" placeholder="повт" aria-label="Повторы: ${h(partName(p))}" autocomplete="off">
@@ -707,7 +703,8 @@ function chainBody(it){
     ${loadField(it)}${loadExtra(it)}
     ${U.weighted && wsu.length > 1 && U.cur === '%' ? `<label class="field"><span>% от 1ПМ упражнения</span><select id="cOf">
       <option value="">самого слабого</option>${wsu.map(p => `<option value="${p.exId}" ${it.of === p.exId ? 'selected' : ''}>${h(partName(p))}</option>`).join('')}</select></label>` : ''}
-  </div>`;
+  </div>
+  <div class="ed-acts">${optRow('e-g-un', IC.ungroup, 'Разъединить — упражнения станут отдельными строками', `data-id="${it.id}"`)}</div>`;
 }
 function sheetChain(id){
   const f = findIt(id); if(!f) return; const it = f.it;
@@ -750,11 +747,12 @@ function sheetRaw(id){
 function sheetSS(id){
   const f = findIt(id); if(!f) return; const it = f.it;
   const body = () => `<div class="sh-p">
+      <div class="seg wide gkind" role="radiogroup" aria-label="Сет или связка"><button class="on" role="radio" aria-checked="true" >Сет</button><button class="" role="radio" aria-checked="false" data-act="e-g-kind" data-k="ch" data-id="${it.id}">Связка</button></div>
       <div class="stp"><span>Круги</span><button class="nb" data-act="e-ss-r" data-d="-1" aria-label="Меньше кругов">${IC.minus}</button><b>${it.rounds}</b><button class="nb" data-act="e-ss-r" data-d="1" aria-label="Больше кругов">${I.plus}</button></div>
       <label class="field"><span>Отдых между кругами</span><input id="sRest" value="${h(it.rest || '')}" placeholder="без отдыха" autocomplete="off"></label>
       <div class="chips pre">${REST_PRESETS.map(p => `<button class="chip${(it.rest || '') === p ? ' on' : ''}" data-act="e-ss-rest" data-v="${p}">${p || 'без отдыха'}</button>`).join('')}</div>
       <p class="ed-note">Упражнения сета выполняют подряд по кругу; нагрузка у каждого — на один круг</p></div>
-    <div class="ed-acts">${optRow('e-ss-ungroup', IC.ungroup, 'Разгруппировать — упражнения останутся', `data-id="${id}"`)}
+    <div class="ed-acts">${optRow('e-ss-ungroup', IC.ungroup, 'Разъединить — упражнения станут отдельными строками', `data-id="${id}"`)}
       ${optRow('e-ss-del', IC.trash, 'Удалить сет вместе с упражнениями', `data-id="${id}"`, 'rm')}</div>`;
   const ov = sheet({id:'ss', title:'Сет', sub:'Упражнения подряд по кругу', body:body(), foot:foot()});
   ov.dataset.id = id; ov._body = body;
@@ -797,7 +795,7 @@ function searchList(){
 }
 function searchFoot(){
   const n = SR.picked.length; if(SR.mode !== 'add') return '';
-  return `<div class="sh-f">${n > 1 ? `<div class="seg wide" role="radiogroup" aria-label="Как добавить">${[['one', 'Отдельно'], ['ss', 'Сетом'], ['ch', 'Связкой']].map(([k, t]) =>
+  return `<div class="sh-f">${n > 1 ? `<div class="seg wide" role="radiogroup" aria-label="Как добавить">${[['one', 'Отдельно'], ['ss', 'Вместе']].map(([k, t]) =>
       `<button class="${SR.as === k ? 'on' : ''}" role="radio" aria-checked="${SR.as === k}" data-act="e-s-as" data-k="${k}">${t}</button>`).join('')}</div>` : ''}
     <button class="btn" data-act="e-s-add" ${n ? '' : 'disabled'}>${n ? 'Добавить · ' + n : 'Отметьте упражнения'}</button></div>`;
 }
@@ -825,12 +823,11 @@ function addPicked(){
   const b = targetBlock(SR.bid), ids = SR.picked; if(!ids.length) return;
   let add;
   if(ids.length > 1 && SR.as === 'ss') add = [ssItem(3, ''), ...ids.map(id => Object.assign(mkItem(id), {sub:true}))];
-  else if(ids.length > 1 && SR.as === 'ch') add = [chainItem(ids.map(id => mkItem(id)))];
   else add = ids.map(id => mkItem(id));
   b.items.push(...add); normSS(b);
   add.forEach(x => ED.flash.add(x.id));
   closeSheet(); draw(); scrollToBlock(b.id, true);
-  say(ids.length > 1 ? (SR.as === 'ss' ? 'Сет из ' + ids.length + ' упражнений' : SR.as === 'ch' ? 'Связка из ' + ids.length + ' упражнений' : 'Добавлено: ' + ids.length) : 'Добавлено — нажмите строку, чтобы задать схему');
+  say(ids.length > 1 ? (SR.as === 'ss' ? 'Вместе — сетом из ' + ids.length + '; связкой можно сделать в настройках сета' : 'Добавлено: ' + ids.length) : 'Добавлено — нажмите строку, чтобы задать схему');
 }
 function scrollToBlock(bid, end){
   const scr = document.getElementById('edScr'), el = scr && scr.querySelector(`.eb[data-b="${bid}"]`); if(!el) return;
@@ -905,7 +902,7 @@ function sheetDayMenu(){
     ${optRow('e-comp', I.trophy, ED.comp ? 'Снять отметку «Соревнование»' : 'Отметить как соревнование')}
     ${has ? optRow('e-dsave', I.star, 'Сохранить в базу тренировок') : ''}
     ${has ? optRow('e-wizard', I.copy, 'Скопировать на другие дни') : ''}
-    ${ED.blocks.some(canSel) ? optRow('e-sel', IC.set, 'Сет или связка из строк') : ''}
+    ${ED.blocks.some(canSel) ? optRow('e-sel', IC.set, 'Объединить строки') : ''}
     ${ED.blocks.length > 1 || ED.blocks.some(b => (b.items || []).filter(itemHas).length > 1) ? optRow('e-reorder', IC.sort, 'Изменить порядок') : ''}
     ${revRow()}
     ${ED.blocks.length ? optRow('e-dclear', IC.erase, 'Очистить день', '', 'rm') : ''}</div>`});
@@ -1084,8 +1081,7 @@ const acts = {
   'e-sel-t': b => { const id = b.dataset.id, f = findIt(id); if(!f || b.getAttribute('aria-disabled') === 'true') return;
     if(ED.sel.has(id)) ED.sel.delete(id); else ED.sel.add(id); draw() },
   'e-sel-x': () => { ED.sel = null; draw() },
-  'e-sel-ss': () => selMake('ss'),
-  'e-sel-ch': () => selMake('ch'),
+  'e-sel-merge': () => selMerge(),
   'e-x-unss': b => { const f = findIt(b.dataset.id); if(!f) return; const its = f.b.items; let hk = f.k; while(hk >= 0 && !its[hk].ss) hk--;
     const end = ssEnd(its, hk), [x] = its.splice(f.k, 1); x.sub = false; its.splice(end - 1, 0, x); normSS(f.b); closeSheet(); draw() },
   'e-x-move': b => { const id = b.dataset.id, f = findIt(id); if(!f) return;
@@ -1101,8 +1097,12 @@ const acts = {
   /* сет */
   'e-ss-r': b => { const ov = sheetOf(b), it = findIt(ov.dataset.id).it; it.rounds = Math.max(1, Math.min(20, (+it.rounds || 1) + +b.dataset.d)); reSS(ov) },
   'e-ss-rest': b => { const ov = sheetOf(b), it = findIt(ov.dataset.id).it; it.rest = b.dataset.v; reSS(ov) },
-  'e-ss-ungroup': b => { const f = findIt(b.dataset.id); if(!f) return; const its = f.b.items, end = ssEnd(its, f.k);
-    for(let m = f.k + 1; m < end; m++) its[m].sub = false; its.splice(f.k, 1); closeSheet(); draw(); say('Сет разгруппирован') },
+  'e-ss-ungroup': b => grpUn(b.dataset.id),
+  'e-g-un': b => grpUn(b.dataset.id),
+  'e-g-kind': b => { const f = findIt(b.dataset.id); if(!f) return; const B = f.b, snap = JSON.stringify(B.items);
+    const r = b.dataset.k === 'ch' ? grpToChain(B, b.dataset.id) : grpToSet(B, b.dataset.id); if(!r) return;
+    closeSheet(true); draw(); if(r.chain) sheetChain(r.id); else if(r.ss) sheetSS(r.id);
+    undoToast(r.chain ? 'Теперь связка' : 'Теперь сет', () => { closeSheet(true); B.items = JSON.parse(snap); draw() }) },
   'e-ss-del': b => { const f = findIt(b.dataset.id); if(!f) return; const snap = JSON.stringify(f.b.items), blk_ = f.b, end = ssEnd(f.b.items, f.k);
     f.b.items.splice(f.k, end - f.k); closeSheet(); draw(); undoToast('Сет удалён', () => { blk_.items = JSON.parse(snap); draw() }) },
   /* поиск */

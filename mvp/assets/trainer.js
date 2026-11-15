@@ -473,9 +473,10 @@ function chainLineHTML(it){
       <button class="cpx" data-delpart="${p.id}" tabindex="-1" title="Убрать из связки">${ICON.x}</button></span>`).join('');
   return `<div class="line chain${ps.length ? '' : ' empty'}${lselOn(it)}" data-item="${it.id}">
     ${lboxHTML(ps.length ? it : null)}<span class="gr" title="Перетащить связку">${ICON.grip}</span>
-    <span class="chl">Связка</span>
+    <span class="chl desk-only">Связка</span>${ps.length ? gkHTML('ch', it.id) : ''}
     <span class="cps">${parts}<span class="caddw">${ps.length ? '<span class="cplus">+</span>' : ''}<span class="cadd" contenteditable data-edit="${it.id}" spellcheck="false" data-ph="${ps.length ? 'упражнение' : 'первое упражнение связки'}"></span></span>${ps.length ? chainPrmHTML(it) : ''}</span>
     ${QUICK && !ps.length ? kindHTML(it, 'ch') : ''}
+    ${ps.length ? `<button class="x mob-only" data-grpun="${it.id}" tabindex="-1" title="Разъединить — упражнения станут отдельными строками">${ICON.ungroup}</button>` : ''}
     <button class="x" data-del="${it.id}" tabindex="-1" title="Удалить связку">${ICON.x}</button>
   </div>`;
 }
@@ -524,8 +525,8 @@ function ssHTML(h, mem){
   const r = Math.max(1, +h.rounds || 1);
   return `<div class="ssg" data-ss="${h.id}">
     <div class="line ssh" data-item="${h.id}">
-      ${lboxHTML(null)}<span class="gr" title="Перетащить сет">${ICON.grip}</span>
-      <span class="nm ssb">Сет</span>
+      ${lboxHTML(QUICK ? h : null)}<span class="gr" title="Перетащить сет">${ICON.grip}</span>
+      <span class="nm ssb desk-only">Сет</span>${gkHTML('ss', h.id)}
       <label class="ssf"><input class="ssn" data-ssf="rounds" data-ss-id="${h.id}" value="${r}" inputmode="numeric" maxlength="2"><s data-ss-rl="${h.id}">${plural(r,'круг','круга','кругов')}</s></label>
       <label class="ssf"><s>отдых</s><input class="ssrest" data-ssf="rest" data-ss-id="${h.id}" value="${esc(h.rest||'')}" placeholder="без отдыха"></label>
       <span class="sp"></span>
@@ -716,10 +717,16 @@ const kindHTML = (it, cur) => `<span class="kind">${KINDS.filter(([k]) => !(k ==
    блоке; Esc — снять. Строки — из одного блока. Отмена — из тоста.
    Быстрый «+» после упражнения (строка → связка) остаётся. */
 const LSEL = new Set();
+/* Телефон (≤760 px, мобильная версия кабинета): одна кнопка «Объединить», у группы переключатель
+   «Сет · Связка» и «Разъединить», без «+ в сет», поля внутри связки и «+»-связки (решение 15.11.2026,
+   как в приложении; десктоп — без изменений). Разметка — для обоих, показ — mobile.css (.mob-only / .desk-only). */
+const LS_MOB = matchMedia('(max-width:760px)');
 let LSEL_AT = null;                                   /* последняя отмеченная — начало диапазона для Shift */
 const lselOn = it => QUICK && LSEL.has(it.id) ? ' lsel' : '';
 const lboxHTML = it => !QUICK || TRO || SUBRO ? '' : !it ? '<i class="bk-box lbox off" aria-hidden="true"></i>'
   : `<i class="bk-box lbox${LSEL.has(it.id) ? ' on' : ''}" data-lsel="${it.id}" role="checkbox" aria-checked="${LSEL.has(it.id)}" aria-label="Выбрать строку" title="Отметьте строки — сделать сетом или связкой">${BK_I.chk}</i>`;
+const gkHTML = (cur, id) => !QUICK ? '' : `<span class="gk mob-only" role="radiogroup" aria-label="Сет или связка">${[['ss', 'Сет'], ['ch', 'Связка']].map(([k, t]) =>
+  `<button role="radio" aria-checked="${k === cur}" class="${k === cur ? 'on' : ''}" ${k === cur ? '' : `data-gk="${k}" data-for="${id}"`}>${t}</button>`).join('')}</span>`;
 const LS_I = {
   ss: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg>',
   ch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'};
@@ -732,7 +739,7 @@ function lselPick(){
 function lselSync(){
   const d = day();
   /* после перерисовки и смены дня в выборе — только живые строки открытого дня */
-  const live = new Set(); (d ? d.blocks : []).forEach(b => (b.items || []).forEach(i => { if(!i.ss && itemHas(i)) live.add(i.id) }));
+  const live = new Set(); (d ? d.blocks : []).forEach(b => (b.items || []).forEach(i => { if(i.ss || itemHas(i)) live.add(i.id) }));
   [...LSEL].forEach(id => { if(!live.has(id)) LSEL.delete(id) });
   let bar = document.getElementById('lsBar');
   if(!bar){ bar = document.createElement('div'); bar.id = 'lsBar'; bar.className = 'bk-bar ls-bar'; bar.addEventListener('click', lselBarClick); document.body.appendChild(bar) }
@@ -744,10 +751,11 @@ function lselSync(){
   const {b, many, sel} = lselPick(), n = LSEL.size;
   const parts = sel.reduce((a, i) => a + (i.chain ? (i.parts || []).filter(partHas).length : 1), 0);
   const hint = many ? 'Строки из разных блоков — отметьте в одном' : n < 2 ? 'Отметьте ещё строку' : (b.title || 'Блок ' + (day().blocks.indexOf(b) + 1));
-  const okSS = !many && sel.length >= 2, okCH = !many && parts >= 2;
+  const okSS = !many && sel.length >= 2, okCH = !many && parts >= 2, okM = !many && !!b && grpCan(b, LSEL);
   bar.innerHTML = `<span class="bk-n"><b>Выбрано ${n}</b><s>${esc(hint)}</s></span><span class="bk-sep"></span>
-    <button data-lsa="ss" ${okSS ? '' : 'disabled'} title="${esc(KIND_HELP.ss[1])}">${LS_I.ss}Сделать сетом</button>
-    <button data-lsa="ch" ${okCH ? '' : 'disabled'} title="${esc(KIND_HELP.ch[1])}">${LS_I.ch}Сделать связкой</button>
+    <button data-lsa="ss" class="desk-only" ${okSS ? '' : 'disabled'} title="${esc(KIND_HELP.ss[1])}">${LS_I.ss}Сделать сетом</button>
+    <button data-lsa="ch" class="desk-only" ${okCH ? '' : 'disabled'} title="${esc(KIND_HELP.ch[1])}">${LS_I.ch}Сделать связкой</button>
+    <button data-lsa="merge" class="mob-only" ${okM ? '' : 'disabled'}>${LS_I.ss}Объединить</button>
     <span class="bk-sep"></span>
     <button data-lsa="clear" class="clr">${BK_I.x}Снять выделение</button>`;
   const r = $('#doc').getBoundingClientRect();
@@ -795,7 +803,14 @@ function lselBarClick(e){
   if(a.dataset.lsa === 'clear') return lselClear();
   flushRaw();
   const {b, sel} = lselPick(); if(!b) return;
+  if(a.dataset.lsa === 'merge'){ const snap = JSON.stringify(b.items), r = grpMerge(b, LSEL); LSEL.clear(); render(); if(!r) return;
+    toast(r.into ? (r.kind === 'ss' ? 'Добавлено в сет' : 'Добавлено в связку') : 'Сет из ' + r.n + ' — связкой можно сделать переключателем в шапке сета', 'Отменить', () => { b.items = JSON.parse(snap); render() }); return }
   if(a.dataset.lsa === 'ss') lselMakeSet(b, sel); else lselMakeChain(b, sel);
+}
+/* Телефон: переключатель «Сет · Связка» в шапке группы и «Разъединить» у связки (общая логика — data.js). */
+function grpAct(id, fn, msg){
+  const {b} = findItem(id); if(!b) return; const snap = JSON.stringify(b.items);
+  if(!fn(b, id)) return; render(); toast(msg, 'Отменить', () => { b.items = JSON.parse(snap); render() });
 }
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && LSEL.size && !document.querySelector('.ov.on')) lselClear() });
 function setKind(id, k){
@@ -814,7 +829,7 @@ function setKind(id, k){
    частью (подходы и нагрузка переезжают к связке), курсор — в следующую.
    Строку текстом «+» не трогает: она сохраняется как написана. */
 document.addEventListener('keydown', e => {
-  if(!QUICK || e.key !== '+') return;
+  if(!QUICK || e.key !== '+' || LS_MOB.matches) return;
   const f = e.target.closest && e.target.closest('#doc .line:not(.chain) [data-edit], #doc .line:not(.chain) [data-pf="sch"]'); if(!f) return;
   if(f.dataset.pf === 'sch' && f.value.trim()) return;
   const {b, i} = findItem(f.dataset.edit || f.dataset.for); if(!b || !i || !i.exId || i.chain || i.ss) return;
@@ -2917,6 +2932,7 @@ document.addEventListener('click', e=>{
     return;
   }
   const ung = e.target.closest('[data-ssungroup]');
+  if(ung && LS_MOB.matches){ grpAct(ung.dataset.ssungroup, grpUngroup, 'Разъединено — упражнения отдельными строками'); return }
   if(ung){
     const {b} = findItem(ung.dataset.ssungroup); if(!b) return;
     const k = b.items.findIndex(x=>x.id===ung.dataset.ssungroup), j = ssEnd(b.items, k);
@@ -2950,6 +2966,8 @@ document.addEventListener('click', e=>{
   const sb = e.target.closest('[data-savblk]');
   if(sb){ openFolder(sb); return }
   const lsb = e.target.closest('[data-lsel]'); if(lsb){ e.preventDefault(); lselToggle(lsb.dataset.lsel, e.shiftKey); return }
+  const gk = e.target.closest('[data-gk]'); if(gk){ grpAct(gk.dataset.for, gk.dataset.gk === 'ch' ? grpToChain : grpToSet, gk.dataset.gk === 'ch' ? 'Теперь связка' : 'Теперь сет'); return }
+  const gun = e.target.closest('[data-grpun]'); if(gun){ grpAct(gun.dataset.grpun, grpUngroup, 'Разъединено — упражнения отдельными строками'); return }
   const rt = e.target.closest('[data-rt]');
   if(rt){ const k = rt.dataset.rt; if(k === 'cal') S.src = 'cal'; else { S.src = 'tpl'; S.tab = k }
     STATE.railSrc = S.src; STATE.railTab = S.tab; saveState(); renderRailHead(); renderSrc(); return }
@@ -3350,7 +3368,8 @@ function dropLine(e){
     item.sub = true;
     if(target.ss) to.items.splice(ssEnd(to.items, k), 0, item);          /* на заголовок — в конец суперсета */
     else if(target.sub) to.items.splice(k + 1, 0, item);                  /* на участника — следом за ним */
-    else { target.sub = true; to.items.splice(k, 0, ssItem(3, '')); to.items.splice(k + 2, 0, item) }
+    else { target.sub = true; to.items.splice(k, 0, ssItem(3, '')); to.items.splice(k + 2, 0, item);
+      if(LS_MOB.matches) setTimeout(() => toast('Объединено в сет — связкой можно сделать переключателем в шапке сета'), 0) }
   } else {
     const k = to.items.indexOf(target);
     item.sub = target.ss ? zone === 'after' : !!target.sub;

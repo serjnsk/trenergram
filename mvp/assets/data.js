@@ -564,6 +564,125 @@ function normSS(b){
   b.items = out;
   return b;
 }
+/* ═══════════ СЕТ И СВЯЗКА: ОБЪЕДИНИТЬ, ПЕРЕКЛЮЧИТЬ, РАЗЪЕДИНИТЬ (15.11.2026) ═══════════
+   Одна логика для кабинета (trainer.js) и приложения (trainer/editor.js). Тренер не решает
+   заранее, сет это или связка: отмечает строки → «Объединить» → получается сет; в шапке
+   группы переключатель «Сет · Связка» и «Разъединить». Если среди отмеченных уже есть сет
+   или связка, остальные строки встают в неё. b — блок, ids — Set id отмеченных строк
+   (у сета можно отметить и заголовок — это весь сет). Модель данных прежняя: сет — заголовок
+   ss + участники sub, связка — одна строка chain с частями parts. */
+const GRP_LOAD = ['pct', 'pct2', 'val', 'val2', 'unit'];
+/* Часть связки из строки: повторы — без подходов («5×3» → «3»), подходы и нагрузка — у связки. */
+function grpPart(i){
+  const p = {...i, id: nid('i')}; delete p.sub; delete p.ss;
+  const m = String(p.scheme || '').match(/^\s*(\d+)\s*[×x]\s*(\S+)\s*$/i); if(m) p.scheme = m[2];
+  /* повторы, записанные нагрузкой («50 повт»), — это повторы части, а не нагрузка связки */
+  const repsLd = i.pct == null && i.unit === 'повт' && !!i.val;
+  if(repsLd){ if(!p.scheme) p.scheme = String(i.val); p.val = ''; p.unit = ''; delete p.val2 }
+  /* своя нагрузка упражнения запоминается: при обратном переключении в сет или «Разъединить» вернётся */
+  const ld = i.pct != null ? {pct: i.pct, ...(i.pct2 != null ? {pct2: i.pct2} : {})}
+    : i.val && !repsLd ? {val: i.val, unit: i.unit || '', ...(i.val2 ? {val2: i.val2} : {})} : null;
+  if(ld) p._ld = ld;
+  return p;
+}
+/* Нагрузка строки из части связки: своя запомненная — если нагрузку связки после
+   переключения не меняли, иначе общая нагрузка связки. */
+const grpLdSig = c => JSON.stringify(GRP_LOAD.map(f => c[f] ?? ''));
+function grpLoadTo(m, p, c, own){
+  GRP_LOAD.forEach(f => { delete m[f] }); m.pct = null; m.unit = ''; m.val = '';
+  const src = own ? (p._ld || {}) : c; GRP_LOAD.forEach(f => { if(src[f] != null && src[f] !== '') m[f] = src[f] });
+  delete m._ld; return m;
+}
+const grpOwn = c => !!c._ldsig && c._ldsig === grpLdSig(c) && (c.parts || []).some(p => p._ld);
+const grpHeadOf = (its, k) => { let hk = k; while(hk >= 0 && !its[hk].ss) hk--; return hk };
+/* Отмеченные строки по порядку: заголовок сета разворачивается в его участников. */
+function grpPicked(b, ids){
+  const its = b.items || [], out = [];
+  for(let k = 0; k < its.length; k++){
+    const i = its[k];
+    if(i.ss && ids.has(i.id)){ const j = ssEnd(its, k); for(let m = k + 1; m < j; m++) if(!out.includes(its[m]) && itemHas(its[m])) out.push(its[m]); continue }
+    if(ids.has(i.id) && !i.ss && itemHas(i) && !out.includes(i)) out.push(i);
+  }
+  return out;
+}
+/* Куда объединять: первая отмеченная группа — сет (заголовок или участник) или связка. */
+function grpTarget(b, ids){
+  const its = b.items || [];
+  for(let k = 0; k < its.length; k++){
+    const i = its[k]; if(!ids.has(i.id)) continue;
+    if(i.ss) return {kind: 'ss', h: i};
+    if(i.chain) return {kind: 'ch', c: i};
+    if(i.sub){ const hk = grpHeadOf(its, k); if(hk >= 0) return {kind: 'ss', h: its[hk]} }
+  }
+  return null;
+}
+/* «Объединить». Возвращает {kind:'ss'|'ch', id, n, into} или null, если объединять нечего. */
+function grpMerge(b, ids){
+  const its = b.items || [], picked = grpPicked(b, ids), t = grpTarget(b, ids);
+  if(!t){
+    if(picked.length < 2) return null;
+    /* новый сет — на месте первой отмеченной */
+    const at = its.indexOf(picked[0]), pos = its.slice(0, at).filter(i => !picked.includes(i)).length;
+    const rest = its.filter(i => !picked.includes(i)), h = ssItem(3, '');
+    picked.forEach(i => { i.sub = true });
+    rest.splice(pos, 0, h, ...picked); b.items = rest; normSS(b);
+    return {kind: 'ss', id: h.id, n: picked.length, into: false};
+  }
+  if(t.kind === 'ss'){
+    const k = its.indexOf(t.h), own = new Set(its.slice(k + 1, ssEnd(its, k)));
+    const moving = picked.filter(i => !own.has(i)); if(!moving.length) return null;
+    let rest = its.filter(i => !moving.includes(i) && !(i.ss && i !== t.h && ids.has(i.id)));
+    moving.forEach(i => { i.sub = true });
+    const hk = rest.indexOf(t.h); rest.splice(ssEnd(rest, hk), 0, ...moving);
+    b.items = rest; normSS(b);
+    return {kind: 'ss', id: t.h.id, n: moving.length, into: true};
+  }
+  const c = t.c, moving = picked.filter(i => i !== c); if(!moving.length) return null;
+  moving.forEach(i => { (i.chain ? (i.parts || []).filter(partHas).map(p => ({...p, id: nid('i')})) : [grpPart(i)]).forEach(p => c.parts.push(p)) });
+  b.items = its.filter(i => !moving.includes(i) && !(i.ss && ids.has(i.id) && grpPicked({items: its}, new Set([i.id])).every(m => moving.includes(m))));
+  normChain(c); normSS(b);
+  return {kind: 'ch', id: c.id, n: moving.length, into: true};
+}
+/* Сет → связка: участники — части, круги — подходы, нагрузка — первая заданная. */
+function grpToChain(b, hid){
+  const its = b.items, k = its.findIndex(i => i.id === hid); if(k < 0 || !its[k].ss) return null;
+  const j = ssEnd(its, k), mem = its.slice(k + 1, j).filter(itemHas);
+  const c = chainItem(mem.flatMap(m => m.chain ? (m.parts || []).filter(partHas).map(p => ({...p, id: nid('i')})) : [grpPart(m)]));
+  if(+its[k].rounds > 1) c.sets = String(its[k].rounds);
+  c._ldsig = grpLdSig(c);
+  its.splice(k, j - k, c); normSS(b);
+  return c;
+}
+/* Связка → сет: части — участники с нагрузкой связки, подходы — круги. Связка внутри сета
+   просто раскладывается в участников этого сета. */
+function grpToSet(b, cid){
+  const its = b.items, k = its.findIndex(i => i.id === cid), c = its[k]; if(!c || !c.chain) return null;
+  const own = grpOwn(c), mem = (c.parts || []).filter(partHas).map(p => grpLoadTo({...p, id: nid('i'), sub: true}, p, c, own));
+  if(c.sub){ its.splice(k, 1, ...mem); normSS(b); return its[grpHeadOf(its, k)] || null }
+  const h = ssItem(+c.sets || 3, ''); its.splice(k, 1, h, ...mem); normSS(b);
+  return h;
+}
+/* «Разъединить»: упражнения остаются отдельными строками; круги и подходы переходят в схему. */
+function grpUngroup(b, id){
+  const its = b.items, k = its.findIndex(i => i.id === id), g = its[k]; if(!g) return false;
+  const withSets = (n, sc) => +n > 1 && /^\d+$/.test(String(sc || '').trim()) ? n + '×' + String(sc).trim() : sc;
+  if(g.ss){
+    const j = ssEnd(its, k);
+    for(let m = k + 1; m < j; m++){ its[m].sub = false; if(!its[m].chain) its[m].scheme = withSets(g.rounds, its[m].scheme) }
+    its.splice(k, 1); normSS(b); return true;
+  }
+  if(g.chain){
+    const own = grpOwn(g), parts = (g.parts || []).filter(partHas).map(p => grpLoadTo({...p, id: nid('i'), sub: !!g.sub, scheme: p.scheme ? withSets(g.sets, p.scheme) : (+g.sets > 1 ? g.sets + '×' : '')}, p, g, own));
+    its.splice(k, 1, ...parts); normSS(b); return true;
+  }
+  return false;
+}
+/* Можно ли объединить отмеченное: две строки и больше или строка в уже отмеченную группу. */
+function grpCan(b, ids){
+  const picked = grpPicked(b, ids), t = grpTarget(b, ids); if(!t) return picked.length >= 2;
+  if(t.kind === 'ss'){ const its = b.items, k = its.indexOf(t.h), own = new Set(its.slice(k + 1, ssEnd(its, k))); return picked.some(i => !own.has(i)) }
+  return picked.some(i => i !== t.c);
+}
 const ssLabel = h => 'Сет · ' + h.rounds + ' ' + plural3(+h.rounds, 'круг', 'круга', 'кругов') + (h.rest ? ' · отдых ' + h.rest : '');
 /* Заголовок суперсета в тексте: «Суперсет 3 круга», «3 круга:», «3 раза», «Суперсет ×4, отдых 90 сек»,
    перечень — в той же строке после двоеточия или следующими строками. «3 раунда на время», AMRAP,
@@ -2264,7 +2383,7 @@ function blkModel(cid, date, b, bi){
     if(itemHas(it)) rows.push(row(it)); q++ }
   const tl = blockTypeLabel(b);
   return {k, bi, name: b.title || tl || (isTextBlock(b) ? 'Блок текстом' : 'Блок'), fmt: fmt && b.title ? fmtLabel(fmt) : '',
-    type: b.title ? [norm(tl || '') === norm(b.title) ? '' : tl, fmt && !String(b.title).includes(fmtLabel(fmt)) ? fmtLabel(fmt) : ''].filter(Boolean).join(' · ') : '',
+    type: b.title ? [norm(tl || '') === norm(b.title) ? '' : tl, fmt && !String(b.title).includes(fmtLabel(fmt)) && !String(tl || '').includes(fmtLabel(fmt)) ? fmtLabel(fmt) : ''].filter(Boolean).join(' · ') : '',   /* тип комплекса уже несёт настройку («Комплекс · EMOM 10») — не повторять */
     fres: fmt && RES_FMT[fmt.k] ? resVal(k + ':f', {k:fmt.k, f:fmt}) : '', note: b.note || '', rows, talk: talkOf(k)};
 }
 /* Подход относительно плана: lo — меньше веса или повторов, hi — больше. */

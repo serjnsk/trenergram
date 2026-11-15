@@ -610,6 +610,10 @@ html.in-stand::-webkit-scrollbar,html.in-stand body::-webkit-scrollbar{display:n
 .wbh .wbn{grid-row:1 / span 3;align-self:center}
 .wbh .t1,.wbh .t3,.wbh .t2{grid-column:2;min-width:0}
 .wbh .t3{line-height:1.3}
+/* блок без типа: пустые строки сетки не занимают места — название по центру, на одной линии с номером (15.11) */
+.wbh{align-content:center;row-gap:0}
+.wbh .t3,.wbh .t2{margin-top:2px}
+.wbh.wbh:not(:has(.t3, .t2)) > *{grid-row:1}   /* кнопка чата (44) иначе раздувает пустые строки и название уходит вверх */
 .wbh .sp{display:none}
 .wbh .wnb{grid-column:3;grid-row:1 / span 3;width:44px;height:44px}
 .wbh .wch{grid-column:4;grid-row:1 / span 3}
@@ -882,6 +886,20 @@ html.inapp::-webkit-scrollbar{display:none}
 /* ─── галочки строк (сет и связка): на телефоне наведения нет — видны в режиме «Изменить» ─── */
 #doc .line > .lbox{display:none}
 html.medit #doc .line > .lbox{display:inline-grid;opacity:1;width:24px;height:24px;margin:0 0 0 4px}
+
+/* ─── сет и связка (15.11.2026, как в приложении): одна «Объединить», в шапке группы «Сет · Связка»,
+   у связки «Разъединить»; «+ в сет» и поле внутри связки не нужны — отметить строки и «Объединить» ─── */
+.desk-only{display:none !important}
+#lsBar .mob-only{display:inline-flex !important}
+#doc .gk.mob-only{display:inline-flex !important;flex:none;background:var(--s1);border-radius:9px;padding:2px;gap:2px}
+#doc .gk button{min-width:58px;height:32px;padding:0 10px;border-radius:7px;font-size:14px;font-weight:500;color:var(--tx2);position:relative}
+#doc .gk button::after{content:"";position:absolute;inset:-6px -1px}
+#doc .gk button.on{background:var(--bg);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+#doc .line .x.mob-only{display:grid !important}
+#doc .ssg .addl.in{display:none}
+#doc .line.chain:not(.empty) .caddw{display:none}
+html.medit #doc .line.ssh > .lbox[data-lsel]{visibility:visible;pointer-events:auto}
+#doc .ssg > .line.ssh{padding-left:12px;row-gap:6px}   /* шапка сета не наезжает на оранжевую черту группы слева */
 
 /* ─── «Уменьшение движения» (HIG): без выездов, пружин и автоповторов ─── */
 @media (prefers-reduced-motion: reduce){
