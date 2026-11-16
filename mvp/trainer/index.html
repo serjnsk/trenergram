@@ -107,6 +107,15 @@ a{color:var(--acc-d)}
 .bro .rnd{position:absolute;top:10px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.86);box-shadow:0 1px 2px rgba(0,0,0,.12),0 6px 16px -8px rgba(0,0,0,.25)}
 .bro svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Тёмная тема: статус-бар, индикатор Home и полосы браузера — светлым по тёмному.
+   .dark ставится по самой странице во фрейме (color-scheme), а не по кнопке: у приложения
+   тёмная тема — trainer/dark.css, у страниц мобильного кабинета — assets/mobile-dark.css (16.11.2026) */
+.scrn.dark,.scrn.dark iframe{background:#000}
+.scrn.dark .sys{color:#fff}
+.scrn.dark .sys .hi{background:#fff}
+.scrn.dark .bro{background:#000;color:#fff}
+.scrn.dark .bro .pill,.scrn.dark .bro .rnd{background:rgba(44,44,46,.86);color:#fff}
+.scrn.dark .bro i{background:#fff !important}
 .dims{font:500 12px/1 var(--mono);color:var(--tx3);text-align:center;padding-bottom:10px}
 
 /* ── правая колонка: описание ── */
@@ -181,6 +190,7 @@ a{color:var(--acc-d)}
       <div class="seg" id="dev"></div>
       <div class="seg" id="size" title="Разрешение экрана"></div>
       <div class="seg" id="plat" title="Веб — кабинет в мобильном браузере; Приложение — тот же интерфейс во весь экран, с безопасными зонами"></div>
+      <div class="seg" id="theme" title="Тема телефона: у приложения (A1–A15, trainer/dark.css) и у мобильного кабинета, включая его страницы во фрейме приложения (assets/mobile-dark.css)"></div>
       <button class="seg ib" id="reload" title="Открыть вид заново (R)"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/></svg></button>
       <a class="seg ib" id="newtab" target="_blank" rel="noopener" title="Эта страница кабинета в новой вкладке — как на компьютере"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
       <span class="scale" id="scale"></span>
@@ -216,12 +226,14 @@ const DEVICES = {
 };
 const SIZES = [[360, 780], [450, 976]];
 const PLATS = [['web', 'Веб'], ['app', 'Приложение']];
+const THEMES = [['light', 'Светлая'], ['dark', 'Тёмная']];
 const ids = Object.keys(TR_SCREENS);
 const defP = () => Object.fromEntries(TR_PARAMS.map(x => [x.id, x.opts[0][0]]));
 
 /* ── состояние стенда; экран и параметры — в адресе, устройство — в браузере ── */
-const st = { id: 'a_today', v: '', p: defP(), dev: 'iphone', size: '360x780', plat: 'app' };
-try { st.dev = localStorage.getItem('tr.dev') || st.dev; st.size = localStorage.getItem('tr.size') || st.size; st.plat = localStorage.getItem('tr.plat') || st.plat; } catch (e) {}
+const st = { id: 'a_today', v: '', p: defP(), dev: 'iphone', size: '360x780', plat: 'app', theme: 'light' };
+try { st.dev = localStorage.getItem('tr.dev') || st.dev; st.size = localStorage.getItem('tr.size') || st.size; st.plat = localStorage.getItem('tr.plat') || st.plat; st.theme = localStorage.getItem('tr.theme') || st.theme; } catch (e) {}
+if (!THEMES.some(([k]) => k === st.theme)) st.theme = 'light';
 if (!DEVICES[st.dev]) st.dev = 'iphone';
 if (!SIZES.some(([w, h]) => w + 'x' + h === st.size)) st.size = '360x780';
 if (!PLATS.some(([k]) => k === st.plat)) st.plat = 'app';
@@ -300,14 +312,22 @@ function frame() {
   ph.style.padding = d.pad + 'px'; ph.style.borderRadius = (d.r + d.pad) + 'px';
   fr.width = d.w; fr.height = d.h - top - bot;
   fr.dataset.mode = st.dev + ':' + st.plat;
+  fr.dataset.theme = st.theme;   /* тему так же: trainer/app.html читает её в <head> (dark.css) */
   $('broTop').className = 'bro' + (top ? ' on' : ''); $('broTop').style.height = top + 'px';
   $('broBot').className = 'bro' + (bot ? ' on' : ''); $('broBot').style.height = bot + 'px';
   drawSys();
   $('dev').innerHTML = Object.entries(DEVICES).map(([k, x]) => `<button class="${k === st.dev ? 'on' : ''}" data-dev="${k}">${x.name}</button>`).join('');
   $('size').innerHTML = SIZES.map(([w, h]) => `<button class="${w + 'x' + h === st.size ? 'on' : ''}" data-size="${w}x${h}">${w}×${h}</button>`).join('');
   $('plat').innerHTML = PLATS.map(([k, n]) => `<button class="${k === st.plat ? 'on' : ''}" data-plat="${k}">${n}</button>`).join('');
+  $('theme').innerHTML = THEMES.map(([k, n]) => `<button class="${k === st.theme ? 'on' : ''}" data-theme="${k}">${n}</button>`).join('');
   $('dims').textContent = `${d.name} · ${st.plat === 'app' ? 'приложение · безопасные зоны ' + d.sa.join(' / ') : 'веб · полосы браузера ' + d.web.join(' / ')} · ${d.w} × ${d.h}`;
   fit();
+}
+/* Статус-бар светлый, если страница во фрейме сейчас в тёмной теме (color-scheme из dark.css) */
+function paintTheme() {
+  let dk = false;
+  try { const w = fwin(); dk = /dark/.test(w.getComputedStyle(w.document.documentElement).colorScheme); } catch (e) {}
+  $('scrn').classList.toggle('dark', dk);
 }
 
 /* Статус-бар и полосы. В приложении — поверх страницы; в вебе статус-бар
@@ -357,6 +377,7 @@ function open(force) {
 }
 fr.addEventListener('load', async () => {
   const w = fwin();
+  paintTheme();
   w.addEventListener('click', () => setTimeout(observe, 260), true);
   w.addEventListener('keydown', e => { if (e.key === 'Escape') setTimeout(observe, 200); }, true);
   if (pend) { const a = pend; pend = null; await new Promise(r => setTimeout(r, 450)); await trRun(w, a); }
@@ -482,6 +503,10 @@ const keep = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 $('dev').addEventListener('click', e => { const b = e.target.closest('[data-dev]'); if (!b || b.dataset.dev === st.dev) return; st.dev = b.dataset.dev; keep('tr.dev', st.dev); frame(); open(true); });
 $('size').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (!b || b.dataset.size === st.size) return; st.size = b.dataset.size; keep('tr.size', st.size); frame(); open(true); });
 $('plat').addEventListener('click', e => { const b = e.target.closest('[data-plat]'); if (!b || b.dataset.plat === st.plat) return; st.plat = b.dataset.plat; keep('tr.plat', st.plat); frame(); open(true); });
+/* тема — сразу, без перезагрузки: открытые шторки и прокрутка остаются */
+$('theme').addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b || b.dataset.theme === st.theme) return; st.theme = b.dataset.theme; keep('tr.theme', st.theme); frame();
+  try { fwin().document.documentElement.setAttribute('data-theme', st.theme); } catch (e) {}
+  setTimeout(paintTheme, 30); });   /* страница меняет тему наблюдателем атрибута — следующим тиком */
 $('reload').addEventListener('click', () => open(true));
 
 addEventListener('keydown', e => {

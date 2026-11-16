@@ -1,0 +1,83 @@
+/* ═══════════ МОБИЛЬНАЯ ВЕРСИЯ КАБИНЕТА · ТЁМНАЯ ТЕМА (16.11.2026) ═══════════
+   Мобильная версия кабинета = тренерское приложение, в том числе по теме: у приложения тёмная
+   тема (trainer/dark.css) — у кабинета на телефоне такая же. Сюда же попадают страницы кабинета,
+   которые приложение открывает во фрейме (html.inapp): просмотр тренировки (workout.html, A6) и
+   конструктор с мастером копирования (constructor.html?wizard=1).
+
+   Подключает assets/mobile.js с media="(max-width:760px) and (prefers-color-scheme: dark)": тема как
+   в системе и только на телефонной ширине — десктоп не меняется ни на пиксель. Принудительно —
+   <html data-theme="dark|light"> (стенд — атрибутом фрейма; во фрейме приложения — тема приложения),
+   тогда media = "(max-width:760px)" или "not all". Поэтому ниже правила без @media: файл действует,
+   только когда тема тёмная, и светлую тему не трогает.
+
+   Палитра — как в trainer/dark.css (HIG, Color; скилл hig → references/color.md):
+   · экран #000 (systemBackground); карточки, шторки и окна — #1C1C1E: это --bg кабинета, в светлой
+     белый; заливки на карточке — #2C2C2E (--s1), едва заметные — #242426 (--s2, вне HIG);
+   · текст: #FFF; вторичный #AEAEB2; третичный #98989D; подсказки #8E8E93;
+   · акцент #FC5200 для заливок (белый на нём 3.3:1 — только жирные подписи, порог 3:1);
+     мелкий оранжевый текст (--acc-d) — #FF7A33;
+   · статусы — тёмные системные: green #30D158, yellow #FFD600, red #FF4245, blue #409CFF (текст);
+     подложки статусов — их тёмные оттенки.
+   Контраст проверен scripts/contrast.py скилла и обходом всех экранов стенда: текст ≥ 4.5:1 на своём
+   фоне (жирный и от 18 pt — ≥ 3:1). Правила — с html впереди: перебивают mobile.css при равных классах. */
+:root{
+  color-scheme:dark;
+  --bg:#1C1C1E; --s1:#2C2C2E; --s2:#242426; --line:#38383A; --line2:#48484A;
+  --page:#000000; --page-d:#2C2C2E;
+  --ink:#FFFFFF; --tx1:#FFFFFF; --tx2:#AEAEB2; --tx3:#98989D; --tx4:#8E8E93;
+  --acc:#FC5200; --acc-d:#FF7A33; --acc-a:#3A1F10; --acc-p:#4A2814; --on-acc:#FFFFFF;
+  --ok:#30D158; --ok-a:#0F2E1C; --rm:#FF4245; --rm-d:#FF6961; --rm-a:#3B1514; --warn:#FFD600;
+}
+
+/* ─── экран: в светлой серый (--s2 у body, #F2F2F2 во фрейме приложения), карточки на нём — --bg ─── */
+html body,html.inapp .page{background:#000}
+
+/* ─── нижняя панель — тёмное стекло, как у приложения (вне HIG) ─── */
+html .mtabs{background:rgba(22,22,24,.92)}
+
+/* ─── подсказки в полях: системный серый браузера (#757575) на тёмной заливке дал бы 3.4:1 ─── */
+html ::placeholder{color:var(--tx3);opacity:1}
+
+/* ─── цвета, заданные числами в base-trainer.css / mobile.css ─── */
+html .doch{border-bottom-color:var(--acc-p)}                              /* шапка дня: край оранжевой подложки */
+html .days .day.today .d{border-color:var(--acc-p)}
+html .wst.q{background:#0E2340;color:#409CFF}                           /* «ждёт ответа»: синий на тёмно-синем, 5.6:1 */
+html .wtm.q{box-shadow:inset 2px 0 0 #409CFF}
+html .dp-d.out{color:var(--tx4)}
+html .fddb.on{box-shadow:inset 0 0 0 1px var(--acc-p)}
+
+/* подложки статусов: светлые оттенки → тёмные того же цвета; текст на них — сам цвет статуса
+   (зелёный #30D158 на #0F2E1C — 7.3:1, жёлтый #FFD600 на #332A08 — 10.1:1, синий #409CFF на #0E2340 — 5.6:1) */
+html .doch .dst.pub,html .days .day .dmark.pub{background:var(--ok-a)}
+html .fev.t-q .ico,html .tchip.t-q{background:#0E2340;color:#409CFF}
+html .day .dr,html .crow .fl,html .fev.t-miss .ico,html .fev.t-fee .ico,html .tchip.t-miss,html .tchip.t-fee,
+html .days .day .dmark.draft,html .doch .dst.draft,html .gtag.busy,html .chip.warn,html .bnote{background:#332A08}
+html .bkd-warn,html .cnote .k{color:var(--warn)}
+html .pm-bal .pm-br{color:#000}                                           /* «₽» на зелёном: белый дал бы 2.0:1, чёрный — 10.4:1 */
+
+/* соревнование и заметки клиента — жёлтые плашки: тёмные янтарные, текст жёлтый */
+html .day.comp,html .gribbon.busy,html .cnote textarea{background:#2A2208}
+html .day.comp:hover,html .day.comp.on,html .days .day.comp .d{background:#3A2E0A}
+html .days .day .dmark.comp{background:#4A3A0C;color:var(--warn)}
+html .day .dmark.comp,html .day .stcell.comp,html .days .day .stcell.comp,html .days .day.comp .d,html .days .day.comp .d s{color:var(--warn)}
+html .day.draft,html .days .day.draft,html .days .day.comp,html .days .day.comp .d,html .gribbon.busy{border-color:#6B5514}
+html .day.comp.on{border-color:#8A6A12}
+html .cnote textarea{border-color:#6B5514}
+html .cnote textarea:focus{border-color:#8A6A12}
+
+/* календарь: линии между блоками дня и дни отдыха (в светлой чуть серее белого — в тёмной чуть темнее карточки) */
+html .days .day .bl,html .days .day .bx{border-top-color:var(--line)}
+html .days .day.rest,html .days .day.empty{background:#121214}
+html .days .day .stcell.rest img{filter:invert(1)}                         /* «Отдых» — чёрный рисунок PNG (assets/icons/rest.png): в тёмной белый, как текст */
+
+/* ─── «чернильные» плашки: в светлой — почти чёрные с белым текстом; в тёмной --ink белый,
+   а чёрная плашка пропала бы на чёрном экране — серая, светлее карточек (как подсказки приложения) ─── */
+html .toast,html .tip,html .bk-bar,html .dragghost,html .mdrag-ghost{background:#3A3A3C;color:#fff}
+html .toast .undo{color:var(--acc-d)}                                     /* #FF7A33 на #3A3A3C — 4.4:1, жирный 14.5 pt (порог 3:1) */
+html .cav.grp,html .avrow .av-cam{background:#636366}                    /* значок группы, «камера» у аватара: белый на нём 6.0:1 */
+
+/* ─── всплывающие меню и подсказки поиска (не шторки): в светлой белые с тенью над белым; в тёмной
+   тень на чёрном не видна, и меню сливалось с карточкой под ним — приподнятый фон #2C2C2E и край,
+   как у меню iOS; выделенная строка — ещё на ступень светлее ─── */
+html .sug:not(.dsl):not(.clipick):not(.dpick):not(.dpk):not(.setup){--bg:#2C2C2E;--s1:#3A3A3C;background:var(--bg);box-shadow:0 12px 36px rgba(0,0,0,.55),0 0 0 .5px var(--line2);
+  --rm:#FF6961}                                                              /* «Удалить блок»: #FF4245 на #2C2C2E — 4.1:1, #FF6961 — 4.9:1 */

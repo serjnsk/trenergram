@@ -66,6 +66,26 @@
   const fm = fe && /^(iphone|android):(app|web)$/.exec(fe.dataset.mode || '');
   /* фрейм тренерского приложения (trainer/app.html): своя шапка и вкладки у приложения */
   if(fe && fe.dataset.inapp) document.documentElement.classList.add('inapp');
+  /* ─── тёмная тема телефона (16.11.2026) — assets/mobile-dark.css ───
+     Мобильная версия кабинета = тренерское приложение, в том числе по теме. Правило то же, что у
+     trainer/dark.css: тема как в системе (media), только до 760 px — десктоп не меняется. Принудительно —
+     <html data-theme="dark|light">: в стенде его берём из атрибута фрейма data-theme, во фрейме
+     приложения (inapp) смотрим на <html> самого приложения; меняется на лету («Светлая | Тёмная»). */
+  {
+    const r = document.documentElement, W = '(max-width:760px)', l = document.createElement('link');
+    l.rel = 'stylesheet'; l.setAttribute('blocking', 'render');
+    l.href = ((document.currentScript || {}).src || 'assets/mobile.js').replace(/mobile\.js(\?.*)?$/, 'mobile-dark.css');
+    let src = r;
+    if(fe && fe.dataset.inapp){ try{ src = window.parent.document.documentElement }catch(_){} }
+    else if(fe && /^(dark|light)$/.test(fe.dataset.theme || '')) r.setAttribute('data-theme', fe.dataset.theme);
+    const ap = () => { const t = src.getAttribute('data-theme'); l.media = t === 'dark' ? W : t === 'light' ? 'not all' : W + ' and (prefers-color-scheme: dark)' };
+    ap(); document.head.appendChild(l);
+    new MutationObserver(ap).observe(src, {attributes:true, attributeFilter:['data-theme']});
+    /* полоса браузера: чёрная, когда тёмная тема телефона; на десктопе — прежняя белая */
+    const tc = document.querySelector('meta[name=theme-color]:not([media])');
+    if(tc){ tc.media = 'not all and ' + W + ' and (prefers-color-scheme: dark)';
+      const m = document.createElement('meta'); m.name = 'theme-color'; m.content = '#000000'; m.media = W + ' and (prefers-color-scheme: dark)'; tc.after(m) }
+  }
   if(fm){
     document.documentElement.classList.add('in-stand');
     if(fm[2] === 'app'){ const r = document.documentElement.style; r.setProperty('--sat', SA[fm[1]][0] + 'px'); r.setProperty('--sab', SA[fm[1]][1] + 'px') }
