@@ -185,6 +185,17 @@ svg{display:block}
 .more-r .t b{font-weight:400;font-size:16px}
 .more-r .n{color:var(--tx2);font-size:15px}
 .lrow.more-r + .lrow.more-r::before{left:60px}
+/* «Помощь» — карточка поддержки (app.js, supportCard), как над профилем в кабинете.
+   Кнопка контурная: в шторке «Ещё» это не главное действие экрана. */
+.sup-card{margin:4px 16px 8px;padding:16px;border-radius:14px;background:var(--s1)}
+.sup-hd{display:flex;align-items:center;gap:12px}
+.sup-av{width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none}
+.sup-av svg{width:100%;height:100%;display:block}
+.sup-hd .tx{flex:1;min-width:0}
+.sup-hd b{display:block;font-size:17px;line-height:22px;font-weight:600}
+.sup-hd s{display:block;text-decoration:none;font-size:15px;line-height:20px;color:var(--tx2)}
+.sup-card p{margin:12px 0 14px;font-size:15px;line-height:20px;color:var(--tx2)}
+.sup-card .btn.o{background:var(--bg)}
 /* клиенты: поиск и значок фильтра в одну строку; статус — под именем */
 .srow{display:flex;align-items:center;gap:4px;padding:12px 8px 4px 16px}
 .srow .search{flex:1;margin:0}

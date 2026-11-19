@@ -63,6 +63,21 @@ button{cursor:pointer}
   display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--tx3);flex:none}
 .nfoot b{font-size:14px;font-weight:600;display:block;letter-spacing:-.01em}
 .nfoot s{text-decoration:none;font-size:13px;color:var(--tx3);display:block}
+/* Поддержка над профилем (вместо live-чата, nav.js). Кнопка серая с рамкой:
+   оранжевый на экране уже у «Создать тренировку» — акцент один. */
+.nsup{margin:0 10px 10px;padding:13px 12px 12px;border:1px solid var(--line);
+  border-radius:var(--rad-l);background:var(--s2);flex:none}
+.nsup-h{display:flex;align-items:center;gap:10px}
+.nsup-av{width:36px;height:36px;border-radius:50%;overflow:hidden;flex:none}
+.nsup-av svg{display:block;width:100%;height:100%}
+.nsup b{font-size:15px;font-weight:600;letter-spacing:-.01em;display:block}
+.nsup s{text-decoration:none;font-size:13px;color:var(--tx3);display:block}
+.nsup p{font-size:13.5px;line-height:1.4;color:var(--tx2);margin:10px 0 12px}
+.nav a.nsup-btn{height:36px;padding:0 10px;justify-content:center;gap:8px;white-space:nowrap;
+  background:var(--bg);border:1px solid var(--line2);color:var(--ink);font-size:14px;font-weight:600}
+.nav a.nsup-btn:hover{background:var(--s1)}
+.nav a.nsup-btn .ntxt{flex:none}
+.nav a.nsup-btn svg{width:16px;height:16px}
 
 /* ─── топбар ─── */
 .topbar{height:58px;background:var(--bg);border-bottom:1px solid var(--line);
@@ -595,6 +610,10 @@ body.navmin .ngrp{font-size:0;padding:12px 0 6px;margin:0 6px;border-top:1px sol
 body.navmin .ngrp:first-child{border-top:0;padding-top:2px}
 body.navmin .nfoot{justify-content:center;padding:10px 0}
 body.navmin .nfoot span:last-child{display:none}
+body.navmin .nsup{margin:0 0 4px;padding:0;border:0;background:none}
+body.navmin .nsup-h,body.navmin .nsup p{display:none}
+body.navmin .nav a.nsup-btn{border:0;background:none;color:var(--tx2)}
+body.navmin .nav a.nsup-btn:hover{background:var(--s1);color:var(--ink)}
 /* Свёрнутое меню разворачивается по клику на знак — иначе из него не выйти. */
 body.navmin .nh .logo{cursor:pointer}
 

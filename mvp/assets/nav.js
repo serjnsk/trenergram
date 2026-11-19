@@ -38,6 +38,18 @@ const MARK  = 'ТМ';               /* сокращение — иконки и 
 const LOGO = `<span class="logo" role="img" aria-label="${BRAND}">`
   + `<i><b>${BRAND[0]}</b>${BRAND.slice(1,-1)}<b>${BRAND.slice(-1)}</b></i><em>${MARK}</em></span>`;
 
+/* ═══════════ ПОДДЕРЖКА — ВМЕСТО LIVE-ЧАТА ═══════════
+   19.11.2026: плавающая кнопка чата уходит, её место — карточка над профилем
+   со ссылкой на Telegram-бота поддержки. Аватар тот же, что у бота
+   (brand/logo/trenergram-avatar-support.svg): в Telegram тренер узнаёт значок.
+   Бот @trenergram_support_bot — рабочий. В продукте к ссылке можно добавить
+   ?start=<id аккаунта> — поддержка увидит, кто пишет, и не переспросит почту.
+   В свёрнутом меню от карточки остаётся кнопка-самолётик (ссылка та же).
+   В тренерском приложении — та же карточка в шторке «Ещё» (trainer/app.js). */
+const SUPPORT_TG = 'https://t.me/trenergram_support_bot';
+const SUPPORT_AV = '<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#FC5200"/><g fill="#FFFFFF"><rect x="19" y="26" width="62" height="40" rx="9"/><path d="M28 59V78L47 59Z"/></g><g transform="translate(50 46) scale(0.6) translate(-51 -52)" fill="#FC5200"><path d="M12 32H46V42H34V66L28 72H24V42H12Z"/><path d="M52 32H62L71 50L80 32H90V72H81V49L73 64H69L61 49V72H52Z"/></g></svg>';
+const SUPPORT_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.7 14.5a.4.4 0 0 0 .7 0l4.3-12.6a.3.3 0 0 0-.4-.4L1.7 5.8a.4.4 0 0 0 0 .7l5.3 2.1a1.3 1.3 0 0 1 .7.7z"/><path d="M14.6 1.4 7.3 8.7"/></svg>';
+
 /* ═══════════ ОТРИСОВКА МЕНЮ — ОДНА НА ОБЕ ОБОЛОЧКИ ═══════════
    Третий дубль подряд после NAV и LOGO: конструктор живёт на своей оболочке,
    и любое общее определение норовит в ней размножиться. Держим здесь. */
@@ -53,6 +65,12 @@ function renderNav(page){
         : `<a href="${x.h}" class="${x.h===page?'on':''}" title="${esc(x.n)}">${ICON[x.k]}
              <span class="ntxt">${esc(x.n)}</span><i class="nab">${esc(x.a||x.n)}</i>
              ${x.c?`<span class="cnt">${x.c()}</span>`:''}</a>`).join('')}
+    </div>
+    <div class="nsup">
+      <div class="nsup-h"><span class="nsup-av">${SUPPORT_AV}</span>
+        <span><b>Поддержка</b><s>Отвечаем в Telegram</s></span></div>
+      <p>Есть вопрос или что-то не получается — напишите, разберёмся.</p>
+      <a class="nsup-btn" href="${SUPPORT_TG}" target="_blank" rel="noopener" title="Поддержка в Telegram">${SUPPORT_ICON}<span class="ntxt">Написать в Telegram</span></a>
     </div>
     <a class="nfoot" href="profile.html" title="${esc(TRAINER.n)}">
       <span class="av">${esc(TRAINER.ini)}</span>
