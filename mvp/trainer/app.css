@@ -185,17 +185,25 @@ svg{display:block}
 .more-r .t b{font-weight:400;font-size:16px}
 .more-r .n{color:var(--tx2);font-size:15px}
 .lrow.more-r + .lrow.more-r::before{left:60px}
-/* «Помощь» — карточка поддержки (app.js, supportCard), как над профилем в кабинете.
-   Кнопка контурная: в шторке «Ещё» это не главное действие экрана. */
-.sup-card{margin:4px 16px 8px;padding:16px;border-radius:14px;background:var(--s1)}
-.sup-hd{display:flex;align-items:center;gap:12px}
-.sup-av{width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none}
+/* «Базы» в «Ещё» — плитка 2×2 (app.js, moreTile): так шторка с поддержкой помещается в 360×780 */
+.mtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.mtile{display:flex;align-items:center;gap:10px;min-height:56px;padding:8px 12px;border-radius:12px;background:var(--s1);color:var(--tx)}
+.mtile:active{background:var(--s2)}
+.mtile .ic{width:28px;height:28px;display:grid;place-items:center;flex:none}
+.mtile .ic svg{width:19px;height:19px}
+.mtile .t{min-width:0}
+.mtile b{display:block;font-size:15px;line-height:19px;font-weight:500;overflow-wrap:anywhere}
+.mtile s{display:block;text-decoration:none;font-size:13px;line-height:17px;color:var(--tx2)}
+/* «Помощь» — карточка поддержки в одну строку (app.js, supportCard), по смыслу та же, что над
+   профилем в кабинете. Кнопка контурная: в шторке «Ещё» это не главное действие экрана. */
+.sup-card{display:flex;align-items:center;gap:12px;margin:2px 16px 0;padding:12px 12px 12px 14px;border-radius:14px;background:var(--s1);color:var(--tx)}
+.sup-card:active{background:var(--s2)}
+.sup-av{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none}
 .sup-av svg{width:100%;height:100%;display:block}
-.sup-hd .tx{flex:1;min-width:0}
-.sup-hd b{display:block;font-size:17px;line-height:22px;font-weight:600}
-.sup-hd s{display:block;text-decoration:none;font-size:15px;line-height:20px;color:var(--tx2)}
-.sup-card p{margin:12px 0 14px;font-size:15px;line-height:20px;color:var(--tx2)}
-.sup-card .btn.o{background:var(--bg)}
+.sup-card .tx{flex:1;min-width:0}
+.sup-card b{display:block;font-size:16px;line-height:21px;font-weight:600}
+.sup-card s{display:block;text-decoration:none;font-size:13.5px;line-height:18px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sup-card .btn.s{background:var(--bg);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line2);padding:0 14px;flex:none}
 /* клиенты: поиск и значок фильтра в одну строку; статус — под именем */
 .srow{display:flex;align-items:center;gap:4px;padding:12px 8px 4px 16px}
 .srow .search{flex:1;margin:0}

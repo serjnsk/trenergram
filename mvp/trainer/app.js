@@ -837,26 +837,31 @@ const confirmSheet = (id, title, sub, label, act, attrs) => sheet({id, title, su
     <button class="btn rm" data-act="${act}" ${attrs}>${label}</button><button class="btn o" data-act="close-sheet">Отмена</button></div>`});
 
 /* ═══════════ БАЗЫ И ПРОФИЛЬ — следующая итерация ═══════════ */
-/* «Ещё» — список разделов по-iOS: базы шаблонов, аккаунт, помощь. Сами разделы — следующая итерация. */
+/* «Ещё» — список разделов по-iOS: базы шаблонов, аккаунт, помощь. Сами разделы — следующая итерация.
+   Третий элемент 'tiles' — раздел плиткой 2×2, а не строками (19.11.2026): иначе на 360×780 шторка
+   с карточкой поддержки не помещается в экран. */
 const MORE = [
   ['Базы', [['ex', I.ex, 'Упражнения', () => exLive().length], ['blocks', I.bases, 'Блоки', () => tplLive('блок').length],
-    ['workouts', I.clip, 'Тренировки', () => tplLive('тренировка').length], ['programs', I.list, 'Программы', () => tplLive('программа').length]]],
+    ['workouts', I.clip, 'Тренировки', () => tplLive('тренировка').length], ['programs', I.list, 'Программы', () => tplLive('программа').length]], 'tiles'],
   ['Аккаунт', [['profile', I.user, 'Профиль', () => ''], ['sub', I.card, 'Подписка', () => ''], ['notify', I.bell, 'Уведомления', () => ''], ['partner', I.gift, 'Партнёрская программа', () => '']]]];
 /* «Помощь» — карточка поддержки, та же, что над профилем в сайдбаре кабинета (19.11.2026):
    live-чата нет, вопросы — в Telegram-бота. Ссылка и аватар бота — SUPPORT_TG / SUPPORT_AV
-   из assets/nav.js. На телефоне ссылка t.me сразу открывает Telegram, QR не нужен. */
-const supportCard = () => `<div class="cap">Помощь</div><div class="sup-card">
-    <div class="sup-hd"><span class="sup-av">${SUPPORT_AV}</span><span class="tx"><b>Поддержка</b><s>Отвечаем в Telegram</s></span></div>
-    <p>Есть вопрос или что-то не получается — напишите, разберёмся.</p>
-    <a class="btn o" href="${SUPPORT_TG}" target="_blank" rel="noopener">${I.plane}Написать в Telegram</a></div>`;
+   из assets/nav.js. На телефоне ссылка t.me сразу открывает Telegram, QR не нужен.
+   В шторке карточка в одну строку, без абзаца: иначе на 360×780 «Ещё» не помещается в экран.
+   Нажимается вся карточка; «Написать» — подсказка, что это действие, а не раздел. */
+const supportCard = () => `<div class="cap">Помощь</div><a class="sup-card" href="${SUPPORT_TG}" target="_blank" rel="noopener" aria-label="Поддержка в Telegram — написать">
+    <span class="sup-av">${SUPPORT_AV}</span><span class="tx"><b>Поддержка</b><s>Ответим в Telegram</s></span><span class="btn s">Написать</span></a>`;
 const STUB = {ex:['Упражнения', 'Поиск по базе, своё упражнение, техника и видео.'], blocks:['Блоки', 'Шаблоны блоков по папкам: разминки, силовые, комплексы, заминки.'],
   workouts:['Тренировки', 'Шаблоны тренировок: просмотр, правка, «Назначить клиенту».'], programs:['Программы', 'Программы на недели вперёд и назначение клиентам.'],
   profile:['Профиль', 'Мои данные и фото, приглашение клиентов, реквизиты для оплаты, синхронизация, выход.'],
   sub:['Подписка', 'Срок и тариф. Оплата — только на сайте, в приложении кнопок оплаты нет.'],
   notify:['Уведомления', 'Пуши о вопросах, оплате, новых клиентах; тихие часы.'], partner:['Партнёрская программа', 'Ссылка, приглашённые тренеры и начисления; вывод средств — на сайте.']};
 /* «Ещё» — шторкой поверх текущего экрана: вкладка не уводит с того, что открыто */
-const moreList = () => MORE.map(([cap_, rows]) => `<div class="cap">${cap_}</div>${rows.map(([k, ic, t, n]) => { const v = n();
-    return `<a class="lrow more-r" href="#/${k === 'profile' ? 'profile' : 'more/' + k}"><span class="ic sq">${ic}</span><span class="t"><b>${t}</b></span>${v !== '' ? `<span class="n">${v}</span>` : ''}${I.chev}</a>` }).join('')}`).join('');
+const moreHref = k => '#/' + (k === 'profile' ? 'profile' : 'more/' + k);
+const moreTile = ([k, ic, t, n]) => { const v = n();
+  return `<a class="mtile" href="${moreHref(k)}"><span class="ic">${ic}</span><span class="t"><b>${t}</b>${v !== '' ? `<s>${v}</s>` : ''}</span></a>` };
+const moreList = () => MORE.map(([cap_, rows, kind]) => `<div class="cap">${cap_}</div>${kind === 'tiles' ? `<div class="mtiles">${rows.map(moreTile).join('')}</div>` : rows.map(([k, ic, t, n]) => { const v = n();
+    return `<a class="lrow more-r" href="${moreHref(k)}"><span class="ic sq">${ic}</span><span class="t"><b>${t}</b></span>${v !== '' ? `<span class="n">${v}</span>` : ''}${I.chev}</a>` }).join('')}`).join('');
 function sheetMore(){ sheet({id:'more', title:'Ещё', body:`<div class="more-s">${moreList()}${supportCard()}</div>`}) }
 function scrStub(k){
   const T = STUB[k] || STUB.profile, back = k === 'profile' ? '#/today' : '#/more';
